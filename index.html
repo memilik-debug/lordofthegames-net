@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lord of the Games — Cem İlişik | Free HTML5 Games</title>
+  <meta name="description" content="Lord of the Games — 11 original HTML5 games built by Cem İlişik. Strategy, racing, simulation, sports and more. Play in your browser, no install needed. / Cem İlişik tarafından yapılmış 11 özgün HTML5 oyunu.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="images/logo.png.png">
+  <link rel="apple-touch-icon" href="images/logo.png.png">
+
+  <!-- Open Graph / sosyal medya paylaşım -->
+  <meta property="og:title" content="Lord of the Games — Cem İlişik">
+  <meta property="og:description" content="Strateji, yarış, simülasyon ve daha fazlası. 10 oyun, tarayıcında, kurulum olmadan.">
+  <meta property="og:image" content="images/logo.png.png">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="images/logo.png.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --bg2: #13131f;
+      --card-bg: #1a1a2e;
+      --text: #f0f0f8;
+      --text-muted: #8888aa;
+      --border: #2a2a44;
+      --accent: #ff4500;
+      --accent-glow: rgba(255, 69, 0, 0.35);
+      --shadow: 0 4px 20px rgba(0,0,0,0.4);
+      --shadow-hover: 0 12px 40px rgba(0,0,0,0.6);
+      --radius: 20px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; }
+
+    /* HEADER */
+    header {
+      background: rgba(13, 13, 26, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      height: 68px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .logo-img {
+      height: 44px; width: auto; display: block;
+      filter: drop-shadow(0 0 10px var(--accent-glow));
+      transition: transform 0.25s ease, filter 0.25s ease;
+    }
+    .logo:hover .logo-img {
+      transform: scale(1.05);
+      filter: drop-shadow(0 0 16px rgba(255,69,0,0.6));
+    }
+    .logo-icon { font-size: 28px; filter: drop-shadow(0 0 8px var(--accent-glow)); }
+    .logo-text {
+      font-family: 'Fredoka One', cursive; font-size: 22px;
+      letter-spacing: 0.5px; text-shadow: 0 0 20px rgba(255,69,0,0.3);
+    }
+    .logo-text span { color: var(--accent); }
+
+    /* Hero logo */
+    .hero-logo {
+      display: block;
+      width: clamp(240px, 38vw, 360px);
+      height: auto;
+      margin: 0 auto 28px;
+      filter: drop-shadow(0 8px 24px rgba(255,69,0,0.35)) drop-shadow(0 4px 16px rgba(0,0,0,0.4));
+      animation: logoFloat 4s ease-in-out infinite;
+    }
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    @media (max-width: 600px) {
+      .hero-logo { width: clamp(200px, 70vw, 280px); margin-bottom: 18px; }
+      .logo-img { height: 36px; }
+    }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .lang-toggle { display: flex; background: var(--bg2); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .lang-btn { padding: 6px 14px; font-size: 13px; font-weight: 600; font-family: inherit; border: none; background: transparent; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
+    .lang-btn.active { background: var(--accent); color: #fff; }
+
+    /* Lord AI header button */
+    .ai-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px;
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      letter-spacing: 0.3px;
+      color: #fff;
+      background: linear-gradient(135deg, #ff4500, #ff7a00);
+      border: none; border-radius: 10px;
+      cursor: pointer; text-decoration: none;
+      box-shadow: 0 4px 14px rgba(255,69,0,0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+    }
+    .ai-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(255,69,0,0.5); }
+    .ai-btn::before {
+      content: '';
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #5eff8a;
+      box-shadow: 0 0 8px #5eff8a;
+      animation: aiPulse 1.6s infinite;
+    }
+    @keyframes aiPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+    .ai-btn-label-short { display: none; }
+    @media (max-width: 600px) {
+      .ai-btn { padding: 7px 12px; font-size: 12px; }
+      .ai-btn-label-full { display: none; }
+      .ai-btn-label-short { display: inline; }
+    }
+
+    /* ── HERO with VIDEO BG ── */
+    .hero-wrap {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero-video-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.55;
+      filter: saturate(0.85);
+    }
+    .hero-video-bg iframe {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 100%; height: 100%;
+      transform: translate(-50%, -50%);
+      border: 0;
+      pointer-events: none;
+    }
+    /* Scrim that fades video into bg color so text stays legible */
+    .hero-scrim {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background:
+        linear-gradient(180deg, rgba(13,13,26,0.55) 0%, rgba(13,13,26,0.75) 60%, var(--bg) 100%),
+        radial-gradient(ellipse at center, transparent 30%, rgba(13,13,26,0.6) 100%);
+      pointer-events: none;
+    }
+    .hero {
+      position: relative;
+      z-index: 2;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 24px 90px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,69,0,0.12);
+      color: var(--accent);
+      border: 1.5px solid rgba(255,69,0,0.3);
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-size: 13px; font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 0.3px;
+      backdrop-filter: blur(8px);
+    }
+    .hero h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 400;
+      letter-spacing: 1px;
+      line-height: 1.05;
+      margin-bottom: 22px;
+      color: var(--text);
+      text-shadow: 0 4px 30px rgba(0,0,0,0.6);
+    }
+    .hero h1 .highlight { color: var(--accent); text-shadow: 0 0 40px var(--accent-glow); }
+    .hero-sub {
+      font-size: clamp(17px, 2.5vw, 21px);
+      color: #d0d0e8;
+      max-width: 540px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+    }
+    .hero-sub .en { display: none; }
+
+    /* CTA row */
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary, .btn-watch {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      padding: 14px 26px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #ff4500, #ff7a00);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(255,69,0,0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(255,69,0,0.55);
+    }
+    .btn-watch {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1.5px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(10px);
+    }
+    .btn-watch:hover {
+      background: rgba(255,255,255,0.14);
+      border-color: rgba(255,69,0,0.5);
+      transform: translateY(-2px);
+    }
+    .play-icon {
+      width: 22px; height: 22px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    .play-icon::before {
+      content: '';
+      border-style: solid;
+      border-width: 5px 0 5px 8px;
+      border-color: transparent transparent transparent #fff;
+      margin-left: 2px;
+    }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(6, 6, 13, 0.92);
+      backdrop-filter: blur(16px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      animation: backdrop-in 0.3s ease both;
+    }
+    .modal-backdrop.open { display: flex; }
+    @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal-frame {
+      width: 100%;
+      max-width: 1280px;
+      aspect-ratio: 16/9;
+      background: #06060d;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px var(--border);
+      position: relative;
+      animation: modal-in 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    }
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.92) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-frame iframe {
+      width: 100%; height: 100%;
+      border: 0; display: block;
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+    }
+    .modal-close:hover {
+      background: var(--accent);
+      transform: scale(1.05);
+    }
+
+    /* GAMES GRID */
+    .games-section { max-width: 1100px; margin: 0 auto; padding: 60px 24px 80px; }
+    .section-label { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 24px; }
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
+
+    .game-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      cursor: pointer;
+    }
+    .game-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(255,69,0,0.5);
+      box-shadow: 0 20px 50px rgba(255,69,0,0.18);
+    }
+    .game-cover { width: 100%; aspect-ratio: 16/9; overflow: hidden; }
+    .game-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.35s; }
+    .game-card:hover .game-cover img { transform: scale(1.06); }
+    .game-info { padding: 16px 18px 18px; }
+    .game-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .tag { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; letter-spacing: 0.3px; }
+    .tag-cat { background: rgba(255,255,255,0.07); color: #aaa; border: 1px solid rgba(255,255,255,0.1); }
+    .tag-hot { background: rgba(255,30,30,0.12); color: #ff5555; border: 1px solid rgba(255,0,0,0.2); }
+    .tag-new { background: rgba(255,69,0,0.15); color: #ff7a40; border: 1px solid rgba(255,69,0,0.25); }
+    .game-title { font-family: 'Fredoka One', cursive; font-size: 18px; margin-bottom: 6px; line-height: 1.3; }
+    .game-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+    .play-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .play-btn { display: inline-flex; align-items: center; gap: 7px; background: linear-gradient(135deg, #ff4500, #ff7a00); color: #fff; font-size: 13px; font-weight: 700; padding: 8px 18px; border-radius: 10px; }
+    .game-version { font-size: 11px; color: #555; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.07); }
+
+    /* MAINTENANCE / BAKIMDA — disabled card style */
+    .game-card.maintenance {
+      cursor: not-allowed;
+      pointer-events: none;
+      opacity: 0.65;
+      filter: grayscale(0.4);
+      position: relative;
+    }
+    .game-card.maintenance .game-cover { position: relative; }
+    .game-card.maintenance .game-cover::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(13, 13, 26, 0.55);
+      backdrop-filter: blur(1px);
+    }
+    .maintenance-ribbon {
+      position: absolute;
+      top: 12px; left: 12px;
+      z-index: 3;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, #ffb800, #ff7a00);
+      color: #1a1010;
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      padding: 5px 10px; border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(255, 122, 0, 0.45);
+    }
+    .game-card.maintenance .play-btn {
+      background: rgba(255,255,255,0.08);
+      color: var(--text-muted);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .tag-maint {
+      background: rgba(255, 184, 0, 0.15);
+      color: #ffb800;
+      border: 1px solid rgba(255, 184, 0, 0.35);
+    }
+
+    /* NEWS SECTION */
+    .news-section { max-width: 1100px; margin: 0 auto; padding: 40px 24px 0; }
+    .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; margin-top: 18px; }
+    .news-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 22px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .news-card:hover { border-color: rgba(255,69,0,0.45); box-shadow: 0 8px 28px rgba(255,69,0,0.12); }
+    .news-icon { font-size: 32px; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+    .news-body { flex: 1; min-width: 0; }
+    .news-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .news-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; background: rgba(255,69,0,0.14); color: #ff7a40; border: 1px solid rgba(255,69,0,0.25); padding: 2px 8px; border-radius: 5px; }
+    .news-date { font-size: 11px; color: var(--text-muted); }
+    .news-title { font-family: 'Fredoka One', cursive; font-size: 16px; margin-bottom: 6px; line-height: 1.3; }
+    .news-desc { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+    .news-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; font-size: 12px; font-weight: 700; color: var(--accent); text-decoration: none; opacity: 0.85; }
+    .news-link:hover { opacity: 1; }
+    @media (max-width: 600px) { .news-section { padding: 30px 16px 0; } .news-grid { grid-template-columns: 1fr; } }
+
+    footer { border-top: 1px solid var(--border); background: var(--bg2); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; padding: 32px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-left { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+    .footer-left strong { color: var(--text); font-weight: 700; }
+
+    @media (max-width: 600px) {
+      .hero { padding: 60px 16px 50px; }
+      .games-section { padding: 40px 16px 60px; }
+      .games-grid { grid-template-columns: 1fr; gap: 16px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="#" class="logo" aria-label="Lord of the Games">
+      <img src="images/logo.png.png" alt="Lord of the Games" class="logo-img">
+    </a>
+    <div class="header-right">
+      <a href="lord_ai.html" class="ai-btn" aria-label="Lord AI ile konuş">
+        <span class="ai-btn-label-full">🤖 Lord AI</span>
+        <span class="ai-btn-label-short">🤖 AI</span>
+      </a>
+      <div class="lang-toggle">
+        <button class="lang-btn active" data-lang="tr">TR</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero-wrap">
+    <!-- (1) Looping video as ambient hero background -->
+    <div class="hero-video-bg" aria-hidden="true">
+      <iframe src="Hero Loop 8s.html" title="" tabindex="-1" scrolling="no"></iframe>
+    </div>
+    <div class="hero-scrim"></div>
+
+    <div class="hero">
+      <img src="images/logo.png.png" alt="Lord of the Games" class="hero-logo">
+      <h1>
+        <span class="tr">Oyna, <span class="highlight">Keşfet</span>,<br>Eğlen.</span>
+        <span class="en" style="display:none">Play, <span class="highlight">Explore</span>,<br>Have Fun.</span>
+      </h1>
+      <p class="hero-sub">
+        <span class="tr">Strateji, yarış, simülasyon ve daha fazlası.<br>11 oyun, tarayıcında, kurulum olmadan.</span>
+        <span class="en" style="display:none">Strategy, racing, simulation and more.<br>11 games in your browser, no install needed.</span>
+      </p>
+
+      <!-- (4) CTA row with Tanıtım izle button -->
+      <div class="hero-actions">
+        <a href="#oyunlar" class="btn-primary">
+          <span class="tr">▶ Oyunları gör</span>
+          <span class="en" style="display:none">▶ See the games</span>
+        </a>
+        <button class="btn-watch" id="open-promo">
+          <span class="play-icon"></span>
+          <span class="tr">Tanıtım izle</span>
+          <span class="en" style="display:none">Watch the trailer</span>
+          <span style="opacity:0.6; font-weight:500; margin-left: 4px;">· 30s</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEWS SECTION -->
+  <section class="news-section" id="haberler">
+    <div class="section-label tr">— Son Haberler</div>
+    <div class="section-label en" style="display:none">— Latest News</div>
+    <div class="news-grid">
+
+      <div class="news-card">
+        <div class="news-icon">🌍</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge">v2.2 · Büyük Güncelleme</span>
+            <span class="news-date">Haziran 2026</span>
+          </div>
+          <div class="news-title">Strateji 1936 — v2.2: Ülke Yönetimi + Yeni Harita!</div>
+          <div class="news-desc tr">🏛 Oyun artık sadece savaş değil! 4 yeni yönetim sekmesi: 💰 Ekonomi & Bütçe (vergi oranı, ordu bakım gideri, net bütçe), 🏭 Sanayi & Üretim (fabrika kurma, ekonomi politikası), 🏛 Politika & Stabilite (hükümet tipleri, isyan riski, propaganda), 🤝 Diplomasi (ilişki, ticaret, saldırmazlık paktı, ittifak — müttefikin yanında savaşır). 🎨 Harita yenilendi: fethettiğin ülkenin toprağı SENİN rengine dönüyor, kendi sınırların altın, renkler daha canlı.</div>
+          <div class="news-desc en" style="display:none">🏛 The game is now more than just war! 4 new management tabs: 💰 Economy & Budget (tax rate, army upkeep, net budget), 🏭 Industry & Production (build factories, economic policy), 🏛 Politics & Stability (government types, revolt risk, propaganda), 🤝 Diplomacy (relations, trade, non-aggression pacts, alliances — allies fight by your side). 🎨 Revamped map: conquered land turns into YOUR color, your borders gold, more vivid colors.</div>
+          <a class="news-link" href="savas_hoi.html">▶ Oyna / Oyunu gör</a>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="news-icon">👑</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge">v1.4 · Yeni Oyun</span>
+            <span class="news-date">Haziran 2026</span>
+          </div>
+          <div class="news-title">Lord of Nations — Ülke Yönetme & Savaş çıktı!</div>
+          <div class="news-desc tr">👑 Yepyeni 3D strateji oyunu! Bir ülke seç, ekonomiyi yönet, ordunu kur, diplomasi yap ve sıra tabanlı savaşlarla haritaya hükmet. Three.js ile gerçek 3D harita, vergi/bütçe sistemi ve yapay zekâ rakipler.</div>
+          <div class="news-desc en" style="display:none">👑 A brand-new 3D strategy game! Pick a nation, manage the economy, build your army, run diplomacy and dominate the map through turn-based war. Real 3D map with Three.js, tax/budget system and AI rivals.</div>
+          <a class="news-link" href="lord_of_nations_3d.html">▶ Oyna / Oyunu gör</a>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="news-icon">⛏️</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge">v3.0 · Yeni</span>
+            <span class="news-date">Haziran 2026</span>
+          </div>
+          <div class="news-title">Minecraft 2D Pro — v3.0: Hikaye Modu + Mobil!</div>
+          <div class="news-desc tr">📖 Hikaye Modu eklendi: Buz Kalesi'nde Kral Varran ile uyan, Baldric'in işgaline karşı 6 görev (taş kır, kılıç yap, zombi öldür, batıya yürü). 🌍 Serbest Mod ile klasik açık dünya. 🤴 Kral karakteri + seçenekli diyaloglar. 📱 Tam mobil dokunmatik kontrol. 🔧 Crafting table bugu düzeltildi — sağ tıkla artık 3x3 üretim grid'i açılıyor.</div>
+          <div class="news-desc en" style="display:none">📖 Story Mode: wake up in the Ice Castle with King Varran, 6 quests against Baldric's invasion. 🌍 Free Mode for classic open world. 🤴 King NPC + choice dialogs. 📱 Full mobile touch. 🔧 Crafting table fixed — right click now opens the 3x3 grid.</div>
+          <a class="news-link" href="minecraft.html">▶ Oyna / Oyunu gör</a>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="news-icon">⚽</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge">v2.8 · Yeni</span>
+            <span class="news-date">Haziran 2026</span>
+          </div>
+          <div class="news-title">Futbol Manager — v2.8: Canlı Maç İstatistikleri!</div>
+          <div class="news-desc tr">🩹 Sarı/kırmızı kart, sakatlık, korner, kaleci kurtarışı, kayarak müdahale eklendi. 📊 Maç ekranında canlı istatistik paneli: topla oynama %, şut, isabet, kurtarış, faul, kart sayaçları. 🎤 Spiker senaryosu 40 farklı cümleye çıktı. ⚡ Maç ekranı kararma bugu düzeltildi.</div>
+          <div class="news-desc en" style="display:none">🩹 Yellow/red cards, injuries, corners, goalkeeper saves, slide tackles added. 📊 Live in-match stats panel: possession %, shots, on-target, saves, fouls, card counters. 🎤 Commentary expanded to 40 unique lines. ⚡ Match screen flashing bug fixed.</div>
+          <a class="news-link" href="futbol.html">▶ Oyna / Oyunu gör</a>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="news-icon">🏰</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge">v3.0 · Yeni</span>
+            <span class="news-date">Haziran 2026</span>
+          </div>
+          <div class="news-title">Kale Savunma — v3.0: Hikaye + 5 Karakter!</div>
+          <div class="news-desc tr">📖 Hikaye Modu (10 dalga, saray intro) + ♾️ Sonsuz Mod. 5 karakter konuşuyor: 🧙‍♂️ Baldric, 🛡️ Sör Roric, 👸 Prenses Elara, 🤡 Soytarı Quill, 🧝‍♀️ Büyücü Lyra. Seçenekli diyaloglar. 🌳 Her seviyede dallanan evrim ağacı (LV2-5, her bina için 8 evrim). Goblin/Ork/Yarasa/Boss grafikleri tamamen yeniden çizildi. Ana menüde TR/ENG dil seçimi.</div>
+          <div class="news-desc en" style="display:none">📖 Story Mode (10 waves + palace intro) + ♾️ Endless Mode. 5-character cast: 🧙‍♂️ Baldric, 🛡️ Sir Roric, 👸 Princess Elara, 🤡 Jester Quill, 🧝‍♀️ Mage Lyra. Branching dialog choices. 🌳 Per-level evolution tree (LV2-5, 8 evolutions per building). Goblin/Orc/Bat/Boss graphics completely redrawn. TR/ENG language toggle.</div>
+          <a class="news-link" href="koy_savunma.html">▶ Oyna / Oyunu gör</a>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="news-icon">🌍</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge">v2.1 · Yeni</span>
+            <span class="news-date">Haziran 2026</span>
+          </div>
+          <div class="news-title">Strateji 1936 — v2.1: Toplu Saldırı!</div>
+          <div class="news-desc tr">⚔ TOPLU SALDIRI eklendi: tek tek tümen göndermenin saçmalığı bitti. Bir şehirde 2+ tümen varsa Ordu sekmesinde altın panel çıkar, birleşik ⚔/🛡 güç gösterilir, "HEPSİYLE → şehir" butonuyla tek tıkta tüm stack birlikte saldırır. 10 kişilik ordu = tek tokat.</div>
+          <div class="news-desc en" style="display:none">⚔ STACK ATTACK added: no more sending divisions one-by-one. If a city has 2+ divisions, a gold panel appears in the Army tab with combined ⚔/🛡 power and "ALL → city" buttons. One click, whole stack attacks together.</div>
+          <a class="news-link" href="savas_hoi.html">▶ Oyna / Oyunu gör</a>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="news-icon">🤖</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge">v2.6 · Yeni</span>
+            <span class="news-date">Haziran 2026</span>
+          </div>
+          <div class="news-title">Lord AI Pro — v2.6: Tüm Oyunlar Mobil!</div>
+          <div class="news-desc tr">📱/💻 Mobil-PC ayrımı kaldırıldı: artık 10 oyunun hepsi mobil + PC uyumlu. Lord AI'nın bilgi tabanı en son sürümlere göre güncellendi (Minecraft v3.0, Futbol v2.8, Kale v3.0, Strateji 2.1, Toplu Saldırı). Haberler bölümü tazelendi.</div>
+          <div class="news-desc en" style="display:none">📱/💻 Mobile/PC distinction removed: all 10 games are now mobile + PC compatible. Lord AI's knowledge base refreshed to latest versions (Minecraft v3.0, Futbol v2.8, Kale v3.0, Strategy 2.1, Stack Attack). News section refreshed.</div>
+          <a class="news-link" href="lord_ai.html">▶ Lord AI'ya sor</a>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="news-icon">🚀</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge">Güncel</span>
+            <span class="news-date">Mayıs 2026</span>
+          </div>
+          <div class="news-title">BirdBlast — v2.0: Uzay & Kum Havuzu</div>
+          <div class="news-desc tr">Yeni uzay seviyeleri, tamamen yeni kum havuzu (sandbox) editörü, yenilenen ses sistemi ve farklı kuş türleri.</div>
+          <div class="news-desc en" style="display:none">New space levels, brand new sandbox editor, overhauled sound system and new bird types.</div>
+          <a class="news-link" href="angry_birds.html">▶ Oyna / Oyunu gör</a>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="news-icon">🔧</div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-badge" style="background: rgba(255,184,0,0.18); color:#ffb800; border-color: rgba(255,184,0,0.4);">Bakımda</span>
+            <span class="news-date">Mayıs 2026</span>
+          </div>
+          <div class="news-title">War of Countries — Geçici olarak kapatıldı</div>
+          <div class="news-desc tr">Oyunda bir hata tespit edildi ve geçici olarak kapatıldı. En kısa sürede düzeltip tekrar açacağız. Anlayışın için teşekkürler!</div>
+          <div class="news-desc en" style="display:none">A bug has been detected and the game is temporarily offline. We'll fix it and bring it back as soon as possible. Thanks for your patience!</div>
+          <span class="news-link" style="color:#ffb800; cursor: default; opacity: 0.85;">⏸ Geçici olarak kapalı</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="games-section" id="oyunlar">
+    <div class="section-label tr">— Tüm Oyunlar</div>
+    <div class="section-label en" style="display:none">— All Games</div>
+    <div class="games-grid">
+      <a class="game-card" href="lord_of_nations_3d.html">
+        <div class="game-cover"><img src="images/ulke_yonetme.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Strateji</span><span class="en" style="display:none">Strategy</span></span>
+            <span class="tag tag-new"><span class="tr">YENİ</span><span class="en" style="display:none">NEW</span></span>
+            <span class="tag tag-hot">🔥 HOT</span>
+          </div>
+          <div class="game-title"><span class="tr">Lord of Nations — Ülke Yönetme</span><span class="en" style="display:none">Lord of Nations — Manage Your Nation</span></div>
+          <div class="game-desc"><span class="tr">Bir ülke seç, ekonomiyi ve orduyu yönet, diplomasi kur ve savaşarak haritaya hükmet! 3D harita.</span><span class="en" style="display:none">Pick a nation, manage the economy and army, run diplomacy and conquer the map through war! 3D map.</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v1.4</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="alan_kazanma.html">
+        <div class="game-cover"><img src="images/alan_kazanma.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Strateji</span><span class="en" style="display:none">Strategy</span></span>
+            <span class="tag tag-hot">🔥 HOT</span>
+          </div>
+          <div class="game-title"><span class="tr">TÜRK.IO — Haritayı Fethettir</span><span class="en" style="display:none">TÜRK.IO — Conquer the Map</span></div>
+          <div class="game-desc"><span class="tr">Haritada alan kazan, rakipleri sil, ülkeyi fethettir!</span><span class="en" style="display:none">Claim territory on the map, eliminate rivals and conquer the country!</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v1.5</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="angry_birds.html">
+        <div class="game-cover"><img src="images/angry_birds.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Aksiyon</span><span class="en" style="display:none">Action</span></span>
+            <span class="tag tag-new"><span class="tr">Piksel</span><span class="en" style="display:none">Pixel</span></span>
+          </div>
+          <div class="game-title"><span class="tr">BirdBlast — Uzay & Kum Havuzu</span><span class="en" style="display:none">BirdBlast — Space & Sandbox</span></div>
+          <div class="game-desc"><span class="tr">Sapanı geri çek, kuşları fırlat, yapıları yık! Uzay seviyeleri & kum havuzu editörü!</span><span class="en" style="display:none">Pull back the slingshot, launch the birds, smash the structures! Space levels & sandbox editor included!</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v2.0</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="araba_yaris.html">
+        <div class="game-cover"><img src="images/araba_yaris.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Yarış</span><span class="en" style="display:none">Racing</span></span>
+            <span class="tag tag-hot">🔥 HOT</span>
+            <span class="tag tag-new">📱 MOBİL</span>
+          </div>
+          <div class="game-title"><span class="tr">TURBO RUSH — Kariyer</span><span class="en" style="display:none">TURBO RUSH — Career</span></div>
+          <div class="game-desc"><span class="tr">F1 stili kariyer + DRİFT mekaniği. 5 pist, 8 takım, pit stop, mobil destek.</span><span class="en" style="display:none">F1-style career + DRIFT mechanic. 5 tracks, 8 teams, pit stops, mobile support.</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v1.8</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="evrim_similasyonu.html">
+        <div class="game-cover"><img src="images/evrim_similasyonu.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Simülasyon</span><span class="en" style="display:none">Simulation</span></span>
+          </div>
+          <div class="game-title"><span class="tr">Evrim Simülasyonu v3</span><span class="en" style="display:none">Evolution Simulator v3</span></div>
+          <div class="game-desc"><span class="tr">Doğal seçilim süreçlerini simüle et. Canlıların evrimini izle.</span><span class="en" style="display:none">Simulate natural selection. Watch organisms evolve in real time.</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v2.0</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="koy_savunma.html">
+        <div class="game-cover"><img src="images/koy_savunma.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat">Tower Defense</span>
+          </div>
+          <div class="game-title"><span class="tr">Kale Savunma: Krallık Çağı</span><span class="en" style="display:none">Castle Defense: Age of Kingdoms</span></div>
+          <div class="game-desc"><span class="tr">Kaleyi korumak için kuleler inşa et. Mobil & PC uyumlu, yeni binalar ve evrim sistemi!</span><span class="en" style="display:none">Build towers to defend your castle. Full mobile & PC support, new buildings and an evolution system!</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v1.7</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="matematik_oyunu.html">
+        <div class="game-cover"><img src="images/matematik_oyunu.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Eğitim</span><span class="en" style="display:none">Education</span></span>
+          </div>
+          <div class="game-title"><span class="tr">Matematik Tarihi: Zaman Çizelgesi</span><span class="en" style="display:none">History of Math: Timeline</span></div>
+          <div class="game-desc"><span class="tr">Matematiğin tarihini keşfet. Antik çağdan günümüze yolculuk.</span><span class="en" style="display:none">Explore the history of mathematics. A journey from antiquity to the modern era.</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v2.0</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="minecraft.html">
+        <div class="game-cover"><img src="images/minecraft.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat">Sandbox</span>
+            <span class="tag tag-new">v2.0</span>
+          </div>
+          <div class="game-title">Minecraft 2D Pro</div>
+          <div class="game-desc"><span class="tr">2D sandbox dünyada kazan, inşa et, hayatta kal.</span><span class="en" style="display:none">Mine, build and survive in a 2D sandbox world.</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v2.0</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="savas_hoi.html">
+        <div class="game-cover"><img src="images/savas_hoi.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Strateji</span><span class="en" style="display:none">Strategy</span></span>
+            <span class="tag tag-new">v2.0</span>
+            <span class="tag tag-hot">🔥 HOT</span>
+          </div>
+          <div class="game-title"><span class="tr">Strateji İmparatorluğu — 1936</span><span class="en" style="display:none">Strategy Empire — 1936</span></div>
+          <div class="game-desc"><span class="tr">~60 şehir, 5 tümen + XP, 5 dallı araştırma, vintage harita, mobil dokunmatik!</span><span class="en" style="display:none">~60 cities, 5 division types + XP, 5-branch research tree, vintage map, full mobile touch support!</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v2.0</span></div>
+        </div>
+      </a>
+
+      <a class="game-card" href="futbol.html">
+        <div class="game-cover"><img src="images/futbol.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Spor</span><span class="en" style="display:none">Sports</span></span>
+            <span class="tag tag-new"><span class="tr">YENİ</span><span class="en" style="display:none">NEW</span></span>
+          </div>
+          <div class="game-title">Futbol Manager Elite</div>
+          <div class="game-desc"><span class="tr">Takımını yönet, taktik kur, şampiyonluğa ulaş! Yeni rol sistemi ve geliştirilmiş maç motoru!</span><span class="en" style="display:none">Manage your team, build tactics, win the title! New role system and improved match engine!</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">▶ Oyna</span><span class="en" style="display:none">▶ Play</span></span><span class="game-version">v1.8</span></div>
+        </div>
+      </a>
+
+      <div class="game-card maintenance" aria-disabled="true" title="Bu oyun şu an bakımda — kısa süre içinde tekrar açılacak">
+        <span class="maintenance-ribbon"><span class="tr">🔧 Bakımda</span><span class="en" style="display:none">🔧 Maintenance</span></span>
+        <div class="game-cover"><img src="images/war_of_countries.png" alt=""></div>
+        <div class="game-info">
+          <div class="game-tags">
+            <span class="tag tag-cat"><span class="tr">Strateji</span><span class="en" style="display:none">Strategy</span></span>
+            <span class="tag tag-maint"><span class="tr">Bakımda</span><span class="en" style="display:none">Maintenance</span></span>
+          </div>
+          <div class="game-title">War of Countries</div>
+          <div class="game-desc"><span class="tr">Bir hata tespit edildi, oyun geçici olarak kapatıldı. En kısa sürede tekrar açılacak!</span><span class="en" style="display:none">A bug has been detected and the game is temporarily offline. It will be back online shortly!</span></div>
+          <div class="play-row"><span class="play-btn"><span class="tr">⏸ Geçici olarak kapalı</span><span class="en" style="display:none">⏸ Temporarily offline</span></span><span class="game-version">v1.6</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-left">
+      <span class="tr">🎮 <strong>Lord of the Games</strong> — <strong>Cem İlişik</strong> tarafından yapılmıştır.<br>Tüm oyunlar HTML5 ile kodlanmıştır, kurulum gerektirmez.<br><span style="font-size:12px;opacity:0.7;">Tanıtım müziği: <em>Upbeat Advertising Funk</em> — Fassounds (<a href="https://pixabay.com/music/" style="color:inherit;text-decoration:underline;" target="_blank" rel="noopener">Pixabay</a>)</span></span>
+      <span class="en" style="display:none">🎮 <strong>Lord of the Games</strong> — built by <strong>Cem İlişik</strong>.<br>All games are coded in HTML5, no installation required.<br><span style="font-size:12px;opacity:0.7;">Promo music: <em>Upbeat Advertising Funk</em> — Fassounds (<a href="https://pixabay.com/music/" style="color:inherit;text-decoration:underline;" target="_blank" rel="noopener">Pixabay</a>)</span></span>
+    </div>
+    <div style="font-size: 13px; color: #444;">© 2026 lordofthegames.net</div>
+  </div>
+</footer>
+
+<!-- Trailer modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal-frame">
+    <button class="modal-close" id="modal-close" aria-label="Kapat">×</button>
+    <iframe id="modal-frame" title="Tanıtım Videosu"></iframe>
+  </div>
+</div>
+
+
+<script>
+  // Lang toggle
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const lang = b.dataset.lang;
+      document.querySelectorAll('.lang-btn').forEach(x => x.classList.toggle('active', x.dataset.lang === lang));
+      document.querySelectorAll('.tr').forEach(el => el.style.display = lang === 'tr' ? '' : 'none');
+      document.querySelectorAll('.en').forEach(el => el.style.display = lang === 'en' ? '' : 'none');
+    });
+  });
+
+  // Modal: Tanıtım izle
+  const backdrop = document.getElementById('modal-backdrop');
+  const frame = document.getElementById('modal-frame');
+  const openBtn = document.getElementById('open-promo');
+  const closeBtn = document.getElementById('modal-close');
+
+  function openModal() {
+    frame.src = 'Lord of the Games Promo.html';
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    try { frame.contentWindow.postMessage('stop-music', '*'); } catch(e) {}
+    backdrop.classList.remove('open');
+    frame.src = ''; // stop playback
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop.classList.contains('open')) closeModal();
+  });
+</script>
+
+<!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->
+<script src="whatsapp-float.js"></script>
+</body>
+</html>

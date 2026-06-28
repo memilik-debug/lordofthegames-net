@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lord AI - lordofthegames.net</title>
+    <!-- Tailwind CSS for modern responsive utility styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for gamer icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Orbitron for futuristic gamer feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&family=Orbitron:wght=500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+        }
+        .gaming-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Premium neon glow effects */
+        .neon-glow-indigo {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+        }
+        /* Custom scrollbar to match sleek theme */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #312e81;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4f46e5;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- HEADER -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-lg sticky top-0 z-40 px-4 py-3 sm:px-6">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+
+            <!-- Branding -->
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-indigo-600 to-pink-600 p-2 rounded-xl neon-glow-indigo">
+                    <i class="fa-solid fa-gamepad text-lg text-white"></i>
+                </div>
+                <div>
+                    <h1 class="gaming-font text-lg sm:text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                        LORD OF THE GAMES
+                    </h1>
+                    <p class="text-[10px] sm:text-xs text-slate-400 font-medium tracking-wide">
+                        Resmi Yapay Zeka Asistanı <span class="text-indigo-400">Lord AI Pro</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Online Badge -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Lord AI Aktif (v2.6)</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-4 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+        <!-- LEFT PANEL: Games Directory & Interactive Panel -->
+        <section class="lg:col-span-4 flex flex-col gap-4">
+
+            <!-- Games Directory Card (Expanded to utilize space perfectly) -->
+            <div class="bg-gradient-to-b from-slate-900/80 to-slate-950/80 border border-slate-800/80 rounded-2xl p-4 sm:p-5 flex flex-col h-full backdrop-blur-md">
+
+                <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                        <h2 class="gaming-font font-bold text-xs sm:text-sm text-slate-200 tracking-wider">OYUN REHBERİ</h2>
+                    </div>
+                    <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">11 Oyun Aktif</span>
+                </div>
+
+                <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                    Sitemizin kurucusu <strong class="text-slate-200">Cem İlişik</strong> tarafından kodlanan 11 özgün HTML5 oyunu aşağıdadır. İlgilendiğin oyuna tıklayarak Lord AI'dan anında detaylı taktik isteyebilirsin!
+                </p>
+
+                <!-- Interactive Games List (no platform badges — all 10 games are mobile + PC compatible) -->
+                <div class="space-y-2 overflow-y-auto pr-1 max-h-[450px] lg:max-h-[580px] flex-1">
+
+                    <div class="text-[10px] font-bold text-indigo-400 tracking-wider uppercase mb-1 mt-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-gamepad"></i> 11 Oyun · Hepsi Mobil + PC
+                    </div>
+
+                    <button onclick="askAboutGame('Lord of Nations — Ülke Yönetme')" class="w-full bg-amber-950/30 hover:bg-amber-900/30 border border-amber-700/50 hover:border-amber-500/60 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-amber-200 group-hover:text-amber-100">👑 Lord of Nations — Ülke Yönetme <span class="text-[9px] bg-amber-500 text-amber-950 px-1.5 py-0.5 rounded-full font-bold ml-1">YENİ</span></span>
+                    </button>
+                    <button onclick="askAboutGame('Futbol Manager Elite')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">⚽ Futbol Manager Elite</span>
+                    </button>
+                    <button onclick="askAboutGame('BirdBlast — Uzay & Kum Havuzu')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">🚀 BirdBlast — Uzay & Havuz</span>
+                    </button>
+                    <button onclick="askAboutGame('Kale Savunma: Krallık Çağı')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">🏰 Kale Savunma (Köy Savunma)</span>
+                    </button>
+                    <button onclick="askAboutGame('Matematik Tarihi: Zaman Çizelgesi')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">🧮 Matematik Tarihi</span>
+                    </button>
+                    <button onclick="askAboutGame('Strateji İmparatorluğu — 1936')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">🌍 Strateji İmparatorluğu 1936</span>
+                    </button>
+                    <button onclick="askAboutGame('Evrim Simülasyonu v3')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">🧬 Evrim Simülasyonu v3</span>
+                    </button>
+                    <button onclick="askAboutGame('TÜRK.IO')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">🇹🇷 TÜRK.IO</span>
+                    </button>
+                    <button onclick="askAboutGame('War of Countries')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">⚔️ War of Countries</span>
+                    </button>
+                    <button onclick="askAboutGame('TURBO RUSH — Kariyer')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">🏎️ TURBO RUSH — Kariyer</span>
+                    </button>
+                    <button onclick="askAboutGame('Minecraft 2D Pro')" class="w-full bg-slate-900/40 hover:bg-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">⛏️ Minecraft 2D Pro</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: Clean Full Production-Ready Chat Client & Tactical Screen -->
+        <section class="lg:col-span-8 flex flex-col bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-md min-h-[550px] sm:min-h-[650px] h-full relative">
+
+            <!-- Chat Window Header -->
+            <div class="px-5 py-4 border-b border-slate-800/80 bg-slate-900/80 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black neon-glow-indigo">
+                        LA
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-slate-100 tracking-wide text-sm sm:text-base">Lord AI Pro</span>
+                            <span class="text-[9px] bg-pink-950/80 text-pink-300 border border-pink-800/80 px-1.5 py-0.5 rounded font-black tracking-widest uppercase">Gelişmiş Taktik Dehası</span>
+                        </div>
+                        <span class="text-xs text-slate-400">lordofthegames.net Rehber ve Analiz Robotu</span>
+                    </div>
+                </div>
+
+                <!-- Quick Reset -->
+                <button onclick="clearChatHistory()" class="text-xs text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1" title="Sohbeti Sıfırla">
+                    <i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">Sohbeti Temizle</span>
+                </button>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+
+                <!-- Welcome Message from Lord AI -->
+                <div class="flex gap-3 items-start max-w-[95%]">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-black shrink-0">LA</div>
+                    <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl rounded-tl-none p-4 text-slate-200 text-sm leading-relaxed">
+                        <p class="mb-2 font-bold text-indigo-300">🎮 Lord AI Pro Taktik Merkezine Hoş Geldin! 🎮</p>
+                        <p class="mb-2">Sitemizdeki 11 adet efsane HTML5 oyunu için en detaylı kazanma stratejileri, gizli formüller ve adım adım rehberlerle donatıldım.</p>
+                        <div class="text-xs text-slate-400 border-l-2 border-indigo-500 pl-3 my-3 py-1 space-y-1">
+                            <p>💡 <strong>Sol Panelden</strong> bir oyuna tıklayarak doğrudan gerçekçi rehberine ulaşabilirsin.</p>
+                            <p>💬 Veya aşağıdaki alandan bana dilediğin soruyu detaylıca yazabilirsin!</p>
+                        </div>
+                        <p class="text-xs text-pink-400 font-semibold font-mono">Taktik dünyasına dalmaya hazır mıyız şampiyon?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Form -->
+            <div class="p-3 sm:p-4 border-t border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
+                <form id="chatForm" onsubmit="handleSendMessage(event)" class="flex gap-2">
+                    <input id="userInput" type="text" autocomplete="off" placeholder="Hangi oyunda uzmanlaşmak istersin? (örn: Strateji 1936'da para kazanma taktiği ver)..." class="flex-1 bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-200 focus:outline-none transition-all">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 sm:px-6 rounded-xl text-xs sm:text-sm transition-colors flex items-center gap-2">
+                        <span>Sor</span>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-900 py-4 px-6 text-center text-xs text-slate-500 bg-slate-950/60">
+        <p>© 2026 lordofthegames.net. Tüm Hakları Saklıdır. Geliştirici: <strong>Cem İlişik</strong>.</p>
+    </footer>
+
+    <!-- LOGIC SCRIPTS -->
+    <script>
+        let userLiked = false;
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+
+        // Clean corrected tactical database for all 10 games - conversational format
+        const gameDatabase = {
+            futbol: {
+                title: "⚽ Futbol Manager Elite Pro v2.8",
+                desc: "Tam teşekküllü bir menajerlik simülasyonu — altyapı/akademi sistemi, scout bürosu, 5 farklı antrenman rejimi, enerji ve form mekanikleri, oyuncu karakter özellikleri, 4 hazır taktik şablonu, **canlı maç istatistik paneli**, sarı/kırmızı kart, sakatlık, korner, kurtarış olayları, pas/hücum/savunma stili seçimleri ve sentezlenmiş stadyum atmosferi.",
+                tactic: `Dostum, Futbol Manager Elite Pro v2.7 oyununda artık çok katmanlı bir menajerlik seni bekliyor! İşte zirveye çıkmak için bilmen gereken her şey:
+
+**1) Enerji & Form Mekaniği (En Kritik Yenilik):** Oyuncularının artık iki bağımsız metriği var. **Enerji** maçlarda ve antrenmanlarda azalır, dinlenme ile dolar. **Form** ise antrenmanlarla yükselir, dinlenince hafif düşer. Maça mutlaka en az %85 enerji ile çık, çünkü oyuncu gücü doğrudan bu iki değer üzerinden çarpılarak hesaplanıyor (Enerji %75 + Form %25 ağırlıkla).
+
+**2) Karakter Özellikleri:** Her oyuncu rastgele bir karakter taşıyor — **Hırslı** (hızlı yorulur ama hızlı gelişir), **Çalışkan** (antrenmandan %20 ekstra fayda), **Dahi** (özel eğitimde +4 boost), **Cam Adam** (kolay yaralanır, %30 fazla enerji harcar), **Disiplinsiz** (gelişim şansı düşer). Kadro kurarken Cam Adam'ları yedeğe çek, en az 2-3 Çalışkan tut.
+
+**3) Altyapı & Akademi Sistemi 🌱 (DEV YENİLİK):** Artık kendi gençlik kalıplarını şekillendiriyorsun!
+- **Tesis Seviyesi (1→5):** Her seviye, üretilen gençlerin yetenek tabanını +2 ve her hire'lı scout +2.5 katkı sağlar. Maliyet: Seviye × 8.5M €.
+- **Scout (Gözlemci) Bürosu:** 3 farklı kalitede gözlemci işe alabilirsin — Yusuf Demir (Marmara, ücretsiz başlangıç), Garry Parker (İngiltere, 3.5M, Lv3), Zico Santos (Brezilya, 7M, Lv5). Daha çok scout = daha çok genç oyuncu havuzu (3 + scout sayısı kadar).
+- **Bireysel Genç Eğitimi:** Her gence 0.8M € harcayarak +2/+3/+4 yetenek boost'u verebilirsin (karaktere göre).
+- **A Takıma Yükseltme:** 1.5M € imza ücretiyle hazır olan genci profesyonel kadroya katarsın.
+**Taktik:** Erken oyunda 8-10M € biriktir, hemen tesisleri Seviye 3'e çıkar ve Garry Parker'ı al. 2-3 hafta içinde 4-5 yıldız aday genç havuzun olur.
+
+**4) 5 Farklı Antrenman Rejimi (Haftada 1 Hak):**
+- 🏹 **Hücum & Şut:** Forvetleri parlatır (-22 enerji)
+- 🛡️ **Savunma & Pres:** Defansları geliştirir (-20 enerji)
+- 🧩 **Taktik & Pas:** Orta sahaları uçurur (-15 enerji)
+- 🏃‍♂️ **Kondisyon:** Tüm takım için form & yetenek (-18 enerji)
+- 💤 **Dinlenme:** +25 enerji geri kazanır, hafif form düşüşü
+**Taktik:** Maç öncesi enerji <%70 ise mutlaka Dinlenme. Yeni sezonun ilk yarısında Kondisyon ağırlıklı çalış, son maçlarda mevkiye özel rejim seç.
+
+**5) 4 Hazır Taktik Şablonu (Tek Tıkla Sistem):**
+- **Tiki-Taka:** Top hakimiyeti, yüksek pres, kısa pas, merkez odağı
+- **Gegenpressing:** Yüksek tempo, agresif pres %95, adam adama savunma
+- **Otobüsü Çek:** Düşük tempo, derin savunma — Galatasaray maçında bu, başka maçta yasak!
+- **Hızlı Kontra:** Düşük savunma hattı, çok yüksek tempo, kanat akınları
++ Manuel: Pas tarzı (Kısa/Uzun/Direkt), Hücum odağı (Kanatlar/Merkez/Dengeli), Savunma stili (Alan/Adam Adama) dropdown'ları.
+
+**6) Rol Sinerjisi Bonusları:** Doğru rol + doğru taktik = ekstra güç!
+- Hücum Odağı **Kanatlar** + **Kanat Bek** rolü = +4 yetenek
+- Hücum Odağı **Merkez** + **Oyun Kurucu** = +4 yetenek
+- Pas Tarzı **Kısa Pas** + Orta Saha mevkii = +2 yetenek
+
+**7) Canlı Maç İçi Değişiklik:** Maç boyunca saha üzerindeki oyuncuna tıklarsan "değiştirilecek" olarak işaretler, sonra sağdaki Canlı Kulübe'den bir yedeğe tıklarsan oyuncu girer. Enerji <%50 olan oyuncuyu mutlaka değiştir!
+
+**8) Pres ve Tempo Yüksek = Risk:** Pres 80+ ve Tempo 80+ yaparsan oyuncuların enerjisi maç boyunca normalin 1.5 katı hızla erir. Büyük maçta agresif gir, küçük maçta dengele.
+
+**9) Şampiyonluk Ödülü:** 14 haftalık ligde 1. olursan 30M € prim alırsın. Galibiyet 9.5M, beraberlik 4.5M €.
+
+🔊 Oyunda artık arka plan müziği ve gollerde sentezlenmiş stadyum tezahürat sesi var — sağ üstteki 🔇/🔊 butonuyla aç/kapat yapabilirsin!
+
+**10) Canlı İstatistik Paneli (v2.8 YENİ):** Maç ekranının üstünde gerçek zamanlı bir panel: topla oynama yüzdesi (hareketli bar), şut sayısı, isabetli şut, kurtarış, korner, faul ve 🟨/🟥 sayaçları. İki takım için ayrı ayrı renkli (yeşil/kırmızı). Topla oynama tempo ve presine bağlı olarak canlı kayar.
+
+**11) Sarı/Kırmızı Kart Sistemi (v2.8 YENİ):** Yüksek pres taktiği seçersen oyuncuların sarı kart görme oranı artar. İkinci sarıdan kırmızı, oyuncu sahadan atılır ve maç sonuna kadar oynayamaz. Pres'i %85 üstünde tutarsan büyük risk.
+
+**12) Sakatlık Sistemi (v2.8 YENİ):** Yüksek tempo + agresif pres = sakatlık riski. Sakatlanan oyuncunun enerjisi -30, formu -10 düşer ve maç boyunca o haliyle oynamak zorunda kalır. Maç içi değişiklikle çıkarabilirsin.
+
+**13) Korner, Faul, Kurtarış, Müdahale Olayları (v2.8 YENİ):** Maç sırasında her olay arasında küçük olay rolleri var — kornerler, taktiksel fauller, kaleci süper kurtarışları, kayarak müdahaleler. Spikerin (yorumcu) artık 7 farklı senaryo türünde toplam ~40 farklı cümle söyleyebiliyor — aynı maç iki kez aynı görünmüyor.
+
+**14) Ekran Karartma Bugu Çözüldü (v2.8):** Eski sürümde her maç olayında ekran kararıp tekrar açılıyordu (animate-fade-in her render'da tetikleniyordu). Düzeltildi.`
+            },
+            birdblast: {
+                title: "🚀 BirdBlast — Uzay & Kum Havuzu",
+                mobile: true,
+                desc: "Sapan mekanikleriyle uzay boşluğundaki yerçekimi kuvvetlerini hesapladığın harika bir beceri ve fizik oyunudur.",
+                tactic: `BirdBlast oynamak tam bir yerçekimi mühendisliği gerektiriyor dostum! Oyundaki en önemli taktik, kuşları fırlatırken doğrudan hedeflere doğru nişan almamaktır. Gezegenlerin etrafında gördüğün o dairesel yerçekimi alanlarını (yörüngeleri) bir sapan gibi kullanmalısın. Kuşu yörüngenin sınırına fırlatarak onun hızlanmasını ve yerçekimi ivmesiyle kavisli bir yol çizerek hedefi bulmasını sağla.
+
+Yeni gelen dev v2.0 güncellemesiyle oyuna harika yeni uzay seviyeleri, yenilenen ses sistemi ve tamamen özgürce kendi uzay sistemlerini tasarlayabileceğin bir 'Kum Havuzu' (Sandbox) editörü eklendi. Burada bol bol deneme uçuşları yaparak sapan ve yerçekimi mekaniklerini sıfır riskle kavrayabilirsin!`
+            },
+            kale: {
+                title: "🏰 Kale Savunma (Köy Savunma): Krallık Çağı v3.0",
+                mobile: true,
+                desc: "İki oyun modu (Hikaye + Sonsuz), 5 karakterli komik diyalog sistemi, her seviyede dallanan evrim ağacı, tamamen yeniden çizilmiş goblin/boss grafikleri ve TR/ENG dil desteği ile bambaşka bir savunma oyunu.",
+                tactic: `Köy Savunma v3.0 artık ciddi anlamda büyüdü dostum. Tüm yenilikler ve nasıl oynaman gerektiği:
+
+**1) İki Oyun Modu (YENİ):**
+- **📖 Hikaye Modu:** 10 dalgalık senaryo. Her dalganın başında ve sonunda kadro seninle konuşuyor. Dalga aralarında oyun duraklar — alanı toplama ve geliştirme için fırsat. Son dalgayı geçince "Krallık Kurtarıldı" zaferi gelir.
+- **♾️ Sonsuz Mod:** Klasik sonsuz dalga, sürekli aksiyon. Başlangıçta kısa bir Baldric uyarısı, sonra eski mantıkla durmadan düşman.
+
+**2) Karakter Kadrosu (YENİ) — 5 karakter konuşuyor:**
+- 🧙‍♂️ **Baldric:** Yaşlı baş danışman, kuru espriler.
+- 🛡️ **Sör Roric:** Palavracı şövalye, kılıcı her dalgada bir parça daha kırılıyor.
+- 👸 **Prenses Elara:** Alaycı, Baldric'i sürekli geçer.
+- 🤡 **Quill:** Soytarı, tek bir esprisi var ama saklanma uzmanı.
+- 🧝‍♀️ **Lyra:** Büyücü, büyü tuşlarını ve maliyet mantığını anlatır.
+Diyalog balonunun altında konuşmacının yıldızlandığı mini portre şeridi var.
+
+**3) Seçenekli Diyaloglar:** Bazı diyaloglarda 2-3 cevap seçeneği çıkıyor (örn. "Tamamdır" / "Kendi taktiğimi uygularım" / "Quill, taktik öner"). Her seçim farklı tepki zinciri tetikliyor — hikayeyi yeniden oyna, farklı tepkiler bul.
+
+**4) Evrim Ağacı (YENİ — her seviyede):** Eskiden sadece LV2'de evrim vardı. Artık LV2-3-4-5 her seviyede 2 farklı yol seçiyorsun. Toplam her bina için 8 evrim. Örnek:
+- **Lazer Kulesi:** LV2 → Ölüm Işını / Delici · LV3 → Hızlı Işın / Geniş Işın · LV4 → Plazma / Bozucu · LV5 → Yıldız Avcısı / Ölüm Işını Maks.
+- Bina üstünde seçtiğin evrime göre renkli yıldız pip'leri ve LV2→LV5 yeşil→altın gradient'li level rozeti çıkıyor. LV4-5'te zemin halkası + glow efekti var.
+
+**5) Yenilenen Grafikler:**
+- **Goblinler (normal):** Yeşil deri, uzun sivri kulak, büyük burun, kemer üstünde sopa, yürüyüşte ayak salınımı.
+- **Hızlı goblin:** Turuncu deri, hareket bulanıklığı izi, hançer, kırmızı tepe tüyü, öfkeli kaş.
+- **Zırhlı ork:** Boynuzlu kask, dişler, omuz kalkanı, zırh studları.
+- **Yarasa:** Membran damarlı çırpan büyük kanatlar, pembe pupil.
+- **BOSS'lar tamamen yeniden çizildi:** Ork Şefi (mohawk + balta), Yarasa Lordu (devasa kemikli kanat + parlayan kırmızı gözler), İskelet Kral (taç + asa + parlayan turuncu göz çukuru + dişli çene), Ejder (kanatlar + sırt dikenleri + boynuzlar + ateş püskürten ağız).
+
+**6) Ana menüde TR/ENG dil seçimi:** Sağ üstte. ENG'ye basınca tüm UI, bina isimleri, danışman diyalogları İngilizce.
+
+**7) Eski mekanikler korundu:**
+- **LORD aurası** (180 birim, %25 hasar buffu) hâlâ var.
+- **Q=Rally / E=Heal / R=Meteor / F=Buz / T=Fırtına** büyüleri.
+- **XP seviye sistemi** + hero perkleri (LV3 hız, LV4 menzil, LV5 zehir, LV6 zırh, LV7 çift atış, LV8 rejen, LV9 kritik, LV10 ölümsüzlük).
+- **TOP 10 Skor Tablosu** (oyun sonunda).
+- **4 harita:** Krallık / Buz Diyarı / Çöl / Lav Vadisi (lav %30 zor).
+
+**Taktik önerileri:**
+- Hikaye modunda dalga aralarında **+50 altın** bonus gelir, bunu hemen geliştirmeye yatır.
+- Dalga 5 ve 9'da boss var — Heal cooldown'unu sakla, F (Buz) için altın biriktir.
+- Evrim ağacında **dallar tutarlı olmalı:** Saldırı odaklı yol seçtiysen LV5'te "Apocalypse/Death Ray" gibi maks hasar tarafını seç.
+- Birden fazla farklı evrim path'i denemek için aynı binadan birkaç tane diken.
+
+**Kontroller:** PC: WASD + sol tık. Mobil: joystick + dokun. ENG dili seçildiğinde menü ve diyaloglar İngilizce.`
+            },
+            matematik: {
+                title: "🧮 Matematik Tarihi: Zaman Çizelgesi",
+                mobile: true,
+                desc: "Antik çağlardan modern zamanlara kadar matematiğin büyük keşiflerini kronolojik sıraya koyduğun harika bir zeka ve eğitim oyunudur.",
+                tactic: `Matematik Tarihi oyunu bir yapboz veya puzzle oyunu değildir dostum! Bu oyun tamamen kronolojik bir zaman çizelgesi (timeline) sıralama oyunudur. Amacın, sana verilen tarihi matematiksel keşifleri ve bilim insanlarının buluşlarını en eskiden en yeniye doğru doğru bir kronolojiyle sıraya dizmektir.
+
+Başarılı olmak için acele etmeden, tarihsel dönemleri (Antik Çağ, İslam'ın Altın Çağı, Rönesans ve Yakın Çağ) zihninde gruplandırmalısın. Örneğin Pisagor Teoremi'ni Antik Çağ'a yerleştirirken, türev ve integral hesaplarını çok daha ileri dönemlere koyman gerektiğini bilmelisin. Hata yapmadan doğru komboları üst üste koyarak puanını katlayabilirsin.`
+            },
+            strateji: {
+                title: "🌍 Strateji İmparatorluğu — 1936 v2.2",
+                mobile: true,
+                desc: "1936 dünyasını ele geçirmek için derin bir strateji oyunu — 19 ülke, ~60 şehir, 5 dallı araştırma ağacı, 5 tür tümen + tecrübe seviyeleri, yenilenen harita (fethedilen toprak senin rengine döner) ve YENİ v2.2 yönetim sistemleri: Ekonomi & vergi, Sanayi & üretim, Politika & stabilite, Diplomasi (ittifak/pakt/ticaret). Mobil dokunmatik destekli.",
+                tactic: `Dostum, **Strateji İmparatorluğu 1936 v2.2** artık tam teşekküllü bir mini-HOI4 gibi! Eski "tek tümen kur, tek savaş kazan" mantığı yerine çok daha derin bir sistem var — üstelik v2.2 ile **4 yeni yönetim sekmesi** ve yenilenen bir harita geldi. İşte dünyayı fethetmek için bilmen gereken her şey:
+
+**1) Şehir Bazlı Savaş 🏙 (DEV YENİLİK):** Artık ülkeler tek parça halinde değil! Her ülkenin 3-5 şehri var (Türkiye: İstanbul, Ankara, İzmir, Adana, Erzurum; Almanya: Berlin, Münih, Hamburg, Köln; Rusya: Moskova, Leningrad, Stalingrad, Ural, Sibirya...). Tümenlerin şehirlerde bulunur ve komşu şehirlere tek tek ilerlerler. Düşman şehrini fethettiğinde sadece o şehri alırsın — **başkenti (★ yıldız işaretli) ele geçirirsen tüm ülke ilhak edilir!** Bu yüzden hızlı zafer için stratejin: rakibin başkentine giden en kısa şehir-zincirini bul ve oraya odaklan.
+
+**2) 5 Tür Tümen + Tecrübe Sistemi ⚔ (Çok Önemli):**
+- 🪖 **Piyade** (30💰, 2 tur eğt, ⚔5/🛡7) — Ucuz omurga, savunmaya güçlü
+- 🐎 **Süvari** (45💰, ⚔6/🛡5, **2 menzil**) — Hızlı, geniş alan kontrolü
+- 🚛 **Motorize** (60💰, ⚔7/🛡6, 2 menzil) — Dengeli, kombine kuvvet
+- 🛡 **Zırhlı** (90💰, ⚔11/🛡6) — Ezici hücum, pahalı ama döven
+- 💥 **Topçu** (70💰, ⚔9/🛡4) — Uzun menzilli saldırı, savunmaya zayıf
+Her tümenin XP'si var: **Acemi → Tecrübeli (+%10) → Veteran (+%22) → Elit (+%40)**. Savaşa girdikçe XP kazanırlar. **Taktik**: ucuz piyadeleri savunma için, zırhlı + topçu kombosunu hücum için kullan. Elit zırhlıların gücü bir Acemi piyadenin 3 katı!
+
+**3) 5 Dallı Araştırma Ağacı 🔬:** Her dalın 5 seviyesi ve özgün bonusu var.
+- 🪖 **Piyade Doktrini**: Mauser Tüfeği → Süngü Hücumu → Hafif Makineli → Manevra → Elit Birlikler (+%25)
+- 🛡 **Zırhlı Doktrini**: Hafif Tank → Orta Tank → Ağır Tank → **Blitzkrieg (+menzil!)** → Panzer Korpus (+%40)
+- 💥 **Topçuluk**: Tarla Topu → Anti-Tank Topu → Roketatar → Uzun Menzilli → Stratejik Bombardıman
+- 🏭 **Sanayi**: Seri Üretim (-%10 maliyet) → Çelik (-%15 fabrika) → İşçi Verim. → Modern Tesisler (-1 tur eğt) → Savaş Ekonomisi (+%30 tüm gelir)
+- 📡 **Elektronik**: Telsiz → Radar → Şifreleme → Kriptoanaliz → İlk Bilgisayar (+%40 tüm araştırma)
+**Taktik**: Erken oyunda Sanayi'yi Seviye 2-3'e çıkar (ekonomi patlar), sonra ana kara doktrinine (Piyade veya Zırhlı) odakla. Elektronik bekleyebilir.
+
+**4) Topografya Önemli! 🏔🌲🏜️:** Şehirler 5 farklı arazi tipinde olabilir.
+- **Dağ** (×0.7 atk / ×1.5 def): Dağlık şehri saldırmak çok zor → atlamayı dene
+- **Düzlük** (×1.0/×1.0): Standart savaş alanı
+- **Orman** (×0.9/×1.2): Savunmaya küçük bonus
+- **Kıyı** (×1.0/×0.95): Saldırılara biraz açık
+- **Çöl** (×0.85/×0.9): Her iki taraf da zorluk çeker
+Erzurum (dağ), Stalingrad (düzlük), Pragu (dağ) gibi yerleri savunmak çok kolay; oraları **son** olarak işgal et.
+
+**5) Yenilenen Harita & Mobil 📜📱:** Harita v2.2 ile daha canlı ve okunaklı:
+- 🎨 **Fethettiğin toprak SENİN rengine döner!** Bir ülkenin başkentini düşürüp ilhak edince, o ülkenin tüm toprağı senin renginde boyanır — imparatorluğun haritada büyüdükçe tek renk halinde yayılır. Kendi imparatorluğun altın sınırlı, düşmanlar kırmızı pulse'lu görünür.
+- Sınırlar **Catmull-Rom Bezier spline** ile yumuşak kıvrımlarla çiziliyor (köşeli değil!)
+- Daha canlı renkler (eski muddy sepya azaltıldı), ülke içinde gradient
+- Okyanus radyal mavi gradient + dalga deseni + paper-grain texture
+- Dağ/orman/çöl ikonları haritada görünür
+- Başkentler kırmızı yıldız + animasyonlu pulse halka ile çarpıcı
+- **Mobilde**: Tek dokunuş → seç, İki parmak pinch → zoom, İki parmak sürükle → pan, sağ üstte ☰ Panel butonu
+
+**6) Şehirden Hareket — Adım Adım:**
+1. **Ordu sekmesi** → tümen seç
+2. Altta o tümenin gidebileceği komşu şehirler listelenir (sarı = kendi, kırmızı = düşman)
+3. Bir butona tıkla → tümen oraya hareket eder veya saldırır
+4. Her tümenin ay başına **1-2 hareket hakkı** var (Süvari/Motorize 2, diğerleri 1)
+5. Saldırı sonucu: kazanırsan şehri alırsın + XP kazanırsın; kaybedersen hareketin biter, %20 ihtimalle tümen yok olur
+
+**6b) ⚔ TOPLU SALDIRI (YENİ):** Bir şehirde 2 veya daha fazla hazır tümenin varsa Ordu sekmesinde o şehrin başlığının altında **altın çerçeveli bir panel** çıkar. Birleşik ⚔/🛡 gücün gösterilir ve komşu şehirler için "⚔ HEPSİYLE → şehir" / "→ HEPSİ → şehir" butonları belirir. Bir butona tıklayınca o şehirdeki **tüm hazır tümenlerin birlikte** hücum eder/hareket eder; güçleri toplanarak savaşa girer. Bu sayede 10 tümeni tek tek değil, hep birlikte gönderebilirsin — düşmanın 5 kişilik garnizonu tek tokatta düşer.
+
+**7) AI Daha Akıllı 🤖:** AI ülkeleri kendi araştırmalarını yapıyor, fabrika kuruyor, farklı tümen tipleri eğitiyor ve **şehir şehir saldırıyor**. Zayıf komşuya saldırırlar, savaşı kaybederlerse barış teklif ederler.
+
+**8) Zafer Şartı 🏆:** Ülkelerin **%55'ini ilhak et** veya hayatta sadece 2 ülke kalsın. En hızlı yol: küçük komşulardan başla, başkentleri zorla, snowball etkisiyle büyü.
+
+**9) 🆕 YÖNETİM SİSTEMLERİ (v2.2 — 4 yeni sekme):** Artık sadece savaş değil, ülkeni de yöneteceksin. Panelde üstte yeni sekmeler var:
+- 💰 **Ekonomi & Bütçe:** Vergi oranını kaydır (slider). Yüksek vergi = daha çok para ama düşen stabilite; düşük vergi = az para ama mutlu halk. Aylık bütçeni gör: brüt gelir − ordu bakımı = net. **Dikkat: her tümenin aylık bakım gideri var!** Net eksiyse kasan erir ve stabilite düşer. Taktik: barışta vergiyi %40-50, topyekûn savaşta %60-70 tut.
+- 🏭 **Sanayi & Üretim:** Toplam fabrika/üretim özetin. Ekonomi politikası seç (Sivil → Karma → Savaş Ekonomisi; sanayi artar, para/stabilite düşer). İstediğin şehre tek tıkla **fabrika kur** (80💰). Fabrika = daha çok üretim + gelir.
+- 🏛 **Politika & Stabilite:** **Stabilite çubuğu (0-100)** ülkenin can damarı. Yüksek stabilite +gelir +savaş gücü verir; **%20 altına düşerse İSYAN çıkar** (şehir/tümen kaybı!). 4 hükümet tipi: 🗳 Demokrasi (+%10 para, +stabilite ama savaş ilanı halkı kızdırır), 👑 Otoriter (dengeli), ⚙ Faşist (+%20 savaş & nüfus, -stabilite), ☭ Komünist (+%25 sanayi, +nüfus, -%10 para). Hükümet değiştirmek -15 stabilite. **Seferberlik kanunu** nüfus üretimini artırır (Topyekûn Savaş = bol asker ama düşen stabilite). Sıkışınca 📣 **Propaganda** (60💰) ile +12 stabilite al.
+- 🤝 **Diplomasi:** Her ülkeyle ilişki puanın var (−100…+100). 🕊 **İlişki geliştir** (30💰, +10). İlişki ≥0 → 💱 **Ticaret** (+%12 gelir, iki tarafa da). İlişki ≥20 → 📜 **Saldırmazlık Paktı** (savaşı önler). İlişki ≥50 → 🤝 **İttifak**! Müttefikin saldırıya uğrarsa otomatik yanında savaşır. Tersi de geçerli: zayıfken güçlü bir komşuyla ittifak kurarsan AI sana saldırmayı göze alamaz.
+
+**Yönetim taktiği özet:** Önce diplomasi ile sınır komşularınla pakt/ittifak yapıp arkanı sağlama al → vergi & ekonomiyi dengede tut (net pozitif kalsın) → stabiliteyi %50+ tut → sonra tek bir düşmana yüklen. Stabilite düşükken savaşa girme, isyanla iki cephede ezilirsin!
+
+🎮 Yeni yönetim sekmelerini dene — mobil cihazında bile rahat oynayabilirsin!`
+            },
+            evrim: {
+                title: "🧬 Evrim Simülasyonu v3",
+                mobile: true,
+                desc: "Doğal seçilim yasalarını, mutasyonları ve canlıların besin arayışlarını simüle ettiğin harika bir bilimsel sandbox simülasyonudur.",
+                tactic: `Evrim Simülasyonu v3 oyununda başarının sırrı ekolojik dengeyi kurmaktır. Simülasyonu başlattığında ortama çok fazla otobur canlı salarsan, yerdeki bitkileri saniyeler içinde tüketirler ve açlıktan toplu ölümler başlar.
+
+İlk turlarda otobur canlı sayısı ile yerdeki bitki (besin) oranını dengede tutmalısın. Mutasyon hızını ilk başta %5 ile %10 arasında tutarak canlıların çevreye yavaş ve stabil bir şekilde uyum sağlamasına izin ver. Canlıların genetik haritasını takip ederek en güçlü türlerin nasıl hayatta kaldığını gözlemleyebilirsin.`
+            },
+            turkio: {
+                title: "🇹🇷 TÜRK.IO",
+                mobile: true,
+                desc: "Haritada kendi çizgilerini çizerek en büyük alanı kaplamaya ve rakiplerini yok etmeye çalıştığın heyecan dolu bir .io oyunudur.",
+                tactic: `TÜRK.IO oyununda sürekli ölmekten şikayetçiysen, oyundaki o meşhur ölümcül çarpışma kuralını çok iyi kavramalısın. Bu oyunda 'kuyruk kesme' diye bir şey yok dostum! Kural çok net: Eğer senin kafan (başın) başka bir oyuncunun gövdesine, çizgisine veya doğrudan başka bir oyuncunun kafasına çarparsa anında elenirsin ve ölürsün!
+
+Bu yüzden hayatta kalmak için kendi boyalı ve güvenli bölgenden çok fazla uzaklaşarak devasa riskler alma. Küçük ve kontrollü kavisler çizerek alanını yavaş yavaş, parça parça büyüt. Eğer çevrende agresif bir rakip görürsen hemen kendi boyalı alanına geri kaç ve rakibinin senin çizgine çarpmasını sağlayarak onu tuzağa düşür!`
+            },
+            war: {
+                title: "⚔️ War of Countries",
+                mobile: true,
+                desc: "Ülkeler arası askeri sevkiyatlar, kaynak yönetimleri ve stratejik fetihler üzerine kurulu gerçek zamanlı bir savaş oyunudur.",
+                tactic: `War of Countries oyununda dünya hakimiyeti kurmanın en kritik noktası, oyundaki o efsanevi Gazete Manşetleri sistemini çok sıkı takip etmektir! Gazete haberleri sana hangi ülkenin zayıfladığını, hangi ülkelerin savaşa girdiğini veya hammadde sıkıntısı çektiğini söyler. Bu bilgileri kullanarak zayıf durumdaki ülkelere askeri sevkiyat yapıp onları kolayca fethedebilirsin.
+
+Savunma kulelerini stratejik sınır geçişlerine ve geçitlere inşa ederek düşman saldırılarını durdur. Kışlaları ve akademiyi hızla yükselterek askerlerinin teknoloji seviyesini artır; yüksek teknolojili ordular savaşlarda çok daha az kayıp verir.`
+            },
+            turborush: {
+                title: "🏎️ TURBO RUSH — Kariyer v1.8",
+                mobile: true,
+                desc: "5 farklı pist, 8 takım, kariyer modu, pit stop, nitro, DRİFT mekaniği, AI rakipler ve mobil dokunmatik kontrollerle dolu Three.js tabanlı 3D yarış simülasyonu.",
+                tactic: `TURBO RUSH v1.8 ile karşına çıkan kariyer modu artık hem masaüstünde hem de mobilde çalışan tam bir F1 simülasyonu dostum! İşte zirveye çıkmak için bilmen gereken her şey:
+
+**1) 8 Takım Hiyerarşisi (Tier 1-5):** Düşük bütçeli **Anadolu GP** ve **Kobra Racing** (Tier 5) ile başlarsın. İyi sonuçlarla **Papaya Storm**, **Ninja Speed**, **Écurie Bleu** (Orta), sonra **Silver Wing**, **Bulls Energy** (Üst) ve nihayet **Scuderia Rosa** (Tier 1 - Şampiyon Takım) seni transfere çağırır. Takım tier'ı garaj üst limit seviyesini belirler (Lvl 2'den Lvl 5'e).
+
+**2) 5 Pist & Karakterleri:**
+- 🇹🇷 **İstanbul Park:** Geniş ve akıcı, sektör 2'de yokuş — drift için ideal başlangıç pisti.
+- 🇲🇨 **Monaco Sokakları:** Dar ve teknik, sıkı 180° dönüşler — yavaş ama hatasız sür.
+- 🇬🇧 **Silverstone:** Hızlı sweeper virajlar, geniş aerodinamik testi.
+- 🇯🇵 **Suzuka:** Teknik S-virajları, sola kıvrılan arka bölüm — drift kombosu burada parlatır.
+- 🇦🇪 **Abu Dhabi GP:** Uzun düz + saç tokası + hızlı bölüm karması — finalin son pisti.
+
+**3) ⚡ NİTRO & 💨 DRİFT Sistemi (YENİ v1.8):**
+- **Nitro (SPACE veya ⚡ butonu):** Top hız %55 artar ama yakıt hızla tükenir. Boş düzlüklerde sakla.
+- **DRİFT MEKANİĞİ (YENİ!):** Yüksek hızda sert direksiyon = otomatik drift! Sarı duman partikülleri saçar, "🔥 PERFECT DRIFT!" mesajı çıkar, NİTRO BAR otomatik dolar! 1.5 saniyeden uzun drift kombosu = bonus nitro. Bu güncellemeyle artık drift ederek nitro biriktirebilirsin — viraj sonrası nitro'yu düzlükte boşalt!
+
+**4) 7 Garaj Yükseltmesi:** 🚀 Motor (hız), 🎯 Direksiyon (dönüş kabiliyeti), ⚡ Nitro (kapasite), ⛽ Yakıt Verimi, 🏁 Aerodinamik (ivme/fren), ⏱️ Pit Ekibi (pit hızı), 👨‍💻 Mühendislik (moral & stabilite). Takım tier'ı her yükseltmenin max seviyesini sınırlar — büyük takıma transfer olmadan Lvl 5'e çıkamazsın.
+
+**5) Yakıt + Pit Stop Stratejisi:** Yakıtın %18'in altına düşerse "⛽ YAKIT AZ!" uyarısı çıkar. Start/Finish çizgisine yaklaşınca "⬇ PİT [P]" göstergesi belirir, **P tuşuna** (veya 🔧 PIT butonuna) basıp pit'e gir. Pit Ekibi yükseltmesi her seviyede 0.8 sn süreyi kısaltır.
+
+**6) AI Rakipler & Takım Arkadaşı:** Her yarışta **ezeli rakibin** (mor renk 🔥) ve **takım arkadaşın** (cam göbeği) belirlenir. Rakibinden fazla puan alırsan sezon sonunda mesaj çıkar. Rakipler 3 karakterde olabilir: **Aggressive** (hatasız, çarpan), **Erratic** (sık hata yapar), **Timid** (uzak durur).
+
+**7) Mobil Kontroller (YENİ!):** Telefonda açtığında ekranın altında dokunmatik butonlar belirir:
+- ◀ ▶ Sol/Sağ direksiyon
+- ▲ Gaz, ▼ Fren
+- ⚡ Nitro
+- 🔧 PIT (pit stop talebi)
+Tüm butonlar haptik basınç animasyonlu, ekran ölçeklenir.
+
+**8) Basın Toplantısı:** Yarış sonunda bazen basın sorusu çıkar — cevabın MORALİ etkiler, takım arkadaşının performansını değiştirir.
+
+**9) Zorluk Seviyeleri:** AMATÖR (rakipler %92 hızlı, sık hata) → PRO (denge) → EFSANE (rakipler %106 hızlı, çok az hata, son turda agresif). Ana menüden "ZORLUK: PRO" butonuyla değiştir.
+
+**10) Sezon Sonu Transferler:** İyi sonuç alırsan üst takım teklif gönderir. Tier 1 (Scuderia Rosa) teklifi için en az 120 puana veya Top 3'e bitmen lazım. Kabul edersen yeni takımda sezona devam.
+
+🔧 **TAVSİYE STRATEJİ:** İlk sezon Anadolu GP'de geçir, en az 40 puan al, Papaya Storm teklifini kabul et. İkinci sezonda Motor + Direksiyon Lvl 3'e çıkar, drift ile sürekli nitro doldurmayı pratiğe dönüştür, Silver Wing'e geç. Üçüncü sezonda Scuderia Rosa kapıyı çalar! 🏆`
+            },
+            minecraft: {
+                title: "⛏️ Minecraft 2D Pro v3.0",
+                mobile: true,
+                desc: "İki oyun modu (Hikaye + Serbest), tam mobil dokunmatik destek, Kral Varran ile hikaye, görev sistemi ve Baldric anlatısı eklendi. Klasik blok kırma, inşa, madencilik, mob savaşı ve crafting korunur.",
+                tactic: `Minecraft 2D Pro v3.0 artık iki modlu bir oyun dostum. İşte tüm yenilikler:
+
+**1) Başlangıç Mod Seçimi (YENİ):** Oyun açıldığında bir ekran çıkar:
+- **📖 HİKAYE MODU:** Soğuk Kuzey biyomundaki Buz Kalesi'nde uyanırsın. İçeride Kral Varran (👑) seninle konuşur. Hikaye anlatır, görev verir. Açık dünya — istersen görevi atla.
+- **🌍 SERBEST MOD:** Klasik açık dünya. Hikaye yok, sadece keşif ve hayatta kalma.
+
+**2) Hikaye İçeriği:** Kral Varran halkının 100 yıl önce yeşil ovalarda yaşadığını anlatır. **BALDRIC** isimli bir "danışman" ordu kurarak halkı kuzeye sürmüştür (Köy Savunma'daki Baldric karakterine bir gönderme!). Kral şimdi senden yardım ister:
+- 1. Görev: Kral ile konuş (otomatik)
+- 2. Görev: 10 Taş kır (Kalenin altında bol)
+- 3. Görev: 1 Tahta Kılıç yap (Crafting Table)
+- 4. Görev: 3 Zombi yen (Baldric'in askerleri)
+- 5. Görev: Batıya yürü, Baldric karargahına ulaş (x < 300)
+- 6. Görev: Krala geri dön
+
+**3) Görev Paneli:** Sol üstte (HP barının altında) küçük bir panel. Aktif görevi, ilerlemeyi (örn. "2 / 10") ve barı gösterir. Görevler hikaye modunda aktiftir; serbest modda görünmez.
+
+**4) Buz Kalesi:** Hikaye modunda spawn yeri. Cobblestone duvarlar, kar üstü krenele, glowstone aydınlatma, altın taht ve demir blok süslemeler. Kralın yanında çalışma masası ve fırın hazır. İçeri zombi spawn etmez.
+
+**5) Diyalog Seçenekleri:** Kral ile konuşurken birkaç noktada seçim çıkar — "Tabii, yardım ederim" / "Özgürce dolaşmayı tercih ederim" / "Baldric mi? Bu isim tanıdık geliyor..." gibi. Her seçim farklı tepki üretir.
+
+**6) Mobil Kontroller (YENİ):** Ekran 900px'den dar ise otomatik açılır, ya da sağ alt köşedeki 📱/🖱️ butonuyla manuel toggle.
+- Sol alt: ◀ ▶ (yürü), üstte ▲ (zıpla)
+- Sağ alt: ⛏️ (kır, basılı tut), 📦 (yerleştir), 🍖 (ye)
+- Sağ üst: 🎒 (envanter), hotbar ◀ ▶ (slot değiştir)
+- Hotbara dokunarak direkt slot seçimi
+- Canvas dokunuşu mineTarget'ı günceller
+Mine ve place butonları karakterin baktığı yöndeki bloka odaklar (player.facing kullanır).
+
+**7) Klasik Mekanikler:** Köy üretimi (orman/çöl), Nether portalı, redstone sistemi (kablo, meşale, lamba), 64 yığın envanter, 27 slot ana envanter + 9 slot hotbar, 3 tier kazma/balta/kılıç (tahta/taş/demir/altın/elmas), fırın eritme, koyun avı, mob savaş, gece zombi/slime spawn.
+
+**Strateji:**
+- Hikaye modunda en hızlı yol: Kral ile konuş → kalenin altına in, 10 taş çıkar → odun bulup tahta kılıç yap → gece geleceğini bekle, zombileri öldür → batıya yürü.
+- Görevi atlayıp serbest takılmak istersen: kapıdan çık, klasik survival oyna.`
+            },
+            lordofnations: {
+                title: "👑 Lord of Nations — Ülke Yönetme & Savaş v1.4",
+                mobile: true,
+                desc: "Three.js destekli derin bir grand-strateji oyunu. Atlas tarzı dünya haritasından bir ülke seç; ekonomi, bütçe, kaynaklar, şehirler, ordu, teknoloji, din & kültür, kabine, kanunlar, rejim, ticaret, casusluk operasyonları ve diplomasi sekmeleriyle ülkeni yönet. Sıra tabanlı ilerle, kara ve deniz savaşlarıyla haritaya hükmet.",
+                tactic: `Dostum, Lord of Nations tam bir imparatorluk yönetme simülasyonu — HOI4 ile Victoria'nın tarayıcıdaki kardeşi gibi! İşte sıfırdan süper güce çıkmanın yol haritası:
+
+**1) Ülke Seçimi (En Kritik Karar):** Haritada bir ülkeye tıkla, panelde nüfus, ekonomi, ordu ve coğrafyasını (biyom: ova/orman/dağ/çöl/kıyı/kutup) gör, kendi ismini ver ve başla. Yeni başlıyorsan **kıyı (coastal) veya ova (plains)** bir ülke seç — kıyı ülkeleri ticaret + deniz gücü verir, ovalar yüksek tarım/sanayi tabanı sağlar. Dağlık ülkeler savunması kolay ama ekonomisi yavaştır.
+
+**2) İlk Turlar — Ekonomiyi Ayağa Kaldır:** Önce 💼 **Ekonomi** ve 📈 **Detaylı Bütçe** sekmesine gir. Geliri giderden yüksek tut — askeri harcamayı erken şişirme, açık bütçe altın rezervini eritir. 🏙️ **Şehirler** sekmesinden başkent ve şehirlerine **🏗️ Yatır (-1500 altın)** ile sanayi + mutluluk artır. Sanayi = uzun vadede her şeyin motoru.
+
+**3) Kaynaklar & Ticaret:** 📦 **Kaynaklar** sekmesinde eksik hammadelerini gör. Açığını 📜 **Ticaret** sekmesinden komşularla anlaşarak kapat. Fazla verdiğin kaynağı sat, stratejik olanı (çelik/petrol türü) ithal et. Ticaret ayrıca diplomatik ilişkiyi ısıtır.
+
+**4) Mutluluk & İç Politika:** ⛪ **Din & Kültür**, ⚖️ **Kanunlar** ve 🏛️ **Rejim** sekmeleri halk mutluluğunu ve üretim/asker bonuslarını belirler. Mutluluk düşerse isyan ve üretim kaybı gelir. Savaşa girmeden önce kanunları ve rejimi ekonomine/planına göre ayarla (savaş ekonomisi üretim verir ama mutluluğu kırar).
+
+**5) Teknoloji Önceliği:** 🔬 **Teknoloji** ağacında önce **ekonomi/sanayi** dallarını aç, sonra askeri. Erken askeri tech'e gömülürsen ekonomin geri kalır. 👔 **Kabine** sekmesinden doğru bakanları ata — her bakan bir alana yüzde bonus verir (üretim, vergi, moral, askeri).
+
+**6) Ordu Kur (Ama Zamanında):** ⚔️ **Ordu** ve 🪖 **Detaylı Ordu** sekmesinden asker, tank ve uçak üret. Savaş gücü; asker sayısı, tank/uçak oranı ve teknolojinle hesaplanır. Saldırıya geçmeden önce düşmandan belirgin üstünlük kur — denk güçlerde savaş ikinizi de yıpratır.
+
+**7) Diplomasi = Yarı Zafer:** 🤝 **Diplomasi** sekmesinden ittifak kur, saldırmazlık paktı imzala, zayıf komşuyu izole et. Aynı anda iki cephede savaşma! 🕵️ **Operasyonlar** (casusluk) ile düşmanın ekonomisini/moralini sabote et, savaştan önce zayıflat.
+
+**8) Savaş (Kara & Deniz):** Bir ülkeye saldırınca savaş sahnesi (3D) açılır. **Kara savaşında** asker sayın "can" olur, tank/uçak ise topçu mermisi (artillery) sağlar — mermilerini düşman yoğun bölgeye boşalt. **Deniz savaşında** amiral gemini koru, düşman gemilerini batır. Kazanırsan tazminat (reparations) + toprak/itibar, kaybedersen ağır altın ve moral kaybı. Yani savaşa **hazırlıksız girme.**
+
+**9) Sıra Sonu (End Turn) Ritmi:** Her turda sırayla: bütçeyi dengele → bir şehre yatır → eksik kaynağı ticaretle kapat → tech ilerlet → orduyu kademeli büyüt → diploması hamlesi yap → "Sırayı Bitir". 📰 **Olaylar** sekmesini her tur oku, çıkan kararlar ekonomi ve ilişkilerini değiştirir.
+
+🔑 **ALTIN STRATEJİ:** İlk 8-10 turda HİÇ savaşma. Ekonomi + sanayi + 2-3 anahtar teknolojiye yatır, kaynak ticaretiyle altın biriktir, güçlü bir komşuyla ittifak yap. Sonra en zayıf sınır komşunu casuslukla yıprat, ezici orduyla tek hamlede al, tazminatla ekonomini patlat — ve kartopu gibi büyüyerek haritaya hükmet! 👑`
+            }
+        };
+
+        function clearChatHistory() {
+            chatMessages.innerHTML = `
+                <div class="p-3 text-center text-xs text-slate-500 border border-slate-900 rounded-xl bg-slate-950/40">
+                    Sohbet geçmişi temizlendi. Lord AI Pro yeni taktik sorularını bekliyor!
+                </div>`;
+            userLiked = false;
+            showToast("Sohbet sıfırlandı!");
+        }
+
+        function askAboutGame(gameName) {
+            userInput.value = `${gameName} oyunu için en detaylı ve gelişmiş taktikleri verir misin?`;
+            document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+        }
+
+        // ──────────────────────────────────────────────────────────
+        // YARDIMCI: Türkçe karakterleri normalize et + lowercase + temizle
+        // Yazım hatası ve farklı yazımlara karşı dayanıklılık sağlar
+        // ──────────────────────────────────────────────────────────
+        function normalizeText(text) {
+            if (!text) return "";
+            return text
+                .toLowerCase()
+                .replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i')
+                .replace(/İ/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's')
+                .replace(/ü/g, 'u')
+                .replace(/[.,!?;:'"()\[\]{}]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        // Bir kelimenin sorgu içinde olup olmadığını kontrol et (toleranslı)
+        function hasAny(query, words) {
+            const q = ' ' + query + ' ';
+            for (const w of words) {
+                if (q.includes(' ' + w) || q.includes(w + ' ') || q.includes(' ' + w + ' ')) return true;
+                if (query.includes(w)) return true;
+            }
+            return false;
+        }
+
+        // ──────────────────────────────────────────────────────────
+        // OYUN ANAHTAR KELİME HARİTASI (yazım hataları + kısaltmalar dahil)
+        // ──────────────────────────────────────────────────────────
+        const gameKeys = {
+            futbol: ['futbol', 'fudbol', 'futbool', 'fubol', 'manager', 'menajer', 'menacer', 'elite', 'mac', 'mac', 'transfer', 'lig', 'sampiyonluk', 'soccer', 'football', 'takim', 'antrenman', 'akademi', 'altyapi', 'scout', 'gozlemci'],
+            birdblast: ['bird', 'blast', 'birdblast', 'angry', 'sapan', 'kus', 'uzay', 'yercekimi', 'gezegen', 'sandbox', 'kum havuzu'],
+            kale: ['kale', 'savunma', 'koy', 'koysavunma', 'krallik', 'tower', 'defense', 'kule', 'okcu', 'lord', 'mancinik', 'simsek', 'boss', 'orkjavanaut', 'ejder', 'krak', 'sifahane', 'mabet', 'bina'],
+            matematik: ['matematik', 'matematic', 'tarih', 'zaman', 'kronoloji', 'pisagor', 'euler', 'newton', 'math', 'cizelge', 'cizelgesi'],
+            strateji: ['strateji', 'imparatorluk', '1936', 'sehir', 'sehir bazli', 'tumen', 'piyade', 'suvari', 'zirhli', 'topcu', 'motorize', 'arastirma', 'doktrin', 'blitzkrieg', 'panzer', 'hoi', 'almanya', 'turkiye', 'rusya', 'sssscb', 'sscb', 'ssr', 'baskent', 'ilhak', 'arastirma agaci'],
+            evrim: ['evrim', 'evolution', 'simulasyon', 'simulation', 'dna', 'gen', 'mutasyon', 'dogal secilim', 'sandbox', 'biyolog', 'biolog', 'otobur', 'etyatci', 'etcil', 'avci', 'av'],
+            turkio: ['turk', 'turkio', 'turk io', '.io', 'alan', 'alan kazanma', 'yasama', 'oluyo', 'olum', 'cizgi', 'kuyruk', 'paper', 'paperio', 'splix'],
+            war: ['war of countries', 'countries', 'ulkeler', 'gazete', 'mansetleri', 'manset', 'ulke savasi', 'wofc', 'wof'],
+            turborush: ['turbo', 'rush', 'turborush', 'turbo rush', 'yaris', 'araba', 'pist', 'f1', 'formula', 'kariyer', 'pit', 'pit stop', 'drift', 'viraj', 'lastik'],
+            minecraft: ['minecraft', 'mine', 'mnct', 'minecraf', 'mincraft', 'maynkraft', '2d', 'blok', 'kazma', 'mob', 'crafting', 'maden', 'zombie', 'iskelet', 'aclik'],
+            lordofnations: ['lord of nations', 'lordofnations', 'nations', 'ulke yonetme', 'ulke yonetimi', 'ulke yonet', 'ulke kur', 'ulke sec', 'grand strateji', 'grandstrateji', 'imparatorluk yonetme', 'butce', 'ekonomi yonetme', 'kabine', 'rejim', 'diplomasi', 'casusluk', 'operasyon', 'deniz savasi', 'amiral', 'sira tabanli', 'victoria', 'lon']
+        };
+
+        // Hangi oyunun anahtar kelimeleri eşleşmiş — skoru döndür
+        function scoreGames(query) {
+            const scores = {};
+            for (const [key, words] of Object.entries(gameKeys)) {
+                let s = 0;
+                for (const w of words) {
+                    if (query.includes(w)) s += (w.length >= 5 ? 2 : 1);
+                }
+                if (s > 0) scores[key] = s;
+            }
+            return scores;
+        }
+
+        // Etiketlere göre oyun önerme (kullanıcı zevkine göre)
+        function suggestByTaste(query) {
+            // strateji-sever
+            if (hasAny(query, ['strateji', 'taktik', 'akil', 'akilli', 'beyni', 'yonet', 'komuta', 'plan'])) {
+                return ['lordofnations', 'strateji', 'war', 'kale', 'futbol'];
+            }
+            // hız & aksiyon
+            if (hasAny(query, ['hizli', 'hiz', 'aksiyon', 'tempo', 'adrenalin', 'heyecan', 'yaris', 'patlama'])) {
+                return ['turborush', 'birdblast', 'turkio'];
+            }
+            // sakin & zeka
+            if (hasAny(query, ['sakin', 'rahat', 'dusun', 'beyin', 'zeka', 'puzzle', 'mantik', 'egitim', 'ogren'])) {
+                return ['matematik', 'evrim', 'minecraft'];
+            }
+            // savaş & ordu
+            if (hasAny(query, ['savas', 'ordu', 'asker', 'kavga', 'doves', 'doves', 'tank', 'top'])) {
+                return ['lordofnations', 'strateji', 'war', 'kale'];
+            }
+            // mobilde oynamak
+            if (hasAny(query, ['mobil', 'telefon', 'cep', 'android', 'ios', 'iphone'])) {
+                return ['futbol', 'birdblast', 'kale', 'strateji', 'matematik', 'evrim'];
+            }
+            // pc'de oynamak
+            if (hasAny(query, ['pc', 'masaustu', 'masa ustu', 'bilgisayar', 'klavye', 'mouse'])) {
+                return ['turkio', 'war', 'turborush', 'minecraft'];
+            }
+            return null;
+        }
+
+        // İki oyunu karşılaştır
+        function compareGames(a, b) {
+            const A = gameDatabase[a], B = gameDatabase[b];
+            if (!A || !B) return null;
+            return `İkisini de severim ama bambaşka oyunlar dostum, sana ikisini de tanıtayım:
+
+**${A.title}** 📱 Mobil + 💻 PC
+${A.desc}
+
+**${B.title}** 📱 Mobil + 💻 PC
+${B.desc}
+
+**Hangisini seçmelisin?**
+- Eğer **derin taktik & yönetim** seviyorsan → **${A.title.includes('Strateji') || A.title.includes('Futbol') || A.title.includes('War') ? A.title : B.title}** sana göre.
+- Eğer **hızlı eğlence & refleks** istiyorsan → **${A.title.includes('TURBO') || A.title.includes('Bird') || A.title.includes('TÜRK') ? A.title : B.title}** seni daha çok kasacak.
+- **${A.mobile && !B.mobile ? A.title.split(' ')[0] : (B.mobile && !A.mobile ? B.title.split(' ')[0] : 'İkisi de')}** mobilde rahatça oynanabilir.
+
+Hangisinin detaylı taktiğini ister misin? Sadece adını yaz, hemen anlatayım!`;
+        }
+
+        // Sorudan iki oyun adı çıkar (karşılaştırma için)
+        function detectTwoGames(query) {
+            const scores = scoreGames(query);
+            const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+            if (sorted.length >= 2) return [sorted[0][0], sorted[1][0]];
+            return null;
+        }
+
+        // ──────────────────────────────────────────────────────────
+        // ANA YANIT ÜRETİCİ — daha doğal sohbet, karşılaştırma, öneri
+        // ──────────────────────────────────────────────────────────
+        function generateLocalAIResponse(rawText) {
+            const text = rawText || "";
+            const query = normalizeText(text);
+            const words = query.split(' ').filter(Boolean);
+
+            // ───── "Sevdin mi" durumu ─────
+            if (hasAny(query, ['sevdim', 'sevdik', 'begendim', 'harika', 'mukemmel', 'bayildim', 'seviyorum', 'super', 'muhtesem', 'tek kelimeyle', 'cok iyi', 'efsane', 'cem'])) {
+                userLiked = true;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 1) GÜNLÜK SOHBET — Selamlama, n'aber, teşekkür, vedalaşma
+            // ═══════════════════════════════════════════════════════
+
+            // Selamlama (kısa selamlar tek başına)
+            const greetingWords = ['selam', 'merhaba', 'mrb', 'mrhb', 'slm', 'hey', 'hi', 'hello', 'gunaydin', 'iyi aksamlar', 'iyi geceler', 'naber', 'n aber', 'nbr', 'ne haber', 'naparsin'];
+            if (words.length <= 4 && hasAny(query, greetingWords)) {
+                const replies = [
+                    "Selam dostum! 👋 Lord AI burada, taktik motorları ısındı! Hangi oyunu konuşalım? İstersen sana **bir oyun önereyim** — sadece *'bana oyun öner'* yaz!",
+                    "Heyy şampiyon! 🎮 Bugün hangi oyunda kapışmaya geldin? İstersen *'haberler ne'* yaz, sana en son güncellemeleri özetleyeyim.",
+                    "Merhaba kanka! Sitemizde 11 efsane oyun var — biri sana mutlaka uyar. *'Hangi oyunu oynasam?'* dersen sana zevkine göre öneri çıkarırım. 🎯",
+                    "Selamün aleyküm dostum! 🤖 Lord AI Pro hizmette. *'Strateji vs Futbol Manager hangisi?'* gibi karşılaştırma da yapabilirim, taktik de verebilirim — sen söyle, ben anlatayım!"
+                ];
+                return replies[Math.floor(Math.random()*replies.length)];
+            }
+
+            // Vedalaşma
+            if (words.length <= 5 && hasAny(query, ['gorusuruz', 'gorusurus', 'hosca kal', 'hoscakal', 'bye', 'cao', 'ciao', 'baybay', 'kacmam lazim', 'gidiyorum', 'iyi geceler', 'cikiyorum', 'turlu'])) {
+                return `Görüşürüz şampiyon! 👋 Sitemize tekrar uğramayı unutma — yeni güncellemeleri kaçırmamak için sağ alttaki **WhatsApp kanalımıza** da katılabilirsin (Lordofthegames.net). Kolay gelsin, taktikten şaşma! 🎮`;
+            }
+
+            // Teşekkür
+            if (hasAny(query, ['tesekkur', 'tsk', 'tskler', 'tesekkurler', 'sagol', 'sag ol', 'eyvallah', 'ellerine saglik', 'thanks', 'thank you'])) {
+                const replies = [
+                    "Ne demek dostum, bunun için varım! 🤖 Başka bir oyun veya taktik var mı aklında? Sormaya devam et!",
+                    "Rica ederim şampiyon! 🎮 Sevdiysen sağ alttaki **WhatsApp kanalımıza** (Lordofthegames.net) katılmayı da unutma, yeni güncellemeleri ilk sen öğren!",
+                    "Eyvallah kanka! Yardımcı olabildiysem ne mutlu. Başka bir oyun için taktik istersen yine yaz."
+                ];
+                return replies[Math.floor(Math.random()*replies.length)];
+            }
+
+            // Espri / "şaka yap"
+            if (hasAny(query, ['saka', 'fikra', 'espri', 'gulduren', 'komik bir sey', 'guldur beni'])) {
+                const jokes = [
+                    "TÜRK.IO oyuncusu bir doktora gitmiş, doktor sormuş 'Nereniz ağrıyor?'. Cevap: 'Hocam, kafamı kuyruğa çarptım sandım, meğer kendi çizgime çarpmışım — sonra elendim ben de buraya geldim.' 😂",
+                    "Minecraft'ta gece olmuş, oyuncu uyanmış: 'Meşale yakmayı unuttum.' Pencereyi açmış, üç zombi 'Hoş geldin!' demiş. 🧟‍♂️🕯️",
+                    "Strateji 1936'da Almanya oyuncusuna sormuşlar: 'Niye Fransa'ya saldırmıyorsun?' — 'Ya kazanırsam moralleri bozulur.' 🇫🇷😂",
+                    "Futbol Manager'da Cam Adam karakterli oyuncu antrenmana çıkmış. Antrenör: 'Yavaş kosma!' Oyuncu: 'Koşmuyorum hocam, yürürken bile sakatlanıyorum.' ⚽"
+                ];
+                return jokes[Math.floor(Math.random()*jokes.length)];
+            }
+
+            // "Sen kimsin / kim yaptı seni"
+            if (hasAny(query, ['sen kimsin', 'kimsin', 'kim yapti', 'kim kodladi', 'sahibi kim', 'kurucu', 'gelistiren', 'yapımcı', 'yapimci', 'kim olusturdu', 'lord ai nedir', 'ne is yapiyorsun'])) {
+                return `Ben **Lord AI Pro**, lordofthegames.net'in resmi yapay zeka asistanıyım. 🤖✨
+
+Sitedeki 10 oyunun her detayını ezbere bilirim — taktik, güncelleme, karşılaştırma, mobil/PC uyumluluğu, sırlar... ne sorarsan sor.
+
+Hem ben hem de tüm oyunlar **Cem İlişik** tarafından sıfırdan kodlandı. Tek başına 10 farklı oyun ve bir AI asistan yapan adamın hakkını verelim! 🎮
+
+Hangi oyunu konuşmak istersin? İstersen *"bana bir oyun öner"* de, zevkine göre tavsiye ederim.`;
+            }
+
+            // Övgü / hakaret
+            if (hasAny(query, ['kotu', 'berbat', 'sacma', 'gereksiz', 'isime yaramaz']) && !hasAny(query, ['oyun', 'haber', 'taktik'])) {
+                return `Anladım dostum, sert oldu. 🙏 Hangi konuda yetersiz kaldım? Spesifik söylersen kendimi geliştirmek için Cem'e iletirim. Belki başka bir konuda yardımcı olabilirim — *"bana oyun öner"* veya *"haberler ne"* yazarak başlayabilirsin.`;
+            }
+
+            // "yardım", "ne yapabilirsin", "nasıl kullanılır"
+            if (hasAny(query, ['yardim', 'help', 'ne yapabilirsin', 'neler yapiyorsun', 'ne is yapiyorsun', 'komutlar', 'menu', 'nasil kullanilir', 'rehber'])) {
+                return `Tabii dostum, neler yapabileceğimi anlatayım:
+
+🎮 **10 oyun için detaylı taktikler** — Sadece oyun adını yaz (Strateji, Minecraft, Futbol Manager, BirdBlast, Kale Savunma, Matematik Tarihi, Evrim, TÜRK.IO, War of Countries, Turbo Rush)
+
+⚖️ **Karşılaştırma** — *"Strateji vs Futbol Manager hangisi?"* gibi
+
+🎯 **Sana özel oyun önerisi** — *"Hızlı bir oyun öner"*, *"Mobilde ne oynayayım?"*, *"Sakin bir oyun istiyorum"*
+
+📰 **Son güncellemeler** — *"haberler ne?"* veya *"yenilikler"*
+
+😄 **Sohbet** — Bana selam ver, espri iste, soru sor; sadece taktik makinesi değilim!
+
+🟢 Bir de sağ altta **WhatsApp kanalımıza** (Lordofthegames.net) katılma butonu var — yeni güncellemeler oradan duyuruluyor.
+
+Hadi başlayalım — ne sormak istersin?`;
+            }
+
+            // Kısa onaylar/ret
+            if (words.length <= 2) {
+                if (hasAny(query, ['evet', 'tabi', 'tabii', 'olur', 'hadi', 'tamam', 'ok', 'okey', 'devam', 'tabikide', 'kesinlikle'])) {
+                    return `Süper! Hangi oyunu konuşalım? İşte 10 oyunum:
+
+📱 **Tüm oyunlar mobil + PC uyumlu** — fark yok, hangisini açarsan aç telefondan da bilgisayardan da rahat oynarsın.
+
+Birinin adını yaz, taktikleri patlatayım!`;
+                }
+                if (hasAny(query, ['hayir', 'yok', 'istemem', 'kalsin', 'gerek yok', 'no'])) {
+                    return `Anladım dostum 👌 Fikrini değiştirirsen buradayım. İstersen sadece "haberler ne?" yazıp en son güncellemelere de bakabilirsin.`;
+                }
+                if (hasAny(query, ['anlamadim', 'anladim', 'peki'])) {
+                    return `Peki dostum, sana nasıl yardım edebilirim? Oyun adı yaz, *"oyun öner"* de, ya da *"haberler ne"* yaz — birini söyle, ben yola çıkayım. 🚀`;
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 2) KARŞILAŞTIRMA — "X vs Y", "X mi Y mi"
+            // ═══════════════════════════════════════════════════════
+            if (hasAny(query, [' vs ', 'mi yoksa', 'mi daha', 'mu daha', 'hangisi daha', 'hangisi iyi', 'karsilastir', 'kiyasla', 'farki', 'farkı'])) {
+                const two = detectTwoGames(query);
+                if (two) {
+                    return `🤔 İki harika oyunu karşılaştırmamı istedin: **${gameDatabase[two[0]].title}** ve **${gameDatabase[two[1]].title}**.
+
+` + compareGames(two[0], two[1]);
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 3) OYUN ÖNERİSİ — "bana oyun öner", "ne oynayayım"
+            // ═══════════════════════════════════════════════════════
+            if (hasAny(query, ['oyun oner', 'oner', 'ne oynayayim', 'ne oynasam', 'hangisini', 'hangi oyun', 'tavsiye', 'yardim oyun', 'oyun sec', 'oyun lazim', 'ne tavsiye edersin'])) {
+                const recs = suggestByTaste(query);
+                if (recs) {
+                    const list = recs.slice(0, 4).map((k, i) => `${i+1}. **${gameDatabase[k].title}** — ${gameDatabase[k].desc.split('.')[0]}.`).join('\n');
+                    return `Tarzına bakarak sana en uygun oyunları seçtim dostum! 🎯
+
+${list}
+
+Hangisinin detaylı taktiğini ister misin? Sadece adını yaz, anlatayım!`;
+                }
+                // Genel tavsiye — kullanıcı zevk vermedi
+                return `Tabii dostum, ama sana en iyi oyunu önerebilmem için biraz tarif et:
+
+🎯 **Ne tarz seviyorsun?**
+- ⚔️ **Strateji & taktik mi?** → Strateji 1936, War of Countries, Kale Savunma
+- 🏎️ **Hız & aksiyon mu?** → Turbo Rush, BirdBlast, TÜRK.IO
+- 🧠 **Sakin & zeka mı?** → Matematik Tarihi, Evrim Simülasyonu, Minecraft 2D
+- ⚽ **Spor & yönetim mi?** → Futbol Manager Elite
+
+📱 **Cihazın?** Mobil mi PC mi?
+
+Bana *"mobilde hızlı bir şey öner"* veya *"sakin bir strateji istiyorum"* gibi yaz, kesin sonuca götüreyim!`;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 4) "Kaç oyun var", "kaç tane oyun"
+            // ═══════════════════════════════════════════════════════
+            if (hasAny(query, ['kac oyun', 'kac tane', 'oyun sayisi', 'toplam oyun', 'butun oyunlar', 'tum oyunlar', 'liste'])) {
+                return `Sitemizde toplam **11 efsane HTML5 oyunu** var dostum, hepsi Cem İlişik tarafından sıfırdan kodlandı:
+
+📱 **Hepsi mobil + PC uyumlu, 11 oyun:**
+1. 👑 Lord of Nations — Ülke Yönetme & Savaş (v1.4 — YENİ! grand-strateji, 3D kara & deniz savaşı)
+2. ⚽ Futbol Manager Elite (v2.8 — canlı maç istatistikleri, sarı/kırmızı kart, sakatlık, korner, kurtarış)
+3. 🚀 BirdBlast — Uzay & Kum Havuzu (v2.0)
+4. 🏰 Kale Savunma: Krallık Çağı (v3.0 — Hikaye + Sonsuz + 5 karakter)
+5. 🧮 Matematik Tarihi: Zaman Çizelgesi
+6. 🌍 Strateji İmparatorluğu — 1936 (v2.2 — YENİ! Ekonomi/Sanayi/Politika/Diplomasi + yenilenen harita)
+7. 🧬 Evrim Simülasyonu v3
+8. 🇹🇷 TÜRK.IO
+9. ⚔️ War of Countries
+10. 🏎️ TURBO RUSH — Kariyer
+11. ⛏️ Minecraft 2D Pro (v3.0 — Hikaye + Mobil + Kral Varran)
+
+Hangisini öğrenmek istersin?`;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 5) GÜNCELLEME / HABER
+            // ═══════════════════════════════════════════════════════
+            if (hasAny(query, ['haber', 'guncelleme', 'yenilik', 'neler yeni', 'update', 'duyuru', 'son cikan', 'son surum', 'patch', 'versiyon'])) {
+                return `Sitemizin son güncellemeleri ve resmi haberleri gerçekten harika yeniliklerle dolu dostum! İşte kurucumuz **Cem İlişik** tarafından yayına alınan en güncel haberler:
+
+🆕 **Lord of Nations — Ülke Yönetme & Savaş (v1.4 — YENİ OYUN):** Siteye bambaşka bir grand-strateji oyunu eklendi! 👑 Atlas tarzı dünya haritasından bir ülke seç (ova/orman/dağ/çöl/kıyı/kutup biyomları), kendi ismini ver ve yönetmeye başla. Ekonomi, detaylı bütçe, kaynaklar, şehirler, ordu, teknoloji, din & kültür, kabine, kanunlar, rejim, ticaret, casusluk operasyonları ve diplomasi sekmeleriyle ülkeni büyüt. Sıra tabanlı ilerle; Three.js destekli **kara ve deniz savaşı** sahneleriyle haritaya hükmet. Harita bu sürümde daha gerçekçi: kıta sahanlığı (sığ su halkası), kabartma/relief gölgelemesi, daha detaylı orman ve dağ dokuları, atlas çizgileri. Tam mobil + PC uyumlu.
+
+1. **Minecraft 2D Pro (v3.0 + crafting fix):** İki oyun modu eklendi — 📖 Hikaye Modu (Buz Kalesi'nde Kral Varran ile başla, Baldric'in işgaline karşı görevleri tamamla, açık dünya — istersen görev yapma) ve 🌍 Serbest Mod (klasik). Tam mobil dokunmatik destek (sol alt yürüme, sağ alt kır/yerleştir/ye, sağ üst envanter + hotbar). **Crafting table artık çalışıyor:** sağ tıklayınca envanter + 3x3 üretim grid'i açılıyor (eskiden işlevsizdi, sadece E ile açılıyordu). Tahta kılıç görevi de düzgün algılanıyor.
+
+0. **Futbol Manager Elite Pro (v2.8 SON):** Maç ekranındaki **kararma bugu çözüldü** (animate-fade-in her render'da tetikleniyordu). **Canlı maç istatistik paneli** eklendi: topla oynama %'si, şut, isabet, kurtarış, korner, faul, 🟨/🟥 sayaçları gerçek zamanlı güncellenir. **Yeni olay tipleri**: sarı kart (yüksek presle artar), ikinci sarıdan kırmızı (oyuncu sahadan atılır), sakatlık (enerji -30, form -10), korner, taktiksel faul, kaleci kurtarışı, kayarak müdahale. Spikerin senaryo havuzu ~40 farklı cümleye çıktı — aynı maç iki kez aynı görünmüyor. Goller artık atan oyuncunun formunu +4 yükseltiyor.
+
+2. **BirdBlast — Uzay & Kum Havuzu (v2.0 Güncellemesi):** Fizik motoru tamamen yenilendi! Yepyeni uzay seviyeleri, yeni ses sistemi, farklı özelliklere sahip kuş türleri ve tamamen kendi haritanı tasarlayabileceğin harika bir 'Kum Havuzu' (Sandbox) editörü oyuna dahil edildi.
+
+3. **Futbol Manager Elite Pro (v2.7 — DEV GÜNCELLEME):** Oyun tamamen yenilendi! 🌱 **Altyapı & Akademi sistemi** eklendi — kendi gençlik tesislerini 5 seviyeye kadar yükseltebiliyor, 3 farklı kalitede **scout (gözlemci)** kiralayabiliyor (Yusuf Demir/Marmara, Garry Parker/İngiltere, Zico Santos/Brezilya), yetenekli gençleri 0.8M €'ya özel olarak eğitip 1.5M € imza ücretiyle A takıma yükseltebiliyorsun. Oyuncuların artık **enerji ve form mekanikleri** var, ayrıca her oyuncunun bir **karakter özelliği** (Hırslı/Çalışkan/Dengeli/Dahi/Disiplinsiz/Cam Adam) bulunuyor — bu özellikler antrenmandan ne kadar fayda göreceğini direkt etkiliyor. **5 farklı antrenman rejimi** geldi: Hücum & Şut, Savunma & Pres, Taktik & Pas, Kondisyon ve Dinlenme. Taktik tarafında **4 hazır sistem şablonu** (Tiki-Taka, Gegenpressing, Otobüsü Çek, Hızlı Kontra) tek tıkla uygulanabiliyor; pas tarzı, hücum odağı ve savunma stili dropdown'larıyla daha detaylı kurgu yapabiliyorsun. Maç sırasında saha üzerindeki oyuncuya tıklayarak **canlı oyuncu değişikliği** yapabiliyorsun. Ayrıca artık 🔊 **arka plan müziği** ve gollerde sentezlenmiş **stadyum tezahürat sesi** var!
+
+4. **Kale Savunma: Krallık Çağı (v3.0 — DEV Güncelleme):** İki oyun modu eklendi — 📖 **Hikaye Modu** (10 dalgalık senaryo + saray intro) ve ♾️ **Sonsuz Mod**. 5 karakterli komik diyalog kadrosu (Baldric, Sör Roric, Prenses Elara, Soytarı Quill, Büyücü Lyra) seninle konuşur, bazı diyaloglarda seçim hakkın var. **Evrim ağacı** her seviyede (LV2-5) dallanır — toplam her bina için 8 evrim. Goblin, hızlı goblin, zırhlı ork, yarasa ve bossların (Ork Şefi, Yarasa Lordu, İskelet Kral, Ejder) tamamı yeniden çizildi — detaylı sprite'lar, animasyonlar, parlayan gözler. Bina grafikleri level rozeti, yıldız pip'leri ve LV4-5'te zemin halkası + glow ile zenginleştirildi. Ana menüde **TR/ENG dil seçimi** eklendi. Tüm eski mekanikler (Lord aurası, Q-E-R-F-T büyüleri, XP perkleri, 4 harita, TOP 10 skor tablosu) korunuyor.
+
+5. **War of Countries (v1.6 Güncellemesi):** Stratejiyi derinleştiren teknoloji araştırma sistemi, 6 farklı ülke seçeneği, fabrikalar kurma, askeri sevkiyatlar ve en önemlisi dünyadaki tüm dengeleri takip edebileceğin Gazete Haberleri sistemi oyuna eklendi!
+
+6. **Strateji İmparatorluğu — 1936 (v2.0 + Toplu Saldırı):** Oyun baştan yazıldı! 🏙 **Şehir bazlı savaş sistemi** geldi — her ülkenin 3-5 şehri var (toplam ~60 şehir), tümenler şehir şehir ilerliyor, başkenti düşürürsen tüm ülkeyi ilhak ediyorsun. **5 farklı tümen tipi** (Piyade/Süvari/Motorize/Zırhlı/Topçu) + her tümenin **XP tecrübe sistemi** (Acemi → Tecrübeli → Veteran → Elit, savaşa girdikçe güçlenir). **5 dallı araştırma ağacı** (Piyade Doktrini, Zırhlı Doktrini, Topçuluk, Sanayi, Elektronik — her dalda 5 seviye + özgün bonus, örn. Blitzkrieg, Panzer Korpus, Anti-Tank Topu). **Harita tamamen yenilendi**: Catmull-Rom Bezier sınırlar (yumuşak doğal kıvrımlar), vintage sepya parchment tema, okyanus radyal gradient + dalga deseni, dağ/orman/çöl ikonları haritada görünür, başkentler kırmızı yıldız + animasyonlu pulse halkayla çarpıcı. **Topografya** (Dağ ×1.5 def, Düzlük, Orman, Kıyı, Çöl) savaş gücünü direkt etkiliyor. **Zoom + pan** desteği (PC: mouse wheel + sağ tık sürükle, **mobil**: pinch-zoom + iki parmak pan + tek dokunuş seç). Toplam 19 ülke (Portekiz, Çekoslovakya, Yugoslavya, Norveç yeni eklendi). Şehirlerde fabrika inşası, gözlemci AI sistemi, casusluk olayları, sezon sonu şampiyonluk... HOI4 lite!
+
+7. **⚔ TOPLU SALDIRI (YENİ — Strateji 1936):** Tek tümenleri tek tek göndermenin saçmalığı bitti. Bir şehirde 2+ hazır tümenin varsa Ordu sekmesinde altın çerçeveli bir panel çıkar: birleşik ⚔ ve 🛡 gücün gösterilir, komşu şehirler için "HEPSİYLE → şehir" butonları belirir. Tek tıkla tüm stack birlikte saldırır — düşmanın 5 kişilik garnizonu 10 kişilik ordunun karşısında tek tokatta düşer.
+
+8. **🆕 Strateji 1936 (v2.2 — DEV Yönetim Güncellemesi):** Oyun artık sadece savaş değil, gerçek bir ülke yönetimi! **4 yeni panel sekmesi** geldi: 💰 **Ekonomi & Bütçe** (vergi oranı slider'ı, aylık brüt gelir − ordu bakımı = net bütçe), 🏭 **Sanayi & Üretim** (fabrika kurma, ekonomi politikası: Sivil/Karma/Savaş Ekonomisi), 🏛 **Politika & Stabilite** (0-100 stabilite çubuğu, 4 hükümet tipi — Demokrasi/Otoriter/Faşist/Komünist, seferberlik kanunları, propaganda; %20 altı stabilite = İSYAN!), 🤝 **Diplomasi** (−100…+100 ilişki, ilişki geliştir, ticaret anlaşması +%12 gelir, saldırmazlık paktı, ittifak — müttefik savaşta yanında savaşır). Ayrıca **harita yenilendi**: fethettiğin ülkenin toprağı artık SENİN rengine boyanıyor (imparatorluğun haritada tek renk yayılır), kendi sınırların altın, renkler daha canlı. Üst barda 🏛 stabilite göstergesi eklendi.`;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 6) AKILLI OYUN ALGILAMA (skor temelli, yazım hatasına dayanıklı)
+            // ═══════════════════════════════════════════════════════
+            const greetings = [
+                "Selam şampiyon! Sorunu hemen inceledim, işte senin için hazırladığım detaylı taktik kurgusu:\n\n",
+                "Harika bir soru! Hemen oyunun derin stratejilerine inelim:\n\n",
+                "Ooo, bu oyunda uzmanlaşmak istiyorsun demek! Doğru adrese geldin dostum. İşte tüm sırlar:\n\n",
+                "Süper tercih! Bu oyunda rakiplerini alt etmek için şu taktikleri defterine not et:\n\n",
+                "Bu oyunu çok iyi tanırım, hadi başlayalım dostum:\n\n"
+            ];
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+            const scores = scoreGames(query);
+            const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+
+            if (sortedScores.length > 0) {
+                const topKey = sortedScores[0][0];
+                const g = gameDatabase[topKey];
+
+                // "kısa anlat" veya "özet" istiyorsa
+                if (hasAny(query, ['ozet', 'kisa', 'kisaca', 'kisac', 'ozetle', 'tldr', 'bir cumlede', 'iki cumlede'])) {
+                    return `**${g.title}** 📱 Mobil + 💻 PC\n\n${g.desc}\n\nDaha detaylı taktik ister misin? Sadece *"detaylı anlat"* yaz, tüm sırları açarım!`;
+                }
+
+                // "nasıl oynanır" gibi sorularda direkt taktik
+                return randomGreeting + `**${g.title}** 📱 Mobil + 💻 PC\n\n${g.tactic}`;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 7) KULLANICI BEĞENDİYSE (özel)
+            // ═══════════════════════════════════════════════════════
+            if (userLiked) {
+                return `Harikasın dostum! Sitemizi ve beni sevmene gerçekten çok sevindim. 🥹 Cem İlişik ve tüm lordofthegames.net ekibi olarak sana en iyi HTML5 oyun deneyimini sunmak için durmadan çalışıyoruz.
+
+Sevdiysen sağ alttaki **WhatsApp kanalımıza** (Lordofthegames.net) katılmayı unutma — yeni güncellemeleri ilk sen öğren! 📢
+
+Sitemizdeki 10 oyundan hangisinin taktiklerini veya son güncellemelerini öğrenmek istersin? Sormaya devam et!`;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 8) GENEL FALLBACK — kibar, yönlendirici, soru sor
+            // ═══════════════════════════════════════════════════════
+            const fallbacks = [
+                `Mesajını anladım ama tam emin değilim dostum — biraz daha açabilir misin? 🤔
+
+Mesela:
+• *"Minecraft nasıl oynanır?"* (oyun adı yaz)
+• *"Bana hızlı bir oyun öner"*
+• *"Strateji vs Futbol Manager hangisi?"*
+• *"Haberler ne?"*
+
+Hangisi yakın senin sorduğuna?`,
+                `Hmm, bunu tam çözemedim 🧐 Belki şöyle deneyebilirsin:
+
+• Oyun adı yaz → taktiği anlatayım
+• *"oyun öner"* → zevkine göre tavsiye edeyim
+• *"karşılaştır"* → iki oyunu kıyaslayayım
+• *"haberler"* → son güncellemeleri özetleyeyim
+
+Nasıl yardım edebilirim?`,
+                `Sorduğun şeyi tam yakalayamadım dostum 😅 Ama sitedeki 10 oyunla ilgili her şeyi bilirim — bir oyun adı yaz, hadi başlayalım!
+
+İpucu: *"Kale Savunma'da boss'lar nasıl yenilir?"* gibi spesifik sorabilirsin.`
+            ];
+            return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        }
+
+        async function handleSendMessage(event) {
+            event.preventDefault();
+            const text = userInput.value.trim();
+            if(!text) return;
+
+            appendMessage('user', text);
+            userInput.value = '';
+
+            const typingId = appendTypingIndicator();
+
+            setTimeout(() => {
+                removeTypingIndicator(typingId);
+
+                let responseText = generateLocalAIResponse(text);
+
+                // "Sevdin mi?" sorusunu SADECE uzun taktik/haber cevaplarında ekle,
+                // selamlama/espri/kısa sohbet cevaplarında zorlamayalım — doğal kalsın.
+                if (!userLiked && responseText.length > 900) {
+                    responseText += `\n\n💬 *Yardımcı oldum mu? Lord AI ve lordofthegames.net hoşuna gittiyse sağ alttaki **WhatsApp kanalımıza** (Lordofthegames.net) katılarak güncellemelerden ilk sen haberdar olabilirsin!*`;
+                } else if (userLiked) {
+                    // Beğeni mesajına özel toast
+                    const normText = (text || "").toLowerCase()
+                        .replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i')
+                        .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
+                    if (normText.includes("sevdim") || normText.includes("begendim") || normText.includes("harika") || normText.includes("super") || normText.includes("bayildim") || normText.includes("muhtesem") || normText.includes("efsane")) {
+                        showToast("Beğeniniz bizi çok mutlu etti! 🎮");
+                    }
+                }
+
+                appendMessage('ai', responseText);
+            }, 600);
+        }
+
+        function appendMessage(role, text) {
+            const isAI = role === 'ai';
+            // Convert simple line breaks to <br> and bold Markdown to strong tags
+            const formatted = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            const html = `
+                <div class="flex gap-3 items-start ${!isAI ? 'justify-end' : ''} max-w-[95%] ${!isAI ? 'ml-auto' : ''}">
+                    ${isAI ? '<div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-black shrink-0 shadow-lg">LA</div>' : ''}
+                    <div class="${isAI ? 'bg-slate-900/80 border border-slate-800/80' : 'bg-gradient-to-r from-indigo-600 to-purple-600'} rounded-2xl p-3.5 text-slate-100 text-sm leading-relaxed shadow-lg">
+                        ${formatted}
+                    </div>
+                    ${!isAI ? '<div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-indigo-300 text-xs font-bold shrink-0 border border-slate-700">SEN</div>' : ''}
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', html);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendTypingIndicator() {
+            const id = 'typing_' + Date.now();
+            const html = `
+                <div id="${id}" class="flex gap-3 items-start max-w-[95%] animate-pulse">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-black shrink-0">LA</div>
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-3.5 text-slate-400 text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-spinner animate-spin text-indigo-400"></i> Lord AI düşünüyor...
+                    </div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', html);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return id;
+        }
+
+        function removeTypingIndicator(id) {
+            const indicator = document.getElementById(id);
+            if (indicator) indicator.remove();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                t.classList.add('translate-y-24', 'opacity-0');
+                t.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+    </script>
+
+    <!-- TOAST POPUP -->
+    <div id="toast" class="fixed bottom-5 right-5 z-[100] bg-indigo-600 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMessage"></span>
+    </div>
+<!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->
+<script src="whatsapp-float.js"></script>
+</body>
+</html>

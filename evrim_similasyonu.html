@@ -1,0 +1,2221 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>🧬 Evrim Simülasyonu v3</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
+canvas{display:block}
+#lp{position:fixed;top:0;left:0;width:246px;height:100vh;
+    background:rgba(1,6,14,0.96);border-right:1px solid #0b4;
+    padding:10px;overflow-y:auto;color:#0c5;z-index:10;
+    scrollbar-width:thin;scrollbar-color:#0b4 #000}
+h1{font-size:11px;letter-spacing:3px;color:#0fa;margin-bottom:7px;
+   border-bottom:1px solid #062;padding-bottom:4px;text-shadow:0 0 8px #0fa3}
+.stat{font-size:8.5px;margin-bottom:2px;color:#073}
+.stat b{color:#4df}
+.sec{margin:7px 0 4px;font-size:8px;letter-spacing:2px;color:#0b4;
+     border-bottom:1px solid #031;padding-bottom:2px}
+button{display:block;width:100%;margin-bottom:3px;padding:5px 7px;
+       background:transparent;border:1px solid #0b4;color:#0b4;
+       font-family:'Courier New',monospace;font-size:8.5px;cursor:pointer;
+       text-align:left;transition:background .1s,color .1s}
+button:hover{background:#0b4;color:#000}
+button.r{border-color:#b30;color:#b30}
+button.r:hover{background:#b30;color:#fff}
+button.hi{border-color:#0af;color:#0af;font-weight:bold}
+button.hi:hover{background:#0af;color:#000}
+input[type=range]{width:100%;margin:1px 0 5px;accent-color:#0b4}
+label{font-size:7.5px;color:#042;display:block}
+#ci{position:fixed;bottom:112px;left:258px;width:210px;
+    background:rgba(1,6,14,0.97);border:1px solid #0b4;
+    padding:8px;font-size:8.5px;color:#0b4;line-height:1.75;
+    display:none;z-index:20}
+#ci b{color:#0fa}
+.cx{float:right;cursor:pointer;color:#b30;font-size:11px}
+#log{position:fixed;bottom:0;right:0;width:270px;height:104px;
+     background:rgba(0,0,0,0.88);border-top:1px solid #020;
+     border-left:1px solid #020;padding:4px;overflow-y:auto;
+     font-size:7.5px;z-index:10}
+.le{margin-bottom:1px;color:#042}
+.le.b{color:#0a7}.le.d{color:#b40}.le.m{color:#da0}.le.e{color:#07b}.le.p{color:#f60}
+#tip{position:fixed;bottom:108px;right:0;width:270px;
+     background:rgba(0,0,0,0.62);border-left:1px solid #020;
+     padding:3px 7px;font-size:7.5px;color:#034;line-height:1.6;z-index:10}
+/* FULL-SCREEN EVO TREE OVERLAY */
+#evoOverlay{position:fixed;top:0;left:0;width:100%;height:100%;
+            background:rgba(0,3,8,0.97);z-index:100;display:none;
+            flex-direction:column}
+#evoHeader{padding:12px 20px;border-bottom:1px solid #0b4;
+           display:flex;align-items:center;gap:12px;flex-shrink:0}
+#evoHeader h2{font-size:16px;letter-spacing:3px;color:#0fa;text-shadow:0 0 12px #0fa5}
+#evoHeader small{font-size:9px;color:#0b4}
+#evoClose{margin-left:auto;background:transparent;border:1px solid #b30;
+          color:#b30;padding:5px 12px;cursor:pointer;font-family:'Courier New',monospace;
+          font-size:10px}
+#evoClose:hover{background:#b30;color:#fff}
+#evoCanvas{flex:1;display:block}
+.bbg{display:inline-block;width:55px;height:5px;background:#021;
+     border:1px solid #031;border-radius:2px;vertical-align:middle;overflow:hidden}
+.bbf{display:inline-block;height:5px;border-radius:2px}
+
+/* ── DISASTER FX OVERLAY ── */
+#fx{position:fixed;top:0;left:0;width:100%;height:100%;
+    pointer-events:none;z-index:50;display:none}
+#fxCanvas{width:100%;height:100%;display:block}
+
+/* disaster title banner */
+#disasterBanner{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  z-index:60;pointer-events:none;text-align:center;
+  transition:transform .3s cubic-bezier(.2,1.4,.4,1);
+}
+#disasterBanner.show{transform:translate(-50%,-50%) scale(1);}
+#disasterBanner .dtitle{
+  font-size:42px;letter-spacing:4px;font-family:'Courier New',monospace;
+  text-shadow:0 0 30px currentColor,0 0 60px currentColor;
+  filter:drop-shadow(0 4px 16px rgba(0,0,0,0.8));
+}
+#disasterBanner .dsub{
+  font-size:14px;letter-spacing:2px;font-family:'Courier New',monospace;
+  opacity:0.8;margin-top:6px;
+}
+
+@keyframes screenShake{
+  0%{transform:translate(0,0)}
+  15%{transform:translate(-8px,4px)}
+  30%{transform:translate(8px,-6px)}
+  45%{transform:translate(-5px,8px)}
+  60%{transform:translate(7px,-4px)}
+  75%{transform:translate(-4px,3px)}
+  90%{transform:translate(3px,-2px)}
+  100%{transform:translate(0,0)}
+}
+.shaking{animation:screenShake .6s ease-out;}
+</style>
+</head>
+<body>
+<div id="lotg-nav" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);border-radius:8px;padding:7px 14px;font-family:sans-serif;font-size:13px;border:1px solid rgba(255,255,255,0.18);"><a href="index.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">←</span><span class="lotg-tr"> Ana Sayfa</span><span class="lotg-en" style="display:none"> Home</span></a></div><script>(function(){if(localStorage.getItem('lotg_lang')==='en'){var t=document.querySelector('#lotg-nav .lotg-tr');var e=document.querySelector('#lotg-nav .lotg-en');if(t)t.style.display='none';if(e)e.style.display='';}})();</script>
+<!-- DISASTER FX -->
+<div id="fx"><canvas id="fxCanvas"></canvas></div>
+<div id="disasterBanner">
+  <div class="dtitle" id="dTitle">☄️</div>
+  <div class="dsub"   id="dSub">KİTLESEL YOK OLUŞ</div>
+</div>
+
+<div id="lp">
+  <h1>🧬 EVRİM SİMÜLASYONU</h1>
+  <div class="stat">Nesil <b id="sg">0</b> &nbsp;Tür <b id="ssp">0</b></div>
+  <div class="stat">Canlı <b id="sa">0</b>/<b id="sm">80</b> &nbsp;Yırtıcı <b id="spr">0</b></div>
+  <div class="stat">🌊<b id="sq">0</b> 🐊<b id="sam">0</b> 🌿<b id="sl">0</b> 🦅<b id="sfl">0</b></div>
+  <div class="stat">Doğum <b id="sb">0</b> &nbsp;Ölüm <b id="sd">0</b></div>
+  <div class="stat">Yiyecek <b id="sf">0</b> &nbsp;Süre <b id="ss">0</b>s</div>
+  <div class="stat">Ağaçlar <b id="str2">0</b> &nbsp;Biyom <b id="scb">—</b></div>
+
+  <div class="sec">AYARLAR</div>
+  <label>Mutasyon: <b id="mv">0.15</b></label>
+  <input type="range" id="rm" min="0" max="0.5" step="0.01" value="0.15">
+  <label>Hız: <b id="sv">1x</b></label>
+  <input type="range" id="rs" min="1" max="5" step="1" value="1">
+  <label>Max Nüfus: <b id="pv">80</b></label>
+  <input type="range" id="rp" min="20" max="160" step="10" value="80">
+  <label>Yiyecek: <b id="fv">Orta</b></label>
+  <input type="range" id="rf" min="1" max="5" step="1" value="3">
+
+  <div class="sec">EKLE</div>
+  <button onclick="burstFood(15)">🍖 Yiyecek Ekle (15)</button>
+  <button onclick="spawnGroup(5,0.85,0.1)">🐠 Su Canlısı (5)</button>
+  <button onclick="spawnGroup(5,0.15,0.1)">🦎 Kara Canlısı (5)</button>
+  <button onclick="spawnGroup(5,0.5,0.1)">🐊 Amfibi (5)</button>
+  <button onclick="spawnGroup(4,0.1,0.85)">🦅 Uçan Canlı (4)</button>
+  <button onclick="spawnPreds(2)">🦈 Yırtıcı (2)</button>
+  <button id="pb" onclick="togglePause()">⏸ Duraklat</button>
+  <button class="hi" onclick="openEvoTree()">🌳 EVRİM AĞACI (TAM EKRAN)</button>
+
+  <div class="sec">AFETLER</div>
+  <button class="r" onclick="massExtinct()">☄️ Kitlesel Yok Oluş</button>
+  <button class="r" onclick="doDrought()">🌵 Kuraklık</button>
+  <button class="r" onclick="doFlood()">🌊 Sel</button>
+  <button class="r" onclick="doPlague()">☠️ Veba Mega-Mutasyon</button>
+  <button class="r" onclick="doCold()">❄️ Donma Dalgası</button>
+
+  <div class="sec">ÇEVRE</div>
+  <button onclick="makeIsland()">🏝 Ada Oluştur</button>
+  <button onclick="cycleClimate()">🌡 İklim: <span id="cl">Normal</span></button>
+  <button onclick="doVolcano()">🌋 Volkan</button>
+
+  <div class="sec">KONTROL</div>
+  <div style="font-size:7.5px;color:#042;line-height:1.9">
+    🖱 Sürükle → Kamera &nbsp; Scroll → Zoom<br>
+    🖱 Tık → Yiyecek &nbsp; Ctrl+Tık → Canlı Ekle<br>
+    🖱 Canlıya Tık → Gen Bilgisi
+  </div>
+</div>
+
+<!-- FULL SCREEN EVO TREE -->
+<div id="evoOverlay">
+  <div id="evoHeader">
+    <h2>🌳 EVRİM AĞACI</h2>
+    <small id="evoInfo">Tür sayısı: 0</small>
+    <button id="evoClose" onclick="closeEvoTree()">✕ KAPAT</button>
+  </div>
+  <canvas id="evoCanvas"></canvas>
+</div>
+
+<div id="ci"><span class="cx" onclick="hideCI()">✕</span><div id="cib"></div></div>
+<div id="tip">💡 Tık=yiyecek | Ctrl+Tık=canlı | Canlıya tık=genler</div>
+<div id="log"></div>
+
+<script>
+// ══════════════════════════════════════════
+// RENDERER + SCENE
+// ══════════════════════════════════════════
+var renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x7ec8e3, 1);
+renderer.physicallyCorrectLights = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+var scene  = new THREE.Scene();
+scene.fog  = new THREE.FogExp2(0x7ec8e3, 0.003);
+var camera = new THREE.PerspectiveCamera(52, window.innerWidth/window.innerHeight, 0.1, 1400);
+camera.position.set(0, 65, 110);
+camera.lookAt(0,0,0);
+
+// ══════════════════════════════════════════
+// LIGHTS
+// ══════════════════════════════════════════
+var ambL = new THREE.AmbientLight(0x304878, 0.85);
+scene.add(ambL);
+var sun = new THREE.DirectionalLight(0xfff5d0, 1.4);
+sun.position.set(60,100,50);
+sun.castShadow = true;
+sun.shadow.mapSize.width = sun.shadow.mapSize.height = 1024;
+sun.shadow.camera.left = sun.shadow.camera.bottom = -130;
+sun.shadow.camera.right = sun.shadow.camera.top = 130;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far  = 300;
+scene.add(sun);
+// Rim light — backlight for creature depth/silhouette
+var rimLight = new THREE.DirectionalLight(0x80c0ff, 0.55);
+rimLight.position.set(-80, 40, -60);
+scene.add(rimLight);
+// Warm fill from below/side
+var fillLight = new THREE.PointLight(0xffcc88, 0.38, 220);
+fillLight.position.set(20, 3, 0);
+scene.add(fillLight);
+
+// ══════════════════════════════════════════
+// WORLD
+// ══════════════════════════════════════════
+var WS       = 110;
+var X_DEEP   = -WS;
+var X_SHELF  = -55;
+var X_SHORE  = 0;
+var X_GRASS  = 14;
+var X_FOREST = 62;
+var X_HIGH   = 94;
+var X_END    = WS;
+
+var skyMat = new THREE.MeshBasicMaterial({color:0x7ec8e3,side:THREE.BackSide});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(800,12,8), skyMat));
+
+function addBox(x0,x1,y,h,color,rcv){
+  var m=new THREE.Mesh(
+    new THREE.BoxGeometry(x1-x0,h,WS*2),
+    new THREE.MeshPhongMaterial({color:color,shininess:rcv?8:2,specular:0x111111})
+  );
+  m.position.set((x0+x1)/2, y-h/2, 0);
+  if(rcv) m.receiveShadow=true;
+  scene.add(m);
+  return m;
+}
+addBox(X_DEEP,X_SHORE,-3,0.6,0x001433,false);
+var waterMesh=new THREE.Mesh(
+  new THREE.BoxGeometry(X_SHORE-X_DEEP,0.3,WS*2),
+  new THREE.MeshPhongMaterial({color:0x1a7ab0,transparent:true,opacity:0.68,shininess:160,specular:0xaaddff})
+);
+waterMesh.position.set((X_DEEP+X_SHORE)/2,0.2,0);
+scene.add(waterMesh);
+addBox(X_DEEP,X_SHELF,-2.5,0.4,0x001e3c,false);
+addBox(X_SHELF,X_SHORE,-1.5,0.4,0x002244,false);
+var landMeshes=[];
+landMeshes.push(addBox(X_SHORE,X_GRASS,0,0.4,0xd4b864,true));
+landMeshes.push(addBox(X_GRASS,X_FOREST,0,0.4,0x3a8a2a,true));
+landMeshes.push(addBox(X_FOREST,X_HIGH,0,0.4,0x1a5a10,true));
+landMeshes.push(addBox(X_HIGH,X_END,0,0.4,0x8a6040,true));
+
+(function(){
+  var mm=[new THREE.MeshLambertMaterial({color:0x3a8a2a}),
+          new THREE.MeshLambertMaterial({color:0x1a5a10}),
+          new THREE.MeshLambertMaterial({color:0x8a6040}),
+          new THREE.MeshLambertMaterial({color:0x5a4020})];
+  for(var i=0;i<80;i++){
+    var tx=X_GRASS+Math.random()*(X_END-X_GRASS-2);
+    var tz=(Math.random()-0.5)*WS*1.9;
+    var th=0.5+Math.random()*2.2, tw=3+Math.random()*6;
+    var b=new THREE.Mesh(new THREE.BoxGeometry(tw,th,tw+Math.random()*4),mm[i%4]);
+    b.position.set(tx,th*0.5+0.2,tz);
+    b.castShadow=true; b.receiveShadow=true;
+    scene.add(b);
+  }
+})();
+
+var rockMat=new THREE.MeshLambertMaterial({color:0x888899});
+for(var _ri=0;_ri<22;_ri++){
+  var _rr=0.4+Math.random()*1.5;
+  var _rm=new THREE.Mesh(new THREE.DodecahedronGeometry(_rr,0),rockMat);
+  _rm.position.set(X_SHORE+(Math.random()-0.5)*10,_rr*0.35,(Math.random()-0.5)*WS*1.9);
+  _rm.rotation.x=Math.random()*3; _rm.rotation.y=Math.random()*3;
+  _rm.castShadow=true; scene.add(_rm);
+}
+for(var _upi=0;_upi<40;_upi++){
+  var _ph=0.6+Math.random()*2;
+  var _pm=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.14,_ph,5),
+    new THREE.MeshLambertMaterial({color:Math.random()<0.5?0x005533:0x117744}));
+  _pm.position.set(X_DEEP+2+Math.random()*(X_SHORE-X_DEEP-4),-3+_ph/2,(Math.random()-0.5)*WS*1.85);
+  scene.add(_pm);
+}
+
+// ══════════════════════════════════════════
+// BIOME UTILS
+// ══════════════════════════════════════════
+var BIOMES={deep:'Derin Okyanus',ocean:'Okyanus',shore:'Kıyı',grass:'Çayırlık',forest:'Orman',highland:'Yayla'};
+function getBiome(x){
+  if(x<X_SHELF) return 'deep';
+  if(x<X_SHORE) return 'ocean';
+  if(x<X_GRASS) return 'shore';
+  if(x<X_FOREST) return 'grass';
+  if(x<X_HIGH)  return 'forest';
+  return 'highland';
+}
+function biomeWet(b){return b==='deep'||b==='ocean';}
+
+// ══════════════════════════════════════════
+// EVOLVING TREE SYSTEM
+// ══════════════════════════════════════════
+var treePop=[];
+var nTreeId=0;
+
+function EvoTree(x,z,startAge){
+  this.id=nTreeId++;
+  this.px=x; this.pz=z;
+  this.age=startAge||0;
+  this.height=0.5;
+  this.radius=0.8;
+  this.leafHue=0.33;  // 0-1 hue shift
+  this.leafSat=0.6;
+  this.dead=false;
+  this.mature=false;
+  this.reprodCd=0;
+  this.type=getBiome(x)==='highland'?2:getBiome(x)==='forest'?1:0;
+  this.grp=new THREE.Group();
+  this.trunkMesh=null;
+  this.leafMesh=null;
+  this._build();
+  this.grp.position.set(x,0,z);
+  scene.add(this.grp);
+}
+
+EvoTree.prototype._build=function(){
+  var kids=this.grp.children.slice();
+  for(var i=0;i<kids.length;i++){
+    this.grp.remove(kids[i]);
+    if(kids[i].geometry) kids[i].geometry.dispose();
+    if(kids[i].material) kids[i].material.dispose();
+  }
+  var h=this.height, r=this.radius;
+  var leafCol=new THREE.Color();
+  leafCol.setHSL(this.leafHue, this.leafSat, 0.28+this.leafSat*0.1);
+  var trunkH=h*0.5+0.3;
+  this.trunkMesh=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.15*r,0.28*r,trunkH,6),
+    new THREE.MeshPhongMaterial({color:this.dead?0x4a3010:0x4a2a10,shininess:5,specular:0x111100})
+  );
+  this.trunkMesh.position.y=trunkH*0.5;
+  this.trunkMesh.castShadow=true;
+  this.grp.add(this.trunkMesh);
+  if(!this.dead){
+    var leafH=h*1.2+0.5;
+    this.leafMesh=new THREE.Mesh(
+      new THREE.ConeGeometry(r,leafH,this.type===1?8:6),
+      new THREE.MeshPhongMaterial({color:leafCol,shininess:12,specular:0x112200})
+    );
+    this.leafMesh.position.y=trunkH+leafH*0.45;
+    this.leafMesh.castShadow=true;
+    this.grp.add(this.leafMesh);
+    // fruit spheres when mature
+    if(this.mature){
+      for(var fi=0;fi<3;fi++){
+        var fa=fi/3*Math.PI*2;
+        var fBall=new THREE.Mesh(
+          new THREE.SphereGeometry(0.18,5,4),
+          new THREE.MeshLambertMaterial({color:0xff4422})
+        );
+        fBall.position.set(Math.cos(fa)*r*0.7,trunkH+leafH*0.2,Math.sin(fa)*r*0.7);
+        this.grp.add(fBall);
+      }
+    }
+  }
+};
+
+EvoTree.prototype.update=function(dt){
+  if(this.dead) return;
+  this.age+=dt;
+  this.reprodCd=Math.max(0,this.reprodCd-dt);
+  // Slow growth
+  if(this.height<3.5+this.type*1.2){
+    var prev=this.height;
+    this.height+=0.0008*dt*60;
+    this.radius+=0.0003*dt*60;
+    if(this.height-prev>0.15) this._build(); // rebuild on significant grow
+  }
+  // Leaf color drift
+  this.leafHue+=0.00005*dt*60*(Math.random()-0.5);
+  this.leafHue=Math.max(0.1,Math.min(0.55,this.leafHue));
+  if(Math.random()<0.0002) this._build(); // occasional color refresh
+  // Maturity
+  if(!this.mature&&this.age>300){
+    this.mature=true;
+    this._build();
+  }
+  // Reproduction
+  if(this.mature&&this.reprodCd<=0&&treePop.length<80&&Math.random()<0.0004){
+    this.reprodCd=400+Math.random()*400;
+    var nx=this.px+(Math.random()-0.5)*18;
+    var nz=this.pz+(Math.random()-0.5)*18;
+    nx=Math.max(X_GRASS,Math.min(X_END-1,nx));
+    if(!biomeWet(getBiome(nx))){
+      var nt=new EvoTree(nx,nz);
+      nt.leafHue=Math.max(0.1,Math.min(0.55,this.leafHue+(Math.random()-0.5)*0.06));
+      nt.leafSat=Math.max(0.2,Math.min(1,this.leafSat+(Math.random()-0.5)*0.08));
+      nt._build();
+      treePop.push(nt);
+      addLog('🌱 Ağaç çoğaldı (renk:'+nt.leafHue.toFixed(2)+')','e');
+    }
+  }
+  // Random death (rare)
+  if(this.age>1200&&Math.random()<0.00005){
+    this.dead=true; this._build();
+    setTimeout(function(t){scene.remove(t.grp);},5000,this);
+    addLog('🍂 Ağaç öldü','d');
+  }
+};
+
+// Initial trees
+(function(){
+  for(var i=0;i<30;i++){
+    var x=X_GRASS+2+Math.random()*(X_END-X_GRASS-4);
+    var z=(Math.random()-0.5)*WS*1.88;
+    var t=new EvoTree(x,z,Math.random()*300);
+    treePop.push(t);
+  }
+})();
+
+// ══════════════════════════════════════════
+// SIMULATION STATE
+// ══════════════════════════════════════════
+var creatures=[],foods=[];
+var generation=0,births=0,deaths=0,simT=0;
+var paused=false,selC=null;
+var mutRate=0.15,simSpd=1,maxPop=80,fRate=3;
+var nId=0,nFid=0,climIdx=0;
+var lineages=[],nextLid=0;
+var zoneFoodC={},zonePredC={};
+
+// ══════════════════════════════════════════
+// LINEAGE SYSTEM
+// ══════════════════════════════════════════
+function speciesName(g){
+  var p=[];
+  if(g.flight>0.55)        p.push('Uçar');
+  if(g.aquatic>0.72)       p.push('Derin Su');
+  else if(g.aquatic>0.55)  p.push('Su');
+  else if(g.aquatic<0.28)  p.push('Kuru Kara');
+  else if(g.aquatic<0.45)  p.push('Kara');
+  else                     p.push('Amfibi');
+  if(g.size>1.5)           p.push('Dev');
+  else if(g.size<0.55)     p.push('Cüce');
+  if(g.speed>0.08)         p.push('Hızlı');
+  if(g.armor>0.5)          p.push('Zırhlı');
+  if(g.aggro>0.55)         p.push('Yırtıcı');
+  return p.join(' ')+(p.length?'':' Tür');
+}
+
+function makeLin(parentId,g,reason){
+  var l={
+    id:nextLid++,parentId:parentId,
+    name:speciesName(g),
+    gen:generation,
+    traits:{aquatic:g.aquatic,speed:g.speed,size:g.size,
+            aggro:g.aggro,flight:g.flight,armor:g.armor},
+    reason:reason||'Başlangıç türü',
+    alive:0,total:0,color:'#0b4'
+  };
+  // color by type
+  if(g.flight>0.55) l.color='#faa';
+  else if(g.aquatic>0.55) l.color='#0af';
+  else if(g.aquatic<0.45) l.color='#0c5';
+  else l.color='#ca0';
+  if(g.aggro>0.55) l.color='#f60';
+  lineages.push(l);
+  return l;
+}
+
+function getLin(id){
+  for(var i=0;i<lineages.length;i++) if(lineages[i].id===id) return lineages[i];
+  return null;
+}
+
+function pressureReason(pLin,og,bx){
+  var b=getBiome(bx);
+  var preds=zonePredC[b]||0;
+  var pt=pLin?pLin.traits:{aquatic:0.75,speed:0.05,size:0.8,aggro:0,flight:0,armor:0};
+  var dAq=og.aquatic-pt.aquatic;
+  var spdR=og.speed/Math.max(0.001,pt.speed);
+  var szR=og.size/Math.max(0.01,pt.size);
+  if(og.flight>0.55&&pt.flight<0.4)     return 'Kaçış evrimi → uçma gelişti';
+  if(Math.abs(dAq)>0.18){
+    return dAq>0?'Su ortamına adaptasyon':'Sudan karaya çıkış adaptasyonu';
+  }
+  if(spdR>1.4) return preds>2?'Yırtıcı baskısı → hız evrimi':'Av rekabeti → hız artışı';
+  if(spdR<0.72) return 'Enerji tasarrufu → yavaşlama';
+  if(szR>1.4) return (zoneFoodC[b]||0)>8?'Kaynak bolluğu → büyüme':'Savunma → büyüme';
+  if(szR<0.68) return 'Kıtlık → küçülme';
+  if(og.armor>0.5&&pt.armor<0.3)       return 'Yırtıcı baskısı → zırh gelişti';
+  if(og.aggro>0.55&&pt.aggro<0.4)      return 'Rekabet → yırtıcılaşma';
+  var nt=['Nötr genetik sürüklenme','İzole popülasyon ayrışması','Çevresel adaptasyon'];
+  return nt[Math.floor(Math.random()*nt.length)];
+}
+
+function assignLin(c,pLin,og,bx){
+  if(!pLin){
+    var l=makeLin(-1,og,'Başlangıç türü');
+    c.linId=l.id; l.alive++; l.total++; return;
+  }
+  var pt=pLin.traits;
+  var div=Math.abs(og.aquatic-pt.aquatic)>0.18||
+          og.speed/Math.max(0.001,pt.speed)>1.45||og.speed/Math.max(0.001,pt.speed)<0.68||
+          og.size/Math.max(0.01,pt.size)>1.45||og.size/Math.max(0.01,pt.size)<0.68||
+          (og.flight>0.55)!==(pt.flight>0.55)||(og.armor>0.5)!==(pt.armor>0.5);
+  if(div){
+    var r=pressureReason(pLin,og,bx);
+    var nl=makeLin(pLin.id,og,r);
+    c.linId=nl.id; nl.alive++; nl.total++;
+    addLog('🔬 Yeni tür: "'+nl.name+'" — '+r,'m');
+  } else {
+    c.linId=pLin.id; pLin.alive++; pLin.total++;
+  }
+}
+
+// ══════════════════════════════════════════
+// GENES
+// ══════════════════════════════════════════
+function newGenes(aq,fl){
+  aq=(aq===undefined)?0.75:aq;
+  fl=(fl===undefined)?0.05:fl;
+  return {
+    speed:   0.022+Math.random()*0.065,
+    size:    0.45+Math.random()*0.9,
+    r:Math.random(),g:Math.random(),b:Math.random(),
+    aquatic: Math.max(0,Math.min(1,aq+(Math.random()-0.5)*0.4)),
+    flight:  Math.max(0,Math.min(1,fl+(Math.random()-0.5)*0.3)),
+    armor:   Math.max(0,Math.min(1,Math.random()*0.3)),
+    sense:   3+Math.random()*9,
+    meta:    0.0018+Math.random()*0.003,
+    aggro:   Math.random()*0.25,
+    lifespan:420+Math.random()*450
+  };
+}
+function blend(a,b){ var o={}; for(var k in a) o[k]=(a[k]+b[k])*0.5; return o; }
+function mutate(g){
+  var o={};
+  for(var k in g){
+    var v=g[k]+(Math.random()-0.5)*2*mutRate*g[k];
+    if(k==='aquatic'||k==='r'||k==='g'||k==='b'||k==='flight'||k==='armor') v=Math.max(0,Math.min(1,v));
+    else v=Math.max(0.001,v);
+    o[k]=v;
+  }
+  if(Math.random()<0.035){
+    var ks=Object.keys(g);
+    var mk=ks[Math.floor(Math.random()*ks.length)];
+    if(['aquatic','flight','armor','r','g','b'].indexOf(mk)>=0) o[mk]=Math.random();
+    else o[mk]=Math.max(0.001,g[mk]*(0.2+Math.random()*2));
+    addLog('⚡ MAKRO MUTASYON: '+mk,'m');
+  }
+  return o;
+}
+
+// ══════════════════════════════════════════
+// CREATURE
+// ══════════════════════════════════════════
+function Creature(x,z,genes,isPred){
+  this.id    = nId++;
+  this.genes = genes||newGenes();
+  this.pred  = !!isPred;
+  if(this.pred){
+    this.genes.aggro=0.95;
+    this.genes.speed=this.genes.speed*1.4;
+    if(this.genes.size<1.2) this.genes.size=1.2;
+  }
+  this.energy     = 50+Math.random()*35;
+  this.age        = 0;
+  this.mcd        = 100+Math.random()*120;
+  this.ecd        = 0;
+  this.state      = 'wander';
+  this.tgt        = null;
+  this.dead       = false;
+  this.gen        = generation;
+  this.px=x; this.pz=z;
+  this.vx=0;  this.vz=0;
+  this.wx=x;  this.wz=z;
+  this.predHunger = 0;
+  this.prevBiome  = getBiome(x);
+  this.linId      = -1;
+  this.grp        = new THREE.Group();
+  this.body       = null;
+  this.legs       = [];
+  this.wings      = [];
+  this._build();
+  this.grp.position.set(x,this._y(),z);
+  scene.add(this.grp);
+}
+
+Creature.prototype._isFlying  = function(){ return this.genes.flight>0.55; };
+Creature.prototype._isAmphi   = function(){ return this.genes.aquatic>=0.35&&this.genes.aquatic<=0.65&&!this._isFlying(); };
+Creature.prototype._likesWet  = function(){ return this.genes.aquatic>0.5&&!this._isFlying(); };
+Creature.prototype._wet       = function(){ return this.px<X_SHORE&&!this._isFlying(); };
+
+Creature.prototype._y = function(){
+  if(this._isFlying()){
+    return 4+this.genes.flight*6+Math.sin(Date.now()*0.0015+this.id)*0.55;
+  }
+  if(this.px<X_SHORE) return -0.4+Math.sin(Date.now()*0.002+this.id*1.3)*0.2;
+  return this.genes.size*0.3;
+};
+
+Creature.prototype._build = function(){
+  var kids=this.grp.children.slice();
+  for(var i=0;i<kids.length;i++){
+    this.grp.remove(kids[i]);
+    if(kids[i].geometry) kids[i].geometry.dispose();
+    if(kids[i].material) kids[i].material.dispose();
+  }
+  this.legs=[]; this.wings=[];
+  this.headMesh=null; this.tailMesh=null;
+
+  var g=this.genes, s=g.size*0.88;
+  var self=this;
+  var shine=this.pred?55:(g.aquatic>0.65?95:(g.flight>0.55?28:22));
+  var specC=this.pred?0x441100:(g.aquatic>0.65?0x7fcfff:(g.flight>0.55?0xddbb88:0x442211));
+  function mc(c){ return new THREE.MeshPhongMaterial({color:c,shininess:shine,specular:specC}); }
+  function mca(c,a){ return new THREE.MeshPhongMaterial({color:c,transparent:true,opacity:a,shininess:shine*0.6,specular:specC}); }
+  function lighter(c,f){ return new THREE.Color(Math.min(1,c.r*f),Math.min(1,c.g*f),Math.min(1,c.b*f)); }
+  function darker(c,f){  return new THREE.Color(c.r*f,c.g*f,c.b*f); }
+
+  var aq=g.aquatic, fl=g.flight;
+  var isFlying=fl>0.55;
+
+  // Natural habitat palettes
+  var palettes={
+    ocean:[[0.05,0.35,0.72],[0.04,0.58,0.82],[0.2,0.7,0.6],[0.72,0.22,0.08],[0.5,0.18,0.55]],
+    land: [[0.52,0.36,0.16],[0.38,0.52,0.18],[0.62,0.28,0.12],[0.44,0.44,0.18],[0.22,0.44,0.15]],
+    flying:[[0.72,0.28,0.08],[0.12,0.32,0.65],[0.65,0.58,0.12],[0.18,0.18,0.18],[0.78,0.65,0.2]],
+    amphi: [[0.18,0.52,0.18],[0.12,0.42,0.35],[0.55,0.62,0.15],[0.35,0.62,0.28],[0.12,0.48,0.48]],
+    pred:  [[0.4,0.08,0.05],[0.22,0.18,0.08],[0.55,0.28,0.05],[0.08,0.08,0.28],[0.32,0.35,0.15]]
+  };
+  var pkey=this.pred?'pred':(isFlying?'flying':(aq>0.65?'ocean':(aq<0.35?'land':'amphi')));
+  var pArr=palettes[pkey];
+  var pIdx=Math.floor((g.r*17+g.g*31+g.b*13))%pArr.length;
+  var pb=pArr[pIdx];
+  var col=new THREE.Color(
+    Math.min(1,pb[0]*0.72+g.r*0.28),
+    Math.min(1,pb[1]*0.72+g.g*0.28),
+    Math.min(1,pb[2]*0.72+g.b*0.28)
+  );
+  var patType=Math.floor(g.r*3+g.g*5+g.b*7)%3; // 0=solid,1=stripes,2=spots
+
+  // ━━━ PREDATOR ━━━
+  if(this.pred){
+    var predCol  = new THREE.Color(0.55,0.05,0.03);
+    var predDark = new THREE.Color(0.35,0.03,0.02);
+    // Elongated muscular body
+    var pbody=new THREE.Mesh(new THREE.SphereGeometry(s,12,9),mc(predCol));
+    pbody.scale.set(2.0,1.05,1.0); pbody.castShadow=true;
+    this.grp.add(pbody); this.body=pbody;
+    // Chest bulge
+    var pchest=new THREE.Mesh(new THREE.SphereGeometry(s*0.72,9,8),mc(darker(predCol,0.9)));
+    pchest.scale.set(1.1,1.2,1.1); pchest.position.set(s*0.7,s*0.12,0);
+    this.grp.add(pchest);
+    // Neck
+    var pneck=new THREE.Mesh(new THREE.CylinderGeometry(s*0.28,s*0.38,s*0.6,7),mc(predCol));
+    pneck.rotation.z=-Math.PI*0.28; pneck.position.set(s*1.2,s*0.5,0);
+    this.grp.add(pneck);
+    // Head
+    var phead=new THREE.Mesh(new THREE.SphereGeometry(s*0.62,10,8),mc(lighter(predCol,1.1)));
+    phead.scale.set(1.35,1.0,1.0); phead.position.set(s*1.7,s*0.82,0);
+    phead.castShadow=true; this.grp.add(phead); this.headMesh=phead;
+    // Lower jaw
+    var pjaw=new THREE.Mesh(new THREE.SphereGeometry(s*0.42,8,6),mc(predDark));
+    pjaw.scale.set(1.3,0.55,0.88); pjaw.position.set(s*2.0,s*0.54,0);
+    this.grp.add(pjaw);
+    // Teeth
+    var toothM=mc(new THREE.Color(0.98,0.96,0.88));
+    for(var ti=0;ti<4;ti++){
+      var tx=(ti-1.5)*s*0.2;
+      var tooth=new THREE.Mesh(new THREE.ConeGeometry(s*0.07,s*0.28,4),toothM);
+      tooth.position.set(s*2.1+Math.abs(tx)*0.2,s*0.52,tx); tooth.rotation.z=Math.PI;
+      this.grp.add(tooth);
+    }
+    // Eyes — menacing yellow
+    var eyeYM=mc(new THREE.Color(0.9,0.75,0.05)); var eyePM=mc(new THREE.Color(0.04,0,0));
+    [-1,1].forEach(function(sd){
+      var ew=new THREE.Mesh(new THREE.SphereGeometry(s*0.15,7,7),eyeYM);
+      ew.position.set(s*1.78,s*0.98,sd*s*0.48); self.grp.add(ew);
+      var ep=new THREE.Mesh(new THREE.SphereGeometry(s*0.085,6,6),eyePM);
+      ep.position.set(s*1.84,s*0.98,sd*s*0.52); self.grp.add(ep);
+    });
+    // Ears (pointed)
+    [-1,1].forEach(function(sd){
+      var ear=new THREE.Mesh(new THREE.ConeGeometry(s*0.1,s*0.32,4),mc(predDark));
+      ear.position.set(s*1.6,s*1.28,sd*s*0.35); ear.rotation.z=sd*0.2;
+      self.grp.add(ear);
+    });
+    // 4 legs with 2 segments
+    var plegM=mc(darker(predCol,0.85));
+    [[-0.88,0.48],[-0.88,-0.48],[0.72,0.48],[0.72,-0.48]].forEach(function(lp){
+      var ll=s*(0.6+g.speed*2.5);
+      var upper=new THREE.Mesh(new THREE.CylinderGeometry(s*0.14,s*0.11,ll*0.6,6),plegM);
+      upper.position.set(lp[0]*s,-s*0.35,lp[1]*s); upper.rotation.z=lp[0]>0?0.3:-0.3;
+      self.grp.add(upper); self.legs.push(upper);
+      var lower=new THREE.Mesh(new THREE.CylinderGeometry(s*0.1,s*0.08,ll*0.55,6),plegM);
+      lower.position.set(lp[0]*s,-s*0.35-ll*0.55,lp[1]*s);
+      self.grp.add(lower); self.legs.push(lower);
+    });
+    // Tail
+    var ptail=new THREE.Mesh(new THREE.ConeGeometry(s*0.22,s*1.6,6),mc(darker(predCol,0.85)));
+    ptail.rotation.z=Math.PI/2; ptail.position.set(-s*1.9,-s*0.08,0);
+    this.grp.add(ptail); this.tailMesh=ptail;
+    // Wings if flying predator
+    if(fl>0.4){
+      var wColP=new THREE.Color(0.45,0.04,0.02);
+      [-1,1].forEach(function(sd){
+        var wSpanP=fl*s*2.8;
+        var w1=new THREE.Mesh(new THREE.BoxGeometry(s*0.55,s*0.07,wSpanP*0.5),mca(wColP,0.88));
+        w1.position.set(s*0.2,s*0.15,sd*(s*0.55+wSpanP*0.25));
+        self.grp.add(w1); self.wings.push(w1);
+        var w2=new THREE.Mesh(new THREE.BoxGeometry(s*0.38,s*0.05,wSpanP*0.6),mca(darker(wColP,0.8),0.82));
+        w2.position.set(s*0.3,s*0.06,sd*(s*0.55+wSpanP*0.5+wSpanP*0.3));
+        w2.rotation.z=sd*-0.12; self.grp.add(w2); self.wings.push(w2);
+      });
+    }
+    return;
+  }
+
+  // ━━━ BIRD / FLYING ━━━
+  if(isFlying){
+    var wSpan=s*(1.9+fl*2.8);
+    var wingCol=new THREE.Color(Math.min(1,g.r*1.05),Math.min(1,g.g*1.1),Math.min(1,g.b*1.15));
+    var wingDark=darker(wingCol,0.78);
+    // Streamlined body
+    var bbody=new THREE.Mesh(new THREE.SphereGeometry(s,11,8),mc(col));
+    bbody.scale.set(2.1,0.82,0.88); bbody.castShadow=true;
+    this.grp.add(bbody); this.body=bbody;
+    // Breast
+    var bbreast=new THREE.Mesh(new THREE.SphereGeometry(s*0.68,9,7),mc(lighter(col,1.18)));
+    bbreast.scale.set(1.1,1.15,1.1); bbreast.position.set(s*0.55,-s*0.08,0);
+    this.grp.add(bbreast);
+    // Neck
+    var bneck=new THREE.Mesh(new THREE.CylinderGeometry(s*0.22,s*0.3,s*0.55,7),mc(col));
+    bneck.rotation.z=-Math.PI*0.32; bneck.position.set(s*1.05,s*0.42,0);
+    this.grp.add(bneck);
+    // Head
+    var bhead=new THREE.Mesh(new THREE.SphereGeometry(s*0.5,9,8),mc(lighter(col,1.12)));
+    bhead.position.set(s*1.45,s*0.72,0); bhead.castShadow=true;
+    this.grp.add(bhead); this.headMesh=bhead;
+    // Beak — upper
+    var beakU=new THREE.Mesh(new THREE.ConeGeometry(s*0.1,s*0.52,5),mc(new THREE.Color(0.9,0.75,0.08)));
+    beakU.rotation.z=-Math.PI/2; beakU.position.set(s*1.88,s*0.76,0);
+    this.grp.add(beakU);
+    // Beak — lower (slightly smaller)
+    var beakL=new THREE.Mesh(new THREE.ConeGeometry(s*0.08,s*0.42,5),mc(new THREE.Color(0.85,0.68,0.05)));
+    beakL.rotation.z=-Math.PI/2; beakL.position.set(s*1.83,s*0.66,0);
+    this.grp.add(beakL);
+    // Eyes
+    [-1,1].forEach(function(sd){
+      var be=new THREE.Mesh(new THREE.SphereGeometry(s*0.1,7,6),mc(new THREE.Color(0.1,0.1,0.12)));
+      be.position.set(s*1.5,s*0.82,sd*s*0.36); self.grp.add(be);
+      var beh=new THREE.Mesh(new THREE.SphereGeometry(s*0.055,5,5),mc(new THREE.Color(0.95,0.95,0.95)));
+      beh.position.set(s*1.52,s*0.84,sd*s*0.38); self.grp.add(beh);
+    });
+    // WINGS — 2 segments per side, realistic flat planes
+    [-1,1].forEach(function(sd){
+      // Primary feather group (inner wing — covert)
+      var w1=new THREE.Mesh(new THREE.BoxGeometry(s*0.7,s*0.06,wSpan*0.48),mc(wingCol));
+      w1.position.set(s*0.05,s*0.15,sd*(s*0.5+wSpan*0.24));
+      self.grp.add(w1); self.wings.push(w1);
+      // Secondary (outer hand wing)
+      var w2=new THREE.Mesh(new THREE.BoxGeometry(s*0.45,s*0.04,wSpan*0.56),mc(wingDark));
+      w2.position.set(s*0.18,s*0.08,sd*(s*0.5+wSpan*0.48+wSpan*0.28));
+      w2.rotation.z=sd*-0.1; self.grp.add(w2); self.wings.push(w2);
+      // Primary feather tips (individual feather look)
+      for(var fi2=0;fi2<5;fi2++){
+        var ftp=new THREE.Mesh(new THREE.BoxGeometry(s*0.3,s*0.03,s*0.2),mc(darker(wingCol,0.88)));
+        ftp.position.set(s*0.28,s*0.04,sd*(s*0.5+wSpan*0.76+fi2*s*0.22));
+        ftp.rotation.z=sd*(-0.12-fi2*0.06);
+        self.grp.add(ftp);
+      }
+    });
+    // Tail fan (5 feathers)
+    var tFanC=darker(col,0.82);
+    for(var tf2=0;tf2<5;tf2++){
+      var tFan=new THREE.Mesh(new THREE.BoxGeometry(s*0.7,s*0.04,s*0.12),mc(tf2%2===0?tFanC:darker(col,0.72)));
+      tFan.position.set(-s*1.6,s*0.04,(tf2-2)*s*0.2); tFan.rotation.y=(tf2-2)*0.14;
+      self.grp.add(tFan);
+    }
+    this.tailMesh=tFan;
+    // Bird feet
+    var bFootM=mc(new THREE.Color(0.75,0.6,0.08));
+    [-1,1].forEach(function(sd){
+      var bleg=new THREE.Mesh(new THREE.CylinderGeometry(s*0.07,s*0.05,s*0.42,5),bFootM);
+      bleg.position.set(0,-s*0.6,sd*s*0.22); self.grp.add(bleg);
+      // 3 toes
+      for(var toe=0;toe<3;toe++){
+        var toeA=((toe-1)/2)*0.8;
+        var toeMesh=new THREE.Mesh(new THREE.CylinderGeometry(s*0.04,s*0.025,s*0.28,4),bFootM);
+        toeMesh.rotation.z=Math.PI/2; toeMesh.rotation.y=toeA;
+        toeMesh.position.set(s*0.14*Math.cos(toeA),-s*0.78,sd*s*0.22+s*0.14*Math.sin(toeA));
+        self.grp.add(toeMesh);
+      }
+    });
+    return;
+  }
+
+  // ━━━ AQUATIC (FISH) ━━━
+  if(aq>0.65){
+    var finCol=new THREE.Color(g.r*0.65,g.g*0.72,Math.min(1,g.b*1.35));
+    var finDark=darker(finCol,0.75);
+    var bellyCol=lighter(col,1.5);
+    // Torpedo body
+    var fbody=new THREE.Mesh(new THREE.SphereGeometry(s,12,9),mc(col));
+    fbody.scale.set(2.4,0.88,0.82); fbody.castShadow=true;
+    this.grp.add(fbody); this.body=fbody;
+    // Belly (lighter underside)
+    var fbelly=new THREE.Mesh(new THREE.SphereGeometry(s*0.75,9,7),mc(bellyCol));
+    fbelly.scale.set(2.1,0.42,0.75); fbelly.position.set(0,-s*0.5,0);
+    this.grp.add(fbelly);
+    // Head
+    var fhead=new THREE.Mesh(new THREE.SphereGeometry(s*0.65,10,8),mc(lighter(col,1.06)));
+    fhead.scale.set(1.08,0.94,0.96); fhead.position.set(s*1.55,0,0);
+    fhead.castShadow=true; this.grp.add(fhead); this.headMesh=fhead;
+    // Lips / mouth ring
+    var mMesh=new THREE.Mesh(new THREE.CylinderGeometry(s*0.22,s*0.22,s*0.07,10),mc(darker(col,0.6)));
+    mMesh.rotation.z=Math.PI/2; mMesh.position.set(s*2.05,-s*0.1,0);
+    this.grp.add(mMesh);
+    // Eyes (large round, side-facing)
+    [-1,1].forEach(function(sd){
+      var fe=new THREE.Mesh(new THREE.SphereGeometry(s*0.2,8,8),mc(new THREE.Color(0.9,0.85,0.15)));
+      fe.position.set(s*1.58,s*0.2,sd*s*0.5); self.grp.add(fe);
+      var fp=new THREE.Mesh(new THREE.SphereGeometry(s*0.11,7,7),mc(new THREE.Color(0.02,0.02,0.04)));
+      fp.position.set(s*1.63,s*0.2,sd*s*0.55); self.grp.add(fp);
+      var fh=new THREE.Mesh(new THREE.SphereGeometry(s*0.055,5,5),mc(new THREE.Color(1,1,1)));
+      fh.position.set(s*1.65,s*0.24,sd*s*0.56); self.grp.add(fh);
+    });
+    // Gill slits (3 per side)
+    [-1,1].forEach(function(sd){
+      for(var gi=0;gi<3;gi++){
+        var gill=new THREE.Mesh(new THREE.BoxGeometry(s*0.06,s*0.32,s*0.04),mc(darker(col,0.58)));
+        gill.position.set(s*(0.95-gi*0.14),0,sd*s*0.7); self.grp.add(gill);
+      }
+    });
+    // Dorsal fin
+    var dfin=new THREE.Mesh(new THREE.BoxGeometry(s*0.88,s*0.04,s*0.72),mca(finCol,0.9));
+    dfin.position.set(s*0.1,s*0.82,0); dfin.rotation.x=0.05;
+    this.grp.add(dfin); this.wings.push(dfin);
+    // Adipose fin (small, back)
+    var afin=new THREE.Mesh(new THREE.ConeGeometry(s*0.06,s*0.35,5),mc(finDark));
+    afin.position.set(-s*0.8,s*0.62,0);
+    this.grp.add(afin);
+    // Pectoral fins (side)
+    [-1,1].forEach(function(sd){
+      var pf=new THREE.Mesh(new THREE.BoxGeometry(s*0.55,s*0.04,s*0.72),mca(finCol,0.88));
+      pf.position.set(s*0.85,0,sd*s*0.72); pf.rotation.x=sd*0.5;
+      self.grp.add(pf); self.legs.push(pf);
+    });
+    // Ventral fins
+    [-1,1].forEach(function(sd){
+      var vf=new THREE.Mesh(new THREE.BoxGeometry(s*0.32,s*0.04,s*0.45),mca(finDark,0.85));
+      vf.position.set(-s*0.15,-s*0.62,sd*s*0.38); vf.rotation.x=sd*0.3;
+      self.grp.add(vf);
+    });
+    // Caudal tail fin (forked)
+    [0.42,-0.42].forEach(function(off){
+      var cf=new THREE.Mesh(new THREE.BoxGeometry(s*0.08,s*0.7,s*0.58),mc(finDark));
+      cf.position.set(-s*1.85,off*s,0); cf.rotation.x=off>0?0.35:-0.35;
+      self.grp.add(cf);
+    });
+    // Lateral line (stripe)
+    var ll=new THREE.Mesh(new THREE.BoxGeometry(s*4.2,s*0.04,s*0.06),mc(darker(col,0.72)));
+    ll.position.set(-s*0.2,0,s*0.55); this.grp.add(ll);
+    return;
+  }
+
+  // ━━━ LAND QUADRUPED ━━━
+  if(aq<0.35){
+    var legLen=s*(0.72+g.speed*3.5);
+    var legThk=s*(0.12+g.size*0.03);
+    var skinCol=col;
+    var skinDark=darker(col,0.78);
+    var skinLight=lighter(col,1.28);
+    // Torso
+    var torso=new THREE.Mesh(new THREE.SphereGeometry(s,14,11),mc(skinCol));
+    torso.scale.set(1.88,1.02,1.0); torso.castShadow=true;
+    this.grp.add(torso); this.body=torso;
+    // Belly / underbelly
+    var belly=new THREE.Mesh(new THREE.SphereGeometry(s*0.78,11,8),mc(skinLight));
+    belly.scale.set(1.65,0.38,0.92); belly.position.set(0,-s*0.54,0);
+    this.grp.add(belly);
+    // Chest
+    var chest=new THREE.Mesh(new THREE.SphereGeometry(s*0.68,11,9),mc(skinDark));
+    chest.scale.set(1.05,1.18,1.1); chest.position.set(s*0.7,s*0.1,0);
+    this.grp.add(chest);
+    // Rump
+    var rump=new THREE.Mesh(new THREE.SphereGeometry(s*0.62,10,8),mc(skinCol));
+    rump.scale.set(0.95,1.08,1.1); rump.position.set(-s*0.78,s*0.06,0);
+    this.grp.add(rump);
+    // Neck
+    var neckM=new THREE.Mesh(new THREE.CylinderGeometry(s*0.28,s*0.38,s*0.75,8),mc(skinCol));
+    neckM.rotation.z=-Math.PI*0.32; neckM.position.set(s*1.15,s*0.52,0);
+    this.grp.add(neckM);
+    // Head
+    var headM=new THREE.Mesh(new THREE.SphereGeometry(s*0.6,12,10),mc(skinCol));
+    headM.scale.set(1.3,0.98,1.0); headM.position.set(s*1.72,s*0.82,0);
+    headM.castShadow=true; this.grp.add(headM); this.headMesh=headM;
+    // Muzzle
+    var muzzle=new THREE.Mesh(new THREE.SphereGeometry(s*0.32,9,7),mc(skinDark));
+    muzzle.scale.set(1.35,0.72,0.9); muzzle.position.set(s*2.12,s*0.66,0);
+    this.grp.add(muzzle);
+    // Nostrils
+    [-1,1].forEach(function(sd){
+      var nos=new THREE.Mesh(new THREE.SphereGeometry(s*0.07,5,4),mc(darker(col,0.48)));
+      nos.position.set(s*2.3,s*0.69,sd*s*0.14); self.grp.add(nos);
+    });
+    // Ears (size from sense gene)
+    var earH=s*(0.25+g.sense*0.028);
+    var earC=lighter(skinDark,1.1);
+    var earInC=new THREE.Color(Math.min(1,col.r*1.5+0.1),col.g*0.65,col.b*0.6);
+    [-1,1].forEach(function(sd){
+      var ear=new THREE.Mesh(new THREE.ConeGeometry(s*0.15,earH,5),mc(earC));
+      ear.position.set(s*1.52,s*1.18,sd*s*0.4); ear.rotation.z=sd*0.2; self.grp.add(ear);
+      var earIn=new THREE.Mesh(new THREE.ConeGeometry(s*0.09,earH*0.65,5),mc(earInC));
+      earIn.position.set(s*1.53,s*1.2,sd*s*0.4); earIn.rotation.z=sd*0.2; self.grp.add(earIn);
+    });
+    // Eyes with iris + pupil + catchlight
+    var irisC=new THREE.Color(0.12+col.r*0.5,0.28+col.g*0.35,0.04);
+    [-1,1].forEach(function(sd){
+      var esc=new THREE.Mesh(new THREE.SphereGeometry(s*0.155,8,8),mc(new THREE.Color(0.96,0.94,0.9)));
+      esc.position.set(s*1.86,s*0.9,sd*s*0.46); self.grp.add(esc);
+      var ei=new THREE.Mesh(new THREE.SphereGeometry(s*0.105,8,8),mc(irisC));
+      ei.position.set(s*1.9,s*0.9,sd*s*0.49); self.grp.add(ei);
+      var epup=new THREE.Mesh(new THREE.SphereGeometry(s*0.062,7,7),mc(new THREE.Color(0.03,0.02,0.02)));
+      epup.position.set(s*1.93,s*0.9,sd*s*0.505); self.grp.add(epup);
+      var ecl=new THREE.Mesh(new THREE.SphereGeometry(s*0.028,5,5),mc(new THREE.Color(1,1,1)));
+      ecl.position.set(s*1.945,s*0.915,sd*s*0.515); self.grp.add(ecl);
+    });
+    // 4 legs — 2 segments + foot
+    var legM=mc(skinDark); var footM=mc(darker(col,0.62));
+    [[-0.88,0.52],[-0.88,-0.52],[0.72,0.52],[0.72,-0.52]].forEach(function(lp){
+      var upper=new THREE.Mesh(new THREE.CylinderGeometry(legThk*1.15,legThk,legLen*0.52,7),legM);
+      upper.position.set(lp[0]*s,-s*0.32,lp[1]*s); upper.rotation.x=lp[1]>0?0.18:-0.18;
+      self.grp.add(upper); self.legs.push(upper);
+      var lower=new THREE.Mesh(new THREE.CylinderGeometry(legThk*0.88,legThk*0.7,legLen*0.52,7),legM);
+      lower.position.set(lp[0]*s,-s*0.32-legLen*0.52,lp[1]*s);
+      self.grp.add(lower); self.legs.push(lower);
+      var foot=new THREE.Mesh(new THREE.BoxGeometry(legThk*2.5,legThk*0.7,legThk*3.2),footM);
+      foot.position.set(lp[0]*s,-s*0.32-legLen*1.02,lp[1]*s); self.grp.add(foot);
+    });
+    // Tail — tapered with slight curve
+    var tailLen=s*(0.8+g.size*0.3);
+    var tailM=new THREE.Mesh(new THREE.ConeGeometry(s*0.22,tailLen,7),mc(skinDark));
+    tailM.rotation.z=Math.PI/2; tailM.position.set(-s*1.72,-s*0.04,0);
+    this.grp.add(tailM); this.tailMesh=tailM;
+    // Armor spikes along spine
+    if(g.armor>0.38){
+      var spkM=mc(darker(col,0.52));
+      var nSpk=Math.round(g.armor*8);
+      for(var si=0;si<nSpk;si++){
+        var sx=(si/(nSpk-1||1))*s*3.2-s*1.5;
+        var spk=new THREE.Mesh(new THREE.ConeGeometry(s*0.075,s*(0.3+g.armor*0.5),4),spkM);
+        spk.position.set(sx,s*0.72+g.armor*s*0.22,0);
+        self.grp.add(spk);
+      }
+    }
+    // Body PATTERNS
+    var patC=mc(darker(skinCol,0.62));
+    if(patType===1){ // stripes
+      for(var pi=0;pi<4;pi++){
+        var stripe=new THREE.Mesh(new THREE.BoxGeometry(s*0.14,s*1.22,s*2.18),patC);
+        stripe.position.set(s*(0.9-pi*0.55),0,0); self.grp.add(stripe);
+      }
+    } else if(patType===2){ // spots
+      for(var pi=0;pi<6;pi++){
+        var sa2=pi/6*Math.PI*2, sr=s*(0.62+Math.random()*0.35);
+        var spot=new THREE.Mesh(new THREE.SphereGeometry(s*0.16,6,5),patC);
+        spot.position.set(Math.cos(sa2*0.7)*sr*0.7,Math.sin(sa2)*sr*0.3+s*0.2,Math.sin(sa2*0.7)*sr*0.55);
+        self.grp.add(spot);
+      }
+    }
+    return;
+  }
+
+  // ━━━ AMPHIBIOUS / EARLY TETRAPOD ━━━
+  var ampC=col, ampDark=darker(col,0.78), ampLight=lighter(col,1.3);
+  // Flat wide body
+  var ampBody=new THREE.Mesh(new THREE.SphereGeometry(s,11,8),mc(ampC));
+  ampBody.scale.set(1.65,0.68,1.05); ampBody.castShadow=true;
+  this.grp.add(ampBody); this.body=ampBody;
+  // Belly
+  var ampBelly=new THREE.Mesh(new THREE.SphereGeometry(s*0.78,9,7),mc(ampLight));
+  ampBelly.scale.set(1.5,0.28,0.95); ampBelly.position.set(0,-s*0.36,0);
+  this.grp.add(ampBelly);
+  // Wide flat head
+  var ampHead=new THREE.Mesh(new THREE.SphereGeometry(s*0.58,10,7),mc(lighter(ampC,1.06)));
+  ampHead.scale.set(1.18,0.68,1.22); ampHead.position.set(s*1.3,s*0.08,0);
+  ampHead.castShadow=true; this.grp.add(ampHead); this.headMesh=ampHead;
+  // Wide mouth slit
+  var ampMouth=new THREE.Mesh(new THREE.CylinderGeometry(s*0.3,s*0.3,s*0.06,12),mc(darker(ampC,0.52)));
+  ampMouth.rotation.z=Math.PI/2; ampMouth.position.set(s*1.78,s*-0.06,0);
+  this.grp.add(ampMouth);
+  // Protruding eyes on top of head
+  [-1,1].forEach(function(sd){
+    var ae=new THREE.Mesh(new THREE.SphereGeometry(s*0.18,7,7),mc(new THREE.Color(0.15,0.65,0.1)));
+    ae.position.set(s*1.18,s*0.44,sd*s*0.46); self.grp.add(ae);
+    var aep=new THREE.Mesh(new THREE.SphereGeometry(s*0.1,6,6),mc(new THREE.Color(0.04,0.03,0.01)));
+    aep.position.set(s*1.2,s*0.47,sd*s*0.49); self.grp.add(aep);
+  });
+  // 4 splayed stubby legs with webbed feet
+  var alM=mc(ampDark); var afM=mca(lighter(ampC,0.9),0.85);
+  [[-0.88,0.62],[0.78,0.62],[-0.88,-0.62],[0.78,-0.62]].forEach(function(lp){
+    var al=new THREE.Mesh(new THREE.CylinderGeometry(s*0.13,s*0.1,s*0.52,6),alM);
+    al.position.set(lp[0]*s,-s*0.26,lp[1]*s);
+    al.rotation.x=lp[1]>0?0.55:-0.55; al.rotation.z=lp[0]>0?-0.65:0.65;
+    self.grp.add(al); self.legs.push(al);
+    // Webbed flat foot
+    var af=new THREE.Mesh(new THREE.BoxGeometry(s*0.35,s*0.07,s*0.48),afM);
+    af.position.set(lp[0]*1.38*s,-s*0.5,lp[1]*1.2*s);
+    self.grp.add(af);
+  });
+  // Tail
+  var ampTail=new THREE.Mesh(new THREE.ConeGeometry(s*0.18,s*1.3,6),mc(ampDark));
+  ampTail.rotation.z=Math.PI/2; ampTail.position.set(-s*1.48,-s*0.1,0);
+  this.grp.add(ampTail); this.tailMesh=ampTail;
+  // Dorsal stripe pattern
+  var strC=mc(darker(ampC,0.62));
+  for(var dsi=0;dsi<4;dsi++){
+    var ds=new THREE.Mesh(new THREE.BoxGeometry(s*0.42,s*0.06,s*0.1),strC);
+    ds.position.set(s*(0.85-dsi*0.56),s*0.42,0);
+    this.grp.add(ds);
+  }
+  // Vestigial small fin on back
+  var vesF=new THREE.Mesh(new THREE.BoxGeometry(s*0.55,s*0.04,s*0.35),mca(lighter(ampC,0.85),0.65));
+  vesF.position.set(0,s*0.52,0);
+  this.grp.add(vesF);
+};
+
+Creature.prototype.update = function(dt){
+  if(this.dead) return;
+  this.age+=dt;
+  this.mcd=Math.max(0,this.mcd-dt);
+  this.ecd=Math.max(0,this.ecd-dt);
+
+  // Biome change log
+  var cb=getBiome(this.px);
+  if(cb!==this.prevBiome){
+    var wasW=biomeWet(this.prevBiome),isW=biomeWet(cb);
+    if(wasW&&!isW)  addLog('🏝 #'+this.id+' sudan karaya çıktı!','e');
+    if(!wasW&&isW)  addLog('🌊 #'+this.id+' karadan suya girdi!','e');
+    this.prevBiome=cb;
+  }
+
+  // Energy
+  var mv=(this.vx*this.vx+this.vz*this.vz)>0.0001;
+  var flyExtra=this._isFlying()?1.3:1;
+  this.energy-=this.genes.meta*(mv?2.1:1)*flyExtra*dt*60;
+  this.energy-=this.genes.size*0.00014*dt*60;
+  if(this._isAmphi()) this.energy-=0.003*dt*60;
+  else if(this._wet()&&!this._likesWet())  this.energy-=0.014*dt*60;
+  else if(!this._wet()&&!this._isFlying()&&this._likesWet()) this.energy-=0.019*dt*60;
+
+  // Predator hunger
+  if(this.pred){
+    this.predHunger+=dt;
+    if(this.predHunger>200) this.energy-=0.025*dt*60;
+    if(this.predHunger>500&&Math.random()<0.01){this._die('starve_pred');return;}
+  }
+
+  if(this.energy<=0||this.age>this.genes.lifespan){
+    if(this.energy<=0&&Math.random()<0.2){
+      var why=this.pred?'av bulamadı':'yiyecek bulamadı';
+      addLog('💀 #'+this.id+' açlıktan öldü ('+why+')','d');
+    }
+    this._die(this.energy<=0?'starve':'age'); return;
+  }
+
+  this._think();
+  this._move(dt);
+  this._anim(dt);
+
+  this.grp.position.set(this.px,this._y(),this.pz);
+  if(Math.abs(this.vx)+Math.abs(this.vz)>0.002)
+    this.grp.rotation.y=Math.atan2(this.vx,this.vz);
+  if(this.grp.scale.x<1){
+    var sc=Math.min(1,this.grp.scale.x+0.005);
+    this.grp.scale.set(sc,sc,sc);
+  }
+  if(this.body&&this.body.material){
+    var hunger=1-Math.max(0,this.energy/100);
+    var em=selC===this?0.35:hunger>0.6?hunger*0.4*(Math.sin(Date.now()*0.008)*0.5+0.5):hunger*0.15;
+    this.body.material.emissive.setRGB(em,selC===this?0.32:0,0);
+  }
+};
+
+Creature.prototype._think = function(){
+  var g=this.genes, wet=this._wet();
+  var nff=null,nfd=Infinity;
+  if(!this.pred){
+    for(var fi=0;fi<foods.length;fi++){
+      var f=foods[fi];
+      if(!this._isFlying()&&!!f.wet!==wet&&!this._isAmphi()) continue;
+      var fd=Math.sqrt((f.px-this.px)*(f.px-this.px)+(f.pz-this.pz)*(f.pz-this.pz));
+      if(fd<g.sense*1.4&&fd<nfd){nff=f;nfd=fd;}
+    }
+  }
+  var npc=null,npd=Infinity;
+  if(this.pred||g.aggro>0.5){
+    for(var ci=0;ci<creatures.length;ci++){
+      var cc=creatures[ci];
+      if(cc===this||cc.dead||cc.pred) continue;
+      var cd=Math.sqrt((cc.px-this.px)*(cc.px-this.px)+(cc.pz-this.pz)*(cc.pz-this.pz));
+      if(cd<g.sense*1.8&&cd<npd&&cc.genes.size<g.size*1.3){npc=cc;npd=cd;}
+    }
+  }
+  var nmc=null,nmd=Infinity;
+  if(!this.pred&&this.energy>62&&this.mcd<=0){
+    for(var mi=0;mi<creatures.length;mi++){
+      var mc=creatures[mi];
+      if(mc===this||mc.dead||mc.pred||mc.mcd>0||mc.energy<50) continue;
+      var md=Math.sqrt((mc.px-this.px)*(mc.px-this.px)+(mc.pz-this.pz)*(mc.pz-this.pz));
+      if(md<g.sense&&md<nmd){nmc=mc;nmd=md;}
+    }
+  }
+  if(this.pred||g.aggro>0.5){
+    if(npc){this.state='hunt';this.tgt=npc;if(npd<g.size*0.7+npc.genes.size*0.7)this._eatPrey(npc);}
+    else{this.state='wander';this.tgt=null;}
+  } else {
+    if(this.energy<48&&nff){this.state='food';this.tgt=nff;if(nfd<g.size*0.85)this._eatFood(nff);}
+    else if(nmc){this.state='mate';this.tgt=nmc;if(nmd<g.size*0.72+nmc.genes.size*0.72)this._mate(nmc);}
+    else{this.state='wander';this.tgt=null;}
+  }
+};
+
+Creature.prototype._move = function(dt){
+  var dx=0,dz=0;
+  if(this.tgt&&this.state!=='wander'){
+    dx=this.tgt.px-this.px; dz=this.tgt.pz-this.pz;
+  } else {
+    var dd=Math.sqrt((this.wx-this.px)*(this.wx-this.px)+(this.wz-this.pz)*(this.wz-this.pz));
+    if(dd<2.5||Math.random()<0.007){
+      if(this._isFlying()){
+        this.wx=(Math.random()-0.5)*WS*1.6;
+        this.wz=(Math.random()-0.5)*WS*1.6;
+      } else if(this._isAmphi()){
+        this.wx=X_SHORE-12+Math.random()*28;
+        this.wz=(Math.random()-0.5)*WS*1.8;
+      } else if(this._likesWet()){
+        this.wx=X_SHELF+1+Math.random()*(X_SHORE-X_SHELF-2);
+        this.wz=(Math.random()-0.5)*WS*1.8;
+      } else {
+        this.wx=X_GRASS+Math.random()*(X_END-X_GRASS-2);
+        this.wz=(Math.random()-0.5)*WS*1.82;
+      }
+    }
+    dx=this.wx-this.px; dz=this.wz-this.pz;
+  }
+  var len=Math.sqrt(dx*dx+dz*dz);
+  if(len>0.001){dx/=len;dz/=len;}
+  var sm=1;
+  if(!this._isFlying()&&!this._isAmphi()){
+    if(this._wet()&&!this._likesWet())  sm=0.38;
+    if(!this._wet()&&this._likesWet())  sm=0.35;
+  } else if(this._isAmphi()) sm=0.85;
+  this.vx+=(dx*this.genes.speed*sm-this.vx)*0.12;
+  this.vz+=(dz*this.genes.speed*sm-this.vz)*0.12;
+  this.px=Math.max(-WS+1,Math.min(WS-1,this.px+this.vx*dt*60));
+  this.pz=Math.max(-WS+1,Math.min(WS-1,this.pz+this.vz*dt*60));
+};
+
+Creature.prototype._anim = function(dt){
+  var t=Date.now()*0.003+this.id*0.7;
+  if(this._isFlying()){
+    // Wing flap
+    for(var wi=0;wi<this.wings.length;wi++){
+      this.wings[wi].rotation.z=Math.sin(t*4+(wi%2===0?0:Math.PI))*0.4*(this.wings[wi].rotation.z<0?-1:1);
+    }
+  } else if(this._wet()){
+    this.grp.rotation.z=Math.sin(t*3.2)*0.13;
+  } else {
+    var sp=Math.sqrt(this.vx*this.vx+this.vz*this.vz);
+    if(sp>0.005){
+      for(var li=0;li<this.legs.length;li++)
+        this.legs[li].rotation.x=Math.sin(t*7+li*Math.PI)*0.35;
+    }
+  }
+};
+
+Creature.prototype._eatFood = function(f){
+  if(this.ecd>0) return;
+  var idx=foods.indexOf(f); if(idx<0) return;
+  this.energy=Math.min(100,this.energy+33);
+  this.ecd=22;
+  scene.remove(f.mesh);
+  if(f.mesh.geometry) f.mesh.geometry.dispose();
+  if(f.mesh.material) f.mesh.material.dispose();
+  foods.splice(idx,1);
+};
+
+Creature.prototype._eatPrey = function(prey){
+  if(this.ecd>0||prey.dead) return;
+  this.energy=Math.min(100,this.energy+55);
+  this.ecd=50; this.predHunger=0;
+  addLog('🦈 #'+this.id+' → #'+prey.id,'p');
+  prey._die('eaten');
+};
+
+Creature.prototype._mate = function(p){
+  if(this.mcd>0||p.mcd>0||creatures.length>=maxPop) return;
+  this.mcd=140+Math.random()*90; p.mcd=140+Math.random()*90;
+  this.energy-=18; p.energy-=18;
+  var bl=blend(this.genes,p.genes);
+  var og=mutate(bl);
+  generation=Math.max(generation,Math.max(this.gen,p.gen)+1);
+  var ox=this.px+(Math.random()-0.5)*2.5;
+  var oz=this.pz+(Math.random()-0.5)*2.5;
+  var off=new Creature(ox,oz,og,false);
+  off.gen=Math.max(this.gen,p.gen)+1; off.energy=32;
+  off.grp.scale.set(0.05,0.05,0.05);
+  var pLin=getLin(this.linId);
+  assignLin(off,pLin,og,ox);
+  creatures.push(off); births++;
+  var icon=og.flight>0.55?'🦅':og.aquatic>0.65?'🌊':og.aquatic<0.35?'🌿':'🐊';
+  addLog('👶 #'+off.id+' N'+off.gen+' '+icon+'aq:'+(og.aquatic*100).toFixed(0)+'% fl:'+(og.flight*100).toFixed(0)+'%','b');
+};
+
+Creature.prototype._die = function(cause){
+  if(this.dead) return;
+  this.dead=true; deaths++;
+  var lin=getLin(this.linId);
+  if(lin&&lin.alive>0) lin.alive--;
+  if(cause==='starve_pred') addLog('🦈 #'+this.id+' yırtıcı açlıktan öldü','p');
+  else if(Math.random()<0.08){
+    var lbs={starve:'💀',age:'🕰',eaten:'🦈',ext:'☄️',flood:'🌊',cold:'❄️'};
+    addLog((lbs[cause]||'💀')+' #'+this.id,'d');
+  }
+  scene.remove(this.grp);
+};
+
+Creature.prototype.infoHTML = function(){
+  var g=this.genes;
+  var lin=getLin(this.linId);
+  var ht=g.flight>0.55?'🦅 Uçucu':g.aquatic>0.65?'🌊 Su':g.aquatic<0.35?'🌿 Kara':'🐊 Amfibi';
+  function bar(v,mx,c){
+    var w=Math.round(Math.max(0,Math.min(1,v/mx))*52);
+    return '<span class="bbg"><span class="bbf" style="width:'+w+'px;background:'+(c||'#0b4')+'"></span></span>';
+  }
+  return '<b>#'+this.id+' N'+this.gen+'</b><br>'+
+    'Tür: '+(lin?lin.name:'?')+'<br>Habitat: '+ht+'<br>'+
+    'Biyom: '+(BIOMES[getBiome(this.px)]||'?')+'<br>'+
+    'Enerji: '+this.energy.toFixed(0)+'/100 '+bar(this.energy,100,'#0b4')+'<br>'+
+    'Yaş: '+this.age.toFixed(0)+'/'+g.lifespan.toFixed(0)+'<br>'+
+    (this.pred?'<span style="color:#f66">Açlık: '+this.predHunger.toFixed(0)+'</span><br>':'')+'<br>'+
+    'Hız: '+(g.speed*100).toFixed(1)+' '+bar(g.speed,0.1,'#0a5')+'<br>'+
+    'Boyut: '+g.size.toFixed(2)+' '+bar(g.size,2,'#ca0')+'<br>'+
+    'Su: '+(g.aquatic*100).toFixed(0)+'% '+bar(g.aquatic,1,'#05f')+'<br>'+
+    'Uçuş: '+(g.flight*100).toFixed(0)+'% '+bar(g.flight,1,'#faa')+'<br>'+
+    'Zırh: '+(g.armor*100).toFixed(0)+'% '+bar(g.armor,1,'#888')+'<br>'+
+    'Algı: '+g.sense.toFixed(1)+' '+bar(g.sense,12,'#0af')+'<br>'+
+    'Saldırganlık: '+(g.aggro*100).toFixed(0)+'% '+bar(g.aggro,1,'#f60');
+};
+
+// ══════════════════════════════════════════
+// FOOD
+// ══════════════════════════════════════════
+function Food(x,z){
+  this.id=nFid++; this.px=x; this.pz=z;
+  this.wet=(x<X_SHORE);
+  var b=getBiome(x);
+  var cs={deep:0x00ffcc,ocean:0x00ddaa,shore:0xffdd44,grass:0xffcc00,forest:0xff4422,highland:0xddaa44};
+  var sz=0.22+Math.random()*0.18;
+  this.mesh=new THREE.Mesh(new THREE.SphereGeometry(sz,6,5),
+    new THREE.MeshLambertMaterial({color:cs[b]||0xffcc00,
+      emissive:this.wet?new THREE.Color(0,0.07,0.03):new THREE.Color(0.07,0.05,0)}));
+  this.mesh.position.set(x,this.wet?-0.55:sz+0.1,z);
+  scene.add(this.mesh);
+}
+
+// ══════════════════════════════════════════
+// SPAWN
+// ══════════════════════════════════════════
+function spawnGroup(n,aq,fl){
+  n=n||1; aq=(aq===undefined)?0.75:aq; fl=(fl===undefined)?0.05:fl;
+  for(var i=0;i<n;i++){
+    var g=newGenes(aq,fl);
+    var x,z;
+    if(g.flight>0.55){ x=(Math.random()-0.5)*WS*1.2; }
+    else if(g.aquatic>=0.35&&g.aquatic<=0.65){ x=X_SHORE-8+Math.random()*22; }
+    else if(g.aquatic>0.5){ x=X_SHELF+1+Math.random()*(X_SHORE-X_SHELF-2); }
+    else { x=X_GRASS+1+Math.random()*(X_END-X_GRASS-2); }
+    z=(Math.random()-0.5)*WS*1.75;
+    var c=new Creature(x,z,g,false);
+    if(lineages.length===0){ var l=makeLin(-1,g,'Başlangıç türü'); c.linId=l.id; l.alive++; l.total++; }
+    else {
+      var best=lineages[0],bestD=999;
+      for(var li=0;li<lineages.length;li++){
+        var lt=lineages[li].traits;
+        var dd=Math.abs(lt.aquatic-g.aquatic)+Math.abs(lt.flight-g.flight)*2;
+        if(dd<bestD){bestD=dd;best=lineages[li];}
+      }
+      c.linId=best.id; best.alive++; best.total++;
+    }
+    creatures.push(c); births++;
+  }
+}
+
+function spawnPreds(n){
+  n=n||1;
+  for(var i=0;i<n;i++){
+    var aq=Math.random()<0.5?0.85:0.15;
+    var fl=Math.random()<0.3?0.7:0.05;
+    var g=newGenes(aq,fl);
+    var x=g.flight>0.55?(Math.random()-0.5)*WS*1.2:
+          (g.aquatic>0.5?X_SHELF+2+Math.random()*(X_SHORE-X_SHELF-4):X_GRASS+3+Math.random()*(X_END-X_GRASS-4));
+    var c=new Creature(x,(Math.random()-0.5)*WS*1.75,g,true);
+    if(lineages.length>0){c.linId=lineages[0].id;lineages[0].alive++;lineages[0].total++;}
+    else{var l=makeLin(-1,g,'Yırtıcı başlangıç');c.linId=l.id;l.alive++;l.total++;}
+    creatures.push(c); births++;
+    addLog('🦈 Yırtıcı girdi! ('+BIOMES[getBiome(x)]+')','p');
+  }
+}
+
+function burstFood(n){
+  n=n||8;
+  for(var i=0;i<n;i++){
+    var iw=Math.random()<0.35;
+    var x=iw?X_DEEP+2+Math.random()*(X_SHORE-X_DEEP-4):(function(){
+      var r=Math.random();
+      if(r<0.4)  return X_GRASS+Math.random()*(X_FOREST-X_GRASS);
+      if(r<0.75) return X_FOREST+Math.random()*(X_HIGH-X_FOREST);
+      if(r<0.9)  return X_HIGH+Math.random()*(X_END-X_HIGH);
+      return X_SHORE+Math.random()*(X_GRASS-X_SHORE);
+    })();
+    foods.push(new Food(x,(Math.random()-0.5)*WS*1.88));
+  }
+}
+
+function dropFoodAt(x,z){
+  for(var i=0;i<3;i++) foods.push(new Food(x+(Math.random()-0.5)*3,z+(Math.random()-0.5)*3));
+}
+
+// ══════════════════════════════════════════
+// ZONE COUNTS
+// ══════════════════════════════════════════
+function updateZones(){
+  var ks=Object.keys(BIOMES);
+  for(var i=0;i<ks.length;i++){zoneFoodC[ks[i]]=0;zonePredC[ks[i]]=0;}
+  for(var i=0;i<foods.length;i++) zoneFoodC[getBiome(foods[i].px)]=(zoneFoodC[getBiome(foods[i].px)]||0)+1;
+  for(var i=0;i<creatures.length;i++){
+    if(!creatures[i].dead&&creatures[i].pred)
+      zonePredC[getBiome(creatures[i].px)]=(zonePredC[getBiome(creatures[i].px)]||0)+1;
+  }
+}
+
+// ══════════════════════════════════════════
+// DISASTER FX ENGINE
+// ══════════════════════════════════════════
+var fxActive=false, fxParticles=[], fxTimer=0, fxDuration=0, fxType='';
+var fxDiv=null, fxCtx=null;
+var floodWaterMeshFX=null; // extra flood plane
+var floodRiseY=0, floodActive=false, floodT=0;
+
+function fxInit(){
+  fxDiv=document.getElementById('fx');
+  var c=document.getElementById('fxCanvas');
+  c.width=window.innerWidth; c.height=window.innerHeight;
+  fxCtx=c.getContext('2d');
+}
+
+function showBanner(icon,title,color,duration){
+  var b=document.getElementById('disasterBanner');
+  document.getElementById('dTitle').textContent=icon;
+  document.getElementById('dTitle').style.color=color;
+  document.getElementById('dSub').textContent=title;
+  document.getElementById('dSub').style.color=color;
+  b.classList.add('show');
+  setTimeout(function(){b.classList.remove('show');},duration||2200);
+}
+
+function screenShake(){
+  var cv=renderer.domElement;
+  cv.classList.add('shaking');
+  setTimeout(function(){cv.classList.remove('shaking');},600);
+}
+
+// Spawn FX particles
+function spawnParticles(n, cfg){
+  for(var i=0;i<n;i++){
+    fxParticles.push({
+      x:   cfg.x!==undefined ? cfg.x : Math.random()*window.innerWidth,
+      y:   cfg.y!==undefined ? cfg.y : Math.random()*window.innerHeight,
+      vx:  (Math.random()-0.5)*cfg.spread*2,
+      vy:  cfg.vy + (Math.random()-0.5)*cfg.spread,
+      size: cfg.size*(0.5+Math.random()),
+      life: 1.0,
+      decay: cfg.decay*(0.7+Math.random()*0.6),
+      color: cfg.color,
+      shape: cfg.shape||'circle',
+      rot:  Math.random()*Math.PI*2,
+      rotV: (Math.random()-0.5)*0.15
+    });
+  }
+}
+
+function drawParticle(p){
+  fxCtx.save();
+  fxCtx.globalAlpha = p.life*0.85;
+  fxCtx.fillStyle   = p.color;
+  fxCtx.strokeStyle = p.color;
+  fxCtx.translate(p.x, p.y);
+  fxCtx.rotate(p.rot);
+  if(p.shape==='circle'){
+    fxCtx.beginPath();
+    fxCtx.arc(0,0,p.size,0,Math.PI*2);
+    fxCtx.fill();
+  } else if(p.shape==='drop'){
+    // raindrop
+    fxCtx.beginPath();
+    fxCtx.ellipse(0,0,p.size*0.35,p.size,0,0,Math.PI*2);
+    fxCtx.fill();
+  } else if(p.shape==='star'){
+    // snowflake arm
+    for(var k=0;k<6;k++){
+      fxCtx.save();
+      fxCtx.rotate(k*Math.PI/3);
+      fxCtx.beginPath();
+      fxCtx.moveTo(0,0);
+      fxCtx.lineTo(0,-p.size*1.4);
+      fxCtx.lineWidth=p.size*0.3;
+      fxCtx.stroke();
+      fxCtx.restore();
+    }
+  } else if(p.shape==='fire'){
+    var grad=fxCtx.createRadialGradient(0,0,0,0,0,p.size);
+    grad.addColorStop(0,'rgba(255,255,100,0.9)');
+    grad.addColorStop(0.4,'rgba(255,100,0,0.7)');
+    grad.addColorStop(1,'rgba(180,0,0,0)');
+    fxCtx.fillStyle=grad;
+    fxCtx.beginPath();
+    fxCtx.arc(0,0,p.size,0,Math.PI*2);
+    fxCtx.fill();
+  } else if(p.shape==='ash'){
+    fxCtx.fillRect(-p.size*0.5,-p.size*0.5,p.size,p.size);
+  } else if(p.shape==='germ'){
+    fxCtx.beginPath();
+    fxCtx.arc(0,0,p.size,0,Math.PI*2);
+    fxCtx.fill();
+    // spikes
+    for(var k=0;k<6;k++){
+      var a=k/6*Math.PI*2;
+      fxCtx.beginPath();
+      fxCtx.moveTo(Math.cos(a)*p.size,Math.sin(a)*p.size);
+      fxCtx.lineTo(Math.cos(a)*(p.size+4),Math.sin(a)*(p.size+4));
+      fxCtx.lineWidth=1.5;
+      fxCtx.stroke();
+    }
+  }
+  fxCtx.restore();
+}
+
+// called each frame
+function updateFX(dt){
+  if(!fxCtx) return;
+  var W=window.innerWidth, H=window.innerHeight;
+  fxCtx.clearRect(0,0,W,H);
+
+  // Flood: rising water plane + rain
+  if(floodActive){
+    floodT+=dt;
+    var phase=floodT/8; // 0→1 over 8s
+    if(phase>=1){ floodActive=false; endFlood(); }
+    else {
+      // Sky tint darkens to blue
+      var tintA=Math.sin(phase*Math.PI)*0.4;
+      fxCtx.fillStyle='rgba(0,80,180,'+tintA+')';
+      fxCtx.fillRect(0,0,W,H);
+      // Animated waves across screen
+      var waveCount=5;
+      for(var w=0;w<waveCount;w++){
+        var wProg=(phase+w/waveCount)%1;
+        var wY=H*(1-wProg)*1.1;
+        var wA=Math.min(1,wProg*4)*Math.min(1,(1-wProg)*4)*0.55;
+        fxCtx.beginPath();
+        fxCtx.moveTo(0,wY);
+        for(var wx=0;wx<=W;wx+=18){
+          var wy=wY+Math.sin((wx/W*8+floodT*3+w)*1)*22;
+          fxCtx.lineTo(wx,wy);
+        }
+        fxCtx.lineTo(W,H); fxCtx.lineTo(0,H); fxCtx.closePath();
+        var grad=fxCtx.createLinearGradient(0,wY,0,wY+80);
+        grad.addColorStop(0,'rgba(30,120,220,'+(wA*1.2)+')');
+        grad.addColorStop(1,'rgba(10,50,140,0)');
+        fxCtx.fillStyle=grad;
+        fxCtx.fill();
+      }
+      // Rain streaks
+      if(Math.random()<0.6) spawnParticles(8,{
+        x:Math.random()*W,y:-10,
+        vx:15,vy:28,spread:6,size:3,
+        decay:0.025,color:'rgba(120,180,255,0.7)',shape:'drop'
+      });
+      // Rising water in THREE.js
+      if(floodWaterMeshFX){
+        var riseAmt=Math.sin(phase*Math.PI)*6;
+        floodWaterMeshFX.position.y=0.2+riseAmt;
+        floodWaterMeshFX.material.opacity=0.5+Math.sin(phase*Math.PI)*0.3;
+      }
+    }
+  }
+
+  // Tick particles
+  for(var i=fxParticles.length-1;i>=0;i--){
+    var p=fxParticles[i];
+    p.x+=p.vx; p.y+=p.vy;
+    p.life-=p.decay;
+    p.rot+=p.rotV;
+    if(p.shape==='fire'){p.vy-=0.4; p.size*=0.985;}
+    else if(p.shape==='ash'){p.vx+=(Math.random()-0.5)*0.5;}
+    if(p.life<=0){ fxParticles.splice(i,1); continue; }
+    drawParticle(p);
+  }
+
+  // Overall tint still active
+  if(fxActive){
+    fxTimer+=dt;
+    if(fxTimer>=fxDuration){ fxActive=false; fxDiv.style.display='none'; fxParticles=[]; }
+  }
+}
+
+function startFX(type, duration){
+  if(!fxCtx) fxInit();
+  fxDiv.style.display='block';
+  fxActive=true; fxType=type; fxTimer=0; fxDuration=duration||4;
+  fxParticles=[];
+  var W=window.innerWidth, H=window.innerHeight;
+
+  if(type==='meteor'){
+    // Big flash then ash rain
+    spawnParticles(80,{y:-20,vx:60,vy:55,spread:200,size:8,decay:0.012,color:'rgba(255,220,80,0.9)',shape:'fire'});
+    spawnParticles(120,{vy:1.5,spread:300,size:5,decay:0.006,color:'rgba(100,80,60,0.7)',shape:'ash'});
+    // flash overlay
+    fxCtx.fillStyle='rgba(255,200,50,0.7)';
+    fxCtx.fillRect(0,0,W,H);
+    screenShake();
+    showBanner('☄️','KİTLESEL YOK OLUŞ','#ffc850',2500);
+  } else if(type==='drought'){
+    spawnParticles(60,{vy:-0.5,spread:250,size:6,decay:0.003,color:'rgba(255,140,0,0.6)',shape:'circle'});
+    spawnParticles(30,{vy:-1.2,spread:200,size:10,decay:0.002,color:'rgba(255,80,0,0.35)',shape:'circle'});
+    showBanner('🌵','KURAKLIK','#ff8c00',2000);
+  } else if(type==='plague'){
+    spawnParticles(100,{spread:300,vy:-0.3,size:7,decay:0.003,color:'rgba(0,220,80,0.7)',shape:'germ'});
+    spawnParticles(50, {spread:400,vy:-0.6,size:4,decay:0.004,color:'rgba(100,255,50,0.5)',shape:'circle'});
+    showBanner('☠️','VEBA','#00dc50',2200);
+  } else if(type==='cold'){
+    for(var ci2=0;ci2<120;ci2++) spawnParticles(1,{
+      x:Math.random()*W, y:-10,
+      vx:(Math.random()-0.5)*1.5, vy:1+Math.random()*2,
+      spread:0.2, size:4+Math.random()*6, decay:0.004,
+      color:'rgba(180,220,255,0.85)', shape:'star'
+    });
+    // frost tint
+    fxCtx.fillStyle='rgba(200,230,255,0.18)';
+    fxCtx.fillRect(0,0,W,H);
+    showBanner('❄️','DONMA DALGASI','#b4dcff',2200);
+  } else if(type==='volcano'){
+    spawnParticles(120,{
+      x:W/2,y:H*0.7,vx:0,vy:-8,spread:180,
+      size:12,decay:0.008,color:'rgba(255,100,0,0.85)',shape:'fire'
+    });
+    spawnParticles(80,{
+      x:W/2,y:H*0.65,vx:0,vy:-5,spread:120,
+      size:6,decay:0.006,color:'rgba(200,60,0,0.7)',shape:'ash'
+    });
+    fxCtx.fillStyle='rgba(255,60,0,0.25)';
+    fxCtx.fillRect(0,0,W,H);
+    screenShake();
+    showBanner('🌋','VOLKAN PATLAMASI','#ff6020',2500);
+  }
+}
+
+// Flood is special — animated, separate
+function startFlood(){
+  if(!fxCtx) fxInit();
+  fxDiv.style.display='block';
+  fxActive=true; fxType='flood'; fxTimer=0; fxDuration=9;
+  floodActive=true; floodT=0;
+
+  // Create a big transparent flood plane in THREE.js
+  if(floodWaterMeshFX){ scene.remove(floodWaterMeshFX); }
+  floodWaterMeshFX=new THREE.Mesh(
+    new THREE.BoxGeometry(WS*2,0.3,WS*2),
+    new THREE.MeshLambertMaterial({color:0x0055cc,transparent:true,opacity:0.5})
+  );
+  floodWaterMeshFX.position.set(0,0.2,0);
+  scene.add(floodWaterMeshFX);
+
+  showBanner('🌊','SEL FELAKETİ','#40aaff',2500);
+  screenShake();
+}
+
+function endFlood(){
+  // Reset flood water plane
+  if(floodWaterMeshFX){
+    floodWaterMeshFX.position.y=0.2;
+    floodWaterMeshFX.material.opacity=0.5;
+    // fade out
+    var fadeInt=setInterval(function(){
+      if(!floodWaterMeshFX) return clearInterval(fadeInt);
+      floodWaterMeshFX.material.opacity-=0.04;
+      if(floodWaterMeshFX.material.opacity<=0){
+        scene.remove(floodWaterMeshFX);
+        floodWaterMeshFX=null;
+        clearInterval(fadeInt);
+      }
+    },50);
+  }
+  fxActive=false;
+  fxDiv.style.display='none';
+  fxParticles=[];
+}
+
+// ══════════════════════════════════════════
+// DISASTERS
+// ══════════════════════════════════════════
+function massExtinct(){
+  var k=Math.floor(creatures.length*0.62);
+  var sh=creatures.slice().sort(function(){return Math.random()-0.5;});
+  for(var i=0;i<k;i++) sh[i]._die('ext');
+  addLog('☄️ KİTLESEL YOK OLUŞ! '+k+' canlı','e');
+  startFX('meteor',5);
+}
+function doDrought(){
+  var rm=[],kp=[];
+  for(var i=0;i<foods.length;i++){
+    if(!foods[i].wet){scene.remove(foods[i].mesh);rm.push(foods[i]);}else kp.push(foods[i]);
+  }
+  foods=kp;
+  addLog('🌵 KURAKLIK! '+rm.length+' yiyecek yok oldu','e');
+  // Turn sky orange
+  var oldFog=scene.fog.density, oldSky=renderer.getClearColor(new THREE.Color());
+  renderer.setClearColor(0xff8822,1);
+  scene.fog=new THREE.FogExp2(0xff8822,0.005);
+  skyMat.color.setHex(0xff8822);
+  sun.intensity=2.0;
+  setTimeout(function(){
+    renderer.setClearColor(0x7ec8e3,1);
+    scene.fog=new THREE.FogExp2(0x7ec8e3,0.003);
+    skyMat.color.setHex(0x7ec8e3);
+    sun.intensity=1.4;
+  },6000);
+  startFX('drought',6);
+}
+function doFlood(){
+  var h=[];
+  for(var i=0;i<creatures.length;i++){
+    var c=creatures[i];
+    if(!c._isFlying()&&!c._likesWet()&&!c._isAmphi()&&c.px>X_SHORE-15) h.push(c);
+  }
+  // delay kills so water rises first
+  setTimeout(function(){
+    h.forEach(function(c){c._die('flood');});
+    addLog('🌊 SEL! '+h.length+' karasal öldü','e');
+  },3000);
+  // Darken sky to storm
+  renderer.setClearColor(0x334466,1);
+  scene.fog=new THREE.FogExp2(0x334466,0.007);
+  skyMat.color.setHex(0x334466);
+  sun.intensity=0.4;
+  setTimeout(function(){
+    renderer.setClearColor(0x7ec8e3,1);
+    scene.fog=new THREE.FogExp2(0x7ec8e3,0.003);
+    skyMat.color.setHex(0x7ec8e3);
+    sun.intensity=1.4;
+  },9000);
+  startFlood();
+}
+function doPlague(){
+  var old=mutRate; mutRate=Math.min(0.5,mutRate*3.5);
+  document.getElementById('rm').value=mutRate;
+  document.getElementById('mv').textContent=mutRate.toFixed(2);
+  setTimeout(function(){mutRate=old;document.getElementById('rm').value=old;document.getElementById('mv').textContent=old.toFixed(2);},12000);
+  addLog('☠️ VEBA! 12s mutasyon ×3.5','e');
+  // Turn sky sickly green
+  renderer.setClearColor(0x224422,1);
+  scene.fog=new THREE.FogExp2(0x224422,0.005);
+  skyMat.color.setHex(0x224422);
+  setTimeout(function(){renderer.setClearColor(0x7ec8e3,1);scene.fog=new THREE.FogExp2(0x7ec8e3,0.003);skyMat.color.setHex(0x7ec8e3);},12000);
+  startFX('plague',8);
+}
+function doCold(){
+  var h=[];
+  for(var i=0;i<creatures.length;i++) if(creatures[i].genes.speed<0.038) h.push(creatures[i]);
+  h.forEach(function(c){c._die('cold');}); addLog('❄️ DONMA! '+h.length+' öldü','e');
+  // Turn sky icy
+  renderer.setClearColor(0xbbddff,1);
+  scene.fog=new THREE.FogExp2(0xbbddff,0.003);
+  skyMat.color.setHex(0xbbddff);
+  sun.intensity=0.5;
+  setTimeout(function(){renderer.setClearColor(0x7ec8e3,1);scene.fog=new THREE.FogExp2(0x7ec8e3,0.003);skyMat.color.setHex(0x7ec8e3);sun.intensity=1.4;},7000);
+  startFX('cold',7);
+}
+function makeIsland(){
+  var ix=-10-Math.random()*32,iz=(Math.random()-0.5)*50;
+  var im=new THREE.Mesh(new THREE.CylinderGeometry(4+Math.random()*2,5+Math.random(),2.2,8),
+    new THREE.MeshLambertMaterial({color:0xd4b060}));
+  im.position.set(ix,0.7,iz); im.castShadow=true; scene.add(im);
+  for(var i=0;i<8;i++) foods.push(new Food(ix+(Math.random()-0.5)*9,iz+(Math.random()-0.5)*9));
+  addLog('🏝 Ada oluştu!','e');
+}
+var climates=[
+  {name:'Normal',sky:0x7ec8e3,fog:0.003,amb:0x304878,si:1.4},
+  {name:'Sıcak', sky:0xff9944,fog:0.004,amb:0xffaa44,si:1.1},
+  {name:'Soğuk', sky:0xaad4ff,fog:0.003,amb:0x7799cc,si:0.7},
+  {name:'Fırtına',sky:0x334455,fog:0.01,amb:0x445566,si:0.4}
+];
+function cycleClimate(){
+  climIdx=(climIdx+1)%climates.length;
+  var cl=climates[climIdx];
+  renderer.setClearColor(cl.sky,1);
+  scene.fog=new THREE.FogExp2(cl.sky,cl.fog);
+  skyMat.color.setHex(cl.sky);
+  ambL.color.setHex(cl.amb);
+  sun.intensity=cl.si;
+  document.getElementById('cl').textContent=cl.name;
+  addLog('🌡 İklim: '+cl.name,'e');
+}
+function doVolcano(){
+  var vx=X_GRASS+5+Math.random()*(X_END-X_GRASS-8);
+  var vz=(Math.random()-0.5)*WS*1.6;
+  var vm=new THREE.Mesh(new THREE.ConeGeometry(4.5,9,8),
+    new THREE.MeshLambertMaterial({color:0x444444}));
+  vm.position.set(vx,4.5,vz); vm.castShadow=true; scene.add(vm);
+  var lm=new THREE.Mesh(new THREE.SphereGeometry(1.8,7,6),
+    new THREE.MeshLambertMaterial({color:0xff4400,emissive:new THREE.Color(0.5,0.1,0)}));
+  lm.position.set(vx,9,vz); scene.add(lm);
+  // Animated lava particles in THREE.js
+  var lavaBalls=[];
+  for(var li2=0;li2<12;li2++){
+    var lb=new THREE.Mesh(new THREE.SphereGeometry(0.5+Math.random()*0.8,6,5),
+      new THREE.MeshLambertMaterial({color:0xff4400,emissive:new THREE.Color(0.5,0.1,0)}));
+    lb.position.set(vx,9,vz);
+    lb._vx=(Math.random()-0.5)*8; lb._vy=10+Math.random()*8; lb._vz=(Math.random()-0.5)*8;
+    scene.add(lb); lavaBalls.push(lb);
+  }
+  // Animate lava balls
+  var lavaT=0;
+  var lavaInt=setInterval(function(){
+    lavaT+=0.06;
+    for(var i=lavaBalls.length-1;i>=0;i--){
+      var lb=lavaBalls[i];
+      lb._vy-=0.35;
+      lb.position.x+=lb._vx*0.06;
+      lb.position.y+=lb._vy*0.06;
+      lb.position.z+=lb._vz*0.06;
+      if(lb.position.y<0.5||lavaT>5){
+        scene.remove(lb); lavaBalls.splice(i,1);
+      }
+    }
+    if(lavaBalls.length===0) clearInterval(lavaInt);
+  },60);
+
+  var h=[];
+  for(var i=0;i<creatures.length;i++){
+    var c=creatures[i];
+    var dx=c.px-vx,dz=c.pz-vz;
+    if(Math.sqrt(dx*dx+dz*dz)<14&&!c._isFlying()) h.push(c);
+  }
+  h.forEach(function(c){c._die('ext');});
+  addLog('🌋 VOLKAN! '+h.length+' öldü (uçanlar kurtuldu!)','e');
+  startFX('volcano',6);
+}
+
+// ══════════════════════════════════════════
+// UI BINDINGS
+// ══════════════════════════════════════════
+document.getElementById('rm').oninput=function(){mutRate=parseFloat(this.value);document.getElementById('mv').textContent=mutRate.toFixed(2);};
+document.getElementById('rs').oninput=function(){simSpd=parseInt(this.value);document.getElementById('sv').textContent=simSpd+'x';};
+document.getElementById('rp').oninput=function(){maxPop=parseInt(this.value);document.getElementById('pv').textContent=maxPop;document.getElementById('sm').textContent=maxPop;};
+document.getElementById('rf').oninput=function(){fRate=parseInt(this.value);var L=['','Çok Az','Az','Orta','Fazla','Çok Fazla'];document.getElementById('fv').textContent=L[fRate];};
+function togglePause(){paused=!paused;document.getElementById('pb').textContent=paused?'▶ Devam':'⏸ Duraklat';}
+function hideCI(){document.getElementById('ci').style.display='none';selC=null;}
+
+// ══════════════════════════════════════════
+// FULL-SCREEN EVO TREE
+// ══════════════════════════════════════════
+function openEvoTree(){
+  var ov=document.getElementById('evoOverlay');
+  ov.style.display='flex';
+  drawEvoTree();
+}
+function closeEvoTree(){ document.getElementById('evoOverlay').style.display='none'; }
+
+function drawEvoTree(){
+  var canvas=document.getElementById('evoCanvas');
+  if(!canvas) return;
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight-52;
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Background grid
+  ctx.strokeStyle='rgba(0,80,40,0.06)';
+  ctx.lineWidth=1;
+  for(var gx=0;gx<canvas.width;gx+=40){
+    ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,canvas.height); ctx.stroke();
+  }
+  for(var gy=0;gy<canvas.height;gy+=40){
+    ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(canvas.width,gy); ctx.stroke();
+  }
+
+  if(lineages.length===0){
+    ctx.fillStyle='#0c5'; ctx.font='18px Courier New'; ctx.textAlign='center';
+    ctx.fillText('Henüz tür ayrışması yok...', canvas.width/2, canvas.height/2);
+    return;
+  }
+
+  // Update alive counts
+  for(var li=0;li<lineages.length;li++) lineages[li].alive=0;
+  for(var ci=0;ci<creatures.length;ci++){
+    if(!creatures[ci].dead){var l2=getLin(creatures[ci].linId);if(l2)l2.alive++;}
+  }
+  document.getElementById('evoInfo').textContent='Tür sayısı: '+lineages.length+' | Aktif: '+lineages.filter(function(l){return l.alive>0;}).length;
+
+  // Layout: assign x (generation based), y (vertical spread)
+  var nodeMap={};
+  for(var i=0;i<lineages.length;i++) nodeMap[lineages[i].id]=lineages[i];
+
+  // Find max gen depth
+  function getDepth(lin){
+    if(lin.parentId===-1) return 0;
+    var p=getLin(lin.parentId);
+    return p?getDepth(p)+1:0;
+  }
+  var maxDepth=0;
+  for(var i=0;i<lineages.length;i++){
+    var d=getDepth(lineages[i]);
+    lineages[i]._depth=d;
+    if(d>maxDepth) maxDepth=d;
+  }
+
+  // Assign y positions using subtree sizing
+  function getSubtreeSize(linId){
+    var children=lineages.filter(function(l){return l.parentId===linId;});
+    if(children.length===0) return 1;
+    var sum=0; for(var i=0;i<children.length;i++) sum+=getSubtreeSize(children[i].id);
+    return sum;
+  }
+  var roots=lineages.filter(function(l){return l.parentId===-1;});
+  var totalY=0;
+  for(var i=0;i<roots.length;i++) totalY+=getSubtreeSize(roots[i].id);
+
+  var padX=80, padY=60;
+  var usableW=canvas.width-padX*2;
+  var usableH=canvas.height-padY*2;
+  var colW=maxDepth>0?usableW/maxDepth:usableW;
+  var rowUnit=usableH/Math.max(totalY,1);
+
+  function layoutNode(lin,startY){
+    var x=padX+lin._depth*colW;
+    var children=lineages.filter(function(l){return l.parentId===lin.id;});
+    var subtreeSize=getSubtreeSize(lin.id);
+    var y=padY+startY*rowUnit+subtreeSize*rowUnit*0.5;
+    lin._x=x; lin._y=y;
+    var childY=startY;
+    for(var i=0;i<children.length;i++){
+      layoutNode(children[i],childY);
+      childY+=getSubtreeSize(children[i].id);
+    }
+  }
+  var curY=0;
+  for(var i=0;i<roots.length;i++){
+    layoutNode(roots[i],curY);
+    curY+=getSubtreeSize(roots[i].id);
+  }
+
+  // Draw connections
+  for(var i=0;i<lineages.length;i++){
+    var lin=lineages[i];
+    if(lin.parentId===-1) continue;
+    var par=getLin(lin.parentId);
+    if(!par||par._x===undefined) continue;
+    var grad=ctx.createLinearGradient(par._x,par._y,lin._x,lin._y);
+    grad.addColorStop(0,par.color||'#0b4');
+    grad.addColorStop(1,lin.color||'#0b4');
+    ctx.strokeStyle=grad;
+    ctx.lineWidth=Math.max(1,Math.min(6,lin.alive*0.5+1));
+    ctx.beginPath();
+    var mx=(par._x+lin._x)/2;
+    ctx.moveTo(par._x,par._y);
+    ctx.bezierCurveTo(mx,par._y,mx,lin._y,lin._x,lin._y);
+    ctx.stroke();
+  }
+
+  // Draw nodes
+  var NODE_R=22;
+  for(var i=0;i<lineages.length;i++){
+    var lin=lineages[i];
+    if(lin._x===undefined) continue;
+    var isActive=lin.alive>0;
+    var c=lin.color||'#0b4';
+
+    // Glow for active
+    if(isActive){
+      ctx.shadowColor=c; ctx.shadowBlur=16;
+    } else {
+      ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+    }
+
+    // Circle
+    ctx.beginPath();
+    ctx.arc(lin._x,lin._y,NODE_R,0,Math.PI*2);
+    ctx.fillStyle=isActive?'rgba(0,15,8,0.92)':'rgba(0,5,3,0.7)';
+    ctx.fill();
+    ctx.strokeStyle=isActive?c:'#042';
+    ctx.lineWidth=isActive?2.5:1;
+    ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // Draw mini creature silhouette inside
+    drawCreatureIcon(ctx, lin._x, lin._y, NODE_R*0.6, lin.traits, c, isActive);
+
+    // Name label
+    ctx.font=(isActive?'bold ':'')+'9px Courier New';
+    ctx.fillStyle=isActive?c:'#063';
+    ctx.textAlign='left';
+    var labelX=lin._x+NODE_R+6;
+    var maxW=colW*0.85-NODE_R-10;
+    // Wrap name if too long
+    var words=lin.name.split(' ');
+    var line='',lineY=lin._y-14;
+    ctx.font='bold 9px Courier New';
+    ctx.fillStyle=isActive?c:'#042';
+    for(var wi=0;wi<words.length;wi++){
+      var test=line+(line?'  ':'')+words[wi];
+      if(ctx.measureText(test).width>maxW&&line){
+        ctx.fillText(line,labelX,lineY);
+        line=words[wi]; lineY+=11;
+      } else { line=test; }
+    }
+    if(line) ctx.fillText(line,labelX,lineY); lineY+=11;
+
+    // Traits
+    ctx.font='8px Courier New';
+    ctx.fillStyle=isActive?'rgba(0,220,120,0.8)':'#042';
+    ctx.fillText('N'+lin.gen+' | ×'+lin.alive+(lin.total>lin.alive?' ('+lin.total+')':''),labelX,lineY); lineY+=10;
+
+    ctx.fillStyle=isActive?'rgba(200,180,0,0.85)':'#031';
+    ctx.font='italic 8px Courier New';
+    // Wrap reason
+    var rtext='📌 '+lin.reason;
+    var rwords=rtext.split(' '); var rline='';
+    for(var rwi=0;rwi<rwords.length;rwi++){
+      var rtest=rline+(rline?' ':'')+rwords[rwi];
+      if(ctx.measureText(rtest).width>maxW&&rline){
+        ctx.fillText(rline,labelX,lineY); rline=rwords[rwi]; lineY+=10;
+      } else rline=rtest;
+    }
+    if(rline) ctx.fillText(rline,labelX,lineY); lineY+=10;
+
+    // Trait bars
+    ctx.font='7.5px Courier New';
+    ctx.fillStyle=isActive?'#05f':'#024';
+    ctx.fillText('Su:'+Math.round(lin.traits.aquatic*100)+'%',labelX,lineY);
+    ctx.fillStyle=isActive?'#faa':'#024';
+    ctx.fillText('Uç:'+Math.round(lin.traits.flight*100)+'%',labelX+55,lineY);
+    lineY+=10;
+    ctx.fillStyle=isActive?'#0a5':'#024';
+    ctx.fillText('Hız:'+Math.round(lin.traits.speed*100),labelX,lineY);
+    ctx.fillStyle=isActive?'#ca0':'#024';
+    ctx.fillText('Boy:'+lin.traits.size.toFixed(1),labelX+55,lineY);
+  }
+}
+
+function drawCreatureIcon(ctx,cx,cy,s,traits,color,active){
+  ctx.save();
+  ctx.translate(cx,cy);
+  var alpha=active?0.9:0.35;
+  ctx.globalAlpha=alpha;
+
+  // Body
+  ctx.beginPath();
+  ctx.ellipse(0,0,s,s*0.75,0,0,Math.PI*2);
+  ctx.fillStyle=color;
+  ctx.fill();
+
+  if(traits.flight>0.55){
+    // Wings
+    ctx.beginPath();
+    ctx.moveTo(-s,0); ctx.quadraticCurveTo(-s*1.8,-s,-s*0.3,-s*0.3);
+    ctx.fillStyle=color; ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(s,0); ctx.quadraticCurveTo(s*1.8,-s,s*0.3,-s*0.3);
+    ctx.fill();
+  } else if(traits.aquatic>0.65){
+    // Tail fin
+    ctx.beginPath();
+    ctx.moveTo(0,s*0.5); ctx.lineTo(-s*0.6,s*1.4); ctx.lineTo(s*0.6,s*1.4); ctx.closePath();
+    ctx.fillStyle=color; ctx.fill();
+  } else if(traits.aquatic<0.35){
+    // Legs
+    for(var li=0;li<4;li++){
+      var la=(li/4*Math.PI*2)+Math.PI*0.1;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(la)*s*0.7,Math.sin(la)*s*0.7);
+      ctx.lineTo(Math.cos(la)*s*1.5,Math.sin(la)*s*1.5);
+      ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+    }
+  }
+
+  if(traits.armor>0.4){
+    ctx.fillStyle='rgba(180,180,180,0.7)';
+    for(var si=0;si<4;si++){
+      var sa=si/4*Math.PI*2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(sa)*s*0.9,Math.sin(sa)*s*0.9);
+      ctx.lineTo(Math.cos(sa)*s*1.6,Math.sin(sa)*s*1.6);
+      ctx.strokeStyle='rgba(200,200,200,0.8)'; ctx.lineWidth=2; ctx.stroke();
+    }
+  }
+
+  // Eye dot
+  ctx.beginPath(); ctx.arc(-s*0.3,-s*0.2,s*0.18,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(-s*0.3,-s*0.2,s*0.1,0,Math.PI*2);
+  ctx.fillStyle='#111'; ctx.fill();
+
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════
+var logEl=document.getElementById('log');
+function addLog(msg,cls){
+  var d=document.createElement('div');
+  d.className='le '+(cls||'');
+  d.textContent='['+simT.toFixed(0)+'] '+msg;
+  logEl.insertBefore(d,logEl.firstChild);
+  while(logEl.children.length>55) logEl.removeChild(logEl.lastChild);
+}
+
+// ══════════════════════════════════════════
+// CAMERA
+// ══════════════════════════════════════════
+var camT=0.3,camP=0.88,camR=120;
+var drag=false,lmx=0,lmy=0,moved=false;
+function updCam(){
+  camera.position.set(camR*Math.sin(camP)*Math.sin(camT),camR*Math.cos(camP),camR*Math.sin(camP)*Math.cos(camT));
+  camera.lookAt(0,0,0);
+}
+updCam();
+var cv=renderer.domElement;
+cv.addEventListener('mousedown',function(e){if(e.button===0){drag=true;lmx=e.clientX;lmy=e.clientY;moved=false;}});
+cv.addEventListener('mousemove',function(e){
+  if(!drag) return;
+  var ddx=e.clientX-lmx,ddy=e.clientY-lmy;
+  if(Math.abs(ddx)+Math.abs(ddy)>2) moved=true;
+  camT+=ddx*0.004; camP=Math.max(0.06,Math.min(1.45,camP+ddy*0.004));
+  lmx=e.clientX;lmy=e.clientY; updCam();
+});
+cv.addEventListener('mouseup',function(){drag=false;});
+cv.addEventListener('wheel',function(e){camR=Math.max(8,Math.min(250,camR+e.deltaY*0.09));updCam();},{passive:true});
+cv.addEventListener('contextmenu',function(e){e.preventDefault();});
+
+// ══════════════════════════════════════════
+// RAYCASTER
+// ══════════════════════════════════════════
+var rc=new THREE.Raycaster();
+var mp=new THREE.Vector2();
+var clickTargets=landMeshes.concat([waterMesh]);
+cv.addEventListener('click',function(e){
+  if(moved) return;
+  var rect=cv.getBoundingClientRect();
+  mp.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mp.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  rc.setFromCamera(mp,camera);
+  var hc=null,hd=Infinity;
+  for(var ci=0;ci<creatures.length;ci++){
+    var c=creatures[ci]; if(c.dead) continue;
+    var ch=c.grp.children;
+    for(var j=0;j<ch.length;j++){
+      var its=rc.intersectObject(ch[j]);
+      if(its.length&&its[0].distance<hd){hd=its[0].distance;hc=c;}
+    }
+  }
+  if(hc){selC=hc;document.getElementById('cib').innerHTML=hc.infoHTML();document.getElementById('ci').style.display='block';return;}
+  selC=null; document.getElementById('ci').style.display='none';
+  var pt=null;
+  for(var ti=0;ti<clickTargets.length;ti++){
+    var its2=rc.intersectObject(clickTargets[ti]);
+    if(its2.length){pt=its2[0].point;break;}
+  }
+  if(pt){
+    if(e.ctrlKey){
+      var aqb=pt.x<X_SHORE?0.85:pt.x<X_GRASS?0.5:0.15;
+      var nc=new Creature(pt.x,pt.z,newGenes(aqb,0.05),false);
+      nc.grp.scale.set(0.1,0.1,0.1);
+      if(lineages.length>0){nc.linId=lineages[0].id;lineages[0].alive++;lineages[0].total++;}
+      creatures.push(nc);births++;addLog('➕ Canlı eklendi','e');
+    } else dropFoodAt(pt.x,pt.z);
+  }
+});
+
+// ══════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════
+var stTick=0,evTick=0;
+function updStats(){
+  var alive=[],aq=0,la=0,am=0,fl=0,pr=0,sumAq=0;
+  for(var i=0;i<creatures.length;i++){
+    var c=creatures[i]; if(c.dead) continue; alive.push(c);
+    if(c.pred) pr++;
+    else if(c._isFlying()) fl++;
+    else if(c.genes.aquatic>0.65) aq++;
+    else if(c.genes.aquatic<0.35) la++;
+    else am++;
+    sumAq+=c.genes.aquatic;
+  }
+  document.getElementById('sg').textContent=generation;
+  document.getElementById('ssp').textContent=lineages.length;
+  document.getElementById('sa').textContent=alive.length;
+  document.getElementById('sq').textContent=aq;
+  document.getElementById('sam').textContent=am;
+  document.getElementById('sl').textContent=la;
+  document.getElementById('sfl').textContent=fl;
+  document.getElementById('spr').textContent=pr;
+  document.getElementById('sb').textContent=births;
+  document.getElementById('sd').textContent=deaths;
+  document.getElementById('sf').textContent=foods.length;
+  document.getElementById('ss').textContent=simT.toFixed(0);
+  document.getElementById('str2').textContent=treePop.filter(function(t){return !t.dead;}).length;
+  if(selC&&!selC.dead) document.getElementById('scb').textContent=BIOMES[getBiome(selC.px)]||'?';
+}
+
+// ══════════════════════════════════════════
+// MAIN LOOP
+// ══════════════════════════════════════════
+var lastT=performance.now();
+var ftick=0;
+var fIntervals=[0,300,230,170,110,65];
+var waterT=0;
+var treeTick=0;
+
+function loop(){
+  requestAnimationFrame(loop);
+  var now=performance.now();
+  var dt=Math.min((now-lastT)/1000,0.05);
+  lastT=now;
+
+  if(!paused){
+    for(var step=0;step<simSpd;step++){
+      simT+=dt; ftick++; treeTick++;
+
+      for(var i=creatures.length-1;i>=0;i--){
+        if(creatures[i].dead){creatures.splice(i,1);continue;}
+        creatures[i].update(dt);
+      }
+
+      if(foods.length<110&&ftick>=fIntervals[fRate]){ ftick=0; burstFood(2+fRate); }
+
+      var ft=Date.now()*0.002;
+      for(var fi=0;fi<foods.length;fi++){
+        var f=foods[fi];
+        f.mesh.rotation.y+=0.025;
+        f.mesh.position.y=(f.wet?-0.55:0.28)+Math.sin(ft+f.id*0.8)*0.08;
+      }
+
+      // Update trees every 15 ticks
+      if(treeTick>=15){
+        treeTick=0;
+        for(var ti=treePop.length-1;ti>=0;ti--){
+          treePop[ti].update(dt*15);
+          if(treePop[ti].dead&&treePop[ti].age>6) treePop.splice(ti,1);
+        }
+      }
+
+      if(creatures.length<5&&Math.random()<0.02){spawnGroup(5);addLog('⚠️ Kritik nüfus','e');}
+    }
+
+    waterT+=dt;
+    waterMesh.position.y=0.2+Math.sin(waterT*1.1)*0.06;
+
+    if(selC){if(selC.dead)hideCI();else document.getElementById('cib').innerHTML=selC.infoHTML();}
+
+    stTick++;
+    if(stTick>=8){stTick=0;updStats();updateZones();}
+
+    // Auto-refresh evo tree if open
+    evTick++;
+    if(evTick>=180){
+      evTick=0;
+      if(document.getElementById('evoOverlay').style.display!=='none') drawEvoTree();
+    }
+  }
+
+  updateFX(dt);
+  renderer.render(scene,camera);
+}
+
+// ══════════════════════════════════════════
+// RESIZE
+// ══════════════════════════════════════════
+window.addEventListener('resize',function(){
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  if(document.getElementById('evoOverlay').style.display!=='none') drawEvoTree();
+});
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+spawnGroup(12,0.85,0.05);
+spawnGroup(4,0.5,0.05);
+spawnGroup(5,0.15,0.05);
+spawnGroup(3,0.1,0.85);
+spawnPreds(2);
+burstFood(50);
+fxInit();
+addLog('🌊 Evrim Sim v3 başladı! 6 biyom aktif','e');
+addLog('🌳 Evrim Ağacı için sol paneldeki butona bas','e');
+addLog('🦅 Uçan canlılar volkan felaketinden kurtulur!','e');
+loop();
+</script>
+<!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->
+<script src="whatsapp-float.js"></script>
+</body>
+</html>

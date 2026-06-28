@@ -1,0 +1,844 @@
+import pygame
+import random
+import sys
+import os
+
+# ==========================================
+# 1. AYARLAR VE RENKLER
+# ==========================================
+GENISLIK, YUKSEKLIK = 1200, 850
+ARAYUZ_YUKSEKLIK = 250
+HARITA_YUKSEKLIK = YUKSEKLIK - ARAYUZ_YUKSEKLIK
+KARE_BOYUTU = 30
+SUTUN_SAYISI = GENISLIK // KARE_BOYUTU
+SATIR_SAYISI = HARITA_YUKSEKLIK // KARE_BOYUTU
+FPS = 30
+
+# Renk Paleti
+BEYAZ = (255, 255, 255)
+SIYAH = (20, 20, 20)
+KOYU_GRI = (40, 40, 40)
+KAGIT_RENGI = (240, 235, 215)
+DENIZ_MAVISI = (30, 70, 110)
+SIG_DENIZ = (45, 90, 130)
+DAG_RENGI = (110, 80, 60)
+ORMAN_RENGI = (60, 100, 50)
+TARAFSIZ_KARA = (200, 200, 180)
+
+# Ülke Renkleri (4 Ülke)
+MAVI = (80, 120, 200)
+KIRMIZI = (200, 80, 80)
+SARI = (220, 200, 80)
+MOR = (150, 80, 200)
+
+pygame.init()
+ekran = pygame.display.set_mode((GENISLIK, YUKSEKLIK))
+pygame.display.set_caption("Pythonia - Pixel Art Güncellemesi")
+saat = pygame.time.Clock()
+
+font_minik = pygame.font.SysFont('Arial', 10, bold=True)
+font_kucuk = pygame.font.SysFont('Arial', 14, bold=True)
+font_orta = pygame.font.SysFont('Arial', 18, bold=True)
+font_buyuk = pygame.font.SysFont('Arial', 24, bold=True)
+font_gazete = pygame.font.SysFont('Times New Roman', 36, bold=True, italic=True)
+
+
+# ==========================================
+# GÖRSELLERİ YÜKLEME (PIXEL ART)
+# ==========================================
+def gorsel_yukle(dosya_adi, boyut):
+    try:
+        if os.path.exists(dosya_adi):
+            img = pygame.image.load(dosya_adi).convert_alpha()
+            return pygame.transform.scale(img, boyut)
+    except Exception as e:
+        print(f"Görsel yüklenemedi: {dosya_adi} - Hata: {e}")
+    return None
+
+
+# Yüklediğin görseller (Eğer dosya yoksa oyun çökmez, eski çizimlere döner)
+IMG_PIYADE = gorsel_yukle("image_40f814.png", (26, 26))
+IMG_TANK = gorsel_yukle("image_40fbd7.png", (28, 20))
+IMG_KALE = gorsel_yukle("image_40fee4.png", (28, 28))
+
+# YENİ EKLENEN ZEMİN GÖRSELLERİ (PIXEL ART)
+IMG_ZEMIN_ORMAN = gorsel_yukle("image_410642.jpg", (KARE_BOYUTU, KARE_BOYUTU))
+IMG_ZEMIN_KARA = gorsel_yukle("image_4106a1.jpg", (KARE_BOYUTU, KARE_BOYUTU))
+IMG_ZEMIN_DENIZ = gorsel_yukle("image_410736.jpg", (KARE_BOYUTU, KARE_BOYUTU))
+
+
+# ==========================================
+# 2. SINIFLAR (OYUN MEKANİKLERİ)
+# ==========================================
+
+class GazeteEvent:
+    def __init__(self, baslik, alt_metin, etki=None):
+        self.baslik = baslik
+        self.alt_metin = alt_metin
+        self.etki = etki
+
+
+gazete_kuyrugu = []
+
+
+class Ulke:
+    def __init__(self, isim, renk):
+        self.isim = isim
+        self.renk = renk
+        self.savasilan_ulkeler = []
+        self.muttefikler = []
+
+        self.insan_gucu = 100000
+        self.para = 20000
+        self.ekipman = 10000
+        self.sivil_fabrika = random.randint(5, 8)
+        self.askeri_fabrika = random.randint(4, 6)
+
+        self.aktif_odak = None
+        self.odak_sayaci = 0
+        self.odak_hedefi = 30
+        self.bonuslar = {"saldiri": 1.0, "uretim": 1.0, "ikmal": 10}
+
+    def ekonomi_guncelle(self):
+        self.para += self.sivil_fabrika * 30 * self.bonuslar["uretim"]
+        self.ekipman += self.askeri_fabrika * 25 * self.bonuslar["uretim"]
+        self.insan_gucu += 150
+
+        if self.aktif_odak:
+            self.odak_sayaci += 1
+            if self.odak_sayaci >= self.odak_hedefi:
+                if self.aktif_odak == "SANAYİ":
+                    self.bonuslar["uretim"] = 1.3
+                elif self.aktif_odak == "ORDU":
+                    self.bonuslar["saldiri"] = 1.25
+                elif self.aktif_odak == "LOJİSTİK":
+                    self.bonuslar["ikmal"] = 20
+                self.aktif_odak = None
+
+
+class Kare:
+    def __init__(self, sutun, satir, sahip, tip="kara"):
+        self.sutun = sutun
+        self.satir = satir
+        self.sahip = sahip
+        self.tip = tip
+        self.isim = ""
+        self.binalar = {"karakol": False, "liman": False, "hava_ussu": False}
+
+    def savunma_puani(self):
+        puan = 10
+        if self.tip == "sehir":
+            puan = 100
+        elif self.tip == "dag":
+            puan = 60
+        elif self.tip == "orman":
+            puan = 30
+        if self.binalar["karakol"]: puan += 50
+        return puan
+
+    def ciz(self, yuzey):
+        x, y = self.sutun * KARE_BOYUTU, self.satir * KARE_BOYUTU
+        rect = pygame.Rect(x, y, KARE_BOYUTU, KARE_BOYUTU)
+
+        # 1. ZEMİNİ ÇİZ (RESİM VEYA DÜZ RENK)
+        resim_cizildi = False
+        if self.tip in ["deniz", "sig_deniz"] and IMG_ZEMIN_DENIZ:
+            yuzey.blit(IMG_ZEMIN_DENIZ, (x, y))
+            resim_cizildi = True
+        elif self.tip == "orman" and IMG_ZEMIN_ORMAN:
+            yuzey.blit(IMG_ZEMIN_ORMAN, (x, y))
+            resim_cizildi = True
+        elif self.tip in ["kara", "sehir", "dag"] and IMG_ZEMIN_KARA:
+            # Dağlar ve şehirlerin altına da çimen resmi (kara) koyulur
+            yuzey.blit(IMG_ZEMIN_KARA, (x, y))
+            resim_cizildi = True
+
+        # Eğer resim bulunamazsa veya yüklenemezse eski renklerle çiz
+        if not resim_cizildi:
+            if self.tip == "deniz":
+                renk = DENIZ_MAVISI
+            elif self.tip == "sig_deniz":
+                renk = SIG_DENIZ
+            elif self.tip == "dag":
+                renk = DAG_RENGI
+            elif self.tip == "orman":
+                renk = ORMAN_RENGI
+            elif self.sahip is None:
+                renk = TARAFSIZ_KARA
+            elif self.tip == "sehir":
+                renk = (min(255, self.sahip.renk[0] + 40), min(255, self.sahip.renk[1] + 40),
+                        min(255, self.sahip.renk[2] + 40))
+            else:
+                renk = self.sahip.renk
+            pygame.draw.rect(yuzey, renk, rect)
+
+        # 2. ÜLKE SAHİPLİĞİNİ GÖSTER (YARI SAYDAM RENK KATMANI)
+        if self.sahip and self.tip not in ["deniz", "sig_deniz"]:
+            hedef_renk = self.sahip.renk
+            if self.tip == "sehir":
+                hedef_renk = (min(255, hedef_renk[0] + 40), min(255, hedef_renk[1] + 40), min(255, hedef_renk[2] + 40))
+
+            # Resim kullanıldıysa veya resimsiz orman/dağ ise renklerin belirginleşmesi için yarı saydam at
+            if resim_cizildi or self.tip in ["orman", "dag"]:
+                alpha_yuzey = pygame.Surface((KARE_BOYUTU, KARE_BOYUTU), pygame.SRCALPHA)
+                alpha_yuzey.fill((*hedef_renk, 110))  # %45 saydamlık
+                yuzey.blit(alpha_yuzey, (x, y))
+
+        pygame.draw.rect(yuzey, (30, 30, 30), rect, 1)  # Izgara
+
+        if self.tip == "sehir":
+            # PIXEL ART KALE ÇİZİMİ
+            if IMG_KALE:
+                yuzey.blit(IMG_KALE, (x + 1, y + 1))
+            else:
+                yuzey.blit(font_kucuk.render("🏙️", True, BEYAZ), (x + 2, y + 2))
+
+            if self.isim:
+                isim_sur = font_minik.render(self.isim, True, SIYAH)
+                isim_rect = isim_sur.get_rect(center=(x + KARE_BOYUTU // 2, y - 6))
+                pygame.draw.rect(yuzey, KAGIT_RENGI, isim_rect.inflate(8, 4), 0, 2)
+                pygame.draw.rect(yuzey, SIYAH, isim_rect.inflate(8, 4), 1, 2)
+                yuzey.blit(isim_sur, isim_rect)
+
+        if self.tip == "dag":
+            pygame.draw.polygon(yuzey, KOYU_GRI, [(x + KARE_BOYUTU // 2, y + 5), (x + 5, y + KARE_BOYUTU - 5),
+                                                  (x + KARE_BOYUTU - 5, y + KARE_BOYUTU - 5)])
+            pygame.draw.polygon(yuzey, BEYAZ, [(x + KARE_BOYUTU // 2, y + 5), (x + KARE_BOYUTU // 2 - 3, y + 10),
+                                               (x + KARE_BOYUTU // 2 + 3, y + 10)])
+        elif self.tip == "orman" and not IMG_ZEMIN_ORMAN:
+            pygame.draw.circle(yuzey, (30, 80, 30), (x + KARE_BOYUTU // 2, y + KARE_BOYUTU // 2), 6)
+
+        bina_x = x + 2
+        by = y + KARE_BOYUTU - 12
+        if self.binalar["karakol"]: yuzey.blit(font_minik.render("🛡️", True, BEYAZ), (bina_x, by)); bina_x += 10
+        if self.binalar["liman"]: yuzey.blit(font_minik.render("⚓", True, BEYAZ), (bina_x, by)); bina_x += 10
+        if self.binalar["hava_ussu"]: yuzey.blit(font_minik.render("✈️", True, BEYAZ), (bina_x, by))
+
+
+class Birim:
+    def __init__(self, ulke, sutun, satir, birim_tipi="piyade"):
+        self.ulke = ulke
+        self.sutun = sutun
+        self.satir = satir
+        self.hedef_sutun, self.hedef_satir = sutun, satir
+        self.can = 100
+        self.birim_tipi = birim_tipi
+        self.secili = False
+        self.ikmal = True
+        self.hareket_beklemesi = 0
+
+        if birim_tipi == "piyade":
+            self.temel_saldiri = 20; self.hiz = 8
+        elif birim_tipi == "tank":
+            self.temel_saldiri = 60; self.hiz = 4
+        elif birim_tipi == "deniz":
+            self.temel_saldiri = 50; self.hiz = 6
+        elif birim_tipi == "hava":
+            self.temel_saldiri = 30; self.hiz = 2
+
+        self.rol = "oyuncu" if ulke.isim == "Oyuncu" else random.choice(["saldiri", "savunma"])
+
+    def ikmal_hesapla(self, harita_grid):
+        if self.birim_tipi in ["hava", "deniz"]: return
+        ikmal_menzili = self.ulke.bonuslar["ikmal"]
+        ikmal_bulundu = False
+
+        for s in range(SUTUN_SAYISI):
+            for r in range(SATIR_SAYISI):
+                k = harita_grid[s][r]
+                if (k.sahip == self.ulke or k.sahip in self.ulke.muttefikler) and (
+                        k.tip == "sehir" or k.binalar["liman"]):
+                    if abs(self.sutun - s) + abs(self.satir - r) <= ikmal_menzili:
+                        ikmal_bulundu = True
+                        break
+            if ikmal_bulundu: break
+        self.ikmal = ikmal_bulundu
+
+    def hareket_ve_savas(self, harita_grid, tum_tumenler):
+        if self.can <= 0: return
+        self.ikmal_hesapla(harita_grid)
+
+        if not self.ikmal and self.birim_tipi in ["piyade", "tank"]:
+            self.can -= 1
+            if self.can <= 0: return
+
+        if self.sutun == self.hedef_sutun and self.satir == self.hedef_satir: return
+
+        self.hareket_beklemesi += 1
+        if self.hareket_beklemesi < self.hiz: return
+        self.hareket_beklemesi = 0
+
+        yeni_s, yeni_r = self.sutun, self.satir
+        hareket_edildi = False
+
+        if self.sutun < self.hedef_sutun:
+            yeni_s += 1; hareket_edildi = True
+        elif self.sutun > self.hedef_sutun:
+            yeni_s -= 1; hareket_edildi = True
+
+        hedef_tip = harita_grid[yeni_s][self.satir].tip
+
+        if self.birim_tipi in ["piyade", "tank"]:
+            if hareket_edildi and hedef_tip in ["deniz", "sig_deniz"]:
+                yeni_s = self.sutun
+                if self.satir < self.hedef_satir:
+                    yeni_r += 1
+                elif self.satir > self.hedef_satir:
+                    yeni_r -= 1
+            elif not hareket_edildi:
+                if self.satir < self.hedef_satir:
+                    yeni_r += 1
+                elif self.satir > self.hedef_satir:
+                    yeni_r -= 1
+        elif self.birim_tipi == "deniz":
+            if hareket_edildi and hedef_tip not in ["deniz", "sig_deniz", "sehir"]:
+                yeni_s = self.sutun
+                if self.satir < self.hedef_satir:
+                    yeni_r += 1
+                elif self.satir > self.hedef_satir:
+                    yeni_r -= 1
+            elif not hareket_edildi:
+                if self.satir < self.hedef_satir:
+                    yeni_r += 1
+                elif self.satir > self.hedef_satir:
+                    yeni_r -= 1
+        else:
+            if not hareket_edildi:
+                if self.satir < self.hedef_satir:
+                    yeni_r += 1
+                elif self.satir > self.hedef_satir:
+                    yeni_r -= 1
+
+        hedef_kare = harita_grid[yeni_s][yeni_r]
+
+        if self.birim_tipi in ["piyade", "tank"] and hedef_kare.tip in ["deniz", "sig_deniz"]:
+            self.hedef_sutun, self.hedef_satir = self.sutun, self.satir;
+            return
+        if self.birim_tipi == "deniz" and hedef_kare.tip not in ["deniz", "sig_deniz", "sehir"]:
+            self.hedef_sutun, self.hedef_satir = self.sutun, self.satir;
+            return
+
+        if self.birim_tipi in ["piyade",
+                               "tank"] and hedef_kare.sahip != self.ulke and hedef_kare.sahip not in self.ulke.muttefikler and hedef_kare.sahip not in self.ulke.savasilan_ulkeler and hedef_kare.sahip != None:
+            self.hedef_sutun, self.hedef_satir = self.sutun, self.satir;
+            return
+
+        hedefteki_dusman = None
+        for t in tum_tumenler:
+            if t.can > 0 and t.sutun == yeni_s and t.satir == yeni_r and t.ulke != self.ulke and t.ulke not in self.ulke.muttefikler:
+                hedefteki_dusman = t
+                break
+
+        if hedefteki_dusman:
+            aktif_guc = self.temel_saldiri * self.ulke.bonuslar["saldiri"]
+            if not self.ikmal: aktif_guc *= 0.5
+            if self.ulke.ekipman < 5:
+                aktif_guc *= 0.3
+            else:
+                self.ulke.ekipman -= 5
+
+            if self.birim_tipi == "tank" and hedef_kare.tip in ["dag", "sehir"]: aktif_guc *= 0.6
+
+            hasar = aktif_guc * (100 / (100 + hedef_kare.savunma_puani()))
+            hedefteki_dusman.can -= hasar
+            if self.birim_tipi == "hava": self.can -= 5
+            return
+
+        eski_sahip = hedef_kare.sahip
+        self.sutun, self.satir = yeni_s, yeni_r
+
+        if self.birim_tipi in ["piyade", "tank"] and hedef_kare.tip not in ["deniz",
+                                                                            "sig_deniz"] and eski_sahip not in self.ulke.muttefikler:
+            harita_grid[self.sutun][self.satir].sahip = self.ulke
+
+            if hedef_kare.tip == "sehir" and eski_sahip != self.ulke:
+                hedef_kare.binalar["karakol"] = False
+
+                if eski_sahip:
+                    gazete_kuyrugu.append(GazeteEvent(
+                        f"FETHİ MÜBİN: {hedef_kare.isim.upper()} DÜŞTÜ!",
+                        f"{eski_sahip.isim} kuvvetleri geri çekildi.\n{self.ulke.isim} orduları şehre girdi!"
+                    ))
+
+                for ds in [-1, 0, 1]:
+                    for dr in [-1, 0, 1]:
+                        ns, nr = self.sutun + ds, self.satir + dr
+                        if 0 <= ns < SUTUN_SAYISI and 0 <= nr < SATIR_SAYISI:
+                            komsu = harita_grid[ns][nr]
+                            if komsu.tip not in ["deniz", "sig_deniz"] and (
+                                    komsu.sahip == eski_sahip or komsu.sahip is None):
+                                komsu.sahip = self.ulke
+
+    def ai_karar_ver(self, harita_grid):
+        if self.hedef_sutun != self.sutun or self.hedef_satir != self.satir: return
+        if not self.ulke.savasilan_ulkeler: return
+        aktif_sehirler = [(s, r, harita_grid[s][r].sahip) for s in range(SUTUN_SAYISI) for r in range(SATIR_SAYISI) if
+                          harita_grid[s][r].tip == "sehir"]
+
+        hedef_b = False
+        if self.rol == "savunma":
+            min_m = 999
+            for s, r, sahip in aktif_sehirler:
+                if sahip == self.ulke or sahip in self.ulke.muttefikler:
+                    m = abs(self.sutun - s) + abs(self.satir - r)
+                    if m < min_m:
+                        min_m = m
+                        self.hedef_sutun, self.hedef_satir = s, r
+                        hedef_b = True
+
+        if not hedef_b:
+            min_m = 999
+            for s, r, sahip in aktif_sehirler:
+                if sahip in self.ulke.savasilan_ulkeler:
+                    m = abs(self.sutun - s) + abs(self.satir - r)
+                    if m < min_m:
+                        min_m = m
+                        self.hedef_sutun, self.hedef_satir = s, r
+
+    def ciz(self, yuzey):
+        x, y = self.sutun * KARE_BOYUTU, self.satir * KARE_BOYUTU
+        rect = pygame.Rect(x + 2, y + 2, KARE_BOYUTU - 4, KARE_BOYUTU - 4)
+        cx, cy = x + KARE_BOYUTU // 2, y + KARE_BOYUTU // 2
+        c_renk = BEYAZ if self.secili else SIYAH
+
+        # Zemin olarak ülkenin rengi çizilir (Arkada kimin olduğunu anlamak için)
+        pygame.draw.rect(yuzey, self.ulke.renk, rect)
+        pygame.draw.rect(yuzey, c_renk, rect, 2 if not self.secili else 3)
+
+        # PIXEL ART ASKER VE TANK ÇİZİMİ
+        if self.birim_tipi == "piyade":
+            if IMG_PIYADE:
+                yuzey.blit(IMG_PIYADE, (x + 2, y + 2))
+            else:  # Fallback
+                pygame.draw.line(yuzey, c_renk, rect.topleft, rect.bottomright, 2)
+                pygame.draw.line(yuzey, c_renk, rect.topright, rect.bottomleft, 2)
+
+        elif self.birim_tipi == "tank":
+            if IMG_TANK:
+                yuzey.blit(IMG_TANK, (x + 1, y + 5))
+            else:  # Fallback
+                pygame.draw.ellipse(yuzey, c_renk, (cx - 6, cy - 4, 12, 8), 2)
+
+        elif self.birim_tipi == "deniz":
+            yuzey.blit(font_kucuk.render("⚓", True, c_renk), (cx - 6, cy - 8))
+        elif self.birim_tipi == "hava":
+            yuzey.blit(font_kucuk.render("✈", True, c_renk), (cx - 6, cy - 8))
+
+        if not self.ikmal and self.birim_tipi in ["piyade", "tank"]:
+            yuzey.blit(font_kucuk.render("⚠️", True, KIRMIZI), (x - 2, y - 2))
+
+        can_oran = max(0, self.can / 100)
+        pygame.draw.rect(yuzey, (50, 220, 50) if can_oran > 0.5 else KIRMIZI,
+                         (x + 2, y + KARE_BOYUTU - 3, (KARE_BOYUTU - 4) * can_oran, 3))
+
+
+class Buton:
+    def __init__(self, x, y, genislik, yukseklik, metin, renk=KAGIT_RENGI, text_renk=SIYAH):
+        self.rect = pygame.Rect(x, y, genislik, yukseklik)
+        self.metin = metin
+        self.renk = renk
+        self.text_renk = text_renk
+
+    def ciz(self, yuzey):
+        aktif_renk = BEYAZ if self.rect.collidepoint(pygame.mouse.get_pos()) else self.renk
+        pygame.draw.rect(yuzey, aktif_renk, self.rect, 0, 4)
+        pygame.draw.rect(yuzey, SIYAH, self.rect, 2, 4)
+        metin_sur = font_kucuk.render(self.metin, True, self.text_renk)
+        yuzey.blit(metin_sur, metin_sur.get_rect(center=self.rect.center))
+
+
+# ==========================================
+# 3. OYUN KURULUMU (4 ÜLKE)
+# ==========================================
+oyuncu = Ulke("Kuzey Fed.", MAVI)
+dusman_sari = Ulke("Algorithma", SARI)
+dusman_kirmizi = Ulke("Scriptburg", KIRMIZI)
+tarafsiz_mor = Ulke("Pyntalya", MOR)
+ulkeler = [oyuncu, dusman_sari, dusman_kirmizi, tarafsiz_mor]
+
+harita = [[None for _ in range(SATIR_SAYISI)] for _ in range(SUTUN_SAYISI)]
+for s in range(SUTUN_SAYISI):
+    for r in range(SATIR_SAYISI):
+        tip = "kara"
+        sahip = None
+
+        if 16 <= s <= 22:
+            tip = "deniz"
+            if s == 16 or s == 22:
+                tip = "sig_deniz"
+        elif s < 16:
+            if r < SATIR_SAYISI // 2:
+                sahip = oyuncu
+            else:
+                sahip = dusman_sari
+        elif s > 22:
+            if r < SATIR_SAYISI // 2:
+                sahip = tarafsiz_mor
+            else:
+                sahip = dusman_kirmizi
+
+        if tip == "kara":
+            zar = random.random()
+            if zar < 0.12:
+                tip = "dag"
+            elif zar < 0.25:
+                tip = "orman"
+
+        harita[s][r] = Kare(s, r, sahip, tip)
+
+sehirler = [
+    (10, 5, oyuncu, "BAŞKENT"), (4, 3, oyuncu, "KUZEY-ŞEHİR"), (14, 8, oyuncu, "LİMAN-KENT"),
+    (8, 15, dusman_sari, "ALGORITHMA"), (14, 12, dusman_sari, "SARI-LİMAN"), (3, 17, dusman_sari, "GÜNEY-KÖŞE"),
+    (30, 15, dusman_kirmizi, "SCRIPTBURG"), (25, 12, dusman_kirmizi, "KIZIL-KAPI"),
+    (36, 17, dusman_kirmizi, "DOĞU-ZİRVESİ"),
+    (30, 4, tarafsiz_mor, "PYNTALYA"), (25, 6, tarafsiz_mor, "MOR-LİMAN")
+]
+
+for s, r, ulke, isim in sehirler:
+    harita[s][r].tip = "sehir"
+    harita[s][r].sahip = ulke
+    harita[s][r].isim = isim
+    harita[s][r].binalar["karakol"] = True
+
+tum_tumenler = [
+    Birim(oyuncu, 10, 6, "piyade"), Birim(oyuncu, 11, 5, "tank"), Birim(oyuncu, 15, 8, "deniz"),
+    Birim(dusman_sari, 8, 14, "piyade"), Birim(dusman_kirmizi, 30, 14, "tank"), Birim(tarafsiz_mor, 30, 5, "piyade")
+]
+
+# UI Butonları
+btn_lojistik = Buton(20, HARITA_YUKSEKLIK + 180, 140, 40, "📦 Lojistik (L)", (80, 140, 180), BEYAZ)
+btn_odak_sec = Buton(180, HARITA_YUKSEKLIK + 180, 160, 40, "⭐ MİLLİ ODAK", (200, 150, 50), BEYAZ)
+
+btn_karakol = Buton(370, HARITA_YUKSEKLIK + 100, 120, 30, "🛡️ Karakol (5K$)")
+btn_liman = Buton(500, HARITA_YUKSEKLIK + 100, 120, 30, "⚓ Liman (5K$)")
+btn_havaussu = Buton(630, HARITA_YUKSEKLIK + 100, 140, 30, "✈️ Hava Üssü (5K$)")
+
+btn_piyade = Buton(820, HARITA_YUKSEKLIK + 60, 160, 30, "💂 Piyade (10K İG)")
+btn_tank = Buton(820, HARITA_YUKSEKLIK + 100, 160, 30, "🚜 Tank (15K İG, 3K Eq)")
+btn_filo = Buton(1000, HARITA_YUKSEKLIK + 60, 160, 30, "⚓ Donanma")
+btn_ucak = Buton(1000, HARITA_YUKSEKLIK + 100, 160, 30, "✈️ Savaş Uçağı")
+
+btn_odak_sanayi = Buton(GENISLIK // 2 - 200, YUKSEKLIK // 2 - 20, 400, 40, "1. Sanayi Atılımı (+%30 Üretim)")
+btn_odak_ordu = Buton(GENISLIK // 2 - 200, YUKSEKLIK // 2 + 30, 400, 40, "2. Askeri Doktrin (+%25 Saldırı)")
+btn_odak_ikmal = Buton(GENISLIK // 2 - 200, YUKSEKLIK // 2 + 80, 400, 40, "3. Lojistik Ağı (İkmal Menzili Artar)")
+
+btn_diplo_savas = Buton(GENISLIK // 2 - 160, YUKSEKLIK // 2 + 50, 140, 40, "⚔️ SAVAŞ İLAN ET", KIRMIZI, BEYAZ)
+btn_diplo_ittifak = Buton(GENISLIK // 2 + 20, YUKSEKLIK // 2 + 50, 140, 40, "🤝 İTTİFAK KUR", (50, 150, 50), BEYAZ)
+btn_diplo_iptal = Buton(GENISLIK // 2 - 50, YUKSEKLIK // 2 + 110, 100, 30, "İptal")
+btn_gazete_kapat = Buton(GENISLIK // 2 - 75, YUKSEKLIK - 150, 150, 40, "KAPAT")
+
+# State
+secili_kare = None
+secili_tumen = None
+diplomasi_popup = False
+hedef_ulke = None
+gazete_popup = False
+aktif_gazete = None
+odak_popup = False
+lojistik_modu = False
+oyun_gunu = 0
+
+calisiyor = True
+pygame.time.set_timer(pygame.USEREVENT, 100)
+lojistik_surface = pygame.Surface((GENISLIK, HARITA_YUKSEKLIK), pygame.SRCALPHA)
+
+# ==========================================
+# 4. ANA DÖNGÜ (GAME LOOP)
+# ==========================================
+while calisiyor:
+    ekran.fill(KOYU_GRI)
+    fare_pos = pygame.mouse.get_pos()
+    fare_s = min(SUTUN_SAYISI - 1, max(0, fare_pos[0] // KARE_BOYUTU))
+    fare_r = min(SATIR_SAYISI - 1, max(0, fare_pos[1] // KARE_BOYUTU))
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            calisiyor = False
+
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
+            lojistik_modu = not lojistik_modu
+
+        if event.type == pygame.USEREVENT and not any([diplomasi_popup, gazete_popup, odak_popup]):
+            oyun_gunu += 1
+            if oyun_gunu % 10 == 0:
+                for u in ulkeler:
+                    u.ekonomi_guncelle()
+
+                if oyun_gunu % 200 == 0:
+                    for u in [dusman_sari, dusman_kirmizi, tarafsiz_mor]:
+                        if u.para > 15000:
+                            u.para -= 10000
+                            u.askeri_fabrika += 1
+                        if u.insan_gucu > 20000 and u.ekipman > 3000:
+                            us = [(s, r) for s in range(SUTUN_SAYISI) for r in range(SATIR_SAYISI) if
+                                  harita[s][r].tip == "sehir" and harita[s][r].sahip == u]
+                            if us:
+                                u.insan_gucu -= 15000
+                                u.ekipman -= 3000
+                                s, r = random.choice(us)
+                                tum_tumenler.append(Birim(u, s, r, random.choice(["piyade", "piyade", "tank"])))
+
+            if len(gazete_kuyrugu) > 0 and not gazete_popup:
+                aktif_gazete = gazete_kuyrugu.pop(0)
+                if aktif_gazete.etki:
+                    aktif_gazete.etki(oyuncu)
+                gazete_popup = True
+
+            tum_tumenler = [t for t in tum_tumenler if t.can > 0]
+            for t in tum_tumenler:
+                if t.ulke != oyuncu:
+                    t.ai_karar_ver(harita)
+                t.hareket_ve_savas(harita, tum_tumenler)
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if odak_popup:
+                if event.button == 1:
+                    if btn_odak_sanayi.rect.collidepoint(fare_pos):
+                        oyuncu.aktif_odak = "SANAYİ"
+                        oyuncu.odak_sayaci = 0
+                        odak_popup = False
+                    elif btn_odak_ordu.rect.collidepoint(fare_pos):
+                        oyuncu.aktif_odak = "ORDU"
+                        oyuncu.odak_sayaci = 0
+                        odak_popup = False
+                    elif btn_odak_ikmal.rect.collidepoint(fare_pos):
+                        oyuncu.aktif_odak = "LOJİSTİK"
+                        oyuncu.odak_sayaci = 0
+                        odak_popup = False
+                continue
+
+            if gazete_popup:
+                if event.button == 1 and btn_gazete_kapat.rect.collidepoint(fare_pos):
+                    gazete_popup = False
+                continue
+
+            if diplomasi_popup:
+                if event.button == 1:
+                    if btn_diplo_savas.rect.collidepoint(fare_pos):
+                        oyuncu.savasilan_ulkeler.append(hedef_ulke)
+                        hedef_ulke.savasilan_ulkeler.append(oyuncu)
+                        diplomasi_popup = False
+                        gazete_kuyrugu.append(GazeteEvent("SAVAŞ ÇIĞLIKLARI!",
+                                                          f"{oyuncu.isim} ile {hedef_ulke.isim}\narasında savaş resmen başladı."))
+                    elif btn_diplo_ittifak.rect.collidepoint(fare_pos):
+                        if random.random() < 0.6:
+                            oyuncu.muttefikler.append(hedef_ulke)
+                            hedef_ulke.muttefikler.append(oyuncu)
+                            gazete_kuyrugu.append(GazeteEvent("TARİHİ BİR PAKT!",
+                                                              f"{oyuncu.isim} ve {hedef_ulke.isim}\nittifak anlaşması imzaladı!"))
+                        else:
+                            gazete_kuyrugu.append(GazeteEvent("DİPLOMATİK KRİZ",
+                                                              f"{hedef_ulke.isim}, ittifak\nteklifimizi şiddetle reddetti."))
+                        diplomasi_popup = False
+                    elif btn_diplo_iptal.rect.collidepoint(fare_pos):
+                        diplomasi_popup = False
+                        if secili_tumen:
+                            secili_tumen.hedef_sutun, secili_tumen.hedef_satir = secili_tumen.sutun, secili_tumen.satir
+                continue
+
+            if fare_pos[1] < HARITA_YUKSEKLIK:
+                if event.button == 1:
+                    secili_tumen = None
+                    secili_kare = harita[fare_s][fare_r]
+                    for t in tum_tumenler:
+                        t.secili = False
+                        if t.sutun == fare_s and t.satir == fare_r and t.ulke == oyuncu:
+                            secili_tumen = t
+                            t.secili = True
+
+                elif event.button == 3:
+                    if secili_tumen:
+                        hedef_sahip = harita[fare_s][fare_r].sahip
+                        if secili_tumen.birim_tipi in ["piyade",
+                                                       "tank"] and hedef_sahip != oyuncu and hedef_sahip not in oyuncu.savasilan_ulkeler and hedef_sahip not in oyuncu.muttefikler and hedef_sahip != None:
+                            diplomasi_popup = True
+                            hedef_ulke = hedef_sahip
+                            secili_tumen.hedef_sutun, secili_tumen.hedef_satir = fare_s, fare_r
+                        else:
+                            secili_tumen.hedef_sutun, secili_tumen.hedef_satir = fare_s, fare_r
+            else:
+                if event.button == 1:
+                    if btn_lojistik.rect.collidepoint(fare_pos):
+                        lojistik_modu = not lojistik_modu
+
+                    if btn_odak_sec.rect.collidepoint(fare_pos) and oyuncu.aktif_odak is None:
+                        odak_popup = True
+
+                    if secili_kare and secili_kare.sahip == oyuncu:
+                        if btn_karakol.rect.collidepoint(fare_pos) and oyuncu.para >= 5000 and not secili_kare.binalar[
+                            "karakol"]:
+                            oyuncu.para -= 5000
+                            secili_kare.binalar["karakol"] = True
+                        elif btn_liman.rect.collidepoint(fare_pos) and oyuncu.para >= 5000 and secili_kare.tip in [
+                            "kara", "sehir"] and not secili_kare.binalar["liman"]:
+                            oyuncu.para -= 5000
+                            secili_kare.binalar["liman"] = True
+                        elif btn_havaussu.rect.collidepoint(
+                                fare_pos) and oyuncu.para >= 5000 and secili_kare.tip == "sehir" and not \
+                        secili_kare.binalar["hava_ussu"]:
+                            oyuncu.para -= 5000
+                            secili_kare.binalar["hava_ussu"] = True
+
+                    if secili_kare and secili_kare.tip == "sehir" and secili_kare.sahip == oyuncu:
+                        if btn_piyade.rect.collidepoint(
+                                fare_pos) and oyuncu.insan_gucu >= 10000 and oyuncu.ekipman >= 1000:
+                            oyuncu.insan_gucu -= 10000
+                            oyuncu.ekipman -= 1000
+                            tum_tumenler.append(Birim(oyuncu, secili_kare.sutun, secili_kare.satir, "piyade"))
+                        if btn_tank.rect.collidepoint(
+                                fare_pos) and oyuncu.insan_gucu >= 15000 and oyuncu.ekipman >= 3000:
+                            oyuncu.insan_gucu -= 15000
+                            oyuncu.ekipman -= 3000
+                            tum_tumenler.append(Birim(oyuncu, secili_kare.sutun, secili_kare.satir, "tank"))
+                        if btn_filo.rect.collidepoint(fare_pos) and secili_kare.binalar[
+                            "liman"] and oyuncu.insan_gucu >= 15000 and oyuncu.ekipman >= 2000:
+                            oyuncu.insan_gucu -= 15000
+                            oyuncu.ekipman -= 2000
+                            tum_tumenler.append(Birim(oyuncu, secili_kare.sutun, secili_kare.satir, "deniz"))
+                        if btn_ucak.rect.collidepoint(fare_pos) and secili_kare.binalar[
+                            "hava_ussu"] and oyuncu.insan_gucu >= 15000 and oyuncu.ekipman >= 3000:
+                            oyuncu.insan_gucu -= 15000
+                            oyuncu.ekipman -= 3000
+                            tum_tumenler.append(Birim(oyuncu, secili_kare.sutun, secili_kare.satir, "hava"))
+
+    for s in range(SUTUN_SAYISI):
+        for r in range(SATIR_SAYISI):
+            harita[s][r].ciz(ekran)
+
+    if lojistik_modu:
+        lojistik_surface.fill((0, 0, 0, 180))
+        ikmal_kareleri = set()
+        ikmal_menzili = oyuncu.bonuslar["ikmal"]
+
+        for s in range(SUTUN_SAYISI):
+            for r in range(SATIR_SAYISI):
+                k = harita[s][r]
+                if (k.sahip == oyuncu or k.sahip in oyuncu.muttefikler) and (k.tip == "sehir" or k.binalar["liman"]):
+                    for dx in range(-ikmal_menzili, ikmal_menzili + 1):
+                        for dy in range(-ikmal_menzili, ikmal_menzili + 1):
+                            if abs(dx) + abs(
+                                    dy) <= ikmal_menzili and 0 <= s + dx < SUTUN_SAYISI and 0 <= r + dy < SATIR_SAYISI:
+                                ikmal_kareleri.add((s + dx, r + dy))
+
+        for s in range(SUTUN_SAYISI):
+            for r in range(SATIR_SAYISI):
+                x, y = s * KARE_BOYUTU, r * KARE_BOYUTU
+                if harita[s][r].sahip == oyuncu:
+                    if (s, r) in ikmal_kareleri:
+                        pygame.draw.rect(lojistik_surface, (0, 255, 0, 80), (x, y, KARE_BOYUTU, KARE_BOYUTU))
+                    else:
+                        pygame.draw.rect(lojistik_surface, (255, 0, 0, 150), (x, y, KARE_BOYUTU, KARE_BOYUTU))
+        ekran.blit(lojistik_surface, (0, 0))
+
+    for t in tum_tumenler:
+        t.ciz(ekran)
+
+    if secili_tumen:
+        baslangic = (secili_tumen.sutun * KARE_BOYUTU + 15, secili_tumen.satir * KARE_BOYUTU + 15)
+        bitis = (secili_tumen.hedef_sutun * KARE_BOYUTU + 15, secili_tumen.hedef_satir * KARE_BOYUTU + 15)
+        pygame.draw.line(ekran, BEYAZ, baslangic, bitis, 3)
+        pygame.draw.circle(ekran, BEYAZ, bitis, 6)
+
+    if secili_kare:
+        pygame.draw.rect(ekran, BEYAZ,
+                         (secili_kare.sutun * KARE_BOYUTU, secili_kare.satir * KARE_BOYUTU, KARE_BOYUTU, KARE_BOYUTU),
+                         4)
+
+    panel = pygame.Rect(0, HARITA_YUKSEKLIK, GENISLIK, ARAYUZ_YUKSEKLIK)
+    pygame.draw.rect(ekran, KAGIT_RENGI, panel)
+    pygame.draw.rect(ekran, SIYAH, panel, 4)
+    pygame.draw.line(ekran, SIYAH, (350, HARITA_YUKSEKLIK), (350, YUKSEKLIK), 2)
+    pygame.draw.line(ekran, SIYAH, (800, HARITA_YUKSEKLIK), (800, YUKSEKLIK), 2)
+
+    pygame.draw.rect(ekran, oyuncu.renk, (20, HARITA_YUKSEKLIK + 15, 40, 25))
+    pygame.draw.rect(ekran, SIYAH, (20, HARITA_YUKSEKLIK + 15, 40, 25), 2)
+    ekran.blit(font_buyuk.render(oyuncu.isim.upper(), True, SIYAH), (70, HARITA_YUKSEKLIK + 15))
+    ekran.blit(font_kucuk.render(f"👥 İnsan Gücü: {oyuncu.insan_gucu:,}", True, SIYAH), (20, HARITA_YUKSEKLIK + 50))
+    ekran.blit(font_kucuk.render(f"💰 Para: {oyuncu.para:,}$", True, SIYAH), (20, HARITA_YUKSEKLIK + 75))
+    ekran.blit(
+        font_kucuk.render(f"📦 Ekipman: {oyuncu.ekipman:,}", True, (200, 0, 0) if oyuncu.ekipman < 1000 else SIYAH),
+        (20, HARITA_YUKSEKLIK + 100))
+
+    m_isimleri = ", ".join([m.isim for m in oyuncu.muttefikler]) if oyuncu.muttefikler else "Yok"
+    ekran.blit(font_kucuk.render(f"🤝 Müttefikler: {m_isimleri}", True, (50, 100, 50)), (20, HARITA_YUKSEKLIK + 130))
+
+    btn_lojistik.ciz(ekran)
+    if oyuncu.aktif_odak:
+        ekran.blit(
+            font_kucuk.render(f"Aktif Odak: {oyuncu.aktif_odak} ({oyuncu.odak_sayaci}/{oyuncu.odak_hedefi})", True,
+                              (50, 100, 50)), (190, HARITA_YUKSEKLIK + 190))
+    else:
+        btn_odak_sec.ciz(ekran)
+
+    ekran.blit(font_buyuk.render("YÖNETİM & İNŞAAT", True, SIYAH), (370, HARITA_YUKSEKLIK + 10))
+    if secili_kare and secili_kare.sahip == oyuncu:
+        btn_karakol.ciz(ekran)
+        btn_liman.ciz(ekran)
+        btn_havaussu.ciz(ekran)
+    else:
+        ekran.blit(font_kucuk.render("İnşaat için kendi toprağınıza tıklayın.", True, (100, 100, 100)),
+                   (370, HARITA_YUKSEKLIK + 45))
+
+    ekran.blit(font_buyuk.render("ÜRETİM (Şehir Seçin)", True, SIYAH), (820, HARITA_YUKSEKLIK + 10))
+    if secili_kare and secili_kare.tip == "sehir" and secili_kare.sahip == oyuncu:
+        btn_piyade.ciz(ekran)
+        btn_tank.ciz(ekran)
+        if secili_kare.binalar["liman"]:
+            btn_filo.ciz(ekran)
+        if secili_kare.binalar["hava_ussu"]:
+            btn_ucak.ciz(ekran)
+
+    # POPUPLAR
+    karartma = pygame.Surface((GENISLIK, YUKSEKLIK))
+    karartma.set_alpha(180)
+    karartma.fill(SIYAH)
+
+    if odak_popup:
+        ekran.blit(karartma, (0, 0))
+        odak_kutu = pygame.Rect(GENISLIK // 2 - 250, YUKSEKLIK // 2 - 100, 500, 250)
+        pygame.draw.rect(ekran, KAGIT_RENGI, odak_kutu, 0, 10)
+        pygame.draw.rect(ekran, SIYAH, odak_kutu, 4, 10)
+        ekran.blit(font_buyuk.render("MİLLİ ODAK SEÇİN", True, SIYAH), (GENISLIK // 2 - 110, YUKSEKLIK // 2 - 80))
+        btn_odak_sanayi.ciz(ekran)
+        btn_odak_ordu.ciz(ekran)
+        btn_odak_ikmal.ciz(ekran)
+
+    elif diplomasi_popup:
+        ekran.blit(karartma, (0, 0))
+        popup = pygame.Rect(GENISLIK // 2 - 250, HARITA_YUKSEKLIK // 2 - 100, 500, 200)
+        pygame.draw.rect(ekran, KAGIT_RENGI, popup, 0, 10)
+        pygame.draw.rect(ekran, SIYAH, popup, 4, 10)
+        ekran.blit(font_buyuk.render("DİPLOMASİ", True, SIYAH), (GENISLIK // 2 - 75, HARITA_YUKSEKLIK // 2 - 80))
+        ekran.blit(font_orta.render(f"Hedef: {hedef_ulke.isim} - Ne yapmak istiyorsunuz?", True, SIYAH),
+                   (GENISLIK // 2 - 180, HARITA_YUKSEKLIK // 2 - 30))
+        btn_diplo_savas.ciz(ekran)
+        btn_diplo_ittifak.ciz(ekran)
+        btn_diplo_iptal.ciz(ekran)
+
+    elif gazete_popup and aktif_gazete:
+        ekran.blit(karartma, (0, 0))
+        gazete_rect = pygame.Rect(GENISLIK // 2 - 300, 100, 600, 500)
+        pygame.draw.rect(ekran, KAGIT_RENGI, gazete_rect, 0)
+        pygame.draw.rect(ekran, SIYAH, gazete_rect, 5)
+        pygame.draw.line(ekran, SIYAH, (GENISLIK // 2 - 280, 160), (GENISLIK // 2 + 280, 160), 3)
+        ekran.blit(font_gazete.render("PYTHONIA TIMES", True, SIYAH), (GENISLIK // 2 - 170, 115))
+
+        baslik = font_buyuk.render(aktif_gazete.baslik, True, SIYAH)
+        ekran.blit(baslik, (GENISLIK // 2 - baslik.get_width() // 2, 200))
+
+        y_satir = 250
+        for satir in aktif_gazete.alt_metin.split('\n'):
+            s_render = font_orta.render(satir, True, (50, 50, 50))
+            ekran.blit(s_render, (GENISLIK // 2 - s_render.get_width() // 2, y_satir))
+            y_satir += 30
+
+        btn_gazete_kapat.ciz(ekran)
+
+    tarih_metni = f"Gün: {oyuncu.odak_sayaci if oyuncu.aktif_odak else oyun_gunu} | Yıl: 1936"
+    ekran.blit(font_orta.render(tarih_metni, True, BEYAZ), (GENISLIK - 150, 10))
+
+    pygame.display.flip()
+    saat.tick(FPS)
+
+pygame.quit()
+sys.exit()

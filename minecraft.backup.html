@@ -1,0 +1,2649 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft 2D Pro - Tam Sürüm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #4a7fb8; font-family: 'Courier New', Courier, monospace; user-select: none; -webkit-user-select: none; cursor: crosshair; touch-action: none; -webkit-touch-callout: none; }
+        canvas { display: block; image-rendering: pixelated; }
+        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        /* Mobile controls */
+        #mobile-controls { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 500; }
+        #mobile-controls.active { display: block; }
+        .mc-btn {
+            position: absolute;
+            background: rgba(0,0,0,0.55);
+            border: 2px solid rgba(255,255,255,0.55);
+            border-radius: 14px;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+        }
+        .mc-btn:active, .mc-btn.pressed {
+            background: rgba(74,127,184,0.85);
+            transform: scale(0.92);
+            border-color: #fbbf24;
+        }
+        /* Movement pad — bottom left */
+        #mc-left  { left: 18px;  bottom: 100px; width: 60px; height: 60px; font-size: 28px; }
+        #mc-right { left: 138px; bottom: 100px; width: 60px; height: 60px; font-size: 28px; }
+        #mc-jump  { left: 78px;  bottom: 165px; width: 60px; height: 60px; font-size: 24px; background: rgba(34,197,94,0.55); }
+        /* Action pad — bottom right */
+        #mc-mine  { right: 18px;  bottom: 165px; width: 70px; height: 70px; font-size: 30px; background: rgba(220,38,38,0.55); }
+        #mc-place { right: 18px;  bottom: 85px;  width: 70px; height: 70px; font-size: 30px; background: rgba(59,130,246,0.55); }
+        #mc-eat   { right: 100px; bottom: 165px; width: 56px; height: 56px; font-size: 22px; background: rgba(245,158,11,0.55); }
+        /* Top-row utility buttons */
+        #mc-inv   { right: 18px; top: 70px; width: 56px; height: 56px; font-size: 24px; background: rgba(99,102,241,0.65); }
+        #mc-hotbar-prev { right: 84px; top: 70px; width: 44px; height: 56px; font-size: 22px; }
+        #mc-hotbar-next { right: 138px; top: 70px; width: 44px; height: 56px; font-size: 22px; }
+        /* Toggle mobile button (always visible) */
+        #mc-toggle {
+            position: fixed; bottom: 10px; right: 10px; z-index: 600;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 16px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-family: monospace;
+            cursor: pointer;
+            pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+        @media (max-width: 900px) {
+            /* Compact help on mobile */
+            #ui-overlay .desktop-hint { display: none; }
+            /* Auto-show mobile pad */
+            #mobile-controls { display: block; }
+        }
+
+        /* ====== STORY MODE: Dialog overlay ====== */
+        #mc-dialog {
+            position: fixed; inset: 0;
+            display: none;
+            z-index: 7000;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0 16px 48px;
+            pointer-events: auto;
+        }
+        #mc-dialog.show { display: flex; }
+        #mc-dialog-blur {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .mc-dialog-box {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            max-width: 760px;
+            width: 100%;
+        }
+        .mc-char-portrait {
+            font-size: 80px;
+            line-height: 1;
+            text-shadow: 0 0 30px rgba(251,191,36,0.5);
+            animation: mc-char-bob 2.2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes mc-char-bob {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-6px) rotate(2deg); }
+        }
+        .mc-bubble {
+            flex: 1;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #e2e8f0;
+            border: 3px solid #60a5fa;
+            border-radius: 14px;
+            padding: 18px 22px 16px;
+            box-shadow: 0 10px 60px rgba(0,0,0,0.7);
+            font-family: 'Courier New', monospace;
+        }
+        .mc-bubble::before {
+            content: '';
+            position: absolute;
+            left: 80px; bottom: 28px;
+            width: 0; height: 0;
+            border: 12px solid transparent;
+            border-right-color: #60a5fa;
+        }
+        .mc-name {
+            font-weight: 800;
+            color: #fbbf24;
+            font-size: 15px;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+        .mc-text {
+            font-size: 16px;
+            line-height: 1.4;
+            min-height: 60px;
+        }
+        .mc-next {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 8px 18px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: 2px solid #93c5fd;
+            border-radius: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .mc-next:hover { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+        .mc-choices {
+            display: flex; flex-direction: column; gap: 6px;
+            margin-top: 10px;
+        }
+        .mc-choice {
+            background: rgba(59,130,246,0.18);
+            color: #e2e8f0;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .mc-choice:hover { background: rgba(59,130,246,0.35); transform: translateX(3px); }
+
+        /* Quest panel (top-left, under HP bar) */
+        #mc-quest-panel {
+            position: fixed;
+            top: 50px; left: 5px;
+            width: 240px;
+            background: rgba(15,23,42,0.92);
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            padding: 8px 10px;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            z-index: 200;
+            backdrop-filter: blur(6px);
+            display: none;
+        }
+        #mc-quest-panel.show { display: block; }
+        #mc-quest-panel .qt {
+            color: #fbbf24; font-weight: bold; font-size: 11px;
+            letter-spacing: 1px; margin-bottom: 4px;
+        }
+        #mc-quest-panel .qd {
+            color: #cbd5e1; font-size: 12px; line-height: 1.3;
+        }
+        #mc-quest-panel .qp {
+            margin-top: 4px;
+            background: rgba(0,0,0,0.4);
+            height: 6px; border-radius: 3px; overflow: hidden;
+        }
+        #mc-quest-panel .qp > div {
+            height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 0.4s;
+        }
+        #mc-quest-panel .qx {
+            color: #94a3b8; font-size: 10px; margin-top: 4px;
+        }
+        /* Mode selector (start screen) */
+        #mc-start-screen {
+            position: fixed; inset: 0;
+            background: rgba(2,6,23,0.95);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 8000;
+            backdrop-filter: blur(10px);
+        }
+        #mc-start-screen.hidden { display: none; }
+        .mc-start-box {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 3px solid #60a5fa;
+            border-radius: 16px;
+            padding: 32px 36px;
+            max-width: 500px;
+            text-align: center;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 80px rgba(96,165,250,0.3);
+        }
+        .mc-start-title {
+            font-size: 28px; font-weight: bold;
+            color: #fbbf24; margin-bottom: 8px;
+            letter-spacing: 3px;
+        }
+        .mc-start-sub {
+            font-size: 13px; color: #94a3b8;
+            margin-bottom: 20px;
+        }
+        .mc-mode-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            background: linear-gradient(135deg, #1e40af, #1e3a8a);
+            color: white;
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.18s;
+        }
+        .mc-mode-btn:hover { transform: scale(1.03); border-color: #fbbf24; }
+        .mc-mode-btn.story { background: linear-gradient(135deg, #b45309, #78350f); }
+        .mc-mode-btn .small { display: block; font-size: 11px; color: #cbd5e1; font-weight: normal; margin-top: 4px; }
+    </style>
+</head>
+<body>
+<div id="lotg-nav" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);border-radius:8px;padding:7px 14px;font-family:sans-serif;font-size:13px;border:1px solid rgba(255,255,255,0.18);"><a href="index.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">&#8592;</span><span class="lotg-tr"> Ana Sayfa</span><span class="lotg-en" style="display:none"> Home</span></a></div><script>(function(){if(localStorage.getItem("lotg_lang")==="en"){var t=document.querySelector("#lotg-nav .lotg-tr"),e=document.querySelector("#lotg-nav .lotg-en");if(t)t.style.display="none";if(e)e.style.display="";}})();</script>
+    <canvas id="gameCanvas"></canvas>
+    <div id="ui-overlay">
+        <!-- Can Barı -->
+        <div class="absolute top-5 left-5 w-52 h-6 bg-gray-800 border-2 border-white rounded-full overflow-hidden shadow-lg">
+            <div id="health-bar" class="h-full bg-red-600 transition-all duration-300" style="width: 100%;"></div>
+            <div class="absolute inset-0 flex items-center justify-center text-xs text-white font-bold drop-shadow-md">HP: <span id="hp-text">100</span>/100</div>
+        </div>
+        <!-- Yönergeler -->
+        <div class="desktop-hint absolute top-5 right-5 text-white text-sm bg-black/50 p-3 rounded border border-gray-500 text-right shadow-lg">
+            <p><b>Hareket:</b> A, D | <b>Zıpla:</b> W</p>
+            <p><b>Kır:</b> Sol Tık | <b>Koy / Ye / Ticaret:</b> Sağ Tık</p>
+            <p><b>Envanter:</b> E | <b>Seçim:</b> 1-9</p>
+        </div>
+    </div>
+
+    <!-- Mode selector (start screen) -->
+    <div id="mc-start-screen">
+        <div class="mc-start-box">
+            <div class="mc-start-title">MINECRAFT 2D</div>
+            <div class="mc-start-sub">Pro · Tam Sürüm</div>
+            <button class="mc-mode-btn story" onclick="startMinecraft('story')">📖 HİKAYE MODU
+                <span class="small">Soğuk Kale'de uyan. Kral seninle konuşacak.</span>
+            </button>
+            <button class="mc-mode-btn" onclick="startMinecraft('free')">🌍 SERBEST MOD
+                <span class="small">Klasik açık dünya. Hikaye yok, sadece keşif ve hayatta kalma.</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quest panel -->
+    <div id="mc-quest-panel">
+        <div class="qt" id="mc-quest-title">📜 GÖREV</div>
+        <div class="qd" id="mc-quest-desc">...</div>
+        <div class="qp"><div id="mc-quest-bar" style="width:0%"></div></div>
+        <div class="qx" id="mc-quest-progress"></div>
+    </div>
+
+    <!-- Story dialog overlay -->
+    <div id="mc-dialog">
+        <div id="mc-dialog-blur"></div>
+        <div class="mc-dialog-box">
+            <div class="mc-char-portrait" id="mc-char">👑</div>
+            <div class="mc-bubble">
+                <div class="mc-name" id="mc-dname">KRAL VARRAN</div>
+                <div class="mc-text" id="mc-dtext">...</div>
+                <div class="mc-choices" id="mc-dchoices" style="display:none"></div>
+                <button class="mc-next" id="mc-dnext" onclick="mcDialogNext()">İLERİ ▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile on-screen controls -->
+    <div id="mobile-controls">
+        <div class="mc-btn" id="mc-left">◀</div>
+        <div class="mc-btn" id="mc-right">▶</div>
+        <div class="mc-btn" id="mc-jump">▲</div>
+        <div class="mc-btn" id="mc-mine">⛏️</div>
+        <div class="mc-btn" id="mc-place">📦</div>
+        <div class="mc-btn" id="mc-eat">🍖</div>
+        <div class="mc-btn" id="mc-inv">🎒</div>
+        <div class="mc-btn" id="mc-hotbar-prev">◀</div>
+        <div class="mc-btn" id="mc-hotbar-next">▶</div>
+    </div>
+    <button id="mc-toggle" onclick="toggleMobileControls()">📱 Mobil</button>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize); resize();
+
+const BLOCK_SIZE = 32;
+const WORLD_WIDTH = 1000;
+const WORLD_HEIGHT = 150;
+let world = [];
+let entities = [];
+let currentDimension = 0; // 0: Overworld, 1: Nether
+let worlds = [null, null];
+let needsRedstoneUpdate = false;
+
+const BLOCKS = {
+    AIR: 0, DIRT: 1, GRASS: 2, STONE: 3, LOG: 4, LEAVES: 5, PLANKS: 6, COBBLESTONE: 7, GLASS: 8, CRAFTING_TABLE: 9,
+    STICK: 10, WOODEN_PICKAXE: 11, STONE_PICKAXE: 12, WOODEN_AXE: 13, STONE_AXE: 14, WOODEN_SWORD: 15, STONE_SWORD: 16,
+    WATER: 17, COAL_ORE: 18, IRON_ORE: 19, FURNACE: 20, IRON_INGOT: 21, NETHERRACK: 22, LAVA: 23, OBSIDIAN: 24, PORTAL: 25,
+    GOLD_ORE: 26, DIAMOND_ORE: 27, REDSTONE_ORE: 28, EMERALD_ORE: 29,
+    GOLD_INGOT: 30, DIAMOND: 31, REDSTONE_DUST: 32, EMERALD: 33, COAL: 41,
+    GLOWSTONE: 34, SOUL_SAND: 35, NETHER_BRICK: 36,
+    REDSTONE_WIRE_OFF: 37, REDSTONE_TORCH: 38, REDSTONE_LAMP_OFF: 39, REDSTONE_LAMP_ON: 40, REDSTONE_WIRE_ON: 42,
+    IRON_PICKAXE: 43, GOLDEN_PICKAXE: 44, DIAMOND_PICKAXE: 45,
+    IRON_AXE: 46, GOLDEN_AXE: 47, DIAMOND_AXE: 48,
+    IRON_SWORD: 49, GOLDEN_SWORD: 50, DIAMOND_SWORD: 51,
+    IRON_BLOCK: 52, GOLD_BLOCK: 53, DIAMOND_BLOCK: 54, EMERALD_BLOCK: 55,
+    SAND: 56, SNOW: 57, ICE: 58, CACTUS: 59,
+    RAW_MUTTON: 60, COOKED_MUTTON: 61, WHITE_WOOL: 62
+};
+
+const BLOCK_NAMES = {
+    1:"Toprak", 2:"Çimen", 3:"Taş", 4:"Odun", 5:"Yaprak", 6:"Tahta", 7:"Kırık Taş", 8:"Cam", 9:"Çalışma Masası", 10:"Çubuk",
+    11:"Tahta Kazma", 12:"Taş Kazma", 13:"Tahta Balta", 14:"Taş Balta", 15:"Tahta Kılıç", 16:"Taş Kılıç",
+    17:"Su", 18:"Kömür C.", 19:"Demir C.", 20:"Ocak", 21:"Demir Külçe", 22:"Nether Taşı", 23:"Lav", 24:"Obsidyen", 25:"Nether Portalı",
+    26:"Altın C.", 27:"Elmas C.", 28:"Redstone C.", 29:"Zümrüt C.", 30:"Altın Külçe", 31:"Elmas", 32:"Redstone", 33:"Zümrüt", 41:"Kömür",
+    34:"Işıktaşı", 35:"Ruh Kumu", 36:"Nether Tuğlası", 37:"Kablo(K)", 38:"R. Meşalesi", 39:"Lamba(K)", 40:"Lamba(A)", 42:"Kablo(A)",
+    43:"Demir Kazma", 44:"Altın Kazma", 45:"Elmas Kazma", 46:"Demir Balta", 47:"Altın Balta", 48:"Elmas Balta",
+    49:"Demir Kılıç", 50:"Altın Kılıç", 51:"Elmas Kılıç", 52:"Demir B.", 53:"Altın B.", 54:"Elmas B.", 55:"Zümrüt B.",
+    56:"Kum", 57:"Kar", 58:"Buz", 59:"Kaktüs", 60:"Çiğ Koyun Eti", 61:"Pişmiş Koyun Eti", 62:"Beyaz Yün"
+};
+
+const BLOCK_HARDNESS = {
+    1:15, 2:15, 3:100, 4:40, 5:10, 6:40, 7:100, 8:15, 9:40, 18:120, 19:150, 26:150, 27:200, 28:150, 29:200,
+    20:100, 22:30, 24:300, 25:10, 34:15, 35:20, 36:120, 37:5, 38:5, 39:20, 40:20, 42:5,
+    52:150, 53:150, 54:200, 55:200, 56:15, 57:10, 58:20, 59:15, 62:15
+};
+
+const BLOCK_DROPS = {
+    [BLOCKS.COAL_ORE]: { type: BLOCKS.COAL, count: 1 },
+    [BLOCKS.DIAMOND_ORE]: { type: BLOCKS.DIAMOND, count: 1 },
+    [BLOCKS.REDSTONE_ORE]: { type: BLOCKS.REDSTONE_DUST, count: 2 },
+    [BLOCKS.EMERALD_ORE]: { type: BLOCKS.EMERALD, count: 1 },
+    [BLOCKS.REDSTONE_WIRE_OFF]: { type: BLOCKS.REDSTONE_DUST, count: 1 },
+    [BLOCKS.REDSTONE_WIRE_ON]: { type: BLOCKS.REDSTONE_DUST, count: 1 },
+    [BLOCKS.STONE]: { type: BLOCKS.COBBLESTONE, count: 1 },
+    [BLOCKS.LEAVES]: { type: BLOCKS.STICK, count: 1 } // Yapraktan çubuk düşme ihtimali
+};
+
+let audioInitialized = false;
+let synthDirt, synthStone, synthWood, synthGlass, synthHit, synthHurt, synthTrade, synthEat;
+
+function initAudio() {
+    if (audioInitialized) return;
+    try {
+        Tone.start();
+        synthDirt = new Tone.MembraneSynth({ pitchDecay: 0.1, octaves: 2, oscillator: { type: "sine" } }).toDestination();
+        synthStone = new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.01, decay: 0.1 } }).toDestination();
+        synthWood = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 4, oscillator: { type: "square" } }).toDestination();
+        synthGlass = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3 } }).toDestination();
+        synthHit = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.2 } }).toDestination();
+        synthHurt = new Tone.Synth({ oscillator: { type: "sawtooth" } }).toDestination();
+        synthTrade = new Tone.PolySynth(Tone.Synth).toDestination();
+        synthEat = new Tone.MembraneSynth({ pitchDecay: 0.2, octaves: 1.2, oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+        
+        synthDirt.volume.value = -10; synthStone.volume.value = -15; synthWood.volume.value = -10; synthGlass.volume.value = -10;
+        synthHit.volume.value = -15; synthHurt.volume.value = -10; synthTrade.volume.value = -10; synthEat.volume.value = -5;
+        audioInitialized = true;
+    } catch(e) { console.error("Ses başlatılamadı:", e); }
+}
+
+function playSound(type, blockId) {
+    if (!audioInitialized) return;
+    try {
+        if (type === 'hit') synthHit.triggerAttackRelease("16n");
+        if (type === 'hurt') synthHurt.triggerAttackRelease("C2", "8n");
+        if (type === 'trade') synthTrade.triggerAttackRelease(["C4", "E4", "G4"], "8n");
+        if (type === 'eat') synthEat.triggerAttackRelease("C4", "32n");
+        
+        if (type === 'break' || type === 'place') {
+            let s = type === 'break' ? "16n" : "32n";
+            if (blockId === BLOCKS.STONE || blockId === BLOCKS.COBBLESTONE || blockId >= 18 && blockId <= 29) synthStone.triggerAttackRelease(s);
+            else if (blockId === BLOCKS.LOG || blockId === BLOCKS.PLANKS || blockId === BLOCKS.CRAFTING_TABLE) synthWood.triggerAttackRelease("C2", s);
+            else if (blockId === BLOCKS.GLASS || blockId === BLOCKS.GLOWSTONE) synthGlass.triggerAttackRelease("C5", s);
+            else synthDirt.triggerAttackRelease("C1", s);
+        }
+    } catch(e) {}
+}
+
+// İlk tıklamada sesi başlat
+document.body.addEventListener('mousedown', initAudio, { once: true });
+document.body.addEventListener('keydown', initAudio, { once: true });
+
+const textures = {};
+
+// Deterministik pseudo-random — texture'ların her seferinde aynı görünmesi için
+function hashRand(x, y, seed) {
+    let n = Math.sin(x * 12.9898 + y * 78.233 + seed * 43.21) * 43758.5453;
+    return n - Math.floor(n);
+}
+
+function generateTextures() {
+    const createTexture = (id, drawFn) => {
+        const c = document.createElement('canvas'); c.width = BLOCK_SIZE; c.height = BLOCK_SIZE;
+        const cx = c.getContext('2d'); drawFn(cx); textures[id] = c;
+    };
+
+    // ===== TOPRAK =====
+    const dirtPal = { a:'#6b4329', b:'#7a4f33', c:'#8b5a3c', d:'#5a3823', e:'#946540' };
+    createTexture(BLOCKS.DIRT, cx => {
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 1);
+            let k = 'b';
+            if (r < 0.18) k = 'a';
+            else if (r < 0.35) k = 'd';
+            else if (r < 0.55) k = 'c';
+            else if (r < 0.62) k = 'e';
+            cx.fillStyle = dirtPal[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+    });
+
+    // ===== ÇİMEN =====
+    createTexture(BLOCKS.GRASS, cx => {
+        cx.drawImage(textures[BLOCKS.DIRT], 0, 0);
+        const gp = { a:'#3d9c3a', b:'#4ab84a', c:'#2e7a2c', d:'#5fc956', e:'#246a22' };
+        for (let y=0; y<5; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 2);
+            let k = 'a';
+            if (r < 0.25) k = 'c';
+            else if (r < 0.55) k = 'b';
+            else if (r < 0.75) k = 'd';
+            else if (r < 0.85) k = 'e';
+            cx.fillStyle = gp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Çimen tüyleri dirt üzerine sarkıyor
+        for (let x=0; x<16; x++) {
+            const r = hashRand(x, 5, 3);
+            if (r < 0.55) { cx.fillStyle = r < 0.25 ? '#2e7a2c' : '#3d9c3a'; cx.fillRect(x*2, 10, 2, 2); }
+            if (r < 0.25) { cx.fillStyle = '#2e7a2c'; cx.fillRect(x*2, 12, 2, 2); }
+        }
+    });
+
+    // ===== TAŞ =====
+    createTexture(BLOCKS.STONE, cx => {
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 4);
+            let col = '#828282';
+            if (r < 0.15) col = '#6e6e6e';
+            else if (r < 0.30) col = '#737373';
+            else if (r < 0.55) col = '#7d7d7d';
+            else if (r < 0.85) col = '#888888';
+            else col = '#969696';
+            cx.fillStyle = col; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        cx.fillStyle = '#5a5a5a';
+        cx.fillRect(6, 4, 2, 6); cx.fillRect(8, 10, 4, 2);
+        cx.fillRect(20, 16, 2, 6); cx.fillRect(18, 22, 6, 2);
+        cx.fillRect(2, 24, 2, 4);
+    });
+
+    // ===== ODUN =====
+    createTexture(BLOCKS.LOG, cx => {
+        const bp = { a:'#3d2614', b:'#4a2f18', c:'#553622', d:'#2a1809' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 5);
+            let k = 'b';
+            if (x < 2 || x > 13) k = 'd';
+            else if (r < 0.3) k = 'a';
+            else if (r < 0.7) k = 'b';
+            else k = 'c';
+            cx.fillStyle = bp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        cx.fillStyle = '#2a1809';
+        cx.fillRect(10, 0, 2, 32); cx.fillRect(22, 0, 2, 32);
+    });
+
+    // ===== YAPRAK =====
+    createTexture(BLOCKS.LEAVES, cx => {
+        const lp = { a:'#1f5a1c', b:'#287d24', c:'#359d31', d:'#164114', e:'#42b53d' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 6);
+            const edge = (x===0 || x===15 || y===0 || y===15);
+            if (edge && r < 0.3) continue;
+            let k = 'b';
+            if (r < 0.15) k = 'd';
+            else if (r < 0.4) k = 'a';
+            else if (r < 0.7) k = 'b';
+            else if (r < 0.92) k = 'c';
+            else k = 'e';
+            cx.fillStyle = lp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+    });
+
+    // ===== TAHTA =====
+    createTexture(BLOCKS.PLANKS, cx => {
+        const pp = { a:'#a87642', b:'#b88752', c:'#c89762', d:'#8a5e30', e:'#6e4824' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 7);
+            let k = (r < 0.4) ? 'a' : (r < 0.75 ? 'b' : 'c');
+            cx.fillStyle = pp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        cx.fillStyle = pp.e;
+        cx.fillRect(0, 8, 32, 2); cx.fillRect(0, 22, 32, 2);
+        cx.fillStyle = pp.d;
+        cx.fillRect(10, 0, 2, 10); cx.fillRect(20, 10, 2, 14); cx.fillRect(6, 24, 2, 8);
+    });
+
+    // ===== KIRIK TAŞ =====
+    createTexture(BLOCKS.COBBLESTONE, cx => {
+        const cp = { a:'#5a5a5a', b:'#6e6e6e', c:'#828282', d:'#3d3d3d', e:'#969696' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 8);
+            let k = 'b';
+            if (r < 0.18) k = 'd';
+            else if (r < 0.40) k = 'a';
+            else if (r < 0.75) k = 'b';
+            else if (r < 0.92) k = 'c';
+            else k = 'e';
+            cx.fillStyle = cp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        cx.fillStyle = '#2b2b2b';
+        cx.fillRect(0, 10, 32, 2); cx.fillRect(0, 22, 32, 2);
+        cx.fillRect(8, 0, 2, 10); cx.fillRect(18, 12, 2, 10); cx.fillRect(12, 24, 2, 8); cx.fillRect(24, 24, 2, 8);
+    });
+
+    // ===== CAM =====
+    createTexture(BLOCKS.GLASS, cx => {
+        cx.fillStyle = 'rgba(170,220,255,0.18)'; cx.fillRect(0,0,32,32);
+        cx.fillStyle = '#c9e6ff';
+        cx.fillRect(0,0,32,2); cx.fillRect(0,30,32,2); cx.fillRect(0,0,2,32); cx.fillRect(30,0,2,32);
+        cx.fillStyle = 'rgba(255,255,255,0.55)';
+        cx.fillRect(4, 4, 8, 2); cx.fillRect(4, 4, 2, 6);
+        cx.fillStyle = 'rgba(255,255,255,0.25)';
+        cx.fillRect(20, 22, 6, 2); cx.fillRect(24, 22, 2, 4);
+    });
+
+    // ===== ÇALIŞMA MASASI =====
+    createTexture(BLOCKS.CRAFTING_TABLE, cx => {
+        cx.drawImage(textures[BLOCKS.PLANKS], 0, 0);
+        cx.fillStyle = '#3d2614'; cx.fillRect(2, 2, 28, 12);
+        cx.fillStyle = '#7a4a2a';
+        cx.fillRect(4, 4, 8, 8); cx.fillRect(14, 4, 8, 8); cx.fillRect(24, 4, 4, 8);
+        cx.fillStyle = '#a8693a';
+        cx.fillRect(4, 4, 7, 2); cx.fillRect(14, 4, 7, 2); cx.fillRect(24, 4, 4, 2);
+    });
+
+    // ===== KUM =====
+    createTexture(BLOCKS.SAND, cx => {
+        const sp = { a:'#e6d28a', b:'#f0dc9a', c:'#d6c074', d:'#fae7a8', e:'#c2ab68' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 9);
+            let k = 'b';
+            if (r < 0.15) k = 'c';
+            else if (r < 0.35) k = 'a';
+            else if (r < 0.7) k = 'b';
+            else if (r < 0.92) k = 'd';
+            else k = 'e';
+            cx.fillStyle = sp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+    });
+
+    // ===== KAR =====
+    createTexture(BLOCKS.SNOW, cx => {
+        cx.drawImage(textures[BLOCKS.DIRT], 0, 0);
+        const snp = { a:'#ffffff', b:'#eef3f8', c:'#dde6ef' };
+        for (let y=0; y<5; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 10);
+            let k = (r < 0.6) ? 'a' : (r < 0.9 ? 'b' : 'c');
+            cx.fillStyle = snp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        for (let x=0; x<16; x++) {
+            const r = hashRand(x, 5, 11);
+            if (r < 0.55) { cx.fillStyle = '#ffffff'; cx.fillRect(x*2, 10, 2, 2); }
+            if (r < 0.3) { cx.fillStyle = '#dde6ef'; cx.fillRect(x*2, 12, 2, 2); }
+        }
+    });
+
+    // ===== BUZ =====
+    createTexture(BLOCKS.ICE, cx => {
+        const ip = { a:'#7dbcef', b:'#8ec7f3', c:'#a4d3f6', d:'#6aaee6' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 12);
+            let k = (r < 0.25) ? 'd' : (r < 0.55 ? 'a' : (r < 0.85 ? 'b' : 'c'));
+            cx.fillStyle = ip[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        cx.fillStyle = 'rgba(255,255,255,0.6)';
+        cx.fillRect(4, 6, 10, 2); cx.fillRect(12, 8, 2, 6);
+        cx.fillRect(20, 18, 8, 2); cx.fillRect(2, 22, 6, 2);
+    });
+
+    // ===== KAKTÜS =====
+    createTexture(BLOCKS.CACTUS, cx => {
+        cx.fillStyle = '#1f5e1f'; cx.fillRect(4, 0, 24, 32);
+        cx.fillStyle = '#2e8a2e'; cx.fillRect(8, 0, 16, 32);
+        cx.fillStyle = '#3aaa3a'; cx.fillRect(12, 2, 8, 28);
+        cx.fillStyle = '#256a25';
+        cx.fillRect(4, 0, 2, 32); cx.fillRect(26, 0, 2, 32);
+        cx.fillStyle = '#f5f5dc';
+        for (let y=2; y<30; y+=4) {
+            cx.fillRect(6, y, 2, 2); cx.fillRect(24, y+2, 2, 2);
+            cx.fillRect(15, y, 1, 1); cx.fillRect(19, y+2, 1, 1);
+        }
+    });
+
+    // Itemlar ve Aletler
+    createTexture(BLOCKS.STICK, cx => { cx.strokeStyle='#6b4226'; cx.lineWidth=4; cx.lineCap='round'; cx.beginPath(); cx.moveTo(6,26); cx.lineTo(26,6); cx.stroke(); });
+    const drawTool = (cx, handleColor, headColor, isAxe, isSword) => {
+        cx.strokeStyle = handleColor; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(6, 26); cx.lineTo(22, 10); cx.stroke();
+        if (isSword) { cx.strokeStyle = handleColor; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(6, 26); cx.lineTo(12, 20); cx.stroke(); cx.strokeStyle = headColor; cx.lineWidth = 5; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(12, 20); cx.lineTo(26, 6); cx.stroke(); cx.strokeStyle = handleColor; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(8, 22); cx.lineTo(14, 16); cx.stroke(); } 
+        else if (isAxe) { cx.fillStyle = headColor; cx.fillRect(16, 4, 10, 8); } 
+        else { cx.strokeStyle = headColor; cx.lineWidth = 5; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(12, 4); cx.lineTo(28, 12); cx.stroke(); }
+    };
+    createTexture(BLOCKS.WOODEN_PICKAXE, cx => drawTool(cx, '#6b4226', '#a67d4f', false, false));
+    createTexture(BLOCKS.STONE_PICKAXE, cx => drawTool(cx, '#6b4226', '#7a7a7a', false, false));
+    createTexture(BLOCKS.IRON_PICKAXE, cx => drawTool(cx, '#6b4226', '#e6e6e6', false, false));
+    createTexture(BLOCKS.GOLDEN_PICKAXE, cx => drawTool(cx, '#6b4226', '#ffd700', false, false));
+    createTexture(BLOCKS.DIAMOND_PICKAXE, cx => drawTool(cx, '#6b4226', '#00ffff', false, false));
+    
+    createTexture(BLOCKS.WOODEN_AXE, cx => drawTool(cx, '#6b4226', '#a67d4f', true, false));
+    createTexture(BLOCKS.STONE_AXE, cx => drawTool(cx, '#6b4226', '#7a7a7a', true, false));
+    createTexture(BLOCKS.IRON_AXE, cx => drawTool(cx, '#6b4226', '#e6e6e6', true, false));
+    createTexture(BLOCKS.GOLDEN_AXE, cx => drawTool(cx, '#6b4226', '#ffd700', true, false));
+    createTexture(BLOCKS.DIAMOND_AXE, cx => drawTool(cx, '#6b4226', '#00ffff', true, false));
+
+    createTexture(BLOCKS.WOODEN_SWORD, cx => drawTool(cx, '#6b4226', '#a67d4f', false, true));
+    createTexture(BLOCKS.STONE_SWORD, cx => drawTool(cx, '#6b4226', '#7a7a7a', false, true));
+    createTexture(BLOCKS.IRON_SWORD, cx => drawTool(cx, '#6b4226', '#e6e6e6', false, true));
+    createTexture(BLOCKS.GOLDEN_SWORD, cx => drawTool(cx, '#6b4226', '#ffd700', false, true));
+    createTexture(BLOCKS.DIAMOND_SWORD, cx => drawTool(cx, '#6b4226', '#00ffff', false, true));
+
+    createTexture(BLOCKS.WATER, cx => {
+        // Su — yarı saydam mavi katmanlar + parlama
+        cx.fillStyle = 'rgba(35,110,200,0.55)'; cx.fillRect(0,0,32,32);
+        cx.fillStyle = 'rgba(60,140,225,0.45)';
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            if (hashRand(x, y, 13) < 0.35) cx.fillRect(x*2, y*2, 2, 2);
+        }
+        cx.fillStyle = 'rgba(180,220,255,0.4)';
+        cx.fillRect(2, 4, 8, 2); cx.fillRect(18, 12, 6, 2); cx.fillRect(6, 22, 10, 2);
+    });
+
+    // ===== CEVHERLER — STONE arkaplanı + renkli kümeler =====
+    const drawOre = (cx, color, lightColor) => {
+        cx.drawImage(textures[BLOCKS.STONE], 0, 0);
+        // Cevher kümesi piksel grupları
+        const clumps = [
+            [4,4],[6,4],[4,6],[6,6],     // sol üst küme
+            [22,8],[24,8],[22,10],         // sağ üst küme
+            [10,18],[12,18],[10,20],[12,20], // orta küme
+            [20,22],[22,22],[22,24]        // sağ alt küme
+        ];
+        cx.fillStyle = color;
+        for (const [x,y] of clumps) cx.fillRect(x, y, 2, 2);
+        // Parlak vurgular
+        cx.fillStyle = lightColor;
+        cx.fillRect(4, 4, 2, 2); cx.fillRect(22, 8, 2, 2); cx.fillRect(10, 18, 2, 2);
+    };
+    createTexture(BLOCKS.COAL_ORE, cx => drawOre(cx, '#1a1a1a', '#3a3a3a'));
+    createTexture(BLOCKS.IRON_ORE, cx => drawOre(cx, '#c08e6e', '#e6b794'));
+    createTexture(BLOCKS.GOLD_ORE, cx => drawOre(cx, '#e8c520', '#fff080'));
+    createTexture(BLOCKS.DIAMOND_ORE, cx => drawOre(cx, '#3ed5d5', '#a8f5f5'));
+    createTexture(BLOCKS.REDSTONE_ORE, cx => drawOre(cx, '#cc1818', '#ff5555'));
+    createTexture(BLOCKS.EMERALD_ORE, cx => drawOre(cx, '#22b832', '#7ef58a'));
+
+    createTexture(BLOCKS.FURNACE, cx => {
+        cx.drawImage(textures[BLOCKS.COBBLESTONE], 0, 0);
+        // Üst panel
+        cx.fillStyle = '#3a3a3a'; cx.fillRect(2, 2, 28, 6);
+        cx.fillStyle = '#555'; cx.fillRect(2, 2, 28, 2);
+        // Ocak ağzı
+        cx.fillStyle = '#1a1a1a'; cx.fillRect(6, 12, 20, 16);
+        // Ateş izi
+        cx.fillStyle = '#5a2a08'; cx.fillRect(8, 22, 16, 4);
+        cx.fillStyle = '#a04a10'; cx.fillRect(10, 24, 12, 2);
+        // Çerçeve
+        cx.fillStyle = '#2a2a2a';
+        cx.fillRect(6, 12, 20, 2); cx.fillRect(6, 26, 20, 2);
+        cx.fillRect(6, 12, 2, 16); cx.fillRect(24, 12, 2, 16);
+    });
+    createTexture(BLOCKS.IRON_INGOT, cx => { cx.fillStyle='#d8af93'; cx.fillRect(8,12,16,8); cx.fillStyle='#fff'; cx.fillRect(8,12,16,2); });
+    createTexture(BLOCKS.GOLD_INGOT, cx => { cx.fillStyle='#ffd700'; cx.fillRect(8,12,16,8); cx.fillStyle='#fff'; cx.fillRect(8,12,16,2); });
+    createTexture(BLOCKS.DIAMOND, cx => { cx.fillStyle='#00ffff'; cx.beginPath(); cx.moveTo(16,4); cx.lineTo(24,16); cx.lineTo(16,28); cx.lineTo(8,16); cx.fill(); });
+    createTexture(BLOCKS.REDSTONE_DUST, cx => { cx.fillStyle='#ff0000'; cx.beginPath(); cx.arc(16,16,6,0,Math.PI*2); cx.fill(); cx.fillStyle='#880000'; cx.beginPath(); cx.arc(12,22,4,0,Math.PI*2); cx.fill(); cx.beginPath(); cx.arc(22,18,3,0,Math.PI*2); cx.fill(); });
+    createTexture(BLOCKS.EMERALD, cx => { cx.fillStyle='#55ff55'; cx.fillRect(10,6,12,20); cx.fillStyle='#aaffaa'; cx.fillRect(10,6,4,20); });
+    createTexture(BLOCKS.COAL, cx => { cx.fillStyle='#111'; cx.beginPath(); cx.arc(16,16,8,0,Math.PI*2); cx.fill(); cx.fillStyle='#444'; cx.fillRect(12,12,4,4); });
+
+    // Yiyecek ve Yün
+    createTexture(BLOCKS.RAW_MUTTON, cx => { cx.fillStyle='#cc5555'; cx.beginPath(); cx.arc(16,16,10,0,Math.PI*2); cx.fill(); cx.fillStyle='#dddddd'; cx.beginPath(); cx.arc(24,16,4,0,Math.PI*2); cx.fill(); });
+    createTexture(BLOCKS.COOKED_MUTTON, cx => { cx.fillStyle='#884422'; cx.beginPath(); cx.arc(16,16,10,0,Math.PI*2); cx.fill(); cx.fillStyle='#dddddd'; cx.beginPath(); cx.arc(24,16,4,0,Math.PI*2); cx.fill(); });
+    createTexture(BLOCKS.WHITE_WOOL, cx => { cx.fillStyle='#eeeeee'; cx.fillRect(0,0,32,32); cx.fillStyle='#dddddd'; for(let i=0;i<20;i++) cx.fillRect(Math.random()*32,Math.random()*32,4,4); });
+
+    createTexture(BLOCKS.NETHERRACK, cx => {
+        const np = { a:'#4d1414', b:'#5c1c1c', c:'#6e2424', d:'#3a0e0e', e:'#7a2a2a' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 14);
+            let k = 'b';
+            if (r < 0.18) k = 'd';
+            else if (r < 0.4) k = 'a';
+            else if (r < 0.75) k = 'b';
+            else if (r < 0.92) k = 'c';
+            else k = 'e';
+            cx.fillStyle = np[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Damarlar
+        cx.fillStyle = '#2a0808';
+        cx.fillRect(4, 8, 2, 6); cx.fillRect(6, 12, 8, 2);
+        cx.fillRect(20, 18, 2, 6); cx.fillRect(18, 22, 8, 2);
+    });
+
+    createTexture(BLOCKS.LAVA, cx => {
+        // Akıcı lav görünümü
+        const lp = { a:'#ff4500', b:'#ff7a00', c:'#ffb52a', d:'#cc2200', e:'#ffe06a' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 15);
+            let k = 'b';
+            if (r < 0.2) k = 'd';
+            else if (r < 0.45) k = 'a';
+            else if (r < 0.75) k = 'b';
+            else if (r < 0.92) k = 'c';
+            else k = 'e';
+            cx.fillStyle = lp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Parlak sıcak noktalar
+        cx.fillStyle = '#fffacc';
+        cx.fillRect(6, 6, 2, 2); cx.fillRect(20, 14, 2, 2); cx.fillRect(12, 24, 2, 2);
+    });
+
+    createTexture(BLOCKS.OBSIDIAN, cx => {
+        const op = { a:'#1a0b2e', b:'#221340', c:'#0e0620', d:'#321659' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 16);
+            let k = 'a';
+            if (r < 0.2) k = 'c';
+            else if (r < 0.65) k = 'a';
+            else if (r < 0.92) k = 'b';
+            else k = 'd';
+            cx.fillStyle = op[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Mor ışıltılar
+        cx.fillStyle = '#5a2d99';
+        cx.fillRect(8, 6, 2, 2); cx.fillRect(22, 18, 2, 2); cx.fillRect(4, 24, 2, 2);
+        cx.fillStyle = '#7d3fcc';
+        cx.fillRect(8, 6, 1, 1); cx.fillRect(22, 18, 1, 1);
+    });
+
+    createTexture(BLOCKS.PORTAL, cx => {
+        // Mor portal — çerçeveden parıldayan dalgalar
+        cx.fillStyle = '#2a0d4a'; cx.fillRect(0,0,32,32);
+        const pp = { a:'#5a1d8a', b:'#7a2dba', c:'#a44de8', d:'#3d1463' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 17);
+            const wave = Math.sin((x + y) * 0.6) * 0.5 + 0.5;
+            let k = wave > 0.6 ? 'c' : wave > 0.4 ? 'b' : 'a';
+            if (r < 0.15) k = 'd';
+            cx.fillStyle = pp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Parlak yıldızlar
+        cx.fillStyle = '#ffffff';
+        cx.fillRect(8, 10, 1, 1); cx.fillRect(22, 6, 1, 1);
+        cx.fillRect(14, 22, 1, 1); cx.fillRect(26, 26, 1, 1);
+    });
+
+    createTexture(BLOCKS.GLOWSTONE, cx => {
+        const gp = { a:'#c9921a', b:'#d4a32a', c:'#e6b740', d:'#a37314' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 18);
+            let k = (r < 0.25) ? 'd' : (r < 0.55 ? 'a' : (r < 0.85 ? 'b' : 'c'));
+            cx.fillStyle = gp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Parlak çekirdekler
+        cx.fillStyle = '#fff2a8';
+        cx.fillRect(6, 6, 4, 4); cx.fillRect(20, 8, 4, 4);
+        cx.fillRect(10, 20, 4, 4); cx.fillRect(22, 22, 4, 4);
+        cx.fillStyle = '#fffce0';
+        cx.fillRect(7, 7, 2, 2); cx.fillRect(21, 9, 2, 2);
+        cx.fillRect(11, 21, 2, 2); cx.fillRect(23, 23, 2, 2);
+    });
+
+    createTexture(BLOCKS.SOUL_SAND, cx => {
+        const sp = { a:'#3a2a20', b:'#4a3528', c:'#5a4030', d:'#2a1d14' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 19);
+            let k = (r < 0.25) ? 'd' : (r < 0.6 ? 'a' : (r < 0.88 ? 'b' : 'c'));
+            cx.fillStyle = sp[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Yüz desenleri
+        cx.fillStyle = '#1a0e08';
+        cx.fillRect(6, 8, 2, 4); cx.fillRect(12, 8, 2, 4); cx.fillRect(6, 14, 8, 2);
+        cx.fillRect(20, 18, 2, 4); cx.fillRect(26, 18, 2, 4); cx.fillRect(20, 24, 8, 2);
+    });
+
+    createTexture(BLOCKS.NETHER_BRICK, cx => {
+        const np = { a:'#3a1818', b:'#4a2222', c:'#2a1010' };
+        // Tuğla zemin
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 20);
+            let k = (r < 0.45) ? 'a' : (r < 0.85 ? 'b' : 'c');
+            cx.fillStyle = np[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Tuğla çizgileri (kaydırılmış)
+        cx.fillStyle = '#150707';
+        cx.fillRect(0, 6, 32, 2); cx.fillRect(0, 14, 32, 2); cx.fillRect(0, 22, 32, 2); cx.fillRect(0, 30, 32, 2);
+        cx.fillRect(10, 0, 2, 6); cx.fillRect(22, 0, 2, 6);
+        cx.fillRect(6, 8, 2, 6); cx.fillRect(18, 8, 2, 6); cx.fillRect(28, 8, 2, 6);
+        cx.fillRect(10, 16, 2, 6); cx.fillRect(22, 16, 2, 6);
+        cx.fillRect(6, 24, 2, 6); cx.fillRect(18, 24, 2, 6); cx.fillRect(28, 24, 2, 6);
+    });
+
+    createTexture(BLOCKS.REDSTONE_WIRE_OFF, cx => {
+        cx.fillStyle = '#5a0a0a'; cx.fillRect(4, 24, 24, 4);
+        cx.fillStyle = '#7a1414';
+        cx.fillRect(6, 25, 4, 2); cx.fillRect(14, 25, 4, 2); cx.fillRect(22, 25, 4, 2);
+    });
+    createTexture(BLOCKS.REDSTONE_WIRE_ON, cx => {
+        cx.fillStyle = '#cc0a0a'; cx.fillRect(4, 22, 24, 8);
+        cx.fillStyle = '#ff2a2a'; cx.fillRect(4, 24, 24, 4);
+        cx.fillStyle = '#ff8080'; cx.fillRect(6, 25, 20, 2);
+        cx.fillStyle = 'rgba(255,80,80,0.4)';
+        cx.fillRect(2, 20, 28, 12);
+    });
+    createTexture(BLOCKS.REDSTONE_TORCH, cx => {
+        // Çubuk
+        cx.fillStyle = '#5a3818'; cx.fillRect(14, 14, 4, 18);
+        cx.fillStyle = '#7a4a22'; cx.fillRect(14, 14, 2, 18);
+        // Alev (kırmızı)
+        cx.fillStyle = '#cc0a0a'; cx.fillRect(10, 6, 12, 10);
+        cx.fillStyle = '#ff2a2a'; cx.fillRect(12, 8, 8, 6);
+        cx.fillStyle = '#ff8080'; cx.fillRect(14, 9, 4, 3);
+        // Parlama
+        cx.fillStyle = 'rgba(255,80,80,0.3)';
+        cx.fillRect(6, 4, 20, 14);
+    });
+    createTexture(BLOCKS.REDSTONE_LAMP_OFF, cx => {
+        const lop = { a:'#4a3014', b:'#5a3818', c:'#3a2410' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 21);
+            let k = (r < 0.3) ? 'c' : (r < 0.7 ? 'a' : 'b');
+            cx.fillStyle = lop[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        cx.fillStyle = '#2a1808';
+        cx.fillRect(0,0,32,2); cx.fillRect(0,30,32,2); cx.fillRect(0,0,2,32); cx.fillRect(30,0,2,32);
+        cx.fillRect(8,8,16,2); cx.fillRect(8,22,16,2); cx.fillRect(8,8,2,16); cx.fillRect(22,8,2,16);
+    });
+    createTexture(BLOCKS.REDSTONE_LAMP_ON, cx => {
+        const lop = { a:'#e6a82a', b:'#f0c044', c:'#fada66' };
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 22);
+            let k = (r < 0.3) ? 'a' : (r < 0.7 ? 'b' : 'c');
+            cx.fillStyle = lop[k]; cx.fillRect(x*2, y*2, 2, 2);
+        }
+        cx.fillStyle = '#a87018';
+        cx.fillRect(0,0,32,2); cx.fillRect(0,30,32,2); cx.fillRect(0,0,2,32); cx.fillRect(30,0,2,32);
+        cx.fillStyle = 'rgba(255,255,200,0.6)';
+        cx.fillRect(8,8,16,16);
+        cx.fillStyle = '#ffffff';
+        cx.fillRect(12, 12, 6, 6);
+    });
+
+    // ===== METAL BLOKLAR =====
+    const drawMetalBlock = (cx, m, e, h, d) => {
+        // Hashed pattern background
+        for (let y=0; y<16; y++) for (let x=0; x<16; x++) {
+            const r = hashRand(x, y, 23 + d);
+            cx.fillStyle = r < 0.4 ? e : (r < 0.85 ? m : h);
+            cx.fillRect(x*2, y*2, 2, 2);
+        }
+        // Kenar şeridi
+        cx.fillStyle = e;
+        cx.fillRect(0,0,32,2); cx.fillRect(0,30,32,2); cx.fillRect(0,0,2,32); cx.fillRect(30,0,2,32);
+        // Parlak köşe
+        cx.fillStyle = h;
+        cx.fillRect(2, 2, 8, 2); cx.fillRect(2, 2, 2, 8);
+    };
+    createTexture(BLOCKS.IRON_BLOCK, cx => drawMetalBlock(cx, '#d6d6d6', '#9c9c9c', '#f5f5f5', 0));
+    createTexture(BLOCKS.GOLD_BLOCK, cx => drawMetalBlock(cx, '#e6c200', '#b39700', '#fff080', 1));
+    createTexture(BLOCKS.DIAMOND_BLOCK, cx => drawMetalBlock(cx, '#3ed5d5', '#1f9999', '#a8f5f5', 2));
+    createTexture(BLOCKS.EMERALD_BLOCK, cx => drawMetalBlock(cx, '#22b832', '#168224', '#7ef58a', 3));
+}
+generateTextures();
+
+function generateWorld() {
+    world = [];
+    entities = [];
+    const SEA_LEVEL = 40;
+
+    for (let x = 0; x < WORLD_WIDTH; x++) {
+        world[x] = [];
+        let biome = 'forest';
+        if (x < 300) biome = 'forest'; else if (x < 600) biome = 'desert'; else biome = 'snow';
+
+        let height = Math.floor(35 + Math.sin(x * 0.1) * 5 + Math.sin(x * 0.05) * 8);
+        if (biome === 'desert') height -= 5;
+        if (biome === 'snow') height += 5;
+
+        for (let y = 0; y < WORLD_HEIGHT; y++) {
+            if (y > height + 5) {
+                let caveNoise = Math.sin(x * 0.2) + Math.cos(y * 0.2) + Math.sin((x + y) * 0.1);
+                if (caveNoise > 1.2 && y < WORLD_HEIGHT - 2) { world[x][y] = BLOCKS.AIR; } 
+                else {
+                    let r = Math.random();
+                    if (y > WORLD_HEIGHT - 10 && r < 0.1) world[x][y] = BLOCKS.OBSIDIAN;
+                    else if (y > WORLD_HEIGHT - 30) {
+                        if (r < 0.005) world[x][y] = BLOCKS.DIAMOND_ORE;
+                        else if (r < 0.01) world[x][y] = BLOCKS.EMERALD_ORE;
+                        else if (r < 0.03) world[x][y] = BLOCKS.REDSTONE_ORE;
+                        else if (r < 0.05) world[x][y] = BLOCKS.GOLD_ORE;
+                        else world[x][y] = BLOCKS.STONE;
+                    } 
+                    else if (r < 0.03) world[x][y] = BLOCKS.IRON_ORE;
+                    else if (r < 0.08) world[x][y] = BLOCKS.COAL_ORE;
+                    else world[x][y] = BLOCKS.STONE;
+                }
+            }
+            else if (y > height) {
+                if (biome === 'desert') world[x][y] = BLOCKS.SAND;
+                else world[x][y] = BLOCKS.DIRT;
+            }
+            else if (y === height) {
+                if (y >= SEA_LEVEL) {
+                    if (biome === 'desert') world[x][y] = BLOCKS.SAND;
+                    else world[x][y] = BLOCKS.DIRT;
+                } else {
+                    if (biome === 'desert') world[x][y] = BLOCKS.SAND;
+                    else if (biome === 'snow') world[x][y] = BLOCKS.SNOW;
+                    else world[x][y] = BLOCKS.GRASS;
+                }
+            }
+            else {
+                if (y >= SEA_LEVEL) {
+                    if (biome === 'snow') world[x][y] = (y === SEA_LEVEL) ? BLOCKS.ICE : BLOCKS.WATER;
+                    else world[x][y] = BLOCKS.WATER;
+                } else world[x][y] = BLOCKS.AIR;
+            }
+        }
+    }
+
+    // Ağaç, Kaktüs ve Köy Ekleme
+    for (let x = 20; x < WORLD_WIDTH - 20; x++) {
+        let surfaceY = 0; while(world[x] && world[x][surfaceY] === BLOCKS.AIR && surfaceY < WORLD_HEIGHT) surfaceY++;
+        if(surfaceY >= WORLD_HEIGHT) continue;
+
+        let biome = 'forest'; if (x >= 300 && x < 600) biome = 'desert'; else if (x >= 600) biome = 'snow';
+
+        if (Math.random() < 0.015) { 
+            let isFlat = true;
+            for(let i=0; i<15; i++) { let sy=0; while(world[x+i] && world[x+i][sy] === BLOCKS.AIR) sy++; if(Math.abs(sy - surfaceY) > 2) isFlat = false; }
+            if (isFlat) { generateVillage(x, surfaceY - 1, biome); x += 20; continue; }
+        }
+
+        if (world[x][surfaceY] === BLOCKS.GRASS || world[x][surfaceY] === BLOCKS.SNOW) {
+            if (Math.random() < 0.1) { // Ağaç
+                let treeH = Math.floor(Math.random() * 3) + 4;
+                for(let i=1; i<=treeH; i++) world[x][surfaceY - i] = BLOCKS.LOG;
+                for(let lx = -2; lx <= 2; lx++) for(let ly = -2; ly <= 2; ly++) {
+                    if(Math.abs(lx) === 2 && Math.abs(ly) === 2) continue;
+                    if(world[x+lx]) world[x + lx][surfaceY - treeH + ly] = BLOCKS.LEAVES;
+                }
+            } else if (Math.random() < 0.05) { // Koyun
+                entities.push({ type: 'sheep', x: x * BLOCK_SIZE, y: (surfaceY-2) * BLOCK_SIZE, w: 24, h: 24, vx: 0, vy: 0, hp: 10, dir: 1, timer: 0 });
+            }
+        } else if (world[x][surfaceY] === BLOCKS.SAND && Math.random() < 0.05) {
+            let cactusH = Math.floor(Math.random() * 3) + 2;
+            for(let i=1; i<=cactusH; i++) world[x][surfaceY - i] = BLOCKS.CACTUS;
+        }
+
+        // Düşman Moblar (Mağaralarda veya Geceleri)
+        if (Math.random() < 0.03) {
+            let spawnY = surfaceY - 2;
+            if (Math.random() < 0.5) { // Zombi
+                entities.push({ type: 'zombie', x: x * BLOCK_SIZE, y: spawnY * BLOCK_SIZE, w: 24, h: 48, vx: 0, vy: 0, hp: 20, dir: 1 });
+            } else { // Slime
+                entities.push({ type: 'slime', x: x * BLOCK_SIZE, y: spawnY * BLOCK_SIZE, w: 24, h: 24, vx: 0, vy: 0, hp: 10, dir: 1, jumpTimer: 0 });
+            }
+        }
+    }
+}
+
+function generateVillage(startX, y, biome) {
+    const matWall = biome === 'desert' ? BLOCKS.SAND : BLOCKS.PLANKS;
+    const matRoof = biome === 'desert' ? BLOCKS.SAND : BLOCKS.COBBLESTONE;
+
+    for (let x = startX; x < startX + 15; x++) world[x][y] = matRoof;
+
+    const w = 7, h = 5;
+    for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) {
+        if (i === 0 || i === w - 1 || j === 0 || j === h - 1) world[startX + i][y - j] = matWall;
+        else world[startX + i][y - j] = BLOCKS.AIR;
+    }
+    world[startX + 3][y] = BLOCKS.AIR; world[startX + 3][y - 1] = BLOCKS.AIR;
+    world[startX + 1][y - 2] = BLOCKS.GLASS; world[startX + 5][y - 2] = BLOCKS.GLASS;
+    for (let i = -1; i <= w; i++) world[startX + i][y - h] = matRoof;
+    world[startX + 1][y] = BLOCKS.CRAFTING_TABLE;
+
+    for (let i = 8; i < 14; i++) {
+        world[startX + i][y] = BLOCKS.DIRT;
+        if (i % 2 === 0) world[startX + i][y - 1] = BLOCKS.WATER;
+    }
+
+    entities.push({ type: 'villager', x: (startX+3) * BLOCK_SIZE, y: (y-2) * BLOCK_SIZE, w: 24, h: 48, vx: 0, vy: 0, hp: 20, dir: 1, timer: 0 });
+}
+
+function generateNether() {
+    let nether = [];
+    for (let x = 0; x < WORLD_WIDTH; x++) {
+        nether[x] = [];
+        for (let y = 0; y < WORLD_HEIGHT; y++) {
+            if (y === 0 || y === WORLD_HEIGHT - 1) { nether[x][y] = BLOCKS.OBSIDIAN; }
+            else {
+                let caveNoise = Math.sin(x * 0.2) + Math.cos(y * 0.2) + Math.sin((x + y) * 0.15);
+                if (caveNoise > 0.6 && y > 10 && y < WORLD_HEIGHT - 15) nether[x][y] = BLOCKS.AIR;
+                else nether[x][y] = BLOCKS.NETHERRACK;
+            }
+            if (y >= WORLD_HEIGHT - 15 && nether[x][y] === BLOCKS.AIR) {
+                nether[x][y] = BLOCKS.LAVA;
+                if (Math.random() < 0.2 && nether[x][y-1] === BLOCKS.AIR) nether[x][y-1] = BLOCKS.SOUL_SAND;
+            }
+            if (y < 40 && nether[x][y] === BLOCKS.NETHERRACK && nether[x][y+1] === BLOCKS.AIR && Math.random() < 0.1) {
+                nether[x][y] = BLOCKS.GLOWSTONE; nether[x][y+1] = BLOCKS.GLOWSTONE;
+            }
+            if (x % 50 > 40 && y > WORLD_HEIGHT - 40 && nether[x][y] !== BLOCKS.AIR) nether[x][y] = BLOCKS.NETHER_BRICK;
+        }
+    }
+    return nether;
+}
+
+const player = { x: 0, y: 0, width: 24, height: 48, vx: 0, vy: 0, speed: 4, jumpPower: -9, grounded: false, hp: 100, maxHp: 100, highestY: 0, iframe: 0, facing: 1, walkTime: 0 };
+let camera = { x: 0, y: 0 };
+let frameCount = 0;
+
+function spawnPlayerSafely() {
+    let startX = Math.floor(WORLD_WIDTH / 2);
+    let spawnX = startX * BLOCK_SIZE;
+    let spawnY = 0;
+
+    for (let y = 0; y < WORLD_HEIGHT; y++) {
+        let block = world[startX]?.[y];
+        if (block !== BLOCKS.AIR && block !== BLOCKS.WATER && block !== BLOCKS.LAVA) { spawnY = (y - 2) * BLOCK_SIZE; break; }
+    }
+    player.x = spawnX; player.y = spawnY; player.vx = 0; player.vy = 0; player.hp = player.maxHp; player.highestY = player.y; player.iframe = 0;
+    updateHealthUI();
+    
+    // Garantili ilk köy ve moblar
+    generateVillage(startX + 5, spawnY/BLOCK_SIZE + 1, 'forest');
+    entities.push({ type: 'sheep', x: (startX+15) * BLOCK_SIZE, y: spawnY, w: 24, h: 24, vx: 0, vy: 0, hp: 10, dir: 1, timer: 0 });
+}
+
+function switchDimension() {
+    worlds[currentDimension] = world;
+    currentDimension = currentDimension === 0 ? 1 : 0;
+    if (!worlds[currentDimension]) worlds[currentDimension] = currentDimension === 1 ? generateNether() : generateWorld();
+    world = worlds[currentDimension];
+    
+    if (currentDimension === 1) { player.x = 10 * BLOCK_SIZE; player.y = 10 * BLOCK_SIZE; } 
+    else spawnPlayerSafely();
+    needsRedstoneUpdate = true;
+}
+
+const INVENTORY_SIZE = 27; const HOTBAR_SIZE = 9;
+let inventory = new Array(INVENTORY_SIZE).fill(null);
+let hotbar = new Array(HOTBAR_SIZE).fill(null);
+let craftingGrid = new Array(9).fill(null);
+let craftingResult = null;
+let selectedHotbar = 0;
+
+let uiState = { isOpen: false, mode: 'inventory', draggedItem: null, mouseX: 0, mouseY: 0, recipePage: 0, targetEntity: null };
+let furnaceSlots = { input: null, fuel: null, result: null };
+let smeltProgress = 0;
+let isMining = false;
+let mineTarget = { x: -1, y: -1, progress: 0 };
+
+function updateHealthUI() {
+    document.getElementById('hp-text').innerText = Math.floor(player.hp);
+    document.getElementById('health-bar').style.width = Math.max(0, player.hp) + '%';
+    if (player.hp <= 0) spawnPlayerSafely();
+}
+
+const RECIPES = [
+    { pattern: [[BLOCKS.LOG]], result: { type: BLOCKS.PLANKS, count: 4 } },
+    { pattern: [[BLOCKS.PLANKS], [BLOCKS.PLANKS]], result: { type: BLOCKS.STICK, count: 4 } },
+    { pattern: [[BLOCKS.PLANKS, BLOCKS.PLANKS], [BLOCKS.PLANKS, BLOCKS.PLANKS]], result: { type: BLOCKS.CRAFTING_TABLE, count: 1 } },
+    { pattern: [[BLOCKS.PLANKS, BLOCKS.PLANKS, BLOCKS.PLANKS], [0, BLOCKS.STICK, 0], [0, BLOCKS.STICK, 0]], result: { type: BLOCKS.WOODEN_PICKAXE, count: 1 } },
+    { pattern: [[BLOCKS.COBBLESTONE, BLOCKS.COBBLESTONE, BLOCKS.COBBLESTONE], [0, BLOCKS.STICK, 0], [0, BLOCKS.STICK, 0]], result: { type: BLOCKS.STONE_PICKAXE, count: 1 } },
+    { pattern: [[BLOCKS.PLANKS, BLOCKS.PLANKS], [BLOCKS.PLANKS, BLOCKS.STICK], [0, BLOCKS.STICK]], result: { type: BLOCKS.WOODEN_AXE, count: 1 } },
+    { pattern: [[BLOCKS.COBBLESTONE, BLOCKS.COBBLESTONE], [BLOCKS.COBBLESTONE, BLOCKS.STICK], [0, BLOCKS.STICK]], result: { type: BLOCKS.STONE_AXE, count: 1 } },
+    { pattern: [[BLOCKS.PLANKS], [BLOCKS.PLANKS], [BLOCKS.STICK]], result: { type: BLOCKS.WOODEN_SWORD, count: 1 } },
+    { pattern: [[BLOCKS.COBBLESTONE], [BLOCKS.COBBLESTONE], [BLOCKS.STICK]], result: { type: BLOCKS.STONE_SWORD, count: 1 } },
+    { pattern: [[BLOCKS.COBBLESTONE, BLOCKS.COBBLESTONE, BLOCKS.COBBLESTONE], [BLOCKS.COBBLESTONE, 0, BLOCKS.COBBLESTONE], [BLOCKS.COBBLESTONE, BLOCKS.COBBLESTONE, BLOCKS.COBBLESTONE]], result: { type: BLOCKS.FURNACE, count: 1 } },
+    { pattern: [[BLOCKS.OBSIDIAN, BLOCKS.OBSIDIAN], [BLOCKS.OBSIDIAN, BLOCKS.OBSIDIAN]], result: { type: BLOCKS.PORTAL, count: 1 } },
+    { pattern: [[BLOCKS.REDSTONE_DUST], [BLOCKS.STICK]], result: { type: BLOCKS.REDSTONE_TORCH, count: 1 } },
+    { pattern: [[0, BLOCKS.REDSTONE_DUST, 0], [BLOCKS.REDSTONE_DUST, BLOCKS.GLOWSTONE, BLOCKS.REDSTONE_DUST], [0, BLOCKS.REDSTONE_DUST, 0]], result: { type: BLOCKS.REDSTONE_LAMP_OFF, count: 1 } },
+    { pattern: [[BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT], [0, BLOCKS.STICK, 0], [0, BLOCKS.STICK, 0]], result: { type: BLOCKS.IRON_PICKAXE, count: 1 } },
+    { pattern: [[BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT], [0, BLOCKS.STICK, 0], [0, BLOCKS.STICK, 0]], result: { type: BLOCKS.GOLDEN_PICKAXE, count: 1 } },
+    { pattern: [[BLOCKS.DIAMOND, BLOCKS.DIAMOND, BLOCKS.DIAMOND], [0, BLOCKS.STICK, 0], [0, BLOCKS.STICK, 0]], result: { type: BLOCKS.DIAMOND_PICKAXE, count: 1 } },
+    { pattern: [[BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT], [BLOCKS.IRON_INGOT, BLOCKS.STICK], [0, BLOCKS.STICK]], result: { type: BLOCKS.IRON_AXE, count: 1 } },
+    { pattern: [[BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT], [BLOCKS.GOLD_INGOT, BLOCKS.STICK], [0, BLOCKS.STICK]], result: { type: BLOCKS.GOLDEN_AXE, count: 1 } },
+    { pattern: [[BLOCKS.DIAMOND, BLOCKS.DIAMOND], [BLOCKS.DIAMOND, BLOCKS.STICK], [0, BLOCKS.STICK]], result: { type: BLOCKS.DIAMOND_AXE, count: 1 } },
+    { pattern: [[BLOCKS.IRON_INGOT], [BLOCKS.IRON_INGOT], [BLOCKS.STICK]], result: { type: BLOCKS.IRON_SWORD, count: 1 } },
+    { pattern: [[BLOCKS.GOLD_INGOT], [BLOCKS.GOLD_INGOT], [BLOCKS.STICK]], result: { type: BLOCKS.GOLDEN_SWORD, count: 1 } },
+    { pattern: [[BLOCKS.DIAMOND], [BLOCKS.DIAMOND], [BLOCKS.STICK]], result: { type: BLOCKS.DIAMOND_SWORD, count: 1 } },
+    { pattern: [[BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT], [BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT], [BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT, BLOCKS.IRON_INGOT]], result: { type: BLOCKS.IRON_BLOCK, count: 1 } },
+    { pattern: [[BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT], [BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT], [BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT, BLOCKS.GOLD_INGOT]], result: { type: BLOCKS.GOLD_BLOCK, count: 1 } },
+    { pattern: [[BLOCKS.DIAMOND, BLOCKS.DIAMOND, BLOCKS.DIAMOND], [BLOCKS.DIAMOND, BLOCKS.DIAMOND, BLOCKS.DIAMOND], [BLOCKS.DIAMOND, BLOCKS.DIAMOND, BLOCKS.DIAMOND]], result: { type: BLOCKS.DIAMOND_BLOCK, count: 1 } },
+    { pattern: [[BLOCKS.EMERALD, BLOCKS.EMERALD, BLOCKS.EMERALD], [BLOCKS.EMERALD, BLOCKS.EMERALD, BLOCKS.EMERALD], [BLOCKS.EMERALD, BLOCKS.EMERALD, BLOCKS.EMERALD]], result: { type: BLOCKS.EMERALD_BLOCK, count: 1 } }
+];
+
+const TRADES = [
+    { cost: { type: BLOCKS.COAL, count: 10 }, reward: { type: BLOCKS.EMERALD, count: 1 } },
+    { cost: { type: BLOCKS.IRON_INGOT, count: 5 }, reward: { type: BLOCKS.EMERALD, count: 1 } },
+    { cost: { type: BLOCKS.EMERALD, count: 2 }, reward: { type: BLOCKS.COOKED_MUTTON, count: 3 } },
+    { cost: { type: BLOCKS.EMERALD, count: 5 }, reward: { type: BLOCKS.DIAMOND_SWORD, count: 1 } }
+];
+
+function checkCrafting() {
+    let minX=3, minY=3, maxX=-1, maxY=-1; let grid2D = [[0,0,0],[0,0,0],[0,0,0]];
+    for(let i=0; i<9; i++) {
+        let x = i % 3; let y = Math.floor(i / 3);
+        if(craftingGrid[i]) { grid2D[y][x] = craftingGrid[i].type; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+    }
+    if (maxX === -1) { craftingResult = null; return; }
+    let currentPattern = [];
+    for(let y = minY; y <= maxY; y++) { let row = []; for(let x = minX; x <= maxX; x++) row.push(grid2D[y][x]); currentPattern.push(row); }
+
+    craftingResult = null;
+    for(let recipe of RECIPES) {
+        let match = true;
+        if(recipe.pattern.length !== currentPattern.length || recipe.pattern[0].length !== currentPattern[0].length) continue;
+        for(let r=0; r<recipe.pattern.length; r++) {
+            for(let c=0; c<recipe.pattern[r].length; c++) { if(recipe.pattern[r][c] !== currentPattern[r][c]) { match = false; break; } }
+            if(!match) break;
+        }
+        if(match) { craftingResult = { type: recipe.result.type, count: recipe.result.count }; break; }
+    }
+}
+
+function consumeCraftingMaterials() {
+    for(let i=0; i<9; i++) { if(craftingGrid[i]) { craftingGrid[i].count--; if(craftingGrid[i].count <= 0) craftingGrid[i] = null; } }
+    checkCrafting();
+}
+
+function addToInventory(type, count) {
+    // Quest hook: crafting/obtaining a wooden sword
+    if (typeof questProgress === 'function' && type === BLOCKS.WOODEN_SWORD) questProgress('craftSword', 1);
+    for(let i=0; i<HOTBAR_SIZE; i++) { if(hotbar[i] && hotbar[i].type === type && hotbar[i].count < 64) { let add = Math.min(64 - hotbar[i].count, count); hotbar[i].count += add; count -= add; if(count <= 0) return true; } }
+    for(let i=0; i<HOTBAR_SIZE; i++) { if(!hotbar[i]) { hotbar[i] = {type, count}; return true; } }
+    for(let i=0; i<INVENTORY_SIZE; i++) { if(!inventory[i]) { inventory[i] = {type, count}; return true; } }
+    return false;
+}
+
+function hasItem(type, count) {
+    let total = 0;
+    for(let item of hotbar) if(item && item.type === type) total += item.count;
+    for(let item of inventory) if(item && item.type === type) total += item.count;
+    return total >= count;
+}
+
+function consumeItem(type, count) {
+    let remaining = count;
+    for(let i=0; i<HOTBAR_SIZE; i++) {
+        if(hotbar[i] && hotbar[i].type === type) {
+            let take = Math.min(hotbar[i].count, remaining); hotbar[i].count -= take; remaining -= take;
+            if(hotbar[i].count <= 0) hotbar[i] = null; if(remaining <= 0) return;
+        }
+    }
+    for(let i=0; i<INVENTORY_SIZE; i++) {
+        if(inventory[i] && inventory[i].type === type) {
+            let take = Math.min(inventory[i].count, remaining); inventory[i].count -= take; remaining -= take;
+            if(inventory[i].count <= 0) inventory[i] = null; if(remaining <= 0) return;
+        }
+    }
+}
+
+const keys = {};
+window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key.toLowerCase() === 'e') {
+        uiState.isOpen = !uiState.isOpen;
+        if(!uiState.isOpen) {
+            uiState.mode = 'inventory'; uiState.targetEntity = null;
+            if (uiState.draggedItem) { addToInventory(uiState.draggedItem.type, uiState.draggedItem.count); uiState.draggedItem = null; }
+            for(let i=0; i<9; i++) { if(craftingGrid[i]) { addToInventory(craftingGrid[i].type, craftingGrid[i].count); craftingGrid[i] = null; } }
+            if (furnaceSlots.input) { addToInventory(furnaceSlots.input.type, furnaceSlots.input.count); furnaceSlots.input = null; }
+            if (furnaceSlots.fuel) { addToInventory(furnaceSlots.fuel.type, furnaceSlots.fuel.count); furnaceSlots.fuel = null; }
+            if (furnaceSlots.result) { addToInventory(furnaceSlots.result.type, furnaceSlots.result.count); furnaceSlots.result = null; }
+            checkCrafting();
+        }
+    }
+    if (e.key >= '1' && e.key <= '9') selectedHotbar = parseInt(e.key) - 1;
+});
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+window.addEventListener('mousemove', e => { uiState.mouseX = e.clientX; uiState.mouseY = e.clientY; });
+
+let uiBoxes = []; 
+
+window.addEventListener('mousedown', e => {
+    if (uiState.isOpen) {
+        for(let box of uiBoxes) {
+            if(e.clientX >= box.x && e.clientX <= box.x + box.w && e.clientY >= box.y && e.clientY <= box.y + box.h) {
+                if (box.type === 'btn_recipes') { uiState.mode = 'recipes'; uiState.recipePage = 0; return; }
+                if (box.type === 'btn_inv') { uiState.mode = 'inventory'; return; }
+                if (box.type === 'btn_prev' && uiState.recipePage > 0) { uiState.recipePage--; return; }
+                if (box.type === 'btn_next' && uiState.recipePage < RECIPES.length - 1) { uiState.recipePage++; return; }
+                
+                if (box.type === 'btn_trade') {
+                    let trade = TRADES[box.index];
+                    if (hasItem(trade.cost.type, trade.cost.count)) {
+                        consumeItem(trade.cost.type, trade.cost.count);
+                        addToInventory(trade.reward.type, trade.reward.count);
+                        playSound('trade');
+                    }
+                    return;
+                }
+
+                let targetArray = box.type === 'hotbar' ? hotbar : box.type === 'inv' ? inventory : box.type === 'craft' ? craftingGrid : null;
+                let isFurnaceSlot = (box.type === 'furnace_in' || box.type === 'furnace_fuel' || box.type === 'furnace_out');
+
+                if (box.type === 'result' || box.type === 'furnace_out') {
+                    let resultItem = box.type === 'result' ? craftingResult : furnaceSlots.result;
+                    if (resultItem && (!uiState.draggedItem || (uiState.draggedItem.type === resultItem.type && uiState.draggedItem.count + resultItem.count <= 64))) {
+                        if (!uiState.draggedItem) uiState.draggedItem = { ...resultItem }; else uiState.draggedItem.count += resultItem.count;
+                        // Quest hook: crafting a wooden sword (or any crafted item)
+                        if (box.type === 'result' && typeof questProgress === 'function' && resultItem.type === BLOCKS.WOODEN_SWORD) {
+                            questProgress('craftSword', 1);
+                        }
+                        if (box.type === 'result') consumeCraftingMaterials(); else furnaceSlots.result = null;
+                    }
+                    return;
+                }
+
+                if (targetArray || isFurnaceSlot) {
+                    let clickedItem = targetArray ? targetArray[box.index] : (box.type === 'furnace_in' ? furnaceSlots.input : furnaceSlots.fuel);
+                    
+                    if (e.button === 0) {
+                        if (uiState.draggedItem && clickedItem && uiState.draggedItem.type === clickedItem.type && clickedItem.count < 64) {
+                            let add = Math.min(64 - clickedItem.count, uiState.draggedItem.count);
+                            clickedItem.count += add; uiState.draggedItem.count -= add; if(uiState.draggedItem.count === 0) uiState.draggedItem = null;
+                        } else {
+                            let temp = uiState.draggedItem; uiState.draggedItem = clickedItem;
+                            if (targetArray) targetArray[box.index] = temp; else if (box.type === 'furnace_in') furnaceSlots.input = temp; else furnaceSlots.fuel = temp;
+                        }
+                    } else if (e.button === 2) {
+                        if (!uiState.draggedItem && clickedItem) {
+                            let half = Math.ceil(clickedItem.count / 2); uiState.draggedItem = { type: clickedItem.type, count: half }; clickedItem.count -= half;
+                            if(clickedItem.count === 0) { if (targetArray) targetArray[box.index] = null; else if (box.type === 'furnace_in') furnaceSlots.input = null; else furnaceSlots.fuel = null; }
+                        } else if (uiState.draggedItem) {
+                            if (!clickedItem) {
+                                let newItem = { type: uiState.draggedItem.type, count: 1 };
+                                if (targetArray) targetArray[box.index] = newItem; else if (box.type === 'furnace_in') furnaceSlots.input = newItem; else furnaceSlots.fuel = newItem;
+                                uiState.draggedItem.count--;
+                            } else if (clickedItem.type === uiState.draggedItem.type && clickedItem.count < 64) { clickedItem.count++; uiState.draggedItem.count--; }
+                            if(uiState.draggedItem.count === 0) uiState.draggedItem = null;
+                        }
+                    }
+                    if(box.type === 'craft') checkCrafting();
+                }
+            }
+        }
+    } else {
+        let mx = e.clientX + camera.x; let my = e.clientY + camera.y;
+        let pCenterX = player.x + player.width/2; let pCenterY = player.y + player.height/2;
+        let hItem = hotbar[selectedHotbar];
+
+        if (e.button === 0) {
+            let hitEntity = false;
+            for (let i = entities.length - 1; i >= 0; i--) {
+                let ent = entities[i];
+                if (ent.type !== 'villager' && Math.abs(mx - (ent.x + ent.w/2)) < ent.w && Math.abs(my - (ent.y + ent.h/2)) < ent.h && Math.hypot(pCenterX - ent.x, pCenterY - ent.y) < BLOCK_SIZE * 4) {
+                    let dmg = 5;
+                    if (hItem) {
+                        if (hItem.type === BLOCKS.WOODEN_SWORD) dmg = 10; else if (hItem.type === BLOCKS.STONE_SWORD) dmg = 15;
+                        else if (hItem.type === BLOCKS.IRON_SWORD) dmg = 25; else if (hItem.type === BLOCKS.GOLDEN_SWORD) dmg = 35;
+                        else if (hItem.type === BLOCKS.DIAMOND_SWORD) dmg = 50; else if (hItem.type >= 11 && hItem.type <= 14 || hItem.type >= 43 && hItem.type <= 48) dmg = 8;
+                    }
+                    ent.hp -= dmg;
+                    ent.vx = (ent.x > player.x ? 1 : -1) * 8; ent.vy = -4; // Geri tepme (Knockback)
+                    playSound('hit'); hitEntity = true;
+
+                    if (ent.hp <= 0) {
+                        if (ent.type === 'sheep') {
+                            addToInventory(BLOCKS.WHITE_WOOL, 1);
+                            addToInventory(BLOCKS.RAW_MUTTON, Math.floor(Math.random() * 2) + 1);
+                        }
+                        if (ent.type === 'zombie') {
+                            questProgress('killZombies', 1);
+                        }
+                        entities.splice(i, 1);
+                    }
+                    break;
+                }
+            }
+            if (!hitEntity) isMining = true;
+        } 
+        else if (e.button === 2) {
+            let hitEntity = false;
+            for (let ent of entities) {
+                if (ent.type === 'villager' && Math.abs(mx - (ent.x + ent.w/2)) < ent.w && Math.abs(my - (ent.y + ent.h/2)) < ent.h && Math.hypot(pCenterX - ent.x, pCenterY - ent.y) < BLOCK_SIZE * 4) {
+                    uiState.isOpen = true; uiState.mode = 'trade'; uiState.targetEntity = ent;
+                    hitEntity = true; break;
+                }
+            }
+
+            if (!hitEntity) {
+                // Yemek Yeme Kontrolü
+                if (hItem && (hItem.type === BLOCKS.RAW_MUTTON || hItem.type === BLOCKS.COOKED_MUTTON)) {
+                    if (player.hp < player.maxHp) {
+                        let heal = hItem.type === BLOCKS.COOKED_MUTTON ? 20 : 5;
+                        player.hp = Math.min(player.maxHp, player.hp + heal);
+                        updateHealthUI();
+                        hItem.count--; if(hItem.count <= 0) hotbar[selectedHotbar] = null;
+                        playSound('eat'); setTimeout(() => playSound('eat'), 150); setTimeout(() => playSound('eat'), 300);
+                        return;
+                    }
+                }
+
+                // Blok Etkileşimi / Koyma
+                let bx = Math.floor(mx / BLOCK_SIZE); let by = Math.floor(my / BLOCK_SIZE);
+                if (Math.hypot(pCenterX - (bx*BLOCK_SIZE+16), pCenterY - (by*BLOCK_SIZE+16)) < BLOCK_SIZE * 5) {
+                    let targetBlock = world[bx]?.[by];
+                    if (targetBlock === BLOCKS.CRAFTING_TABLE) { uiState.isOpen = true; uiState.mode = 'inventory'; return; }
+                    if (targetBlock === BLOCKS.FURNACE) { uiState.isOpen = true; uiState.mode = 'furnace'; return; }
+                    if (targetBlock === BLOCKS.PORTAL) { switchDimension(); return; }
+
+                    if ((targetBlock === BLOCKS.AIR || targetBlock === BLOCKS.WATER || targetBlock === BLOCKS.LAVA || targetBlock === BLOCKS.REDSTONE_WIRE_OFF || targetBlock === BLOCKS.REDSTONE_WIRE_ON) && hItem) {
+                        let isPlaceable = (hItem.type <= 9) || (hItem.type >= 20 && hItem.type <= 25 && hItem.type !== 21) || (hItem.type >= 34 && hItem.type <= 40) || hItem.type === BLOCKS.REDSTONE_DUST || (hItem.type >= 52 && hItem.type <= 59) || hItem.type === BLOCKS.WHITE_WOOL;
+                        if (isPlaceable && world[bx]) {
+                            let placeType = hItem.type;
+                            if (placeType === BLOCKS.REDSTONE_DUST) placeType = BLOCKS.REDSTONE_WIRE_OFF; 
+                            world[bx][by] = placeType;
+                            needsRedstoneUpdate = true; 
+                            hItem.count--; if(hItem.count <= 0) hotbar[selectedHotbar] = null;
+                            playSound('place', placeType);
+                        }
+                    }
+                }
+            }
+        }
+    }
+});
+
+window.addEventListener('mouseup', e => { if (e.button === 0) { isMining = false; mineTarget.progress = 0; } });
+window.addEventListener('contextmenu', e => e.preventDefault());
+
+function getBlock(x, y) {
+    let bx = Math.floor(x / BLOCK_SIZE); let by = Math.floor(y / BLOCK_SIZE);
+    if (bx >= 0 && bx < WORLD_WIDTH && by >= 0 && by < WORLD_HEIGHT) return world[bx][by]; return BLOCKS.AIR;
+}
+
+function isSolid(block) {
+    if (block === BLOCKS.REDSTONE_WIRE_OFF || block === BLOCKS.REDSTONE_WIRE_ON || block === BLOCKS.REDSTONE_TORCH) return false;
+    return (block > 0 && block <= 9) || (block >= 18 && block <= 20) || (block >= 22 && block <= 29) || (block >= 34 && block <= 36) || block === BLOCKS.REDSTONE_LAMP_OFF || block === BLOCKS.REDSTONE_LAMP_ON || (block >= 52 && block <= 59) || block === BLOCKS.WHITE_WOOL;
+}
+
+function updateRedstoneSystem() {
+    for(let x=0; x<WORLD_WIDTH; x++) {
+        for(let y=0; y<WORLD_HEIGHT; y++) {
+            if(world[x][y] === BLOCKS.REDSTONE_WIRE_ON) world[x][y] = BLOCKS.REDSTONE_WIRE_OFF;
+            if(world[x][y] === BLOCKS.REDSTONE_LAMP_ON) world[x][y] = BLOCKS.REDSTONE_LAMP_OFF;
+        }
+    }
+    let queue = [];
+    for(let x=0; x<WORLD_WIDTH; x++) {
+        for(let y=0; y<WORLD_HEIGHT; y++) {
+            if(world[x][y] === BLOCKS.REDSTONE_TORCH) { queue.push({x:x, y:y, p:15}); }
+        }
+    }
+    
+    let visited = new Set();
+    while(queue.length > 0) {
+        let {x, y, p} = queue.shift();
+        let key = x+","+y;
+        if(visited.has(key)) continue;
+        visited.add(key);
+
+        if (world[x][y] === BLOCKS.REDSTONE_WIRE_OFF) world[x][y] = BLOCKS.REDSTONE_WIRE_ON;
+        if (world[x][y] === BLOCKS.REDSTONE_LAMP_OFF) world[x][y] = BLOCKS.REDSTONE_LAMP_ON;
+
+        if (p > 0) {
+            let neighbors = [[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+            for(let [nx, ny] of neighbors) {
+                if(nx>=0 && nx<WORLD_WIDTH && ny>=0 && ny<WORLD_HEIGHT) {
+                    let nb = world[nx][ny];
+                    if(nb === BLOCKS.REDSTONE_WIRE_OFF || nb === BLOCKS.REDSTONE_WIRE_ON || nb === BLOCKS.REDSTONE_LAMP_OFF || nb === BLOCKS.REDSTONE_LAMP_ON) {
+                        queue.push({x:nx, y:ny, p: p-1});
+                    }
+                }
+            }
+        }
+    }
+}
+
+function updatePhysics() {
+    try {
+        if (needsRedstoneUpdate) { updateRedstoneSystem(); needsRedstoneUpdate = false; }
+        // Story quest: reachBaldric — track when player goes far west
+        if (storyMode && QUESTS[activeQuestIdx]?.id === 'reachBaldric') {
+            if (player.x / BLOCK_SIZE < 300) questProgress('reachBaldric', 1);
+        }
+        // King anchor — keep the king on his throne
+        if (storyMode && kingEntity && kingEntity.anchorX !== undefined) {
+            kingEntity.x = kingEntity.anchorX;
+            kingEntity.vx = 0; kingEntity.vy = 0;
+        }
+
+        if (furnaceSlots.input && furnaceSlots.fuel) {
+            let canSmelt = false; let resultType = null;
+            if (furnaceSlots.input.type === BLOCKS.IRON_ORE) { canSmelt = true; resultType = BLOCKS.IRON_INGOT; }
+            else if (furnaceSlots.input.type === BLOCKS.GOLD_ORE) { canSmelt = true; resultType = BLOCKS.GOLD_INGOT; }
+            else if (furnaceSlots.input.type === BLOCKS.RAW_MUTTON) { canSmelt = true; resultType = BLOCKS.COOKED_MUTTON; }
+            
+            let isFuel = furnaceSlots.fuel.type === BLOCKS.COAL || furnaceSlots.fuel.type === BLOCKS.LOG || furnaceSlots.fuel.type === BLOCKS.PLANKS;
+
+            if (canSmelt && isFuel && (!furnaceSlots.result || (furnaceSlots.result.type === resultType && furnaceSlots.result.count < 64))) {
+                smeltProgress++;
+                if (smeltProgress >= 100) {
+                    smeltProgress = 0;
+                    furnaceSlots.input.count--; if (furnaceSlots.input.count <= 0) furnaceSlots.input = null;
+                    furnaceSlots.fuel.count--; if (furnaceSlots.fuel.count <= 0) furnaceSlots.fuel = null;
+                    if (!furnaceSlots.result) furnaceSlots.result = { type: resultType, count: 1 }; else furnaceSlots.result.count++;
+                }
+            } else smeltProgress = 0;
+        } else smeltProgress = 0;
+
+        if(uiState.isOpen) return; 
+
+        let pCenterX = player.x + player.width/2; let pCenterY = player.y + player.height/2;
+        let bAtCenter = getBlock(pCenterX, pCenterY);
+        let inWater = bAtCenter === BLOCKS.WATER || bAtCenter === BLOCKS.LAVA;
+        let inLava = bAtCenter === BLOCKS.LAVA;
+
+        let moveSpeed = player.speed; if (inWater) moveSpeed *= 0.5;
+
+        if (player.iframe > 0) player.iframe--;
+        if (inLava && player.iframe <= 0) { player.hp -= 10; player.iframe = 30; playSound('hurt'); updateHealthUI(); }
+
+        if (keys['a']) { player.vx = -moveSpeed; player.facing = -1; }
+        else if (keys['d']) { player.vx = moveSpeed; player.facing = 1; }
+        else player.vx *= 0.8;
+        if (Math.abs(player.vx) > 0.4) player.walkTime += 0.25;
+        player.x += player.vx;
+
+        if (player.vx > 0 && (isSolid(getBlock(player.x+player.width, player.y)) || isSolid(getBlock(player.x+player.width, player.y+player.height-1)))) 
+            player.x = Math.floor((player.x+player.width)/BLOCK_SIZE)*BLOCK_SIZE - player.width;
+        else if (player.vx < 0 && (isSolid(getBlock(player.x, player.y)) || isSolid(getBlock(player.x, player.y+player.height-1)))) 
+            player.x = Math.floor(player.x/BLOCK_SIZE)*BLOCK_SIZE + BLOCK_SIZE;
+
+        player.vy += inWater ? 0.05 : 0.5;
+        if (player.vy > BLOCK_SIZE - 2) player.vy = BLOCK_SIZE - 2; // Terminal Velocity Sınırı
+        if (inWater && player.vy > 2) player.vy = 2;
+        player.y += player.vy;
+        player.grounded = false;
+
+        if (player.vy > 0 && (isSolid(getBlock(player.x+1, player.y+player.height)) || isSolid(getBlock(player.x+player.width-1, player.y+player.height)))) {
+            let fallDistance = (player.y - player.highestY) / BLOCK_SIZE;
+            if (fallDistance > 4 && !inWater) { 
+                player.hp -= Math.floor(fallDistance - 3) * 10; playSound('hurt'); updateHealthUI(); 
+            }
+            player.y = Math.floor((player.y+player.height)/BLOCK_SIZE)*BLOCK_SIZE - player.height; 
+            player.vy = 0; player.grounded = true; player.highestY = player.y;
+        } else if (player.vy < 0) {
+            if (player.y < player.highestY) player.highestY = player.y;
+            if (isSolid(getBlock(player.x+1, player.y)) || isSolid(getBlock(player.x+player.width-1, player.y))) {
+                player.y = Math.floor(player.y/BLOCK_SIZE)*BLOCK_SIZE + BLOCK_SIZE; player.vy = 0;
+            }
+        }
+        if (player.grounded && player.vy === 0) player.highestY = player.y;
+        if (keys['w']) { if (player.grounded) player.vy = player.jumpPower; else if (inWater) player.vy = -2; }
+
+        if (player.x < 0) player.x = 0;
+        if (player.x > WORLD_WIDTH * BLOCK_SIZE - player.width) player.x = WORLD_WIDTH * BLOCK_SIZE - player.width;
+        if (player.y > WORLD_HEIGHT * BLOCK_SIZE) { player.hp = 0; updateHealthUI(); } // Void'e düşme
+
+        camera.x = player.x - canvas.width / 2; camera.y = player.y - canvas.height / 2;
+
+        // Varlıklar (Entities) Yapay Zekası ve Fiziği
+        for (let ent of entities) {
+            ent.timer++;
+            if (ent.type === 'zombie') {
+                if (Math.hypot(pCenterX - ent.x, pCenterY - ent.y) < BLOCK_SIZE * 10) ent.vx = (player.x > ent.x ? 1 : -1) * 2;
+                else ent.vx = 0;
+                
+                if (Math.abs(pCenterX - ent.x) < BLOCK_SIZE && Math.abs(pCenterY - ent.y) < BLOCK_SIZE && player.iframe <= 0) {
+                    player.hp -= 15; player.iframe = 30; playSound('hurt'); updateHealthUI();
+                    player.vx = (player.x > ent.x ? 1 : -1) * 10; player.vy = -5;
+                }
+            } else if (ent.type === 'slime') {
+                ent.jumpTimer++;
+                if (Math.hypot(pCenterX - ent.x, pCenterY - ent.y) < BLOCK_SIZE * 15 && ent.jumpTimer > 60 && ent.vy === 0) {
+                    ent.vx = (player.x > ent.x ? 1 : -1) * 4; ent.vy = -8; ent.jumpTimer = 0;
+                }
+                if (ent.vy === 0) ent.vx *= 0.8;
+
+                if (Math.abs(pCenterX - ent.x) < BLOCK_SIZE && Math.abs(pCenterY - ent.y) < BLOCK_SIZE && player.iframe <= 0) {
+                    player.hp -= 10; player.iframe = 30; playSound('hurt'); updateHealthUI();
+                }
+            } else if (ent.type === 'villager' || ent.type === 'sheep') {
+                if (ent.timer > 100) {
+                    ent.timer = 0;
+                    if (Math.random() < 0.3) ent.vx = 0;
+                    else ent.vx = (Math.random() > 0.5 ? 1 : -1) * 1.5;
+                }
+            }
+
+            // Animasyon değerlerini güncelle
+            if (ent.vx > 0.1) ent.dir = 1;
+            else if (ent.vx < -0.1) ent.dir = -1;
+            if (ent.walkTime === undefined) ent.walkTime = 0;
+            if (Math.abs(ent.vx) > 0.3) ent.walkTime += 0.25;
+
+            ent.x += ent.vx;
+            if (ent.vx > 0 && (isSolid(getBlock(ent.x+ent.w, ent.y)) || isSolid(getBlock(ent.x+ent.w, ent.y+ent.h-1)))) { ent.x -= ent.vx; if(ent.vy===0) ent.vy = -6; }
+            else if (ent.vx < 0 && (isSolid(getBlock(ent.x, ent.y)) || isSolid(getBlock(ent.x, ent.y+ent.h-1)))) { ent.x -= ent.vx; if(ent.vy===0) ent.vy = -6; }
+
+            ent.vy += 0.5;
+            if (ent.vy > BLOCK_SIZE - 2) ent.vy = BLOCK_SIZE - 2;
+            ent.y += ent.vy;
+
+            if (ent.vy > 0 && (isSolid(getBlock(ent.x+1, ent.y+ent.h)) || isSolid(getBlock(ent.x+ent.w-1, ent.y+ent.h)))) {
+                ent.y = Math.floor((ent.y+ent.h)/BLOCK_SIZE)*BLOCK_SIZE - ent.h; ent.vy = 0;
+            } else if (ent.vy < 0 && (isSolid(getBlock(ent.x+1, ent.y)) || isSolid(getBlock(ent.x+ent.w-1, ent.y)))) {
+                ent.y = Math.floor(ent.y/BLOCK_SIZE)*BLOCK_SIZE + BLOCK_SIZE; ent.vy = 0;
+            }
+        }
+
+        // Madencilik
+        if (isMining && !uiState.isOpen) {
+            let bx = Math.floor((uiState.mouseX + camera.x) / BLOCK_SIZE); let by = Math.floor((uiState.mouseY + camera.y) / BLOCK_SIZE);
+            if (Math.hypot(pCenterX - (bx*BLOCK_SIZE+16), pCenterY - (by*BLOCK_SIZE+16)) < BLOCK_SIZE * 5) {
+                let tb = world[bx]?.[by];
+                if (tb && tb !== BLOCKS.AIR && tb !== BLOCKS.WATER && tb !== BLOCKS.LAVA) {
+                    if (bx !== mineTarget.x || by !== mineTarget.y) { mineTarget.x = bx; mineTarget.y = by; mineTarget.progress = 0; }
+                    let tool = hotbar[selectedHotbar]; let power = 1;
+                    if (tool) {
+                        if (tool.type === BLOCKS.WOODEN_PICKAXE) power = 4; else if (tool.type === BLOCKS.STONE_PICKAXE) power = 8;
+                        else if (tool.type === BLOCKS.IRON_PICKAXE) power = 15; else if (tool.type === BLOCKS.GOLDEN_PICKAXE) power = 25; else if (tool.type === BLOCKS.DIAMOND_PICKAXE) power = 30;
+                        else if (tool.type === BLOCKS.WOODEN_AXE) power = 3; else if (tool.type === BLOCKS.STONE_AXE) power = 6;
+                        else if (tool.type === BLOCKS.IRON_AXE) power = 12; else if (tool.type === BLOCKS.GOLDEN_AXE) power = 20; else if (tool.type === BLOCKS.DIAMOND_AXE) power = 25;
+                    }
+                    mineTarget.progress += power;
+                    if (mineTarget.progress >= (BLOCK_HARDNESS[tb] || 30)) {
+                        if (BLOCK_DROPS[tb]) addToInventory(BLOCK_DROPS[tb].type, BLOCK_DROPS[tb].count);
+                        else addToInventory(tb, 1);
+                        // Quest progress: mineStone (stone or cobble)
+                        if (tb === BLOCKS.STONE || tb === BLOCKS.COBBLESTONE) questProgress('mineStone', 1);
+                        world[bx][by] = BLOCKS.AIR; mineTarget.progress = 0;
+                        playSound('break', tb);
+                        needsRedstoneUpdate = true;
+                    }
+                } else mineTarget.progress = 0;
+            } else mineTarget.progress = 0;
+        }
+    } catch(err) { console.error("Fizik hatası: ", err); }
+}
+
+function drawItem(ctx, itemObj, x, y, size=32) {
+    if (!itemObj) return;
+    if (textures[itemObj.type]) ctx.drawImage(textures[itemObj.type], x, y, size, size); else { ctx.fillStyle='#f0f'; ctx.fillRect(x,y,size,size); }
+    if (itemObj.count > 1) { ctx.fillStyle='white'; ctx.font='14px Arial'; ctx.textAlign='right'; ctx.fillText(itemObj.count, x+size-2, y+size-2); }
+}
+
+function drawUI() {
+    uiBoxes = [];
+    if (uiState.isOpen) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+
+    if (!uiState.isOpen) {
+        let bx = Math.floor((uiState.mouseX + camera.x) / BLOCK_SIZE); let by = Math.floor((uiState.mouseY + camera.y) / BLOCK_SIZE);
+        if (Math.hypot(player.x+player.width/2 - (bx*BLOCK_SIZE+16), player.y+player.height/2 - (by*BLOCK_SIZE+16)) < BLOCK_SIZE * 5) {
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2; ctx.strokeRect(bx * BLOCK_SIZE - camera.x, by * BLOCK_SIZE - camera.y, BLOCK_SIZE, BLOCK_SIZE);
+            if (isMining && mineTarget.x === bx && mineTarget.y === by && mineTarget.progress > 0) {
+                let stage = Math.floor((mineTarget.progress / (BLOCK_HARDNESS[world[bx]?.[by]] || 30)) * 4);
+                ctx.save(); ctx.translate(bx * BLOCK_SIZE - camera.x, by * BLOCK_SIZE - camera.y); ctx.strokeStyle = 'rgba(20,20,20,0.8)'; ctx.lineWidth = 2; ctx.beginPath();
+                if (stage >= 1) { ctx.moveTo(0,0); ctx.lineTo(16,16); ctx.moveTo(32,32); ctx.lineTo(16,16); }
+                if (stage >= 2) { ctx.moveTo(32,0); ctx.lineTo(16,16); ctx.moveTo(0,32); ctx.lineTo(16,16); }
+                if (stage >= 3) { ctx.moveTo(16,0); ctx.lineTo(16,32); ctx.moveTo(0,16); ctx.lineTo(32,16); }
+                ctx.stroke(); ctx.restore();
+            }
+        }
+    }
+
+    const slotSize = 48; const padding = 5; const startX = (canvas.width - ((slotSize + padding) * HOTBAR_SIZE + padding)) / 2; const startY = canvas.height - slotSize - 20;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; ctx.fillRect(startX, startY, ((slotSize + padding) * HOTBAR_SIZE + padding), slotSize + padding*2);
+    for (let i = 0; i < HOTBAR_SIZE; i++) {
+        let sx = startX + padding + i * (slotSize + padding); let sy = startY + padding;
+        ctx.fillStyle = (i === selectedHotbar && !uiState.isOpen) ? 'rgba(255, 255, 255, 0.4)' : 'rgba(100, 100, 100, 0.6)';
+        ctx.fillRect(sx, sy, slotSize, slotSize); ctx.strokeStyle = '#222'; ctx.strokeRect(sx, sy, slotSize, slotSize);
+        drawItem(ctx, hotbar[i], sx + 8, sy + 8, 32); uiBoxes.push({ type: 'hotbar', index: i, x: sx, y: sy, w: slotSize, h: slotSize });
+        if (i === selectedHotbar && hotbar[i] && !uiState.isOpen) { ctx.fillStyle='white'; ctx.textAlign='center'; ctx.font='16px Arial'; ctx.fillText(BLOCK_NAMES[hotbar[i].type], canvas.width/2, startY - 10); }
+    }
+
+    if (uiState.isOpen) {
+        const panelW = 500; const panelH = 400; const pX = (canvas.width - panelW) / 2; const pY = (canvas.height - panelH) / 2;
+        ctx.fillStyle = '#c6c6c6'; ctx.fillRect(pX, pY, panelW, panelH); ctx.strokeStyle = '#fff'; ctx.lineWidth=3; ctx.strokeRect(pX, pY, panelW, panelH);
+
+        if (uiState.mode !== 'trade') {
+            ctx.fillStyle = uiState.mode === 'inventory' ? '#8b8b8b' : '#c6c6c6'; ctx.fillRect(pX+20, pY-30, 100, 30); ctx.strokeRect(pX+20, pY-30, 100, 30);
+            ctx.fillStyle = '#333'; ctx.fillText("Envanter", pX+70, pY-10); uiBoxes.push({ type: 'btn_inv', x: pX+20, y: pY-30, w: 100, h: 30 });
+            
+            ctx.fillStyle = uiState.mode === 'recipes' ? '#8b8b8b' : '#c6c6c6'; ctx.fillRect(pX+130, pY-30, 150, 30); ctx.strokeRect(pX+130, pY-30, 150, 30);
+            ctx.fillStyle = '#333'; ctx.fillText("Tarifler Kitabı", pX+205, pY-10); uiBoxes.push({ type: 'btn_recipes', x: pX+130, y: pY-30, w: 150, h: 30 });
+        }
+
+        if (uiState.mode === 'recipes') {
+            ctx.fillStyle = '#333'; ctx.textAlign='center'; ctx.font='20px Arial'; ctx.fillText("Tüm Tarifler", pX + panelW/2, pY + 30);
+            
+            let recipe = RECIPES[uiState.recipePage];
+            if (recipe) {
+                let startRX = pX + 150; let startRY = pY + 80;
+                for(let r=0; r<3; r++) {
+                    for(let c=0; c<3; c++) {
+                        let rx = startRX + c*(slotSize+padding); let ry = startRY + r*(slotSize+padding);
+                        ctx.fillStyle = '#8b8b8b'; ctx.fillRect(rx, ry, slotSize, slotSize); ctx.strokeRect(rx, ry, slotSize, slotSize);
+                        let itemType = recipe.pattern[r]?.[c] || 0;
+                        if(itemType > 0) drawItem(ctx, {type: itemType, count: 1}, rx+8, ry+8, 32);
+                    }
+                }
+                ctx.fillStyle = '#333'; ctx.fillText("➔", pX + 350, startRY + 70);
+                let resX = pX + 380; let resY = startRY + 50;
+                ctx.fillStyle = '#8b8b8b'; ctx.fillRect(resX, resY, slotSize, slotSize); ctx.strokeRect(resX, resY, slotSize, slotSize);
+                drawItem(ctx, recipe.result, resX+8, resY+8, 32);
+                ctx.fillText(BLOCK_NAMES[recipe.result.type], pX + panelW/2, pY + 280);
+            }
+            ctx.fillStyle = '#777'; ctx.fillRect(pX+50, pY+300, 50, 30); ctx.strokeRect(pX+50, pY+300, 50, 30); ctx.fillStyle='white'; ctx.fillText("< Önceki", pX+75, pY+320); uiBoxes.push({ type: 'btn_prev', x: pX+50, y: pY+300, w: 50, h: 30 });
+            ctx.fillStyle = '#777'; ctx.fillRect(pX+400, pY+300, 50, 30); ctx.strokeRect(pX+400, pY+300, 50, 30); ctx.fillStyle='white'; ctx.fillText("Sonraki >", pX+425, pY+320); uiBoxes.push({ type: 'btn_next', x: pX+400, y: pY+300, w: 50, h: 30 });
+            ctx.fillStyle='#333'; ctx.fillText(`Sayfa ${uiState.recipePage + 1} / ${RECIPES.length}`, pX + panelW/2, pY+320);
+
+        } else if (uiState.mode === 'trade') {
+            ctx.fillStyle = '#333'; ctx.textAlign='center'; ctx.font='20px Arial'; ctx.fillText("Köylü Ticareti", pX + panelW/2, pY + 30);
+            for (let i = 0; i < TRADES.length; i++) {
+                let trade = TRADES[i]; let ty = pY + 60 + i * 55;
+                ctx.fillStyle = '#8b8b8b'; ctx.fillRect(pX + 50, ty, slotSize, slotSize); ctx.strokeRect(pX + 50, ty, slotSize, slotSize);
+                drawItem(ctx, trade.cost, pX + 50 + 8, ty + 8, 32);
+                ctx.fillStyle = '#333'; ctx.fillText("➔", pX + 130, ty + 30);
+                ctx.fillStyle = '#8b8b8b'; ctx.fillRect(pX + 160, ty, slotSize, slotSize); ctx.strokeRect(pX + 160, ty, slotSize, slotSize);
+                drawItem(ctx, trade.reward, pX + 160 + 8, ty + 8, 32);
+                
+                let canAfford = hasItem(trade.cost.type, trade.cost.count);
+                ctx.fillStyle = canAfford ? '#4CAF50' : '#f44336'; ctx.fillRect(pX + 250, ty + 10, 100, 30); ctx.strokeRect(pX + 250, ty + 10, 100, 30);
+                ctx.fillStyle = 'white'; ctx.fillText("Takas Et", pX + 300, ty + 32);
+                uiBoxes.push({ type: 'btn_trade', index: i, x: pX + 250, y: ty + 10, w: 100, h: 30 });
+            }
+        } else {
+            ctx.fillStyle = '#333'; ctx.textAlign='left'; ctx.font='16px Arial'; ctx.fillText("Envanter", pX + 20, pY + 180);
+            if (uiState.mode === 'inventory') {
+                ctx.fillText("Üretim", pX + 250, pY + 30);
+                for(let i=0; i<9; i++) {
+                    let cx = pX + 250 + (i%3)*(slotSize+padding); let cy = pY + 50 + Math.floor(i/3)*(slotSize+padding);
+                    ctx.fillStyle = '#8b8b8b'; ctx.fillRect(cx, cy, slotSize, slotSize); ctx.strokeRect(cx, cy, slotSize, slotSize);
+                    drawItem(ctx, craftingGrid[i], cx+8, cy+8, 32); uiBoxes.push({ type: 'craft', index: i, x: cx, y: cy, w: slotSize, h: slotSize });
+                }
+                ctx.fillStyle = '#333'; ctx.fillText("➔", pX + 415, pY + 110);
+                let rx = pX + 440; let ry = pY + 80; ctx.fillStyle = '#8b8b8b'; ctx.fillRect(rx, ry, slotSize, slotSize); ctx.strokeRect(rx, ry, slotSize, slotSize);
+                if(craftingResult) drawItem(ctx, craftingResult, rx+8, ry+8, 32); uiBoxes.push({ type: 'result', index: 0, x: rx, y: ry, w: slotSize, h: slotSize });
+
+            } else if (uiState.mode === 'furnace') {
+                ctx.fillText("Ocak (Eritme)", pX + 250, pY + 30);
+                let inX = pX + 310; let inY = pY + 50; ctx.fillStyle = '#8b8b8b'; ctx.fillRect(inX, inY, slotSize, slotSize); ctx.strokeRect(inX, inY, slotSize, slotSize);
+                drawItem(ctx, furnaceSlots.input, inX+8, inY+8, 32); uiBoxes.push({ type: 'furnace_in', index: 0, x: inX, y: inY, w: slotSize, h: slotSize });
+                let fX = pX + 310; let fY = pY + 110; ctx.fillStyle = '#8b8b8b'; ctx.fillRect(fX, fY, slotSize, slotSize); ctx.strokeRect(fX, fY, slotSize, slotSize);
+                drawItem(ctx, furnaceSlots.fuel, fX+8, fY+8, 32); uiBoxes.push({ type: 'furnace_fuel', index: 0, x: fX, y: fY, w: slotSize, h: slotSize });
+                ctx.fillStyle = '#555'; ctx.fillRect(pX + 370, pY + 80, 30, 10);
+                if (smeltProgress > 0) { ctx.fillStyle = '#ff9900'; ctx.fillRect(pX + 370, pY + 80, 30 * (smeltProgress/100), 10); }
+                ctx.fillStyle = '#333'; ctx.fillText("➔", pX + 405, pY + 90);
+                let rx = pX + 430; let ry = pY + 80; ctx.fillStyle = '#8b8b8b'; ctx.fillRect(rx, ry, slotSize, slotSize); ctx.strokeRect(rx, ry, slotSize, slotSize);
+                drawItem(ctx, furnaceSlots.result, rx+8, ry+8, 32); uiBoxes.push({ type: 'furnace_out', index: 0, x: rx, y: ry, w: slotSize, h: slotSize });
+            }
+
+            for(let i=0; i<INVENTORY_SIZE; i++) {
+                let cx = pX + 20 + (i%9)*(slotSize+padding); let cy = pY + 200 + Math.floor(i/9)*(slotSize+padding);
+                ctx.fillStyle = '#8b8b8b'; ctx.fillRect(cx, cy, slotSize, slotSize); ctx.strokeRect(cx, cy, slotSize, slotSize);
+                drawItem(ctx, inventory[i], cx+8, cy+8, 32); uiBoxes.push({ type: 'inv', index: i, x: cx, y: cy, w: slotSize, h: slotSize });
+            }
+        }
+        if (uiState.draggedItem) drawItem(ctx, uiState.draggedItem, uiState.mouseX - 16, uiState.mouseY - 16, 32);
+    } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(canvas.width/2 - 1, canvas.height/2 - 10, 2, 20); ctx.fillRect(canvas.width/2 - 10, canvas.height/2 - 1, 20, 2);
+    }
+}
+
+// ===== KARAKTER VE CANAVAR SPRITE ÇİZİMLERİ =====
+// Yardımcı: piksel-ızgara sprite çiz (px = piksel boyutu, dir = -1 ise yatay yansıt)
+function drawSprite(rows, palette, ox, oy, px, dir) {
+    const flip = dir === -1;
+    const W = rows[0].length;
+    for (let y = 0; y < rows.length; y++) {
+        const row = rows[y];
+        for (let x = 0; x < W; x++) {
+            const c = row[x];
+            if (c === '.' || c === ' ') continue;
+            const col = palette[c];
+            if (!col) continue;
+            ctx.fillStyle = col;
+            const drawX = flip ? (ox + (W - 1 - x) * px) : (ox + x * px);
+            ctx.fillRect(drawX, oy + y * px, px, px);
+        }
+    }
+}
+
+// Oyuncu (Steve) — 12 geniş x 24 yüksek piksel, scale 2 = 24x48
+function drawPlayer() {
+    const ox = Math.round(player.x - camera.x);
+    const oy = Math.round(player.y - camera.y);
+    const px = 2;
+    const dir = player.facing || 1;
+
+    // Hasar yanıp sönmesi
+    const hurt = player.iframe > 0 && Math.floor(player.iframe / 3) % 2 === 0;
+
+    // Yürüme: bacaklar zıt fazda salınır
+    const walking = Math.abs(player.vx) > 0.4 && player.grounded;
+    const swing = walking ? Math.sin(player.walkTime) : 0;
+    const legOff = Math.round(swing * 1.5); // -1..1 piksel kayma
+
+    // Palet
+    const P = {
+        s:'#f0c19a',  // ten
+        S:'#d49a72',  // ten gölge
+        H:'#3a2410',  // saç
+        h:'#4a2f18',
+        E:'#ffffff',  // göz beyazı
+        e:'#1a3aaa',  // göz iris
+        T:'#1da9d8',  // tişört turkuaz
+        t:'#0d7fa6',  // tişört gölge
+        P:'#3a2c8a',  // pantolon mavi
+        p:'#251c5a',  // pantolon gölge
+        B:'#3d2614',  // ayakkabı
+    };
+
+    // GÖVDE (head 8x8, body 8x12, legs 4x8 each)
+    // Baş
+    const headRows = [
+        '.HHHHHHHH.',
+        'HHHHHHHHHH',
+        'HHhsssshhH',
+        'HsssssssHH',
+        'HsEeesEees',
+        'HsssssssHH',
+        'HSssssssSH',
+        'HSSSSSSSSH',
+    ];
+    // Gövde + kollar
+    const bodyRows = [
+        'sTTTTTTTTs',
+        'STTTTTTTTS',
+        'STTTTTTTTS',
+        'STTttttTTS',
+        'STTttttTTS',
+        'STTTTTTTTS',
+        'StttttttS.',
+    ];
+    // Bacak A (ön)
+    const legARows = [
+        'PPPPP',
+        'PPPPP',
+        'PPpppP',
+        'PpppPP',
+        'PPpppP',
+        'PpppPP',
+        'BBBBB',
+        'BBBBB',
+    ];
+    // Bacak B (arka — biraz daha koyu)
+    const legBRows = [
+        'ppPPp',
+        'ppPPp',
+        'ppPPp',
+        'ppPPp',
+        'ppPPp',
+        'ppPPp',
+        'BBBBB',
+        'BBBBB',
+    ];
+
+    if (hurt) {
+        ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // Baş (yukarıda, 10 geniş × 8 = 20x16 piksel, ortalı)
+    drawSprite(headRows, P, ox + 2, oy, px, dir);
+    // Gövde (orta, 10 geniş × 7 = 20x14)
+    drawSprite(bodyRows, P, ox + 2, oy + 16, px, dir);
+    // Bacaklar — salınımlı
+    drawSprite(legARows, P, ox + 2 + legOff, oy + 30, px, dir);
+    drawSprite(legBRows, P, ox + 12 - legOff, oy + 30, px, dir);
+
+    // Hasar tint
+    if (hurt) {
+        ctx.fillStyle = 'rgba(255,40,40,0.45)';
+        ctx.fillRect(ox, oy, player.width, player.height);
+    }
+}
+
+// Zombi — yeşil ten + mavi kıyafet
+function drawZombie(ent) {
+    const ox = Math.round(ent.x - camera.x);
+    const oy = Math.round(ent.y - camera.y);
+    const px = 2;
+    const dir = ent.dir || 1;
+    const walking = Math.abs(ent.vx) > 0.2;
+    const swing = walking ? Math.sin((ent.walkTime || 0)) : 0;
+    const legOff = Math.round(swing * 1.5);
+    const armOff = Math.round(Math.sin(frameCount * 0.04) * 1.2); // sürekli salınan kollar
+
+    const P = {
+        g:'#3d8a3d', G:'#2c6a2c', d:'#1a4a1a',
+        E:'#2a1a0a', e:'#5a3a1a',
+        T:'#3a4dc4', t:'#26339a',
+        P:'#3a2c8a', p:'#251c5a',
+        B:'#3d2614', K:'#000000'
+    };
+
+    // Baş — 10x8 (20x16) sırıtarak
+    const head = [
+        '.GGGGGGGG.',
+        'GgggggggGG',
+        'GgggggggGG',
+        'GgEegggEeg',
+        'GggggggggG',
+        'GgKKgKKgGG',
+        'GgKKgKKgGG',
+        'GGGGGGGGGG',
+    ];
+    // Gövde — kollar uzatılmış (klasik zombi)
+    const body = [
+        '.TTTTTTTT.',
+        'TTTTTTTTTT',
+        'TTtttttttT',
+        'TTtttttttT',
+        'TTtttttttT',
+        'TtttttttT.',
+    ];
+    // Uzatılmış kollar (sol+sağ, body önünde) — animasyonla yukarı-aşağı
+    const arm = [
+        'TT',
+        'TT',
+        'gg',
+        'gg',
+        'gg',
+        'gg',
+        'gg',
+    ];
+    const leg = [
+        'PPPP',
+        'PpppP'.slice(0,4),
+        'PpppP'.slice(0,4),
+        'PpppP'.slice(0,4),
+        'BBBB',
+        'BBBB',
+    ];
+
+    drawSprite(head, P, ox + 2, oy, px, dir);
+    drawSprite(body, P, ox + 2, oy + 16, px, dir);
+    // Uzun kollar — gövdenin önünde uzanmış, hafif salınımlı
+    drawSprite(arm, P, ox + 0, oy + 16 + armOff, px, dir);
+    drawSprite(arm, P, ox + 20, oy + 16 - armOff, px, dir);
+    // Bacaklar
+    drawSprite(leg, P, ox + 4 + legOff, oy + 32, px, dir);
+    drawSprite(leg, P, ox + 12 - legOff, oy + 32, px, dir);
+}
+
+// Slime — yarı saydam yeşil küp + 2 göz + ağız, atlarken sıkışır
+function drawSlime(ent) {
+    const ox = Math.round(ent.x - camera.x);
+    const oy = Math.round(ent.y - camera.y);
+    const w = ent.w, h = ent.h;
+    const inAir = Math.abs(ent.vy) > 0.5;
+    const squash = inAir ? 0 : Math.sin(frameCount * 0.08) * 2;
+    const sx = ox - Math.round(squash);
+    const sy = oy + Math.round(squash);
+    const sw = w + Math.round(squash * 2);
+    const sh = h - Math.round(squash);
+
+    // Dış katman
+    ctx.fillStyle = 'rgba(100,210,90,0.55)';
+    ctx.fillRect(sx, sy, sw, sh);
+    // İç gövde — daha koyu
+    ctx.fillStyle = 'rgba(60,170,60,0.85)';
+    ctx.fillRect(sx + 2, sy + 2, sw - 4, sh - 4);
+    // Çekirdek
+    ctx.fillStyle = '#56b856';
+    ctx.fillRect(sx + 4, sy + 4, sw - 8, sh - 8);
+    // Parlama (sol üst)
+    ctx.fillStyle = 'rgba(220,255,200,0.6)';
+    ctx.fillRect(sx + 4, sy + 4, 6, 2);
+    ctx.fillRect(sx + 4, sy + 4, 2, 4);
+    // Gözler
+    ctx.fillStyle = '#000';
+    ctx.fillRect(sx + 6, sy + 8, 3, 4);
+    ctx.fillRect(sx + sw - 9, sy + 8, 3, 4);
+    // Ağız
+    ctx.fillRect(sx + sw/2 - 3, sy + 14, 6, 2);
+}
+
+// Koyun — beyaz pamuk gövde + kahverengi kafa
+function drawSheep(ent) {
+    const ox = Math.round(ent.x - camera.x);
+    const oy = Math.round(ent.y - camera.y);
+    const px = 2;
+    const dir = ent.dir || 1;
+    const walking = Math.abs(ent.vx) > 0.2;
+    const swing = walking ? Math.sin((ent.walkTime || 0)) : 0;
+    const legOff = Math.round(swing * 1);
+
+    const P = {
+        w:'#eeeeee', W:'#f8f8f8', g:'#c8c8c8', // yün
+        f:'#d8b48a', F:'#c89868', // kafa açık
+        b:'#5a3a1a', // koyu kahve
+        E:'#000000',
+        p:'#222222'
+    };
+    // Gövde (puffy oval) — 12 wide, 8 tall
+    const body = [
+        '..WWWWWWWW..',
+        '.WwwwwwwwwW.',
+        'WwwwwwwwwwwW',
+        'WwwwwgwwwwwW',
+        'Wwwgwwwwwwwww'.slice(0,12),
+        'WwwwwwwwgwwW',
+        '.WwwwwwwwwW.',
+        '..WWWWWWWW..',
+    ];
+    // Kafa — kahve, küçük
+    const head = [
+        'FFFFFF',
+        'FffffF',
+        'FfEffF',
+        'FffffF',
+        'bbbbbb',
+        'b....b',
+    ];
+    const leg = [
+        'bb',
+        'bb',
+        'pp',
+        'pp',
+    ];
+
+    // Gövde merkez
+    drawSprite(body, P, ox, oy + 4, px, 1);
+    // Kafa öne — dir göre
+    if (dir === 1) {
+        drawSprite(head, P, ox + 18, oy + 8, px, 1);
+    } else {
+        drawSprite(head, P, ox - 6, oy + 8, px, -1);
+    }
+    // Bacaklar
+    drawSprite(leg, P, ox + 4 + legOff, oy + 20, px, 1);
+    drawSprite(leg, P, ox + 16 - legOff, oy + 20, px, 1);
+}
+
+// Köylü — kahve cüppe, uzun burun
+function drawVillager(ent) {
+    const ox = Math.round(ent.x - camera.x);
+    const oy = Math.round(ent.y - camera.y);
+    const px = 2;
+    const dir = ent.dir || 1;
+    const walking = Math.abs(ent.vx) > 0.2;
+    const swing = walking ? Math.sin((ent.walkTime || 0)) : 0;
+    const legOff = Math.round(swing * 1);
+
+    const P = {
+        s:'#d8b48a', S:'#c8986a', // cilt
+        n:'#9c6c44', // burun
+        H:'#3a2410', // saç
+        R:'#6e4a2a', r:'#523618', // cüppe
+        B:'#3d2614',
+        E:'#1a3aaa'
+    };
+    // Baş
+    const head = [
+        '.HHHHHHHH.',
+        'HHHHHHHHHH',
+        'HsssssssH',
+        'HsssssssH',
+        'HsEessEes',
+        'HssnnnssS',
+        'HsssssssS',
+        'SSSSSSSSSS',
+    ];
+    // Gövde — uzun cüppe
+    const body = [
+        '.RRRRRRRR.',
+        'RRRRRRRRRR',
+        'RRrrrrrrRR',
+        'RRrrrrrrRR',
+        'RRrrrrrrRR',
+        'RRrrrrrrRR',
+        'RRRRRRRRRR',
+    ];
+    const leg = [
+        'RRRRR',
+        'rrrrR',
+        'rrrrR',
+        'BBBBB',
+        'BBBBB',
+    ];
+
+    drawSprite(head, P, ox + 2, oy, px, dir);
+    drawSprite(body, P, ox + 2, oy + 16, px, dir);
+    drawSprite(leg, P, ox + 2 + legOff, oy + 30, px, dir);
+    drawSprite(leg, P, ox + 12 - legOff, oy + 30, px, dir);
+}
+
+function drawSky() {
+    // Üst koyu mavi → alt açık mavi gradient
+    const cy = camera.y;
+    const top = '#4a7fb8';
+    const bot = '#bce0ff';
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, top);
+    grad.addColorStop(0.8, bot);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Nether tarafında kırmızı tonlama
+    if (currentDimension === 1) {
+        ctx.fillStyle = 'rgba(120,20,20,0.55)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+}
+
+function draw() {
+    try {
+        frameCount++;
+        drawSky();
+
+        let startCol = Math.floor(Math.max(0, camera.x / BLOCK_SIZE)); let endCol = startCol + (canvas.width / BLOCK_SIZE) + 1;
+        let startRow = Math.floor(Math.max(0, camera.y / BLOCK_SIZE)); let endRow = startRow + (canvas.height / BLOCK_SIZE) + 1;
+
+        for (let x = startCol; x < endCol; x++) {
+            if(!world[x]) continue;
+            for (let y = startRow; y < endRow; y++) {
+                let block = world[x][y];
+                if (block && block !== BLOCKS.AIR && textures[block]) ctx.drawImage(textures[block], x * BLOCK_SIZE - camera.x, y * BLOCK_SIZE - camera.y);
+            }
+        }
+
+        // Varlıkları Çiz (detaylı sprite'lar)
+        for (let ent of entities) {
+            if (ent.x + ent.w > camera.x && ent.x < camera.x + canvas.width && ent.y + ent.h > camera.y && ent.y < camera.y + canvas.height) {
+                if (ent.type === 'villager') drawVillager(ent);
+                else if (ent.type === 'zombie') drawZombie(ent);
+                else if (ent.type === 'slime') drawSlime(ent);
+                else if (ent.type === 'sheep') drawSheep(ent);
+                else if (ent.type === 'king') drawKing(ent);
+            }
+        }
+
+        // Oyuncuyu Çiz
+        drawPlayer();
+
+        drawUI();
+    } catch(err) { console.error("Çizim hatası: ", err); }
+}
+
+// ==================== STORY MODE ====================
+let storyMode = false;
+let gameStarted = false;
+let kingEntity = null;
+let frozenCastleX = 0; // ground X of the castle's left edge
+let mcDialogQueue = [];
+let mcDialogIndex = 0;
+let mcDialogOnComplete = null;
+let mcDialogChoiceActive = false;
+
+// Quests
+const QUESTS = [
+    { id:'talkKing', title:'Kral ile Konuş', desc:'Buz Kalesi\'ndeki Kral Varran\'a yaklaş ve sağ tık ile konuş.', goal:1, progress:0 },
+    { id:'mineStone', title:'Taş Topla', desc:'Hayatta kalmak için 10 Taş kır. Kale\'nin altına bak — buz altında taş vardır.', goal:10, progress:0 },
+    { id:'craftSword', title:'Bir Kılıç Yap', desc:'Çalışma masasında bir Tahta Kılıç yap. Önce odun bul (kalenin doğusunda ağaç var).', goal:1, progress:0 },
+    { id:'killZombies', title:'3 Zombi Yen', desc:'Baldric\'in askerlerinden (zombi) 3 tane öldür.', goal:3, progress:0 },
+    { id:'reachBaldric', title:'Baldric\'in Karargahını Bul', desc:'Batıya yürü. Orman bölgesine (x < 300) ulaş.', goal:1, progress:0 },
+    { id:'storyEnd', title:'Krala Geri Dön', desc:'Buz Kalesi\'ne dön ve Kral\'a haberi ver.', goal:1, progress:0 }
+];
+let activeQuestIdx = -1;
+
+function setActiveQuest(idx) {
+    activeQuestIdx = idx;
+    if (idx < 0 || idx >= QUESTS.length) {
+        document.getElementById('mc-quest-panel').classList.remove('show');
+        return;
+    }
+    updateQuestPanel();
+    document.getElementById('mc-quest-panel').classList.add('show');
+}
+function updateQuestPanel() {
+    if (activeQuestIdx < 0) return;
+    const q = QUESTS[activeQuestIdx];
+    document.getElementById('mc-quest-title').innerText = '📜 ' + q.title;
+    document.getElementById('mc-quest-desc').innerText = q.desc;
+    const pct = Math.min(100, (q.progress / q.goal) * 100);
+    document.getElementById('mc-quest-bar').style.width = pct + '%';
+    document.getElementById('mc-quest-progress').innerText = q.progress + ' / ' + q.goal;
+}
+function questProgress(id, amount) {
+    if (!storyMode) return;
+    const q = QUESTS.find(x => x.id === id);
+    if (!q) return;
+    q.progress = Math.min(q.goal, q.progress + amount);
+    updateQuestPanel();
+    if (q.progress >= q.goal && QUESTS[activeQuestIdx] && QUESTS[activeQuestIdx].id === id) {
+        onQuestComplete(id);
+    }
+}
+function onQuestComplete(id) {
+    const idx = QUESTS.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    // Brief toast
+    const panel = document.getElementById('mc-quest-panel');
+    panel.style.borderColor = '#10b981';
+    setTimeout(() => panel.style.borderColor = '#3b82f6', 1200);
+    // Advance to next quest, or trigger end dialog if this was the last
+    if (id === 'talkKing')      setActiveQuest(1);
+    else if (id === 'mineStone') setActiveQuest(2);
+    else if (id === 'craftSword') setActiveQuest(3);
+    else if (id === 'killZombies') setActiveQuest(4);
+    else if (id === 'reachBaldric') {
+        setActiveQuest(5);
+        showMcDialog([
+            { c:'📜', n:'Anlatıcı', t:'Baldric\'in karargahını gördün. Adamları kaleni kuşatıyor. Krala dön.' }
+        ]);
+    }
+    else if (id === 'storyEnd') {
+        showMcDialog([
+            { c:'👑', n:'Kral Varran', t:'Sağ döndün! Tanrılara şükür. Şimdi bir Lord olabilirsin... ama Baldric hâlâ orada.' },
+            { c:'👑', n:'Kral Varran', t:'Hikaye burada bitiyor. Açık dünya senin. Krallığını kur veya çık git. Karar senin.' }
+        ]);
+    }
+}
+
+// Dialog
+function showMcDialog(messages, onComplete) {
+    mcDialogQueue = (messages || []).slice();
+    mcDialogIndex = 0;
+    mcDialogOnComplete = onComplete || null;
+    if (!mcDialogQueue.length) { if (mcDialogOnComplete) mcDialogOnComplete(); return; }
+    document.getElementById('mc-dialog').classList.add('show');
+    renderMcDialog();
+}
+function renderMcDialog() {
+    const msg = mcDialogQueue[mcDialogIndex];
+    if (!msg) { closeMcDialog(); return; }
+    document.getElementById('mc-char').innerText = msg.c || '👑';
+    document.getElementById('mc-dname').innerText = msg.n || 'Kral';
+    document.getElementById('mc-dtext').innerText = msg.t || '';
+    const choicesEl = document.getElementById('mc-dchoices');
+    const nextBtn = document.getElementById('mc-dnext');
+    if (msg.choices && msg.choices.length) {
+        mcDialogChoiceActive = true;
+        choicesEl.style.display = 'flex';
+        nextBtn.style.display = 'none';
+        choicesEl.innerHTML = '';
+        msg.choices.forEach(ch => {
+            const btn = document.createElement('button');
+            btn.className = 'mc-choice';
+            btn.innerText = ch.a;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                mcDialogChoiceActive = false;
+                choicesEl.style.display = 'none';
+                nextBtn.style.display = '';
+                if (ch.r && ch.r.length) {
+                    mcDialogQueue.splice(mcDialogIndex + 1, 0, ...ch.r);
+                }
+                mcDialogNext();
+            };
+            choicesEl.appendChild(btn);
+        });
+    } else {
+        mcDialogChoiceActive = false;
+        choicesEl.style.display = 'none';
+        nextBtn.style.display = '';
+    }
+}
+function mcDialogNext() {
+    if (mcDialogChoiceActive) return;
+    mcDialogIndex++;
+    if (mcDialogIndex >= mcDialogQueue.length) closeMcDialog();
+    else renderMcDialog();
+}
+function closeMcDialog() {
+    document.getElementById('mc-dialog').classList.remove('show');
+    const cb = mcDialogOnComplete; mcDialogOnComplete = null;
+    if (cb) cb();
+}
+document.getElementById('mc-dialog').addEventListener('click', (e) => {
+    if (mcDialogChoiceActive) return;
+    if (e.target.id === 'mc-dnext') return;
+    if (e.target.closest && e.target.closest('.mc-choice')) return;
+    mcDialogNext();
+});
+window.addEventListener('keydown', (e) => {
+    if (document.getElementById('mc-dialog').classList.contains('show')) {
+        if ((e.key === ' ' || e.key === 'Enter') && !mcDialogChoiceActive) {
+            e.preventDefault();
+            mcDialogNext();
+        }
+    }
+});
+
+// Build the frozen castle at given X (block coords)
+function buildFrozenCastle(originX, surfaceY) {
+    // Surface Y is ground row. Place castle from surface up to surface-7.
+    const w = 28, h = 9;
+    const left = originX, right = originX + w;
+    const top = surfaceY - h;
+    // Clear interior and place walls
+    for (let x = left; x <= right; x++) {
+        for (let y = top; y <= surfaceY; y++) {
+            if (!world[x]) continue;
+            if (x === left || x === right || y === top || y === surfaceY) {
+                // Walls of cobblestone/snow with crenellations at top
+                if (y === top && x % 2 === 0) world[x][y] = BLOCKS.SNOW;
+                else world[x][y] = BLOCKS.COBBLESTONE;
+            } else {
+                world[x][y] = BLOCKS.AIR;
+            }
+        }
+    }
+    // Floor a row of stone bricks
+    for (let x = left+1; x < right; x++) {
+        if (!world[x]) continue;
+        world[x][surfaceY] = BLOCKS.COBBLESTONE;
+        world[x][surfaceY+1] = BLOCKS.STONE; // mine-able stone below
+        world[x][surfaceY+2] = BLOCKS.STONE;
+        world[x][surfaceY+3] = BLOCKS.STONE;
+    }
+    // Door (left and right openings)
+    if (world[left+2]) { world[left+2][surfaceY-1] = BLOCKS.AIR; world[left+2][surfaceY-2] = BLOCKS.AIR; }
+    if (world[right-2]) { world[right-2][surfaceY-1] = BLOCKS.AIR; world[right-2][surfaceY-2] = BLOCKS.AIR; }
+    // Windows (glass)
+    for (let i = 6; i < w; i += 6) {
+        if (world[left+i]) world[left+i][top+3] = BLOCKS.GLASS;
+    }
+    // Glowstone for light
+    if (world[left+5]) world[left+5][top+1] = BLOCKS.GLOWSTONE;
+    if (world[left+20]) world[left+20][top+1] = BLOCKS.GLOWSTONE;
+    // Throne (gold block + nearby decoration)
+    const throneX = left + Math.floor(w/2);
+    if (world[throneX]) {
+        world[throneX][surfaceY-1] = BLOCKS.GOLD_BLOCK;
+        world[throneX][surfaceY-2] = BLOCKS.GOLD_BLOCK;
+    }
+    if (world[throneX-1]) world[throneX-1][surfaceY-1] = BLOCKS.IRON_BLOCK;
+    if (world[throneX+1]) world[throneX+1][surfaceY-1] = BLOCKS.IRON_BLOCK;
+    // Crafting table for player
+    if (world[left+4]) world[left+4][surfaceY-1] = BLOCKS.CRAFTING_TABLE;
+    // Furnace
+    if (world[left+6]) world[left+6][surfaceY-1] = BLOCKS.FURNACE;
+    // King entity at throne (sits in front)
+    kingEntity = {
+        type: 'king',
+        x: (throneX - 1) * BLOCK_SIZE,
+        y: (surfaceY - 2) * BLOCK_SIZE,
+        w: 24, h: 48, vx: 0, vy: 0, hp: 9999, dir: 1, timer: 0,
+        anchorX: (throneX - 1) * BLOCK_SIZE
+    };
+    entities.push(kingEntity);
+    frozenCastleX = left * BLOCK_SIZE;
+}
+
+// Draw king (sprite) — used by render loop
+function drawKing(ent) {
+    const sx = ent.x - camera.x, sy = ent.y - camera.y;
+    // Cloak / body
+    ctx.fillStyle = '#7c2d12';
+    ctx.fillRect(sx + 2, sy + 16, 20, 30);
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(sx + 2, sy + 16, 20, 4);
+    // Inner robe
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(sx + 8, sy + 20, 8, 24);
+    // Head
+    ctx.fillStyle = '#fde68a';
+    ctx.fillRect(sx + 4, sy + 4, 16, 14);
+    // Beard
+    ctx.fillStyle = '#e5e7eb';
+    ctx.fillRect(sx + 6, sy + 12, 12, 8);
+    ctx.fillRect(sx + 5, sy + 14, 14, 2);
+    // Eyes
+    ctx.fillStyle = '#000';
+    ctx.fillRect(sx + 7, sy + 9, 2, 2);
+    ctx.fillRect(sx + 15, sy + 9, 2, 2);
+    // Crown
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(sx + 4, sy, 16, 4);
+    ctx.fillRect(sx + 5, sy - 3, 2, 4);
+    ctx.fillRect(sx + 11, sy - 4, 2, 5);
+    ctx.fillRect(sx + 17, sy - 3, 2, 4);
+    // Crown gems
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(sx + 11, sy + 1, 2, 2);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(sx + 5, sy + 1, 2, 2);
+    ctx.fillRect(sx + 17, sy + 1, 2, 2);
+    // Scepter
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(sx + 22, sy + 4, 2, 28);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(sx + 20, sy + 2, 6, 4);
+    // Interaction hint
+    const dist = Math.hypot((player.x + player.width/2) - (ent.x + ent.w/2),
+                            (player.y + player.height/2) - (ent.y + ent.h/2));
+    if (dist < BLOCK_SIZE * 4) {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(sx - 8, sy - 22, 40, 14);
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('SAĞ TIK', sx + 12, sy - 12);
+    }
+}
+
+// Story content
+const STORY = {
+    intro: [
+        { c:'📜', n:'Anlatıcı', t:'Donmuş Kuzey... Soğuk rüzgar tahtın bayrağını sallıyor. Sen üşüyerek uyanıyorsun. Tanımadığın bir kale.' },
+        { c:'👑', n:'Kral Varran', t:'Sonunda uyandın yabancı. Hoş geldin Buz Kalesi\'ne. Bu son sığınağımız.' },
+        { c:'👑', n:'Kral Varran', t:'Sana bir hikaye anlatayım. Otur (oturacak yer yok ama olsun).' },
+        { c:'👑', n:'Kral Varran', t:'Yüz yıl önce halkım yeşil ovalarda yaşardı. Ekinler boldu, ağaçlar ulu, nehirler temiz. O zaman bir adam çıktı.' },
+        { c:'👑', n:'Kral Varran', t:'Adı BALDRIC idi. Kendisini "danışman" diye tanıtırdı ama gözleri hep aç bir kralın gözlerine bakardı.' },
+        { c:'👑', n:'Kral Varran', t:'Ordusunu kurdu. Konuşmadan, savaşmadan, sadece ısrarla yürüdüler. Bizi kuzeye ittiler. Ve ittiler. Ve ittiler.' },
+        { c:'👑', n:'Kral Varran', t:'Şimdi buradayız. Donmuş, aç, ama hayatta. Bana yardım eder misin?', choices:[
+            { a:'Tabii, ne yapmamı istersin?', r:[
+                { c:'👑', n:'Kral Varran', t:'Önce dayan. Aşağıda taş var, 10 tane kır. Sonra bir kılıç yap. Sonra Baldric\'in karargahını bul.' },
+                { c:'👑', n:'Kral Varran', t:'Bu macera SENİN. Sana zorlanmıyorum. İstersen takip et, istersen kendi yolunu kur.' }
+            ]},
+            { a:'Aslında özgürce dolaşmayı tercih ederim.', r:[
+                { c:'👑', n:'Kral Varran', t:'Tamam. Bu açık bir dünya. Saygı duyarım. Görev panosu sol üstte — istediğin zaman dönebilirsin.' },
+                { c:'📜', n:'Anlatıcı', t:'(Görevleri istediğin zaman izleyebilir veya görmezden gelebilirsin.)' }
+            ]},
+            { a:'Baldric mi? Bu isim tanıdık geliyor...', r:[
+                { c:'👑', n:'Kral Varran', t:'Tanıdık mı? Hım. O her krallıkta var. Yaşlı bir adam, kuru espriler, çay döker. Ama burada ordusu var.' },
+                { c:'👑', n:'Kral Varran', t:'Belki başka bir Baldric. Belki aynı. Sorma. Sadece elinden geleni yap.' }
+            ]}
+        ]}
+    ]
+};
+
+function startMinecraft(mode) {
+    storyMode = (mode === 'story');
+    gameStarted = true;
+    document.getElementById('mc-start-screen').classList.add('hidden');
+    initAudio();
+
+    if (storyMode) {
+        // Find a snow-biome flat spot for the castle (snow biome starts at x >= 600)
+        const castleStart = 620;
+        // Find surface Y at castleStart
+        let surfaceY = 0;
+        for (let y = 0; y < WORLD_HEIGHT; y++) {
+            const b = world[castleStart]?.[y];
+            if (b !== BLOCKS.AIR && b !== BLOCKS.WATER && b !== BLOCKS.LAVA) { surfaceY = y - 1; break; }
+        }
+        // Flatten the ground for the castle width
+        for (let x = castleStart; x < castleStart + 30; x++) {
+            for (let y = 0; y < surfaceY; y++) {
+                if (world[x] && (world[x][y] === BLOCKS.SNOW || world[x][y] === BLOCKS.STONE || world[x][y] === BLOCKS.DIRT)) world[x][y] = BLOCKS.AIR;
+            }
+            if (world[x]) world[x][surfaceY] = BLOCKS.SNOW;
+        }
+        // Build castle on top of surface
+        buildFrozenCastle(castleStart, surfaceY);
+        // Spawn player inside castle (next to the throne)
+        const throneX = castleStart + Math.floor(28/2);
+        player.x = (throneX + 3) * BLOCK_SIZE;
+        player.y = (surfaceY - 2) * BLOCK_SIZE;
+        player.vx = 0; player.vy = 0;
+        player.facing = -1;
+        // Clear hostile entities inside the castle
+        entities = entities.filter(e => {
+            const inCastle = e.x >= castleStart * BLOCK_SIZE && e.x < (castleStart + 28) * BLOCK_SIZE && e.y < surfaceY * BLOCK_SIZE;
+            if (inCastle && (e.type === 'zombie' || e.type === 'slime')) return false;
+            return true;
+        });
+        // Start with the talkKing quest
+        setActiveQuest(0);
+        // Show intro dialog after a brief delay
+        setTimeout(() => showMcDialog(STORY.intro, () => {
+            questProgress('talkKing', 1);
+        }), 500);
+    } else {
+        // Free mode — classic spawn
+        spawnPlayerSafely();
+    }
+}
+
+// Override the king interaction: when the player right-clicks the king, open dialog
+function tryTalkToKing(mx, my) {
+    if (!kingEntity || !storyMode) return false;
+    if (Math.abs(mx - (kingEntity.x + kingEntity.w/2)) > kingEntity.w + 20) return false;
+    if (Math.abs(my - (kingEntity.y + kingEntity.h/2)) > kingEntity.h + 20) return false;
+    const pcx = player.x + player.width/2, pcy = player.y + player.height/2;
+    if (Math.hypot(pcx - kingEntity.x, pcy - kingEntity.y) > BLOCK_SIZE * 5) return false;
+    // Talk
+    if (QUESTS[activeQuestIdx]?.id === 'talkKing') {
+        showMcDialog(STORY.intro, () => questProgress('talkKing', 1));
+    } else if (QUESTS[activeQuestIdx]?.id === 'mineStone') {
+        showMcDialog([{ c:'👑', n:'Kral Varran', t:'Önce 10 taş topla yabancı. Kalenin altında bol var.' }]);
+    } else if (QUESTS[activeQuestIdx]?.id === 'craftSword') {
+        showMcDialog([{ c:'👑', n:'Kral Varran', t:'Bir tahta kılıç yap. Çalışma masasını kullan.' }]);
+    } else if (QUESTS[activeQuestIdx]?.id === 'killZombies') {
+        showMcDialog([{ c:'👑', n:'Kral Varran', t:'Baldric\'in askerleri (zombiler) geliyor. 3 tanesini yen.' }]);
+    } else if (QUESTS[activeQuestIdx]?.id === 'reachBaldric') {
+        showMcDialog([{ c:'👑', n:'Kral Varran', t:'Batıya yürü. Baldric\'in karargahı orman bölgesinde.' }]);
+    } else if (QUESTS[activeQuestIdx]?.id === 'storyEnd') {
+        questProgress('storyEnd', 1);
+    } else {
+        showMcDialog([
+            { c:'👑', n:'Kral Varran', t:'Hikaye bitti yabancı. Şimdi sen serbestsin. Krallık burada — yap ne istersin.' }
+        ]);
+    }
+    return true;
+}
+
+// Wire right-click on king (intercept the world right-click flow)
+const origMouseDown = window.onmousedown;
+window.addEventListener('mousedown', (e) => {
+    if (e.button !== 2 || uiState.isOpen || !storyMode) return;
+    const mx = e.clientX + camera.x, my = e.clientY + camera.y;
+    if (tryTalkToKing(mx, my)) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+    }
+}, true);
+
+generateWorld();
+worlds[0] = world;
+// Don't auto-spawn — wait for start screen
+spawnPlayerSafely();
+// Hide quest panel by default until story mode begins
+document.getElementById('mc-quest-panel').classList.remove('show');
+
+function gameLoop() {
+    if (!gameStarted) {
+        // Just render world behind start screen
+        try { draw(); } catch(e) {}
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    updatePhysics();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+
+// ==================== MOBILE CONTROLS ====================
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.innerWidth < 900;
+let mobileMode = isTouchDevice;
+const mcEl = document.getElementById('mobile-controls');
+const mcToggleBtn = document.getElementById('mc-toggle');
+
+function applyMobileMode() {
+    if (mobileMode) { mcEl.classList.add('active'); mcToggleBtn.innerText = '🖱️ PC'; }
+    else { mcEl.classList.remove('active'); mcToggleBtn.innerText = '📱 Mobil'; }
+}
+function toggleMobileControls() { mobileMode = !mobileMode; applyMobileMode(); initAudio(); }
+applyMobileMode();
+
+// Helper: bind a press-and-hold button to a keys[] entry
+function bindHoldButton(id, keyName, onTap) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const press = (e) => {
+        e.preventDefault();
+        el.classList.add('pressed');
+        if (keyName) keys[keyName] = true;
+        initAudio();
+        if (onTap) onTap();
+    };
+    const release = (e) => {
+        if (e) e.preventDefault();
+        el.classList.remove('pressed');
+        if (keyName) keys[keyName] = false;
+    };
+    el.addEventListener('touchstart', press, { passive: false });
+    el.addEventListener('touchend', release, { passive: false });
+    el.addEventListener('touchcancel', release, { passive: false });
+    el.addEventListener('mousedown', press);
+    el.addEventListener('mouseup', release);
+    el.addEventListener('mouseleave', release);
+}
+
+// Movement buttons
+bindHoldButton('mc-left', 'a');
+bindHoldButton('mc-right', 'd');
+bindHoldButton('mc-jump', 'w');
+
+// Inventory toggle (E equivalent)
+document.getElementById('mc-inv').addEventListener('click', (e) => {
+    e.preventDefault();
+    uiState.isOpen = !uiState.isOpen;
+    if(!uiState.isOpen) {
+        uiState.mode = 'inventory'; uiState.targetEntity = null;
+        if (uiState.draggedItem) { addToInventory(uiState.draggedItem.type, uiState.draggedItem.count); uiState.draggedItem = null; }
+        for(let i=0; i<9; i++) { if(craftingGrid[i]) { addToInventory(craftingGrid[i].type, craftingGrid[i].count); craftingGrid[i] = null; } }
+        if (furnaceSlots.input) { addToInventory(furnaceSlots.input.type, furnaceSlots.input.count); furnaceSlots.input = null; }
+        if (furnaceSlots.fuel) { addToInventory(furnaceSlots.fuel.type, furnaceSlots.fuel.count); furnaceSlots.fuel = null; }
+        if (furnaceSlots.result) { addToInventory(furnaceSlots.result.type, furnaceSlots.result.count); furnaceSlots.result = null; }
+        checkCrafting();
+    }
+});
+document.getElementById('mc-hotbar-prev').addEventListener('click', (e) => {
+    e.preventDefault();
+    selectedHotbar = (selectedHotbar + 8) % 9;
+});
+document.getElementById('mc-hotbar-next').addEventListener('click', (e) => {
+    e.preventDefault();
+    selectedHotbar = (selectedHotbar + 1) % 9;
+});
+
+// Mine button: press-hold left-click on world relative to player.
+// While held, isMining = true and we redirect aim to a forward-facing block.
+const mineBtn = document.getElementById('mc-mine');
+const placeBtn = document.getElementById('mc-place');
+
+function aimForward(distBlocks) {
+    // Target = block in front of player (uses player.facing)
+    const dx = (player.facing || 1) * distBlocks * BLOCK_SIZE;
+    const targetWorldX = player.x + player.width/2 + dx;
+    const targetWorldY = player.y + player.height/2;
+    uiState.mouseX = targetWorldX - camera.x;
+    uiState.mouseY = targetWorldY - camera.y;
+}
+
+function startMobileMine(e) {
+    if (e) e.preventDefault();
+    if (uiState.isOpen) return;
+    mineBtn.classList.add('pressed');
+    aimForward(1);
+    isMining = true;
+    initAudio();
+}
+function stopMobileMine(e) {
+    if (e) e.preventDefault();
+    mineBtn.classList.remove('pressed');
+    isMining = false;
+    mineTarget.progress = 0;
+}
+mineBtn.addEventListener('touchstart', startMobileMine, { passive: false });
+mineBtn.addEventListener('touchend', stopMobileMine, { passive: false });
+mineBtn.addEventListener('touchcancel', stopMobileMine, { passive: false });
+mineBtn.addEventListener('mousedown', startMobileMine);
+mineBtn.addEventListener('mouseup', stopMobileMine);
+mineBtn.addEventListener('mouseleave', stopMobileMine);
+
+// Place button: triggers a single right-click-style place at forward block
+function mobilePlace(e) {
+    if (e) e.preventDefault();
+    if (uiState.isOpen) return;
+    placeBtn.classList.add('pressed');
+    setTimeout(() => placeBtn.classList.remove('pressed'), 100);
+    initAudio();
+    aimForward(1);
+    // Emulate right click using existing logic
+    const evt = new MouseEvent('mousedown', { button: 2, clientX: uiState.mouseX, clientY: uiState.mouseY });
+    Object.defineProperty(evt, 'button', { value: 2 });
+    window.dispatchEvent(evt);
+}
+placeBtn.addEventListener('touchstart', mobilePlace, { passive: false });
+placeBtn.addEventListener('click', mobilePlace);
+
+// Eat button: aim at self, simulate right click eat
+document.getElementById('mc-eat').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (uiState.isOpen) return;
+    initAudio();
+    uiState.mouseX = player.x + player.width/2 - camera.x;
+    uiState.mouseY = player.y + player.height/2 - camera.y;
+    const evt = new MouseEvent('mousedown', { button: 2, clientX: uiState.mouseX, clientY: uiState.mouseY });
+    Object.defineProperty(evt, 'button', { value: 2 });
+    window.dispatchEvent(evt);
+});
+
+// Touch on canvas: track for mining target + inventory drag
+canvas.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length) {
+        const t = e.touches[0];
+        uiState.mouseX = t.clientX;
+        uiState.mouseY = t.clientY;
+        // If inventory open, simulate left click for drag-drop
+        if (uiState.isOpen) {
+            const evt = new MouseEvent('mousedown', { button: 0, clientX: t.clientX, clientY: t.clientY });
+            Object.defineProperty(evt, 'button', { value: 0 });
+            window.dispatchEvent(evt);
+        }
+    }
+    e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches.length) {
+        const t = e.touches[0];
+        uiState.mouseX = t.clientX;
+        uiState.mouseY = t.clientY;
+    }
+    e.preventDefault();
+}, { passive: false });
+
+// Hotbar slot direct-tap: tap on bottom hotbar selects slot
+canvas.addEventListener('touchend', (e) => {
+    if (e.changedTouches && e.changedTouches.length) {
+        const t = e.changedTouches[0];
+        // Hotbar lives near bottom-center — detect taps there
+        const hotbarH = 50;
+        const hotbarY = canvas.height - hotbarH - 8;
+        if (t.clientY > hotbarY && t.clientY < hotbarY + hotbarH) {
+            const slotW = 50;
+            const totalW = slotW * 9;
+            const startX = (canvas.width - totalW) / 2;
+            if (t.clientX >= startX && t.clientX <= startX + totalW) {
+                const idx = Math.floor((t.clientX - startX) / slotW);
+                if (idx >= 0 && idx < 9) selectedHotbar = idx;
+            }
+        }
+    }
+}, { passive: false });
+
+</script>
+<!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->
+<script src="whatsapp-float.js"></script>
+</body>
+</html>

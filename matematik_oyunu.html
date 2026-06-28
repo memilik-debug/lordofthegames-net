@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matematik Tarihi: Zaman Cizelgesi Haritasi</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js ve Globe.gl -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/globe.gl@2.32.0/dist/globe.gl.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #02000a; font-family: 'Inter', sans-serif; }
+        #globeViz { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+        
+        /* Renkli ve Parlak Cam Efekti */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(20, 10, 40, 0.85), rgba(10, 30, 50, 0.85));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.15), inset 0 0 20px rgba(255, 0, 255, 0.1);
+        }
+
+        /* Ozel Rengarenk Slider Stili */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 28px;
+            width: 28px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 0 20px #ffffff, 0 0 40px #00ffff;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: 3px solid #02000a;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+            box-shadow: 0 0 30px #ffffff, 0 0 60px #ff00ff;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            /* Rengarenk Zaman Cizgisi */
+            background: linear-gradient(90deg, #ff0055, #ffdd00, #00ffaa, #00aaff, #aa00ff);
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        .scene-tooltip {
+            background: rgba(10, 0, 20, 0.95) !important;
+            border-radius: 12px !important;
+            padding: 12px 18px !important;
+            color: white !important;
+            font-family: inherit !important;
+            border: 1px solid rgba(0, 255, 255, 0.6) !important;
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.4) !important;
+            font-weight: bold;
+        }
+
+        /* Bilgi paneli animasyonu */
+        .slide-up {
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .text-neon-blue { color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+        .text-neon-pink { color: #ff00ff; text-shadow: 0 0 10px #ff00ff; }
+    </style>
+</head>
+<body class="text-slate-200">
+<div id="lotg-nav" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);border-radius:8px;padding:7px 14px;font-family:sans-serif;font-size:13px;border:1px solid rgba(255,255,255,0.18);"><a href="index.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">←</span><span class="lotg-tr"> Ana Sayfa</span><span class="lotg-en" style="display:none"> Home</span></a></div><script>(function(){if(localStorage.getItem('lotg_lang')==='en'){var t=document.querySelector('#lotg-nav .lotg-tr');var e=document.querySelector('#lotg-nav .lotg-en');if(t)t.style.display='none';if(e)e.style.display='';}})();</script>
+
+    <!-- 3D Kure -->
+    <div id="globeViz"></div>
+
+    <!-- Ust Zaman Cizelgesi (Timeline) -->
+    <div class="fixed top-0 left-0 w-full p-4 md:p-6 z-50 pointer-events-none">
+        <div class="max-w-4xl mx-auto glass-panel rounded-2xl p-6 pointer-events-auto relative overflow-hidden">
+            <!-- Arka Plan Parlamasi -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-[#00ffff] to-transparent opacity-80 shadow-[0_0_20px_#00ffff]"></div>
+            
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h1 class="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                        <i data-lucide="zap" class="w-8 h-8 text-neon-pink"></i>
+                        <span class="bg-clip-text text-transparent bg-gradient-to-r from-[#00ffff] to-[#ff00ff]">Matematiksel Devrimler</span>
+                    </h1>
+                    <p class="text-sm text-slate-300 mt-2 font-medium">Sayi sistemlerinin evrimini gormek icin zamani kaydirin.</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-[#00ffff] font-bold uppercase tracking-widest mb-1 drop-shadow-md">Gecerli Yil</div>
+                    <div id="yearDisplay" class="text-5xl font-mono font-black text-white tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] transition-colors duration-300">
+                        MO 3000
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative pt-2 pb-2">
+                <input type="range" id="timelineSlider" min="0" max="8" value="0" step="1" class="w-full">
+                
+                <!-- Uc noktalarin etiketleri -->
+                <div class="flex justify-between text-[11px] text-[#00ffff] font-bold mt-4 uppercase tracking-wider">
+                    <span>MO 3000 (Antik Cag)</span>
+                    <span>MS 1997 (Modern Cag)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bilgi Paneli -->
+    <div id="infoPanel" class="fixed bottom-6 left-6 md:left-10 z-40 w-[calc(100%-48px)] md:w-96 glass-panel rounded-2xl p-6 hidden">
+        <div class="absolute -right-8 -bottom-8 opacity-20 pointer-events-none transition-transform duration-1000 transform rotate-12" id="bgIconContainer">
+            <i data-lucide="cpu" class="w-48 h-48 text-[#00ffff]" id="panelBgIcon"></i>
+        </div>
+        
+        <div class="flex items-center gap-3 mb-4 relative z-10">
+            <span id="infoYearBadge" class="px-3 py-1 bg-black text-white text-sm font-black rounded-lg border-2 shadow-lg">MO 3000</span>
+            <span class="text-xs text-slate-200 font-bold uppercase tracking-widest flex items-center gap-1 bg-black/40 px-2 py-1 rounded">
+                <i data-lucide="map-pin" class="w-4 h-4 text-[#ff00ff]"></i> <span id="infoLocation">Misir</span>
+            </span>
+        </div>
+        
+        <h2 id="infoTitle" class="text-2xl font-black text-white mb-3 relative z-10 drop-shadow-md">Hiyeroglif Sayilar</h2>
+        
+        <p id="infoDesc" class="text-sm text-slate-200 font-medium leading-relaxed mb-6 relative z-10 bg-black/30 p-4 rounded-lg border border-white/10">
+            Antik Misirlilar onluk tabani temel alan eklemeli bir sistem kullaniyorlardi.
+        </p>
+
+        <button id="closePanelBtn" class="w-full py-3 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-[#ff0055] hover:to-[#aa00ff] text-white text-sm font-bold tracking-widest uppercase rounded-xl transition-all duration-300 border border-slate-600 hover:border-transparent hover:shadow-[0_0_20px_#ff00ff] relative z-10">
+            Kapat
+        </button>
+    </div>
+
+    <!-- Ilk acilista kullaniciyi yonlendiren ipucu -->
+    <div id="tutorialHint" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#00ffff] to-[#00aaff] px-6 py-3 rounded-full text-sm font-bold text-black shadow-[0_0_30px_#00ffff] animate-bounce z-30 pointer-events-none flex items-center gap-2">
+        <i data-lucide="mouse-pointer-click" class="w-5 h-5"></i> Zamani ilerletmek icin ustteki cubugu kaydirin
+    </div>
+
+    <script>
+        // Ikonlari baslat
+        lucide.createIcons();
+
+        // Tarihsel Gelismeler Veritabani (Karakterler ve Renkler Guncellendi)
+        const historicalEvents = [
+            {
+                id: 0,
+                yearRaw: -3000,
+                yearStr: "MO 3000",
+                location: "Antik Misir",
+                lat: 26.82, lng: 30.80,
+                title: "Ilk Onluk Sistem",
+                desc: "Antik Misirlilar onluk tabani kullanan ilk medeniyetlerdendi. Ancak bu sistem 'pozisyonel' degildi; 999 yazmak icin onlarca hiyeroglif sembolunun yan yana tekrarlanmasi gerekiyordu. Bu durum karmasik hesaplamalari imkansiz kiliyordu.",
+                color: "#ff0055", // Neon Pink/Red
+                icon: "pyramid"
+            },
+            {
+                id: 1,
+                yearRaw: -2000,
+                yearStr: "MO 2000",
+                location: "Babil (Mezopotamya)",
+                lat: 32.53, lng: 44.42,
+                title: "Altmislik Sistem",
+                desc: "Babilliler civi yazisiyla 60 tabanli (altmislik) bir sistem gelistirdi. Sembolun degerinin durdugu yere gore degistigi 'basamak degeri' mantigi tarihte ilk kez burada goruldu. Bugun 1 saatin 60 dakika olmasi bu mirastir.",
+                color: "#ffdd00", // Bright Yellow
+                icon: "sun"
+            },
+            {
+                id: 2,
+                yearRaw: -300,
+                yearStr: "MO 300",
+                location: "Cin Imparatorlugu",
+                lat: 34.34, lng: 108.93,
+                title: "Cubuk Sayilar",
+                desc: "Cinli bilginler sayma tahtalari uzerinde bambu cubuklar kullanarak hesaplama yapiyordu. Basamaklarin karismamasi icin aralarda bosluk birakiyorlardi, bu da tarihteki ilk zimni 'Sifir' (yer tutucu) kavramlarindan biriydi.",
+                color: "#00ffaa", // Neon Mint
+                icon: "kanban"
+            },
+            {
+                id: 3,
+                yearRaw: 300,
+                yearStr: "MS 300",
+                location: "Maya Uygarligi",
+                lat: 20.68, lng: -88.56,
+                title: "Bagimsiz Sifir",
+                desc: "Mayalar, diger kitalardan tamamen bagimsiz olarak 20 tabanli bir sistem gelistirdi. Bir 'kabuk' sembolu ile sifiri bagimsiz bir matematiksel kavram olarak takvim ve astronomi hesaplamalarinda aktif olarak kullandilar.",
+                color: "#39ff14", // Neon Green
+                icon: "eye"
+            },
+            {
+                id: 4,
+                yearRaw: 628,
+                yearStr: "MS 628",
+                location: "Hindistan",
+                lat: 24.58, lng: 73.68,
+                title: "Modern Rakamlar",
+                desc: "Hintli matematikci Brahmagupta, sifirin ('shunya') sadece bir bosluk olmadigini, baslibasina uzerinde islem yapilabilen bir deger oldugunu formule etti. Modern 1'den 9'a kadar rakamlar da bu donemde olgunlasti.",
+                color: "#00aaff", // Neon Blue
+                icon: "compass"
+            },
+            {
+                id: 5,
+                yearRaw: 825,
+                yearStr: "MS 825",
+                location: "Bagdat (Abbasiler)",
+                lat: 33.31, lng: 44.36,
+                title: "Algoritma ve Cebir",
+                desc: "Harezmi, 'Hint Rakamlariyla Hesaplama' adli eserinde bu sistemi derledi. Bu eser, modern ondalik sistemin Islam dunyasina ve oradan Avrupa'ya gecmesini sagladi. Ayrica 'Algoritma' kelimesi Harezmi'nin isminden turemistir.",
+                color: "#00ffff", // Cyan
+                icon: "cpu"
+            },
+            {
+                id: 6,
+                yearRaw: 1202,
+                yearStr: "MS 1202",
+                location: "Pisa (Italya)",
+                lat: 43.72, lng: 10.39,
+                title: "Fibonacci Devrimi",
+                desc: "Avrupa yuzyillar boyu Roma rakamlariyla bogusurken, Kuzey Afrika'da egitim goren Fibonacci, 'Liber Abaci' kitabini yazdi. Bu kitap, Hint-Arap ondalik sistemini Avrupa tuccarlarina tanitti ve ticarette devrim yaratti.",
+                color: "#ff00ff", // Magenta
+                icon: "trending-up"
+            },
+            {
+                id: 7,
+                yearRaw: 1585,
+                yearStr: "MS 1585",
+                location: "Hollanda",
+                lat: 52.36, lng: 4.90,
+                title: "Ondalik Kesirler",
+                desc: "Simon Stevin, 'De Thiende' (Ondalik) adli eserinde tam sayilardan sonra gelen kusuratlarin (kesirlerin) de onluk sisteme gore yazilabilecegini gosterdi. Boylece gunumuzun modern ondalik sayi yazimi tam olarak oturdu.",
+                color: "#ff5f1f", // Neon Orange
+                icon: "percent"
+            },
+            {
+                id: 8,
+                yearRaw: 1997,
+                yearStr: "MS 1997",
+                location: "Paris (Fransa)",
+                lat: 48.85, lng: 2.35,
+                title: "Kuresel Standart",
+                desc: "Uluslararasi Agirliklar ve Olculer Burosu (BIPM) tarafindan alinan bir kararla, ondalik isaret olarak hem noktanin (.) hem de virgulu (,) gecerli oldugu kuresel olcekte standartlastirildi.",
+                color: "#ffffff", // Pure White
+                icon: "globe-2"
+            }
+        ];
+
+        // 3D Haritayi Baslat
+        const globeContainer = document.getElementById('globeViz');
+        const world = Globe()(globeContainer)
+            .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+            .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+            .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+            .pointOfView({ lat: 30, lng: 40, altitude: 2 })
+            .labelLat(d => d.lat)
+            .labelLng(d => d.lng)
+            .labelText(d => d.location)
+            .labelSize(1.8)
+            .labelDotRadius(1.5)
+            .labelColor(d => d.color)
+            .labelResolution(3)
+            .labelAltitude(0.02)
+            .onLabelClick(handlePointClick)
+            .onLabelHover(d => {
+                document.body.style.cursor = d ? 'pointer' : 'default';
+            })
+            .labelLabel(d => `
+                <div class="scene-tooltip flex flex-col items-center">
+                    <span style="color:${d.color}; text-shadow: 0 0 10px ${d.color};" class="text-sm font-black mb-1">${d.yearStr}</span>
+                    <span class="text-white text-xs">${d.location}</span>
+                </div>
+            `);
+
+        // Daha canli atmosfer
+        world.globeMaterial().atmosphereColor = '#b026ff';
+        world.globeMaterial().atmosphereOpacity = 0.35;
+
+        // UI Elementleri
+        const slider = document.getElementById('timelineSlider');
+        const yearDisplay = document.getElementById('yearDisplay');
+        const tutorialHint = document.getElementById('tutorialHint');
+        const infoPanel = document.getElementById('infoPanel');
+        const closeBtn = document.getElementById('closePanelBtn');
+        const bgIconContainer = document.getElementById('bgIconContainer');
+
+        // Pencere yeniden boyutlandirma
+        window.addEventListener('resize', () => {
+            world.width(window.innerWidth);
+            world.height(window.innerHeight);
+        });
+
+        // Haritayi Secilen Doneme Gore Guncelle
+        function updateTimeline(index) {
+            const currentEvent = historicalEvents[index];
+            yearDisplay.innerText = currentEvent.yearStr;
+
+            // Kaydiricidaki renklendirmeyi ayarla
+            yearDisplay.style.color = currentEvent.color;
+            yearDisplay.style.textShadow = `0 0 20px ${currentEvent.color}`;
+
+            // Sadece secili zamana KADAR olan olaylari haritada goster
+            const visibleEvents = historicalEvents.filter(e => e.id <= index);
+            world.labelsData(visibleEvents);
+            
+            // Halka (Rings) Animasyonlarini Ekle - Sadece secili noktalarda
+            world.ringsData(visibleEvents)
+                 .ringLat(d => d.lat)
+                 .ringLng(d => d.lng)
+                 .ringColor(d => d.color)
+                 .ringMaxRadius(d => 5)
+                 .ringPropagationSpeed(d => 2)
+                 .ringRepeatPeriod(d => 800);
+
+            // Eger panel aciksa ve zaman ilerlediyse paneli kapat
+            infoPanel.classList.add('hidden');
+            infoPanel.classList.remove('slide-up');
+
+            // Kamerayi yavasca o anki devrimin oldugu yere cevir
+            if(visibleEvents.length > 0) {
+                const latest = visibleEvents[visibleEvents.length - 1];
+                world.pointOfView({ lat: latest.lat, lng: latest.lng, altitude: 1.2 }, 1500);
+            }
+        }
+
+        // Noktaya Tiklaninca Bilgi Panelini Ac
+        function handlePointClick(d) {
+            // Paneli Doldur
+            document.getElementById('infoYearBadge').innerText = d.yearStr;
+            document.getElementById('infoYearBadge').style.color = d.color;
+            document.getElementById('infoYearBadge').style.borderColor = d.color;
+            document.getElementById('infoYearBadge').style.boxShadow = `0 0 15px ${d.color}`;
+            
+            document.getElementById('infoLocation').innerText = d.location;
+            document.getElementById('infoTitle').innerText = d.title;
+            document.getElementById('infoTitle').style.color = d.color;
+            document.getElementById('infoDesc').innerText = d.desc;
+
+            // Paneli Goster ve Animasyon ekle
+            infoPanel.classList.remove('hidden');
+            
+            // Animasyonu tetiklemek
+            void infoPanel.offsetWidth; 
+            infoPanel.classList.add('slide-up');
+
+            // Arka plan ikonunu degistir (Lucide)
+            const iconElem = document.getElementById('panelBgIcon');
+            iconElem.setAttribute('data-lucide', d.icon || 'star');
+            iconElem.style.color = d.color;
+            lucide.createIcons(); // Ikonu yeniden renderla
+            
+            // Ikon donus animasyonu
+            bgIconContainer.style.transform = `rotate(${Math.random() * 45 - 20}deg) scale(1.1)`;
+
+            // Oraya Odaklan
+            world.pointOfView({ lat: d.lat, lng: d.lng, altitude: 0.6 }, 1000);
+        }
+
+        // Slider Dinleyicisi
+        slider.addEventListener('input', (e) => {
+            if(!tutorialHint.classList.contains('hidden')) {
+                tutorialHint.classList.add('hidden');
+            }
+            updateTimeline(parseInt(e.target.value));
+        });
+
+        // Paneli Kapat
+        closeBtn.addEventListener('click', () => {
+            infoPanel.classList.add('hidden');
+            infoPanel.classList.remove('slide-up');
+            world.pointOfView({ altitude: 1.5 }, 1200);
+        });
+
+        // Baslangic Durumu
+        updateTimeline(0);
+
+    </script>
+    <!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->
+    <script src="whatsapp-float.js"></script>
+</body>
+</html>

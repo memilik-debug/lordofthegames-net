@@ -1,0 +1,8 @@
+{
+  "name": "lordofthegames-functions",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^7.4.0"
+  }
+}

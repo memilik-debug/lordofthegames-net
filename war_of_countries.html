@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>War of Countries v1.6</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+/* ── Mini React shim (no CDN needed) ── */
+(function(W){'use strict';
+var Frag={_f:1};
+var _H=[],_hi=0,_rf=null,_rc=null,_rd=null,_pend=false,_rsc=[];
+var SVG_NS='http://www.w3.org/2000/svg';
+var SVG={svg:1,circle:1,line:1,path:1,polyline:1,polygon:1,rect:1,g:1,defs:1,use:1,text:1,tspan:1,ellipse:1,clipPath:1,mask:1,pattern:1,linearGradient:1,radialGradient:1,stop:1};
+var SVG_ATTR={className:'class',strokeWidth:'stroke-width',strokeLinecap:'stroke-linecap',strokeLinejoin:'stroke-linejoin',strokeDasharray:'stroke-dasharray',fillOpacity:'fill-opacity',stopColor:'stop-color',clipPath:'clip-path',fillRule:'fill-rule',viewBox:'viewBox',preserveAspectRatio:'preserveAspectRatio'};
+
+function ce(type,props){
+  var ch=[];
+  for(var i=2;i<arguments.length;i++) push(ch,arguments[i]);
+  return {type:type,props:props||{},ch:ch};
+}
+function push(out,v){
+  if(v===null||v===undefined||v===false||v===true)return;
+  if(Array.isArray(v)){for(var i=0;i<v.length;i++)push(out,v[i]);}
+  else out.push(v);
+}
+function rn(v,svg){
+  if(v===null||v===undefined)return document.createTextNode('');
+  if(typeof v==='number'||typeof v==='string')return document.createTextNode(''+v);
+  var t=v.type;
+  if(t&&t._f){var f=document.createDocumentFragment();v.ch.forEach(function(c){f.appendChild(rn(c,svg));});return f;}
+  if(typeof t==='function')return rn(t(v.props),svg);
+  var inSvg=svg||!!SVG[t];
+  var el=inSvg?document.createElementNS(SVG_NS,t):document.createElement(t);
+  var p=v.props;
+  for(var k in p){
+    var val=p[k];
+    if(val===null||val===undefined)continue;
+    if(k==='className'){inSvg?el.setAttribute('class',val):( el.className=val);}
+    else if(k==='style'&&typeof val==='object'){for(var s in val)el.style[s]=val[s];}
+    else if(k==='dangerouslySetInnerHTML'){el.innerHTML=val.__html;}
+    else if(k==='ref'&&val&&typeof val==='object'){
+      var sc=null;for(var si=0;si<_rsc.length;si++){if(_rsc[si].r===val){sc=_rsc[si];break;}}
+      val.current=el;
+      if(sc)(function(e,s){requestAnimationFrame(function(){e.scrollLeft=s.sl;e.scrollTop=s.st;});})(el,sc);
+    }
+    else if(k==='disabled'){el.disabled=!!val;}
+    else if(k[0]==='o'&&k[1]==='n'&&typeof val==='function'){
+      el.addEventListener(k[2].toLowerCase()+k.slice(3),val);
+    }
+    else if(k!=='key'&&k!=='children'){
+      var an=inSvg?(SVG_ATTR[k]||k):k;
+      if(val===true)el.setAttribute(an,'');
+      else if(val!==false)el.setAttribute(an,val);
+    }
+  }
+  v.ch.forEach(function(c){el.appendChild(rn(c,inSvg));});
+  return el;
+}
+function tick(){if(!_pend){_pend=true;requestAnimationFrame(flush);}}
+function flush(){
+  _pend=false;
+  _rsc=[];
+  for(var i=0;i<_H.length;i++){
+    var h=_H[i];
+    if(h&&h._isRef&&h.current instanceof Element&&(h.current.scrollLeft>0||h.current.scrollTop>0))
+      _rsc.push({r:h,sl:h.current.scrollLeft,st:h.current.scrollTop});
+  }
+  _hi=0;
+  var vdom=_rf();
+  var nd=rn(vdom,false);
+  if(_rd)_rc.replaceChild(nd,_rd);else _rc.appendChild(nd);
+  _rd=nd;
+}
+function useState(init){
+  var i=_hi++;
+  if(_H[i]===undefined)_H[i]=typeof init==='function'?init():init;
+  return(function(ci){return[_H[ci],function(v){_H[ci]=typeof v==='function'?v(_H[ci]):v;tick();}];})(i);
+}
+function useEffect(fn,deps){
+  var i=_hi++;var prev=_H[i]||{};var pd=prev.deps;
+  var run=!pd||!deps||deps.length!==pd.length||deps.some(function(d,j){return!Object.is(d,pd[j]);});
+  _H[i]={deps:deps,cleanup:prev.cleanup,_fn:run?fn:null};
+  if(run){
+    if(prev.cleanup){try{prev.cleanup();}catch(e){}}
+    var hi=i,cf=fn;
+    Promise.resolve().then(function(){
+      if(_H[hi]&&_H[hi]._fn===cf){try{var c=cf();if(_H[hi]){_H[hi].cleanup=c||null;_H[hi]._fn=null;}}catch(e){console.error(e);}}
+    });
+  }
+}
+function useRef(init){var i=_hi++;if(!_H[i])_H[i]={current:init,_isRef:true};return _H[i];}
+function useMemo(fn,deps){
+  var i=_hi++;var prev=_H[i];
+  var run=!prev||deps.some(function(d,j){return!Object.is(d,(prev.deps||[])[j]);});
+  if(run)_H[i]={val:fn(),deps:deps};
+  return _H[i].val;
+}
+W.React={createElement:ce,Fragment:Frag,useState:useState,useEffect:useEffect,useRef:useRef,useMemo:useMemo};
+W.ReactDOM={createRoot:function(c){_rc=c;return{render:function(v){_rf=function(){return typeof v.type==='function'?v.type(v.props||{}):v;};flush();}};}};
+})(window);
+
+/* ── Inline Lucide icons (no CDN needed) ── */
+(function(W){
+function mk(paths){
+  return function(props){
+    var sz=props.size||24,col=props.color||'currentColor',sw=props.strokeWidth!==undefined?props.strokeWidth:2,cls=props.className||'';
+    var ch=paths.map(function(p,i){return React.createElement.apply(React,[p[0],Object.assign({key:i},p[1])]);});
+    return React.createElement.apply(React,['svg',{xmlns:'http://www.w3.org/2000/svg',width:sz,height:sz,viewBox:'0 0 24 24',fill:'none',stroke:col,strokeWidth:sw,strokeLinecap:'round',strokeLinejoin:'round',className:cls}].concat(ch));
+  };
+}
+W.lucide={
+  Target:mk([['circle',{cx:12,cy:12,r:10}],['circle',{cx:12,cy:12,r:6}],['circle',{cx:12,cy:12,r:2}]]),
+  X:mk([['line',{x1:18,y1:6,x2:6,y2:18}],['line',{x1:6,y1:6,x2:18,y2:18}]]),
+  Shield:mk([['path',{d:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'}]]),
+  Zap:mk([['polygon',{points:'13 2 3 14 12 14 11 22 21 10 12 10 13 2'}]]),
+  Anchor:mk([['circle',{cx:12,cy:5,r:3}],['line',{x1:12,y1:22,x2:12,y2:8}],['path',{d:'M5 12H2a10 10 0 0 0 20 0h-3'}]]),
+  Navigation:mk([['polygon',{points:'3 11 22 2 13 21 11 13 3 11'}]]),
+  TrendingUp:mk([['polyline',{points:'23 6 13.5 15.5 8.5 10.5 1 18'}],['polyline',{points:'17 6 23 6 23 12'}]]),
+  Globe:mk([['circle',{cx:12,cy:12,r:10}],['line',{x1:2,y1:12,x2:22,y2:12}],['path',{d:'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'}]]),
+  Milestone:mk([['path',{d:'M18 6H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h13l4-3.5L18 6z'}],['line',{x1:12,y1:13,x2:12,y2:22}]]),
+  LocateFixed:mk([['line',{x1:2,y1:12,x2:5,y2:12}],['line',{x1:19,y1:12,x2:22,y2:12}],['line',{x1:12,y1:2,x2:12,y2:5}],['line',{x1:12,y1:19,x2:12,y2:22}],['circle',{cx:12,cy:12,r:7}],['circle',{cx:12,cy:12,r:3}]]),
+  Swords:mk([['polyline',{points:'14.5 17.5 3 6 3 3 6 3 17.5 14.5'}],['line',{x1:13,y1:11,x2:19,y2:17}],['polyline',{points:'14.5 6.5 17.5 3.5 20.5 6.5 17.5 9.5'}],['line',{x1:5,y1:14,x2:3,y2:16}],['line',{x1:14,y1:5,x2:16,y2:3}]]),
+  Skull:mk([['circle',{cx:12,cy:11,r:8}],['path',{d:'M5 15.5a7 7 0 0 0 14 0'}],['line',{x1:9,y1:11,x2:9,y2:15}],['line',{x1:15,y1:11,x2:15,y2:15}],['path',{d:'M9 20h6'}],['path',{d:'M9 22h6'}]]),
+  Crosshair:mk([['circle',{cx:12,cy:12,r:10}],['line',{x1:22,y1:12,x2:18,y2:12}],['line',{x1:6,y1:12,x2:2,y2:12}],['line',{x1:12,y1:6,x2:12,y2:2}],['line',{x1:12,y1:22,x2:12,y2:18}]]),
+  Trophy:mk([['path',{d:'M6 9H4.5a2.5 2.5 0 0 1 0-5H6'}],['path',{d:'M18 9h1.5a2.5 2.5 0 0 0 0-5H18'}],['path',{d:'M4 22h16'}],['path',{d:'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'}],['path',{d:'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'}],['path',{d:'M18 2H6v7a6 6 0 0 0 12 0V2z'}]]),
+  Activity:mk([['polyline',{points:'22 12 18 12 15 21 9 3 6 12 2 12'}]]),
+  FlaskConical:mk([['path',{d:'M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2'}],['path',{d:'M8.5 2h7'}],['path',{d:'M7 16h10'}]]),
+  Newspaper:mk([['path',{d:'M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z'}],['path',{d:'M16 3v4H8V3'}],['line',{x1:16,y1:11,x2:8,y2:11}],['line',{x1:16,y1:15,x2:8,y2:15}],['line',{x1:10,y1:7,x2:8,y2:7}]]),
+};
+})(window);
+</script>
+<style>
+/* ===== HoI-style topographic map styling ===== */
+:root {
+  --c-player: #3b82f6;
+  --c-sari: #eab308;
+  --c-kirmizi: #ef4444;
+  --c-mor: #a855f7;
+  --c-yesil: #22c55e;
+  --c-turuncu: #f97316;
+}
+
+/* Map canvas background — dark vignette like an old war room table */
+.map-canvas {
+  background:
+    radial-gradient(ellipse at center, #2a2a32 0%, #14141a 60%, #0a0a10 100%);
+}
+
+/* Tile base */
+.tile {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== TERRAIN ===== */
+.tile-kara {
+  background-color: #9bb86b;
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(255,255,255,0.10) 1px, transparent 2px),
+    radial-gradient(circle at 70% 70%, rgba(0,0,0,0.09) 1px, transparent 2px),
+    linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.06) 100%);
+  background-size: 7px 7px, 9px 9px, 100% 100%;
+}
+
+.tile-deniz {
+  background-color: #1e466e;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 5px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.07) 0, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 7px),
+    radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.10), transparent 75%);
+}
+
+.tile-sig_deniz {
+  background-color: #2d5a82;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0, rgba(255,255,255,0.10) 1px, transparent 1px, transparent 4px),
+    radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.14), transparent 80%);
+}
+
+.tile-dag {
+  background-color: #7a5a42;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0,0,0,0.22) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.10) 0 1px, transparent 1px 8px),
+    radial-gradient(circle at 50% 40%, rgba(255,255,255,0.15), transparent 65%);
+}
+
+.tile-orman {
+  background-color: #3c6432;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(10,40,10,0.7) 2px, transparent 3px),
+    radial-gradient(circle at 75% 75%, rgba(10,30,10,0.7) 2px, transparent 3px),
+    radial-gradient(circle at 50% 50%, rgba(140,200,90,0.25) 1.5px, transparent 2.5px);
+  background-size: 10px 10px, 11px 11px, 7px 7px;
+}
+
+.tile-col {
+  background-color: #e6d2aa;
+  background-image:
+    radial-gradient(circle at 30% 30%, rgba(150,110,40,0.20) 1px, transparent 2px),
+    radial-gradient(circle at 70% 70%, rgba(255,255,255,0.20) 1px, transparent 2px);
+  background-size: 6px 6px, 5px 5px;
+}
+
+.tile-bataklik {
+  background-color: #4b5320;
+  background-image:
+    radial-gradient(circle at 30% 30%, rgba(0,0,0,0.32) 2px, transparent 3px),
+    radial-gradient(circle at 70% 60%, rgba(140,160,90,0.25) 1.5px, transparent 2.5px),
+    radial-gradient(circle at 20% 70%, rgba(70,90,160,0.20) 1.5px, transparent 2.5px);
+  background-size: 9px 9px, 7px 7px, 8px 8px;
+}
+
+.tile-sehir {
+  background-color: #c8b888;
+  background-image:
+    linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(0,0,0,0.12) 100%),
+    radial-gradient(circle at 50% 50%, rgba(180,150,90,0.25) 30%, transparent 60%);
+}
+
+/* ===== COUNTRY OWNER TINTS (soft overlay) ===== */
+.tile.owner-oyuncu::before { background: var(--c-player); }
+.tile.owner-dusman_sari::before { background: var(--c-sari); }
+.tile.owner-dusman_kirmizi::before { background: var(--c-kirmizi); }
+.tile.owner-tara_mor::before { background: var(--c-mor); }
+.tile.owner-yeni_yesil::before { background: var(--c-yesil); }
+.tile.owner-yeni_turuncu::before { background: var(--c-turuncu); }
+
+.tile[class*="owner-"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Water tiles never get a country tint */
+.tile-deniz::before,
+.tile-sig_deniz::before { display: none !important; }
+
+/* ===== CITY LABEL ===== */
+.city-label {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f0e9c8;
+  color: #1a1a1a;
+  border: 1.5px solid #1a1a1a;
+  padding: 0 3px;
+  font-size: 7px;
+  font-weight: 900;
+  white-space: nowrap;
+  z-index: 25;
+  font-family: ui-monospace, monospace;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+  letter-spacing: 0.3px;
+}
+
+.city-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+  font-size: 18px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(255,255,255,0.4);
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));
+}
+
+/* River animation - very subtle shimmer */
+@keyframes flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -20; }
+}
+.river-shimmer {
+  stroke-dasharray: 6 14;
+  animation: flow 6s linear infinite;
+}
+</style>
+</head>
+<body class="overflow-hidden">
+<div id="lotg-nav" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);border-radius:8px;padding:7px 14px;font-family:sans-serif;font-size:13px;border:1px solid rgba(255,255,255,0.18);"><a href="index.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">&#8592;</span><span class="lotg-tr"> Ana Sayfa</span><span class="lotg-en" style="display:none"> Home</span></a></div><script>(function(){if(localStorage.getItem('lotg_lang')==='en'){var t=document.querySelector('#lotg-nav .lotg-tr'),e=document.querySelector('#lotg-nav .lotg-en');if(t)t.style.display='none';if(e)e.style.display='';}})();</script>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useRef, useMemo } = React;
+const { FlaskConical, Newspaper, Shield, Zap, Anchor, Navigation, X, Target, TrendingUp, Globe, Milestone, LocateFixed, Swords, Skull, Crosshair, Trophy, Activity } = lucide;
+const KARE_BOYUTU = 36;
+const SUTUN_SAYISI = 50;
+const SATIR_SAYISI = 35;
+const RENKLER = {
+  KAGIT: "#F0EBD7",
+  DENIZ: "#1E466E",
+  SIG_DENIZ: "#2D5A82",
+  DAG: "#6E503C",
+  ORMAN: "#3C6432",
+  COL: "#E6D2AA",
+  BATAKLIK: "#4B5320",
+  TARAFSIZ: "#C8C8B4",
+  OYUNCU_MAVI: "#3b82f6",
+  DUSMAN_SARI: "#eab308",
+  DUSMAN_KIRMIZI: "#ef4444",
+  TARA_MOR: "#a855f7",
+  YENI_YESIL: "#22c55e",
+  YENI_TURUNCU: "#f97316",
+  KOYU_GRI: "#282828"
+};
+const ULKE_ISIMLERI = {
+  oyuncu: "Kuzey Federasyonu",
+  dusman_sari: "Algorithma",
+  dusman_kirmizi: "Scriptburg",
+  tara_mor: "Pyntalya",
+  yeni_yesil: "Byte Cumhuriyeti",
+  yeni_turuncu: "Logic \u0130mparatorlu\u011Fu"
+};
+const TECHS = [
+  { id: "rifles", name: "Geli\u015Fmi\u015F T\xFCfekler", cost: 100, category: "Kara", bonus: "Sald\u0131r\u0131 +%15", icon: "P" },
+  { id: "armor", name: "Z\u0131rhl\u0131 Doktrin", cost: 200, category: "Kara", bonus: "Tank H\u0131z\u0131 +1", icon: "T" },
+  { id: "automation", name: "Otomasyon", cost: 150, category: "Sanayi", bonus: "Verim +%20", icon: "\u{1F3ED}" },
+  { id: "radar_tech", name: "Geli\u015Fmi\u015F Radar", cost: 180, category: "Elektronik", bonus: "G\xF6r\xFC\u015F +3", icon: "\u{1F4E1}" },
+  { id: "dockyard", name: "Modern Tersane", cost: 250, category: "Deniz", bonus: "D. \xDCretimi", icon: "\u2693" }
+];
+// Hardcoded geographic features \u2014 visual only, do not affect mechanics.
+// Coordinates are [s (column), r (row)] points; paths route around the central inner sea (center ~25,17 radius ~6).
+const RIVERS = [
+  [[8, 1], [9, 4], [11, 7], [13, 10], [13, 13], [12, 15]],
+  [[28, 7], [30, 9], [32, 11], [33, 13], [34, 15]],
+  [[42, 1], [41, 4], [40, 7], [38, 10], [37, 13], [37, 15]],
+  [[8, 22], [10, 24], [12, 27], [11, 30], [13, 33]],
+  [[17, 21], [19, 24], [22, 27], [24, 30]],
+  [[42, 22], [40, 24], [38, 27], [39, 30], [41, 33]],
+  [[33, 22], [31, 25], [30, 28], [29, 31]]
+];
+const ROADS = [
+  // Federation (player) network
+  [[5, 5], [2, 2]], [[5, 5], [10, 4]], [[5, 5], [12, 10]], [[10, 4], [15, 5]], [[12, 10], [15, 5]],
+  // Algorithma (sari)
+  [[4, 28], [10, 32]], [[4, 28], [2, 33]], [[4, 28], [8, 22]], [[8, 22], [14, 25]], [[10, 32], [14, 25]],
+  // Scriptburg (kirmizi)
+  [[45, 28], [40, 32]], [[45, 28], [48, 25]], [[45, 28], [43, 18]], [[45, 28], [38, 25]], [[43, 18], [38, 25]],
+  // Pyntalya (mor)
+  [[45, 5], [40, 8]], [[45, 5], [38, 2]], [[45, 5], [48, 10]], [[40, 8], [35, 12]], [[35, 12], [38, 2]],
+  // Byte (yesil)
+  [[25, 4], [22, 8]], [[25, 4], [28, 2]], [[25, 4], [30, 7]], [[25, 4], [18, 4]], [[22, 8], [18, 4]],
+  // Logic (turuncu)
+  [[25, 30], [28, 33]], [[25, 30], [22, 26]], [[25, 30], [19, 31]], [[25, 30], [32, 30]], [[22, 26], [19, 31]]
+];
+const App = () => {
+  const [day, setDay] = useState(1);
+  const [resources, setResources] = useState({
+    money: 35e3,
+    manpower: 15e4,
+    equipment: 15e3,
+    ap: 0,
+    civilFactories: 5,
+    milFactories: 3
+  });
+  const [diplomacy, setDiplomacy] = useState({
+    dusman_sari: "peace",
+    dusman_kirmizi: "peace",
+    tara_mor: "peace",
+    yeni_yesil: "peace",
+    yeni_turuncu: "peace"
+  });
+  const [annexed, setAnnexed] = useState([]);
+  const [grid, setGrid] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [selectedUnitId, setSelectedUnitId] = useState(null);
+  const [selectedCoord, setSelectedCoord] = useState(null);
+  const [activeResearch, setActiveResearch] = useState(null);
+  const [completedTechs, setCompletedTechs] = useState([]);
+  const [researchProgress, setResearchProgress] = useState(0);
+  const [showResearch, setShowResearch] = useState(false);
+  const [news, setNews] = useState([]);
+  const [viewNews, setViewNews] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const mapContainerRef = useRef(null);
+  useEffect(() => {
+    const cityCoords = [
+      { s: 5, r: 5, name: "KUZEY BA\u015EKENT", owner: "oyuncu" },
+      { s: 2, r: 2, name: "KUZEY L\u0130MAN", owner: "oyuncu" },
+      { s: 10, r: 4, name: "\xC7EL\u0130K \u015EEHR\u0130", owner: "oyuncu" },
+      { s: 12, r: 10, name: "BATI KALES\u0130", owner: "oyuncu" },
+      { s: 15, r: 5, name: "SINIR KASABASI", owner: "oyuncu" },
+      { s: 4, r: 28, name: "ALGORITHMA", owner: "dusman_sari" },
+      { s: 10, r: 32, name: "SARI L\u0130MAN", owner: "dusman_sari" },
+      { s: 2, r: 33, name: "KUM \u015EEHR\u0130", owner: "dusman_sari" },
+      { s: 14, r: 25, name: "SARI SINIR", owner: "dusman_sari" },
+      { s: 8, r: 22, name: "VAHA MERKEZ\u0130", owner: "dusman_sari" },
+      { s: 45, r: 28, name: "SCRIPTBURG", owner: "dusman_kirmizi" },
+      { s: 40, r: 32, name: "KIZIL L\u0130MAN", owner: "dusman_kirmizi" },
+      { s: 48, r: 25, name: "DO\u011EU KALES\u0130", owner: "dusman_kirmizi" },
+      { s: 43, r: 18, name: "KIZIL VAD\u0130", owner: "dusman_kirmizi" },
+      { s: 38, r: 25, name: "KIZIL GE\xC7\u0130T", owner: "dusman_kirmizi" },
+      { s: 45, r: 5, name: "PYNTALYA", owner: "tara_mor" },
+      { s: 40, r: 8, name: "MOR L\u0130MAN", owner: "tara_mor" },
+      { s: 38, r: 2, name: "MOR TEPE", owner: "tara_mor" },
+      { s: 48, r: 10, name: "ADALAR \u015EEHR\u0130", owner: "tara_mor" },
+      { s: 35, r: 12, name: "MOR SINIR", owner: "tara_mor" },
+      { s: 25, r: 4, name: "BYTE MERKEZ\u0130", owner: "yeni_yesil" },
+      { s: 22, r: 8, name: "YE\u015E\u0130L VAD\u0130", owner: "yeni_yesil" },
+      { s: 28, r: 2, name: "KUZEY BYTE", owner: "yeni_yesil" },
+      { s: 30, r: 7, name: "YE\u015E\u0130L SINIR", owner: "yeni_yesil" },
+      { s: 18, r: 4, name: "KOD KASABASI", owner: "yeni_yesil" },
+      { s: 25, r: 30, name: "LOGIC MERKEZ", owner: "yeni_turuncu" },
+      { s: 28, r: 33, name: "MANTIK \xDCSS\xDC", owner: "yeni_turuncu" },
+      { s: 22, r: 26, name: "G\xDCNEY LOGIC", owner: "yeni_turuncu" },
+      { s: 19, r: 31, name: "TURUNCU L\u0130MAN", owner: "yeni_turuncu" },
+      { s: 32, r: 30, name: "VER\u0130 \u015EEHR\u0130", owner: "yeni_turuncu" },
+      { s: 25, r: 17, name: "D\xDCNYA MERKEZ\u0130", owner: null },
+      { s: 12, r: 17, name: "BATI GE\xC7\u0130D\u0130", owner: null },
+      { s: 38, r: 17, name: "DO\u011EU GE\xC7\u0130D\u0130", owner: null },
+      { s: 25, r: 12, name: "ORTA KALE", owner: null },
+      { s: 25, r: 22, name: "G\xDCNEY KAV\u015EAK", owner: null },
+      { s: 18, r: 15, name: "BATAKLIK \u015EEHR\u0130", owner: null },
+      { s: 32, r: 19, name: "ORMAN K\xD6Y\xDC", owner: null },
+      { s: 44, r: 14, name: "DO\u011EU \u0130STASYONU", owner: null },
+      { s: 6, r: 20, name: "BATI \u0130STASYONU", owner: null },
+      { s: 25, r: 8, name: "B\u0130L\u0130M KASABASI", owner: null },
+      { s: 25, r: 26, name: "MADEN \u015EEHR\u0130", owner: null },
+      { s: 10, r: 15, name: "S\u0130S KASABASI", owner: null },
+      { s: 40, r: 20, name: "G\xDCNE\u015E L\u0130MANI", owner: null },
+      { s: 20, r: 20, name: "K\xD6PR\xDC \u015EEHR\u0130", owner: null },
+      { s: 30, r: 10, name: "KUZEY GE\xC7\u0130D\u0130", owner: null }
+    ];
+    const initialGrid = [];
+    for (let r = 0; r < SATIR_SAYISI; r++) {
+      for (let s = 0; s < SUTUN_SAYISI; s++) {
+        let type = "kara";
+        let owner = null;
+        let cityName = "";
+        const distToCenter = Math.sqrt(Math.pow(s - 25, 2) + Math.pow(r - 17, 2));
+        if (distToCenter < 6) {
+          type = distToCenter < 5 ? "deniz" : "sig_deniz";
+        } else {
+          if (s < 16) owner = r < 18 ? "oyuncu" : "dusman_sari";
+          else if (s > 34) owner = r < 18 ? "tara_mor" : "dusman_kirmizi";
+          else owner = r < 18 ? "yeni_yesil" : "yeni_turuncu";
+          const rand = Math.random();
+          if (rand < 0.1) type = "dag";
+          else if (rand < 0.15) type = "orman";
+          else if (rand < 0.04) type = "col";
+          else if (rand < 0.04) type = "bataklik";
+        }
+        const city = cityCoords.find((c) => c.s === s && c.r === r);
+        if (city) {
+          type = "sehir";
+          cityName = city.name;
+          owner = city.owner;
+        }
+        initialGrid.push({
+          s,
+          r,
+          type,
+          owner,
+          cityName,
+          buildings: { outpost: false, civilFactory: 0, milFactory: 0, port: false, radar: false }
+        });
+      }
+    }
+    setGrid(initialGrid);
+    setUnits([
+      { id: 1, type: "piyade", owner: "oyuncu", s: 5, r: 6, targetS: 5, targetR: 6, hp: 100 },
+      { id: 2, type: "tank", owner: "oyuncu", s: 6, r: 5, targetS: 6, targetR: 5, hp: 100 },
+      { id: 101, type: "piyade", owner: "dusman_sari", s: 4, r: 29, targetS: 4, targetR: 29, hp: 100 },
+      { id: 104, type: "piyade", owner: "dusman_sari", s: 5, r: 28, targetS: 5, targetR: 28, hp: 100 },
+      { id: 102, type: "piyade", owner: "dusman_kirmizi", s: 45, r: 27, targetS: 45, targetR: 27, hp: 100 },
+      { id: 105, type: "piyade", owner: "dusman_kirmizi", s: 44, r: 28, targetS: 44, targetR: 28, hp: 100 },
+      { id: 103, type: "piyade", owner: "tara_mor", s: 45, r: 6, targetS: 45, targetR: 6, hp: 100 },
+      { id: 106, type: "piyade", owner: "tara_mor", s: 44, r: 5, targetS: 44, targetR: 5, hp: 100 },
+      { id: 107, type: "piyade", owner: "yeni_yesil", s: 25, r: 5, targetS: 25, targetR: 5, hp: 100 },
+      { id: 108, type: "piyade", owner: "yeni_yesil", s: 24, r: 4, targetS: 24, targetR: 4, hp: 100 },
+      { id: 109, type: "piyade", owner: "yeni_turuncu", s: 25, r: 31, targetS: 25, targetR: 31, hp: 100 },
+      { id: 110, type: "piyade", owner: "yeni_turuncu", s: 26, r: 30, targetS: 26, targetR: 30, hp: 100 }
+    ]);
+  }, []);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDay((prev) => prev + 1);
+      setResources((res) => {
+        const myCities = grid.filter((c) => c.type === "sehir" && c.owner === "oyuncu").length;
+        const factoryBonus = completedTechs.includes("automation") ? 1.25 : 1;
+        const moneyGain = (res.civilFactories * 250 + myCities * 100) * factoryBonus;
+        const eqGain = (res.milFactories * 180 + myCities * 80) * factoryBonus;
+        const apGain = 2 + res.civilFactories * 0.3;
+        if (activeResearch) {
+          setResearchProgress((p) => {
+            const next = p + apGain;
+            if (next >= activeResearch.cost) {
+              setCompletedTechs((ct) => [...ct, activeResearch.id]);
+              setNews((n) => [{ title: "TEKNOLOJ\u0130K DEVR\u0130M!", body: `${activeResearch.name.toUpperCase()} tamamland\u0131.`, date: day, type: "tech" }, ...n]);
+              setActiveResearch(null);
+              return 0;
+            }
+            return next;
+          });
+        }
+        return { ...res, money: res.money + moneyGain, manpower: res.manpower + 250, equipment: res.equipment + eqGain, ap: res.ap + apGain };
+      });
+      const countries = Object.keys(diplomacy);
+      countries.forEach((countryId) => {
+        if (!annexed.includes(countryId)) {
+          const countryCities = grid.filter((c) => c.type === "sehir" && c.owner === countryId);
+          if (countryCities.length === 0) {
+            setAnnexed((prev) => [...prev, countryId]);
+            setGrid((prevGrid) => prevGrid.map((c) => c.owner === countryId ? { ...c, owner: "oyuncu" } : c));
+            setNews((n) => [{
+              title: "TAR\u0130H\u0130 FET\u0130H!",
+              body: `${ULKE_ISIMLERI[countryId].toUpperCase()} d\xFC\u015Ft\xFC! Topraklar ilhak edildi.`,
+              date: day,
+              type: "war"
+            }, ...n]);
+          }
+        }
+      });
+      setUnits((prevUnits) => {
+        const nextUnits = prevUnits.map((unit) => {
+          let currentTargetS = unit.targetS;
+          let currentTargetR = unit.targetR;
+          if (unit.owner !== "oyuncu") {
+            if (diplomacy[unit.owner] === "war") {
+              const playerTargets = [
+                ...grid.filter((c) => c.type === "sehir" && c.owner === "oyuncu"),
+                ...prevUnits.filter((u) => u.owner === "oyuncu")
+              ];
+              if (playerTargets.length > 0) {
+                let minDist = 999;
+                let bestTarget = playerTargets[0];
+                playerTargets.forEach((t) => {
+                  const dist = Math.abs(unit.s - t.s) + Math.abs(unit.r - t.r);
+                  if (dist < minDist) {
+                    minDist = dist;
+                    bestTarget = t;
+                  }
+                });
+                currentTargetS = bestTarget.s;
+                currentTargetR = bestTarget.r;
+              }
+            } else if (unit.s === unit.targetS && unit.r === unit.targetR) {
+              if (Math.random() > 0.95) {
+                currentTargetS = Math.max(0, Math.min(SUTUN_SAYISI - 1, unit.s + (Math.random() > 0.5 ? 3 : -3)));
+                currentTargetR = Math.max(0, Math.min(SATIR_SAYISI - 1, unit.r + (Math.random() > 0.5 ? 3 : -3)));
+              }
+            }
+          }
+          const isAtTarget = unit.s === currentTargetS && unit.r === currentTargetR;
+          const ns = isAtTarget ? unit.s : unit.s < currentTargetS ? unit.s + 1 : unit.s > currentTargetS ? unit.s - 1 : unit.s;
+          const nr = isAtTarget ? unit.r : unit.r < currentTargetR ? unit.r + 1 : unit.r > currentTargetR ? unit.r - 1 : unit.r;
+          const currentCell = grid.find((c) => c.s === unit.s && c.r === unit.r);
+          const nextCell = grid.find((c) => c.s === ns && c.r === nr);
+          const hostileInTile = prevUnits.find(
+            (u) => u.id !== unit.id && (u.s === ns && u.r === nr || u.s === unit.s && u.r === unit.r) && u.owner !== unit.owner && (diplomacy[u.owner] === "war" || diplomacy[unit.owner] === "war")
+          );
+          if (hostileInTile) {
+            const defenseBonus = currentCell?.type === "sehir" ? 0.7 : 1;
+            const baseDamage = unit.type === "tank" ? 15 : 10;
+            const finalDamage = baseDamage * defenseBonus;
+            const newHp = unit.hp - finalDamage;
+            if (newHp <= 0 && unit.owner !== "oyuncu") {
+              setNews((n) => [{ title: "D\xDC\u015EMAN \u0130MHA ED\u0130LD\u0130!", body: `${ULKE_ISIMLERI[unit.owner]} birli\u011Fi \xE7at\u0131\u015Fmada yok edildi.`, date: day, type: "war" }, ...n]);
+            }
+            return { ...unit, hp: newHp, targetS: unit.s, targetR: unit.r };
+          }
+          if (!isAtTarget && nextCell && nextCell.owner && nextCell.owner !== unit.owner && diplomacy[nextCell.owner] !== "war") {
+            return { ...unit, targetS: unit.s, targetR: unit.r };
+          }
+          if (!isAtTarget && nextCell && (nextCell.type === "col" || nextCell.type === "bataklik") && day % 2 !== 0) return unit;
+          if (!isAtTarget && nextCell && nextCell.owner !== unit.owner && (unit.owner === "oyuncu" ? diplomacy[nextCell.owner] === "war" : diplomacy[unit.owner] === "war")) {
+            if (unit.owner === "oyuncu" && nextCell.type === "sehir") {
+              setNews((n) => [{ title: "YEN\u0130 \u015EEH\u0130R FETH\u0130!", body: `${nextCell.cityName} art\u0131k Federasyon'un kontrol\xFCnde.`, date: day, type: "war" }, ...n]);
+            }
+            setGrid((g) => g.map((c) => c.s === ns && c.r === nr ? { ...c, owner: unit.owner } : c));
+          }
+          return isAtTarget ? unit : { ...unit, s: ns, r: nr };
+        });
+        return nextUnits.filter((u) => u.hp > 0);
+      });
+    }, 1e3);
+    return () => clearInterval(timer);
+  }, [day, activeResearch, grid, completedTechs, diplomacy, annexed]);
+  const selectedCell = useMemo(
+    () => selectedCoord ? grid.find((c) => c.s === selectedCoord.s && c.r === selectedCoord.r) : null,
+    [selectedCoord, grid]
+  );
+  // Precompute country borders and coastlines for each cell (visual only)
+  const cellBorders = useMemo(() => {
+    if (!grid.length) return [];
+    const map = new Map();
+    grid.forEach((c) => map.set(c.s + ":" + c.r, c));
+    const isWater = (c) => c && (c.type === "deniz" || c.type === "sig_deniz");
+    return grid.map((cell) => {
+      const t = map.get(cell.s + ":" + (cell.r - 1));
+      const r = map.get((cell.s + 1) + ":" + cell.r);
+      const b = map.get(cell.s + ":" + (cell.r + 1));
+      const l = map.get((cell.s - 1) + ":" + cell.r);
+      const selfWater = isWater(cell);
+      return {
+        bt: !selfWater && t && !isWater(t) && t.owner !== cell.owner,
+        br: !selfWater && r && !isWater(r) && r.owner !== cell.owner,
+        bb: !selfWater && b && !isWater(b) && b.owner !== cell.owner,
+        bl: !selfWater && l && !isWater(l) && l.owner !== cell.owner,
+        ct: !selfWater && isWater(t),
+        cr: !selfWater && isWater(r),
+        cb: !selfWater && isWater(b),
+        cl: !selfWater && isWater(l)
+      };
+    });
+  }, [grid]);
+  const getCityIcon = (name) => {
+    if (!name) return "\u{1F3D9}️";
+    if (name.indexOf("BAŞKENT") >= 0) return "★";
+    if (name.indexOf("MERKEZ") >= 0) return "◉";
+    if (name.indexOf("LİMAN") >= 0) return "⚓";
+    if (name.indexOf("KALE") >= 0 || name.indexOf("ÜSSÜ") >= 0) return "\u{1F3F0}";
+    if (name.indexOf("VADİ") >= 0) return "⛰️";
+    if (name.indexOf("GEÇİT") >= 0 || name.indexOf("GEÇİDİ") >= 0) return "\u{1F6E4}️";
+    if (name.indexOf("ADA") >= 0) return "\u{1F3DD}️";
+    return "\u{1F3D9}️";
+  };
+  const declareWar = (countryId) => {
+    if (!countryId || countryId === "oyuncu") return;
+    setDiplomacy((prev) => ({ ...prev, [countryId]: "war" }));
+    setNews((n) => [{
+      title: "SAVA\u015E \u0130LANI!",
+      body: `${ULKE_ISIMLERI[countryId].toUpperCase()} ile \xE7at\u0131\u015Fmalar ba\u015Flad\u0131!`,
+      date: day,
+      type: "war"
+    }, ...n]);
+    setViewNews(true);
+  };
+  const handleBuild = (type) => {
+    if (!selectedCell || selectedCell.owner !== "oyuncu") return;
+    const costs = { civilFactory: { money: 12e3, eq: 200, name: "Sivil Fabrika" }, milFactory: { money: 15e3, eq: 800, name: "Askeri Fabrika" }, outpost: { money: 5e3, eq: 500, name: "Karakol" }, port: { money: 8e3, eq: 1e3, name: "Liman" }, radar: { money: 15e3, eq: 2e3, name: "Radar" } };
+    const cost = costs[type];
+    if (resources.money < cost.money || resources.equipment < cost.eq) return;
+    setResources((prev) => ({ ...prev, money: prev.money - cost.money, equipment: prev.equipment - cost.eq, civilFactories: type === "civilFactory" ? prev.civilFactories + 1 : prev.civilFactories, milFactories: type === "milFactory" ? prev.milFactories + 1 : prev.milFactories }));
+    setGrid((prev) => prev.map((c) => {
+      if (c.s === selectedCoord.s && c.r === selectedCoord.r) {
+        const newBuildings = { ...c.buildings };
+        if (type === "civilFactory" || type === "milFactory") newBuildings[type] += 1;
+        else newBuildings[type] = true;
+        return { ...c, buildings: newBuildings };
+      }
+      return c;
+    }));
+    setNews((n) => [{ title: "\u0130KMAL HATTI KURULDU", body: `${cost.name} in\u015Fa edildi.`, date: day, type: "tech" }, ...n]);
+  };
+  const spawnUnit = (type) => {
+    if (!selectedCell || selectedCell.type !== "sehir" || selectedCell.owner !== "oyuncu") return;
+    const unitCosts = { piyade: { money: 1e3, eq: 1500, mp: 1e4 }, tank: { money: 5e3, eq: 4500, mp: 15e3 }, donanma: { money: 8e3, eq: 6e3, mp: 2e4 }, hava: { money: 12e3, eq: 7e3, mp: 25e3 } };
+    const cost = unitCosts[type];
+    if (resources.money < cost.money || resources.equipment < cost.eq || resources.manpower < cost.mp) return;
+    setResources((prev) => ({ ...prev, money: prev.money - cost.money, equipment: prev.equipment - cost.eq, manpower: prev.manpower - cost.mp }));
+    setUnits((prev) => [...prev, { id: Date.now() + Math.random(), type, owner: "oyuncu", s: selectedCoord.s, r: selectedCoord.r, targetS: selectedCoord.s, targetR: selectedCoord.r, hp: 100 }]);
+  };
+  const handleMapMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+  const handleMapMouseMove = (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
+    mapContainerRef.current.scrollLeft -= dx;
+    mapContainerRef.current.scrollTop -= dy;
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+  const centerOnCapital = () => {
+    const capital = grid.find((c) => c.cityName && c.cityName.includes("BA\u015EKENT") && c.owner === "oyuncu");
+    if (capital && mapContainerRef.current) {
+      mapContainerRef.current.scrollLeft = capital.s * KARE_BOYUTU - mapContainerRef.current.clientWidth / 2;
+      mapContainerRef.current.scrollTop = capital.r * KARE_BOYUTU - mapContainerRef.current.clientHeight / 2;
+    }
+  };
+  const handleRightClick = (e, s, r) => {
+    e.preventDefault();
+    if (selectedUnitId) {
+      setUnits((prev) => prev.map((u) => u.id === selectedUnitId ? { ...u, targetS: s, targetR: r } : u));
+    }
+  };
+  return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col h-screen bg-[#141414] text-[#141414] overflow-hidden select-none font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "h-10 bg-[#282828] border-b-2 border-black flex items-center justify-between px-4 text-white text-[10px] font-bold" }, /* @__PURE__ */ React.createElement("div", { className: "flex gap-4" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-2 text-blue-400 uppercase" }, /* @__PURE__ */ React.createElement(Target, { size: 14 }), " ", ULKE_ISIMLERI.oyuncu), /* @__PURE__ */ React.createElement("span", { className: "text-yellow-400" }, "\u{1F4B0} $", resources.money.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-blue-300" }, "\u{1F465} ", resources.manpower.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-red-400" }, "\u{1F4E6} ", resources.equipment.toLocaleString()), /* @__PURE__ */ React.createElement("span", { className: "text-indigo-400" }, "\u{1F9EA} ", resources.ap.toFixed(1), " AP")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ React.createElement("button", { onClick: centerOnCapital, className: "bg-black/30 hover:bg-black/50 p-1 rounded transition-colors text-white flex items-center gap-1" }, /* @__PURE__ */ React.createElement(LocateFixed, { size: 12 }), " BA\u015EKENTE G\u0130T"), /* @__PURE__ */ React.createElement("div", { className: "bg-black/40 px-3 py-1 rounded border border-white/10" }, "G\xDCN: ", day, " | YIL: 1936"))), /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      ref: mapContainerRef,
+      onMouseDown: handleMapMouseDown,
+      onMouseMove: handleMapMouseMove,
+      onMouseUp: () => setIsDragging(false),
+      onMouseLeave: () => setIsDragging(false),
+      className: `flex-1 overflow-auto map-canvas relative custom-scrollbar p-1 ${isDragging ? "cursor-grabbing" : "cursor-default"}`
+    },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "grid bg-[#0a0a10] border-4 border-black pointer-events-auto relative",
+        style: {
+          gridTemplateColumns: `repeat(${SUTUN_SAYISI}, ${KARE_BOYUTU}px)`,
+          width: SUTUN_SAYISI * KARE_BOYUTU,
+          gap: 0,
+          boxShadow: "inset 0 0 40px rgba(0,0,0,0.5)"
+        },
+        onContextMenu: (e) => e.preventDefault()
+      },
+      grid.map((cell, idx) => {
+        const unit = units.find((u) => u.s === cell.s && u.r === cell.r);
+        const isSelected = selectedCoord?.s === cell.s && selectedCoord?.r === cell.r;
+        const isTarget = units.some((u) => u.id === selectedUnitId && u.targetS === cell.s && u.targetR === cell.r && (u.s !== u.targetS || u.r !== u.targetR));
+        const bb = cellBorders[idx] || {};
+        const shadowParts = [];
+        if (bb.bt) shadowParts.push("inset 0 2px 0 0 rgba(15,15,20,0.85)");
+        if (bb.br) shadowParts.push("inset -2px 0 0 0 rgba(15,15,20,0.85)");
+        if (bb.bb) shadowParts.push("inset 0 -2px 0 0 rgba(15,15,20,0.85)");
+        if (bb.bl) shadowParts.push("inset 2px 0 0 0 rgba(15,15,20,0.85)");
+        if (bb.ct) shadowParts.push("inset 0 1px 0 0 rgba(245,238,210,0.85)");
+        if (bb.cr) shadowParts.push("inset -1px 0 0 0 rgba(245,238,210,0.85)");
+        if (bb.cb) shadowParts.push("inset 0 -1px 0 0 rgba(245,238,210,0.85)");
+        if (bb.cl) shadowParts.push("inset 1px 0 0 0 rgba(245,238,210,0.85)");
+        const tileCls = "tile tile-" + cell.type + (cell.owner ? " owner-" + cell.owner : "") + " cursor-crosshair";
+        const tileStyle = { width: KARE_BOYUTU, height: KARE_BOYUTU };
+        if (shadowParts.length) tileStyle.boxShadow = shadowParts.join(", ");
+        return /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            key: idx,
+            onClick: () => {
+              setSelectedCoord({ s: cell.s, r: cell.r });
+              const u = units.find((un) => un.s === cell.s && un.r === cell.r);
+              if (u && u.owner === "oyuncu") setSelectedUnitId(u.id);
+            },
+            onContextMenu: (e) => handleRightClick(e, cell.s, cell.r),
+            className: tileCls,
+            style: tileStyle
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-0 right-0 flex flex-wrap-reverse justify-end gap-[1px] p-[1px] z-10 pointer-events-none" }, cell.buildings.outpost && /* @__PURE__ */ React.createElement(Shield, { size: 10, className: "text-white bg-black/60 rounded-full p-[1px]" }), cell.buildings.radar && /* @__PURE__ */ React.createElement(Globe, { size: 10, className: "text-cyan-400 bg-black/60 rounded-full p-[1px]" }), cell.buildings.civilFactory > 0 && /* @__PURE__ */ React.createElement(Zap, { size: 10, className: "text-yellow-400 bg-black/60 rounded-full p-[1px]" }), cell.buildings.milFactory > 0 && /* @__PURE__ */ React.createElement(Zap, { size: 10, className: "text-red-400 bg-black/60 rounded-full p-[1px]" })),
+          cell.type === "sehir" && /* @__PURE__ */ React.createElement("div", { className: "city-icon" }, getCityIcon(cell.cityName)),
+          cell.type === "sehir" && /* @__PURE__ */ React.createElement("div", { className: "city-label" }, cell.cityName),
+          unit && /* @__PURE__ */ React.createElement("div", { className: `absolute inset-[3px] rounded-[3px] border-2 border-black flex flex-col items-center justify-center text-white font-black z-30 ${unit.owner === "oyuncu" ? "bg-[#3b82f6]" : "bg-[#ef4444]"} ${unit.id === selectedUnitId ? "ring-2 ring-white scale-110 z-40" : ""}`, style: { boxShadow: "0 2px 3px rgba(0,0,0,0.5)" } }, /* @__PURE__ */ React.createElement("span", { className: "text-[14px] mt-[-2px]" }, unit.type === "piyade" ? "P" : unit.type === "tank" ? "T" : unit.type === "donanma" ? "D" : "H"), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-0 left-0 right-0 h-[3px] bg-black/40" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-green-400", style: { width: `${unit.hp}%` } }))),
+          isSelected && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 border-2 border-white z-40 animate-pulse pointer-events-none" }),
+          isTarget && /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 border-2 border-red-500 z-30 flex items-center justify-center bg-red-500/10 pointer-events-none" }, /* @__PURE__ */ React.createElement(X, { size: 12, className: "text-red-500" }))
+        );
+      }),
+      /* @__PURE__ */ React.createElement(
+        "svg",
+        {
+          width: SUTUN_SAYISI * KARE_BOYUTU,
+          height: SATIR_SAYISI * KARE_BOYUTU,
+          style: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: SUTUN_SAYISI * KARE_BOYUTU + "px",
+            height: SATIR_SAYISI * KARE_BOYUTU + "px",
+            pointerEvents: "none",
+            zIndex: 15
+          }
+        },
+        RIVERS.map((river, i) => {
+          const pts = river.map((p) => (p[0] * KARE_BOYUTU + KARE_BOYUTU / 2) + "," + (p[1] * KARE_BOYUTU + KARE_BOYUTU / 2)).join(" ");
+          return [
+            /* @__PURE__ */ React.createElement("polyline", { key: "rs" + i, points: pts, stroke: "rgba(0,0,0,0.30)", strokeWidth: 7, fill: "none", strokeLinecap: "round", strokeLinejoin: "round" }),
+            /* @__PURE__ */ React.createElement("polyline", { key: "rm" + i, points: pts, stroke: "#3d7ea8", strokeWidth: 4, fill: "none", strokeLinecap: "round", strokeLinejoin: "round" }),
+            /* @__PURE__ */ React.createElement("polyline", { key: "rh" + i, points: pts, stroke: "#a8d2ea", strokeWidth: 1.5, fill: "none", strokeLinecap: "round", strokeLinejoin: "round" })
+          ];
+        }),
+        ROADS.map((road, i) => /* @__PURE__ */ React.createElement("line", {
+          key: "rd" + i,
+          x1: road[0][0] * KARE_BOYUTU + KARE_BOYUTU / 2,
+          y1: road[0][1] * KARE_BOYUTU + KARE_BOYUTU / 2,
+          x2: road[1][0] * KARE_BOYUTU + KARE_BOYUTU / 2,
+          y2: road[1][1] * KARE_BOYUTU + KARE_BOYUTU / 2,
+          stroke: "rgba(50,30,15,0.55)",
+          strokeWidth: 2.2,
+          strokeDasharray: "5,3",
+          strokeLinecap: "round"
+        }))
+      )
+    )
+  ), /* @__PURE__ */ React.createElement("div", { className: "h-[220px] bg-[#F0EBD7] border-t-4 border-black flex p-3 gap-4 z-50 overflow-hidden shadow-[0_-10px_20px_rgba(0,0,0,0.3)]" }, /* @__PURE__ */ React.createElement("div", { className: "w-1/4 border-r-2 border-black/20 flex flex-col gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "bg-black/5 p-2 rounded border border-black/10 text-[9px] font-black space-y-1" }, /* @__PURE__ */ React.createElement("h3", { className: "uppercase flex items-center gap-1 border-b border-black/10 pb-1" }, /* @__PURE__ */ React.createElement(Activity, { size: 12 }), " Ulusal Durum"), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-emerald-700" }, /* @__PURE__ */ React.createElement("span", null, "GEL\u0130R:"), " ", /* @__PURE__ */ React.createElement("span", null, "+$", (resources.civilFactories * 250 + grid.filter((c) => c.owner === "oyuncu" && c.type === "sehir").length * 100).toLocaleString())), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-red-700" }, /* @__PURE__ */ React.createElement("span", null, "EK\u0130PMAN:"), " ", /* @__PURE__ */ React.createElement("span", null, "+", resources.milFactories * 180))), /* @__PURE__ */ React.createElement("button", { onClick: () => setViewNews(true), className: "w-full bg-black text-white py-2 text-[10px] font-black flex items-center justify-center gap-2 hover:bg-gray-800 shadow-[3px_3px_0px_rgba(0,0,0,0.2)] transition-colors" }, /* @__PURE__ */ React.createElement(Newspaper, { size: 14 }), " GAZETE (", news.length, ")"), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowResearch(true), disabled: !!activeResearch, className: `w-full py-3 border-2 border-black font-black text-[10px] flex flex-col items-center justify-center gap-1 ${activeResearch ? "bg-indigo-50 italic" : "bg-[#eab308] hover:bg-[#d4a007]"}` }, activeResearch ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "animate-pulse" }, "ODAK: ", activeResearch.name), /* @__PURE__ */ React.createElement("div", { className: "w-4/5 h-1.5 bg-black/20 rounded-full overflow-hidden mt-1" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-indigo-600", style: { width: `${researchProgress / activeResearch.cost * 100}%` } }))) : "\u{1F52C} TEKNOLOJ\u0130 ARA\u015ETIR")), /* @__PURE__ */ React.createElement("div", { className: "w-1/3 border-r-2 border-black/20 px-2 flex flex-col" }, /* @__PURE__ */ React.createElement("h4", { className: "font-black text-[11px] mb-2 border-b-2 border-black flex items-center gap-2 uppercase italic" }, /* @__PURE__ */ React.createElement(Shield, { size: 14 }), " \u0130n\u015Faat ve Diplomasi"), selectedCell && selectedCell.owner && selectedCell.owner !== "oyuncu" ? /* @__PURE__ */ React.createElement("div", { className: "bg-red-50 p-2 border-2 border-red-200 rounded flex flex-col gap-2 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-black uppercase text-red-800" }, "B\xF6lge: ", ULKE_ISIMLERI[selectedCell.owner]), /* @__PURE__ */ React.createElement("div", { className: "text-[9px] font-bold" }, "Stat\xFC: ", diplomacy[selectedCell.owner] === "war" ? "\u{1F534} SAVA\u015ETA" : "\u26AA BARI\u015ETA"), diplomacy[selectedCell.owner] === "peace" && /* @__PURE__ */ React.createElement("button", { onClick: () => declareWar(selectedCell.owner), className: "bg-red-600 text-white p-2 font-black text-[10px] flex items-center justify-center gap-2 hover:bg-red-700 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-y-px" }, /* @__PURE__ */ React.createElement(Swords, { size: 14 }), " SAVA\u015E \u0130LAN ET")) : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: () => handleBuild("civilFactory"), className: "p-2 bg-white border-2 border-black text-[8px] font-black hover:bg-slate-100 shadow-[2px_2px_0px_rgba(0,0,0,1)] flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Zap, { size: 10, className: "text-yellow-500" }), " S\u0130V\u0130L FAB ($12K)"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleBuild("milFactory"), className: "p-2 bg-white border-2 border-black text-[8px] font-black hover:bg-slate-100 shadow-[2px_2px_0px_rgba(0,0,0,1)] flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Zap, { size: 10, className: "text-red-500" }), " ASKER\u0130 FAB ($15K)"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleBuild("outpost"), className: "p-2 bg-white border-2 border-black text-[8px] font-black hover:bg-slate-100 shadow-[2px_2px_0px_rgba(0,0,0,1)] flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Shield, { size: 10 }), " KARAKOL ($5K)"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleBuild("port"), className: "p-2 bg-white border-2 border-black text-[8px] font-black hover:bg-slate-100 shadow-[2px_2px_0px_rgba(0,0,0,1)] flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Anchor, { size: 10 }), " L\u0130MAN ($8K)")), /* @__PURE__ */ React.createElement("div", { className: "mt-2 p-2 bg-black/5 border border-black/10 text-[8px] font-bold leading-tight flex-1 overflow-y-auto" }, selectedCoord ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-blue-700 font-black" }, "KONUM: ", selectedCoord.s, ",", selectedCoord.r, " | ", selectedCell?.type.toUpperCase()), selectedUnitId && /* @__PURE__ */ React.createElement("div", { className: "mt-1 text-red-600 animate-pulse flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Crosshair, { size: 10 }), " HAREKET EMR\u0130 BEKLEN\u0130YOR (SA\u011E TIK)")) : "B\xF6lge se\xE7iniz...")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 px-2 flex flex-col text-[#141414]" }, /* @__PURE__ */ React.createElement("h4", { className: "font-black text-[11px] mb-2 border-b-2 border-black flex items-center gap-2 text-red-700 uppercase italic" }, /* @__PURE__ */ React.createElement(TrendingUp, { size: 14 }), " Ordu Seferberli\u011Fi"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: () => spawnUnit("piyade"), className: "p-2 bg-white border-2 border-black text-[8px] font-black flex items-center justify-between hover:bg-blue-50 shadow-[2px_2px_0px_rgba(0,0,0,1)]" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F482} P\u0130YADE"), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7px] text-gray-500 italic" }, "1.5K EQ")), /* @__PURE__ */ React.createElement("button", { onClick: () => spawnUnit("tank"), className: "p-2 bg-white border-2 border-black text-[8px] font-black flex items-center justify-between hover:bg-red-50 shadow-[2px_2px_0px_rgba(0,0,0,1)]" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F69C} TANK"), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7px] text-gray-500 italic" }, "4.5K EQ")), /* @__PURE__ */ React.createElement("button", { onClick: () => spawnUnit("donanma"), className: "p-2 bg-white border-2 border-black text-[8px] font-black flex items-center justify-between hover:bg-gray-100 shadow-[2px_2px_0px_rgba(0,0,0,1)]" }, /* @__PURE__ */ React.createElement("span", null, "\u2693 DONANMA"), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7px] text-gray-500 italic" }, "6K EQ")), /* @__PURE__ */ React.createElement("button", { onClick: () => spawnUnit("hava"), className: "p-2 bg-white border-2 border-black text-[8px] font-black flex items-center justify-between hover:bg-gray-100 shadow-[2px_2px_0px_rgba(0,0,0,1)]" }, /* @__PURE__ */ React.createElement("span", null, "\u2708\uFE0F HAVA"), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7px] text-gray-500 italic" }, "7K EQ"))), /* @__PURE__ */ React.createElement("p", { className: "text-[8px] mt-2 font-black text-gray-400 italic uppercase" }, "* Sadece m\xFClkiyetinizdeki \u015Fehirlerde \xFCretim yapabilirsiniz."))), showResearch && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4 text-[#141414]" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#F0EBD7] border-4 border-black w-full max-w-2xl p-6 shadow-[15px_15px_0px_0px_rgba(0,0,0,1)] font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center border-b-4 border-black pb-2 mb-6 uppercase font-black italic text-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(FlaskConical, { size: 32 }), " Teknoloji Akademisi"), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowResearch(false), className: "hover:rotate-90 transition-transform" }, /* @__PURE__ */ React.createElement(X, { size: 32 }))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-4" }, TECHS.map((t) => /* @__PURE__ */ React.createElement("button", { key: t.id, disabled: completedTechs.includes(t.id), onClick: () => {
+    setActiveResearch(t);
+    setResearchProgress(0);
+    setShowResearch(false);
+  }, className: `border-2 border-black p-3 flex items-center justify-between transition-all ${completedTechs.includes(t.id) ? "bg-green-100 opacity-60" : "bg-white hover:bg-indigo-50 shadow-[4px_4px_0px_rgba(0,0,0,1)]"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 bg-black text-white flex items-center justify-center text-xl font-black" }, t.icon), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-xs font-black" }, t.name), /* @__PURE__ */ React.createElement("div", { className: "text-[8px] font-bold text-gray-500 uppercase" }, t.bonus))), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-black text-indigo-700 uppercase" }, completedTechs.includes(t.id) ? "B\u0130TT\u0130" : `${t.cost} AP`)))))), viewNews && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 text-[#141414]" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#F0EBD7] w-full max-w-xl p-8 border-4 border-black shadow-[15px_15px_0px_rgba(255,255,255,0.1)] relative" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setViewNews(false), className: "absolute top-4 right-4 hover:scale-110 transition-transform" }, /* @__PURE__ */ React.createElement(X, { size: 32 })), /* @__PURE__ */ React.createElement("h1", { className: "text-5xl font-black text-center border-b-4 border-black pb-2 italic tracking-tighter uppercase font-serif" }, "Pythonia Times"), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-[9px] font-black border-b border-black py-1 mb-6 uppercase" }, /* @__PURE__ */ React.createElement("span", null, "G\xDCN: ", day), /* @__PURE__ */ React.createElement("span", null, "YIL: 1936"), /* @__PURE__ */ React.createElement("span", null, "F\u0130YAT: 15 KR")), /* @__PURE__ */ React.createElement("div", { className: "space-y-6 max-h-[450px] overflow-y-auto pr-4 font-serif custom-scrollbar" }, news.map((n, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "border-b border-black/20 pb-6 last:border-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: `text-[8px] px-1 font-sans font-black text-white ${n.type === "tech" ? "bg-blue-600" : "bg-red-600"}` }, "MAN\u015EET"), /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-black opacity-50 uppercase" }, "G\xDCN ", n.date)), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black leading-tight mb-2 uppercase underline decoration-2" }, n.title), /* @__PURE__ */ React.createElement("p", { className: "text-base leading-relaxed font-serif" }, n.body)))))));
+};
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+<!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->
+<script src="whatsapp-float.js"></script>
+</body>
+</html>

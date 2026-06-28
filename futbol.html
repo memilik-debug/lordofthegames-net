@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Football Manager - Elite Pro v2.7</title>
+    <!-- Tailwind CSS for high fidelity responsive layouts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* PREMIUM FUTBOL SAHASI */
+        .elite-pitch {
+            background: #14532d;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
+                repeating-linear-gradient(90deg, #14532d, #14532d 10%, #15803d 10%, #15803d 20%);
+            background-size: 30px 30px, 30px 30px, 100% 100%;
+            position: relative;
+            border: 4px solid rgba(255,255,255,0.25);
+            border-radius: 24px;
+            width: 100%;
+            height: 100%;
+            min-height: 460px;
+            box-shadow: inset 0 0 120px rgba(0,0,0,0.8);
+            overflow: visible;
+        }
+
+        .pitch-line { position: absolute; border: 2px solid rgba(255,255,255,0.25); pointer-events: none; }
+        .center-circle { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16%; height: 28%; border-radius: 50%; }
+        .center-line { top: 0; bottom: 0; left: 50%; width: 2px; border: none; background: rgba(255,255,255,0.25); }
+        .penalty-area-left { top: 18%; left: 0; width: 15%; height: 64%; border-left: none; }
+        .penalty-area-right { top: 18%; right: 0; width: 15%; height: 64%; border-right: none; }
+
+        .goal-v6 { position: absolute; top: 38%; width: 2.5%; height: 24%; background: rgba(255,255,255,0.1); border: 2px solid #fff; z-index: 10; }
+        .goal-left { left: -1px; }
+        .goal-right { right: -1px; }
+
+        .player-node {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            /* Position is driven by a 60fps JS animation loop — no CSS position transition */
+            transition: none;
+            will-change: left, top;
+            cursor: pointer;
+        }
+        .player-node.has-ball { z-index: 55; }
+
+        .kit-circle {
+            position: relative;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 11px;
+            color: white;
+            border: 2.5px solid rgba(255,255,255,0.85);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            transition: box-shadow 0.25s, outline 0.15s;
+            transform-origin: 50% 80%;
+        }
+        /* Soft drop shadow on the grass so players feel grounded */
+        .kit-circle::after {
+            content: "";
+            position: absolute;
+            bottom: -7px; left: 50%;
+            width: 26px; height: 7px;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.55), transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .kit-circle:hover {
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+        }
+        .player-node.has-ball .kit-circle {
+            outline: 2px solid rgba(251, 191, 36, 0.9);
+            outline-offset: 2px;
+            box-shadow: 0 0 16px rgba(251, 191, 36, 0.6);
+        }
+
+        .info-tag {
+            font-size: 9px;
+            font-weight: 700;
+            background: rgba(15, 23, 42, 0.95);
+            padding: 2px 7px;
+            border-radius: 8px;
+            margin-top: 3.5px;
+            white-space: nowrap;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5px;
+        }
+
+        .role-tag {
+            font-size: 7px;
+            color: #fbbf24;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .ball-v6 {
+            width: 14px;
+            height: 14px;
+            background:
+                radial-gradient(circle at 35% 30%, #ffffff 0%, #e2e8f0 45%, #94a3b8 100%);
+            border-radius: 50%;
+            position: absolute;
+            /* Driven by the JS animation loop for smooth, weighted motion */
+            transition: none;
+            will-change: left, top;
+            box-shadow: 0 5px 14px rgba(0,0,0,0.85);
+            z-index: 70;
+        }
+        /* Pentagon hint + spin for a rolling-ball feel */
+        .ball-v6::before {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 50% 50%, #334155 0%, #334155 22%, transparent 23%),
+                radial-gradient(circle at 18% 70%, #334155 0%, #334155 12%, transparent 13%),
+                radial-gradient(circle at 82% 70%, #334155 0%, #334155 12%, transparent 13%);
+            animation: ballSpin 0.6s linear infinite;
+        }
+        @keyframes ballSpin { to { transform: rotate(360deg); } }
+
+        .goal-banner {
+            position: absolute;
+            inset: 0;
+            background: rgba(16, 185, 129, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: goal-flash 1.2s ease-out forwards;
+        }
+
+        @keyframes goal-flash {
+            0% { opacity: 0; transform: scale(0.85); }
+            30% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0; transform: scale(1); }
+        }
+
+        .role-modal {
+            position: absolute;
+            background: #1e293b;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 12px;
+            padding: 4px;
+            z-index: 5000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            min-width: 140px;
+        }
+
+        .role-modal button {
+            width: 100%;
+            text-align: left;
+            padding: 6px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #cbd5e1;
+            border-radius: 6px;
+            transition: all 0.15s;
+            margin-bottom: 2px;
+        }
+
+        .role-modal button:hover { background: #334155; color: #fbbf24; }
+        .role-modal button.active { background: #10b981; color: white; }
+
+        .elite-bench-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .elite-bench-item:hover { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); }
+
+        #custom-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 10000;
+            transform: translateY(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #custom-toast.show {
+            transform: translateY(0);
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in 0.35s ease-out; }
+    </style>
+</head>
+<body class="p-2 md:p-4 min-h-screen" onclick="closeModals();">
+
+    <!-- ARKA PLAN MÜZİĞİ - Mevcut dosyaya bağlı, döngülü -->
+    <audio id="game-music" loop preload="auto">
+        <source src="audio/promo-music.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Back to home nav -->
+    <div id="lotg-nav" class="fixed top-4 left-4 z-[9999] bg-slate-900/80 backdrop-blur-md rounded-xl px-4 py-2 text-xs border border-white/10 shadow-lg">
+        <a href="index.html" class="text-white hover:text-emerald-400 font-bold flex items-center gap-2">
+            <span>←</span> Ana Sayfa
+        </a>
+    </div>
+
+    <div id="game-container" class="max-w-7xl mx-auto glass rounded-[36px] shadow-2xl overflow-hidden min-h-[92vh] flex flex-col border border-white/10 mt-10">
+
+        <!-- HEADER -->
+        <div class="bg-slate-900/95 px-6 py-4 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-tr from-emerald-600 to-teal-400 rounded-xl flex items-center justify-center font-black text-white italic text-2xl shadow-lg shadow-emerald-500/20">P</div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight leading-none text-white flex items-center gap-2">
+                        PYTHON MANAGER <span class="text-xs bg-emerald-500/20 text-emerald-400 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30">ELITE PRO v2.7</span>
+                    </h1>
+                    <p id="week-indicator-ui" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">LİG SEZONU • HAFTA 1</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+                <div class="flex gap-3">
+                    <div class="px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-center min-w-[120px]">
+                        <p class="text-[9px] text-slate-500 font-bold uppercase mb-0.5">Kulüp Bütçesi</p>
+                        <p id="budget-ui" class="text-emerald-400 font-black text-lg">50.0M €</p>
+                    </div>
+                    <div class="px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-center min-w-[100px]">
+                        <p class="text-[9px] text-slate-500 font-bold uppercase mb-0.5">Takım Gücü</p>
+                        <p id="strength-ui" class="text-amber-400 font-black text-lg">0</p>
+                    </div>
+                </div>
+                <button onclick="toggleSound(event)" id="sound-btn" class="w-12 h-12 flex items-center justify-center bg-white/5 rounded-xl border border-white/10 hover:bg-white/15 transition-all text-xl" title="Sesi Aç/Kapat">🔇</button>
+            </div>
+        </div>
+
+        <div id="screen-content" class="flex-grow p-6 overflow-y-auto"></div>
+    </div>
+
+    <div id="custom-toast" class="flex items-center gap-3 p-4 bg-slate-900 border border-emerald-500/30 text-slate-100 rounded-2xl shadow-2xl max-w-sm">
+        <div class="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-black" id="toast-icon">✓</div>
+        <div>
+            <h5 class="text-xs font-black uppercase text-emerald-400" id="toast-title">KULÜP RAPORU</h5>
+            <p class="text-[11px] font-semibold text-slate-300" id="toast-body">Antrenman tamamlandı.</p>
+        </div>
+    </div>
+
+    <script>
+        /* =====================================================
+           SES MOTORU - Web Audio API ile sentezlenmiş efekt ve müzik
+        ===================================================== */
+        class FootballSoundSynth {
+            constructor() {
+                this.ctx = null;
+                this.muted = true;
+                this.musicAudio = null;
+                this.ambientSource = null;
+                this.ambientGain = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (!this.musicAudio) {
+                    this.musicAudio = document.getElementById('game-music');
+                }
+            }
+            playWhistle() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1100, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1400, this.ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.005, this.ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+            playKick() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(12, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.005, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            }
+            // Sentezlenmiş taraftar tezahüratı - gollerde patlatır
+            playCheer() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const duration = 2.3;
+                const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                const attackSamples = this.ctx.sampleRate * 0.12;
+                for (let i = 0; i < bufferSize; i++) {
+                    const t = i / bufferSize;
+                    const attack = Math.min(i / attackSamples, 1);
+                    const decay = Math.pow(1 - t, 1.6);
+                    // pembe gürültü için iki frekans karışımı
+                    const noise = (Math.random() * 2 - 1) * 0.7 + Math.sin(i * 0.012) * 0.15 * Math.random();
+                    data[i] = noise * attack * decay;
+                }
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+                // Bant geçiren filtre - insan sesi frekansları
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 900;
+                filter.Q.value = 0.6;
+                const gain = this.ctx.createGain();
+                gain.gain.value = 0.45;
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                source.start(now);
+            }
+            // Maç sırasındaki sürekli tribün uğultusu
+            playMatchAmbient() {
+                if (this.muted) return;
+                this.init();
+                if (this.ambientSource) return; // zaten çalıyor
+                const bufferSize = Math.floor(this.ctx.sampleRate * 2);
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1);
+                }
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+                source.loop = true;
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 700;
+                filter.Q.value = 0.5;
+                const gain = this.ctx.createGain();
+                gain.gain.value = 0.05;
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                source.start();
+                this.ambientSource = source;
+                this.ambientGain = gain;
+            }
+            stopMatchAmbient() {
+                if (this.ambientSource) {
+                    try { this.ambientSource.stop(); } catch(e){}
+                    this.ambientSource = null;
+                    this.ambientGain = null;
+                }
+            }
+            // Arka plan müziği - audio/promo-music.mp3 üzerinden döngü
+            toggleMusic(state) {
+                this.init();
+                if (!this.musicAudio) return;
+                try {
+                    if (state && !this.muted) {
+                        this.musicAudio.volume = 0.4;
+                        this.musicAudio.play().catch(err => console.log("Müzik:", err));
+                    } else {
+                        this.musicAudio.pause();
+                    }
+                } catch(e) { console.log("Müzik kontrol hatası:", e); }
+            }
+        }
+
+        const soundEngine = new FootballSoundSynth();
+        let audioUnlocked = false;
+
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            soundEngine.muted = false;
+            soundEngine.init();
+            if (soundEngine.ctx && soundEngine.ctx.state === 'suspended') {
+                soundEngine.ctx.resume();
+            }
+            soundEngine.toggleMusic(true);
+            const btn = document.getElementById('sound-btn');
+            if (btn) btn.textContent = '🔊';
+            audioUnlocked = true;
+            triggerToast("SES AKTİF", "Oyun müziği ve ses efektleri başlatıldı!", "success");
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        }
+
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+
+        function toggleSound(e) {
+            if (e) e.stopPropagation();
+            soundEngine.muted = !soundEngine.muted;
+            const btn = document.getElementById('sound-btn');
+            btn.textContent = soundEngine.muted ? '🔇' : '🔊';
+            audioUnlocked = true;
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+            if(!soundEngine.muted) {
+                soundEngine.init();
+                if (soundEngine.ctx && soundEngine.ctx.state === 'suspended') {
+                    soundEngine.ctx.resume();
+                }
+                soundEngine.playWhistle();
+                soundEngine.toggleMusic(true);
+            } else {
+                soundEngine.toggleMusic(false);
+                soundEngine.stopMatchAmbient();
+            }
+        }
+
+        function triggerToast(title, body, type = 'success') {
+            const toast = document.getElementById('custom-toast');
+            const tTitle = document.getElementById('toast-title');
+            const tBody = document.getElementById('toast-body');
+            const tIcon = document.getElementById('toast-icon');
+            tTitle.textContent = title;
+            tBody.textContent = body;
+            if(type === 'error') {
+                toast.classList.remove('border-emerald-500/30');
+                toast.classList.add('border-rose-500/30');
+                tIcon.textContent = '✕';
+                tIcon.className = 'w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400 font-black';
+            } else {
+                toast.classList.remove('border-rose-500/30');
+                toast.classList.add('border-emerald-500/30');
+                tIcon.textContent = '✓';
+                tIcon.className = 'w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-black';
+            }
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3500);
+        }
+
+        const NAMES = ["Altay", "Ferdi", "Merih", "Arda", "Semih", "Mert", "Zeki", "Okay", "Hakan", "Enes", "Kenan", "Kaan", "Abdülkerim", "Kerem", "Barış", "İrfan", "Samet", "İlkay", "Orkun", "Can", "Yusuf", "Emre", "Salih", "Uğurcan", "Cenk", "Yunus", "Caglar", "Nuri"];
+        const SURNAMES = ["Bayındır", "Kadıoğlu", "Demiral", "Güler", "Kılıçsoy", "Müldür", "Çelik", "Yokuşlu", "Çalhanoğlu", "Ünal", "Yıldız", "Ayhan", "Bardakçı", "Aktürkoğlu", "Alper", "Can", "Akaydın", "Gündoğan", "Kökçü", "Uzun", "Kılıç", "Mor", "Özcan", "Çakır", "Tosun", "Akgün", "Söyüncü", "Şahin"];
+
+        const ACADEMY_CHARACTERS = ["Hırslı", "Çalışkan", "Dengeli", "Dahi", "Disiplinsiz", "Cam Adam"];
+
+        const getRandomName = () => NAMES[Math.floor(Math.random()*NAMES.length)] + " " + SURNAMES[Math.floor(Math.random()*SURNAMES.length)];
+
+        class Player {
+            constructor(ad, mevkii, yetenek, fiyat, yas = 23, potansiyel = 85, enerji = 100, form = 80, rolu = "Standart", karakter = "Dengeli") {
+                this.ad = ad;
+                this.mevkii = mevkii;
+                this.yetenek = Math.floor(yetenek);
+                this.fiyat = Math.round(fiyat * 10) / 10;
+                this.role = rolu;
+                this.number = Math.floor(Math.random() * 98) + 1;
+                this.yas = yas;
+                this.potansiyel = Math.floor(potansiyel);
+                this.enerji = enerji;
+                this.form = form;
+                this.karakter = karakter;
+            }
+        }
+
+        class Team {
+            constructor(ad, oyuncular, butce, isUser = false) {
+                this.ad = ad;
+                this.oyuncular = oyuncular;
+                this.butce = butce;
+                this.puan = 0;
+                this.galibiyet = 0;
+                this.beraberlik = 0;
+                this.maglubiyet = 0;
+                this.atilan_gol = 0;
+                this.yenilen_gol = 0;
+                this.taktik = {
+                    ofansiflik: 65,
+                    savunma_hatti: 50,
+                    tempo: 60,
+                    pres: 60,
+                    genislik: 60,
+                    yaraticilik: 50,
+                    pas_tarzi: 'Kısa Pas',
+                    hucum_odagi: 'Dengeli',
+                    savunma_stili: 'Alan'
+                };
+                this.isUser = isUser;
+                this.ilk_11 = [];
+                this.otoSecIlk11();
+            }
+            otoSecIlk11() {
+                const order = ["Kaleci", "Defans", "Orta Saha", "Forvet"];
+                const counts = { "Kaleci": 1, "Defans": 4, "Orta Saha": 4, "Forvet": 2 };
+                let pool = [...this.oyuncular].sort((a,b)=>b.yetenek-a.yetenek);
+                let sel = [];
+                order.forEach(pos => {
+                    let found = 0;
+                    for(let i=0; i<pool.length; i++) {
+                        if(pool[i].mevkii === pos && found < counts[pos]) {
+                            sel.push(pool[i]); pool.splice(i, 1); i--; found++;
+                        }
+                    }
+                });
+                this.ilk_11 = sel.slice(0, 11);
+            }
+            getGuc() {
+                if(this.ilk_11.length === 0) return 0;
+                let sum = 0;
+                this.ilk_11.forEach(p => {
+                    let modifier = (p.enerji / 100) * 0.75 + (p.form / 100) * 0.25;
+                    let pSkill = p.yetenek * modifier;
+                    if (this.taktik.hucum_odagi === 'Kanatlar' && p.mevkii === 'Defans' && p.role === 'Kanat Bek') {
+                        pSkill += 4;
+                    }
+                    if (this.taktik.hucum_odagi === 'Merkez' && p.mevkii === 'Orta Saha' && p.role === 'Oyun Kurucu') {
+                        pSkill += 4;
+                    }
+                    if (this.taktik.pas_tarzi === 'Kısa Pas' && p.mevkii === 'Orta Saha') {
+                        pSkill += 2;
+                    }
+                    sum += pSkill;
+                });
+                let baseGuc = sum / this.ilk_11.length;
+                return Math.round(baseGuc + (this.taktik.yaraticilik / 35));
+            }
+        }
+
+        let gameState = {
+            view: 'main_menu',
+            myTeam: null,
+            league: null,
+            transferPool: [],
+            currentMatch: null,
+            matchMinute: 0,
+            lastResult: [0, 0],
+            matchEvents: [],
+            isMatchLive: false,
+            ballPos: { x: 50, y: 50 },
+            goalScored: false,
+            phase: 'normal',
+            activePlayer: null,
+            currentWeek: 1,
+            academyPool: [],
+            academyLevel: 1,
+            trainingRights: 1,
+            academyScouts: [
+                { id: 1, name: "Yusuf Demir", region: "Marmara", cost: 1.0, level: 1, hired: true },
+                { id: 2, name: "Garry Parker", region: "İngiltere", cost: 3.5, level: 3, hired: false },
+                { id: 3, name: "Zico Santos", region: "Brezilya", cost: 7.0, level: 5, hired: false }
+            ],
+            trainingRegimeLogs: [],
+            lastTrainingSummary: null,
+            selectedSubstitutionOut: null,
+            // Live match stats
+            matchStats: {
+                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0 },
+                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0 }
+            },
+            // Players banned this match for red cards
+            redCardedPlayers: new Set(),
+            injuredPlayers: new Set(),
+            // Continuous real-time match simulation state (built at kickoff)
+            sim: null
+        };
+
+        const getSpikerText = (type, player) => {
+            const scripts = {
+                start: [
+                    `${player.ad} orta sahada rüzgar gibi topu kaptı!`,
+                    `${player.ad} enfes bir vücut çalımıyla rakibini arkasında bıraktı!`,
+                    `${player.ad} rakiplerini tek tek ekale ederek takımını atağa kaldırdı!`,
+                    `${player.ad} taca atılan topu kontrol etti ve hemen hücumu başlattı.`,
+                    `${player.ad} kornerin ardından topu kapıp orta sahayı yardı.`,
+                    `${player.ad} kalecinin uzun pasıyla buluştu, bakalım ne yapacak?`,
+                    `${player.ad} bir aşırtmayla rakibi geride bıraktı, koşu başlıyor!`
+                ],
+                develop: [
+                    `${player.ad} ceza sahasına fırtına gibi sokuluyor!`,
+                    `${player.ad} muhteşem bir ara pasla savunma arkasına sarktı!`,
+                    `${player.ad} ceza yayı üzerinde kontrolü sağladı, şut hazırlığında!`,
+                    `${player.ad} sağ kanattan içe doğru kıvrıldı, taraftarlar ayakta!`,
+                    `${player.ad} duvar pasıyla bir-iki kombinasyonu kurdu, çok temiz futbol.`,
+                    `${player.ad} topu hafifletip yanındaki arkadaşına bıraktı, ondan geri aldı!`,
+                    `${player.ad} sol kanattan içeri akıyor, savunma geriliyor.`
+                ],
+                shot: [
+                    `${player.ad} kaleyi tam karşıdan gördü, müthiş bir füze yolladı!`,
+                    `${player.ad} plaseyle kalecinin uzanamayacağı köşeyi hedefledi!`,
+                    `${player.ad} ceza sahası dışından sert şutunu gönderdi!`,
+                    `${player.ad} röveşata denedi, taraftarlar nefesini tuttu!`,
+                    `${player.ad} kafayı vurmak için sıçradı, top o tarafa gidiyor!`,
+                    `${player.ad} serbest vuruşu Brezilya usulü kıvırdı!`,
+                    `${player.ad} topun üzerine düşüp düz vurdu, hava sıkıştı!`
+                ],
+                goal: [
+                    `GOOOOL! Top ağlarda! ${player.ad} adeta iğne deliğinden geçirdi!`,
+                    `İNANILMAZ GOL! ${player.ad} kaleciyi çaresiz bıraktı!`,
+                    `VE GOL! Harika şut direğin içine çarpıp filelerle buluşuyor!`,
+                    `GOOL! ${player.ad} kalecinin altından sokuverdi — alkış kıyamet!`,
+                    `KAFA GOLÜ! ${player.ad} sıçradı, çarptı, ağları havalandırdı!`,
+                    `GOOL! ${player.ad}'ın kıvırma şutu üst köşeye saplandı, mükemmellik!`,
+                    `BAŞKA NE DENİR! ${player.ad} 25 metreden bombayı patlattı, tribün ayakta!`
+                ],
+                miss: [
+                    `AZ FARKLA DIŞARI! ${player.ad} vurdu ama top üst direği sıyırdı.`,
+                    `MÜTHİŞ KURTARIŞ! Kaleci parmaklarının ucuyla çıkardı, ${player.ad} gole inanamıyor!`,
+                    `SAVUNMA SON ANDA! Savunmanın cansiperane müdahalesiyle top kornere çıktı!`,
+                    `DİREK! ${player.ad}'ın şutu direğe çarpıp dışarı çıktı — kaleci el bile süremedi!`,
+                    `Üstten dışarı. ${player.ad} hızını kontrol edemedi, tribünü selamladı.`,
+                    `OFSAYT! ${player.ad} gole gitti ama yan hakem bayrağı kaldırdı.`,
+                    `SAVUNMA BLOK! ${player.ad}'ın şutuna stoper kendini siper etti.`
+                ],
+                yellow: [
+                    `🟨 SARI KART! ${player.ad} sert bir müdahaleden kart gördü.`,
+                    `🟨 ${player.ad} oyunu geciktirme bahanesiyle sarıya boyandı.`,
+                    `🟨 Hakem ${player.ad}'a sarı uzattı — taktiksel faul.`
+                ],
+                red: [
+                    `🟥 KIRMIZI KART! ${player.ad} ihraç edildi! Takım 10 kişi!`,
+                    `🟥 ${player.ad} ikinci sarıdan kırmızı gördü, oyundan atıldı!`
+                ],
+                injury: [
+                    `🩹 ${player.ad} yere yığıldı! Sağlık ekibi sahaya giriyor...`,
+                    `🩹 ${player.ad} bacağını tutuyor, formu düşüyor!`,
+                    `🩹 ${player.ad} kasık problemiyle sahadan çıkmak zorunda kalabilir.`
+                ],
+                corner: [
+                    `🚩 KORNER! ${player.ad} sol köşeden topu çekecek.`,
+                    `🚩 Korner kullanılıyor — ceza sahası kalabalık!`
+                ],
+                penalty: [
+                    `⚠️ PENALTI! Hakem noktayı gösterdi! ${player.ad} faul yapıldı!`,
+                    `⚠️ VAR penaltı dedi! ${player.ad} ceza alanında düşürüldü.`
+                ],
+                save: [
+                    `🧤 SÜPER KURTARIŞ! Kaleci ${player.ad}'ın bombasını çelmek için uzandı!`,
+                    `🧤 Kaleci tek elle çevirdi, ${player.ad}'ın golüne izin vermedi!`
+                ],
+                tackle: [
+                    `🛡️ Müthiş bir müdahale! ${player.ad}'tan topu kayarak söküp aldı!`,
+                    `🛡️ ${player.ad} omuz omuza mücadelede kazandı!`
+                ]
+            };
+            const list = scripts[type] || scripts.start;
+            return list[Math.floor(Math.random() * list.length)];
+        };
+
+        /* =====================================================================
+           CANLI MAÇ MOTORU (REAL-TIME)
+           Mantık ile çizim ayrıldı:
+             • computeMatchTargets()  → her oyuncunun NEREDE olması gerektiğini
+               taktiğe göre hesaplar (sahanın "beyni").
+             • animateMatchFrame()    → requestAnimationFrame ile 60fps yumuşak
+               interpolasyon; oyuncular ve top hedeflerine süzülerek gider.
+             • matchFlowStep()        → topu ilerletir: pas zincirleri, pres,
+               top kapma ve şutlar. Gerçek maç akışı buradan doğar.
+           Ekran ARTIK her olayda yeniden çizilmiyor — sadece konumlar güncelleniyor.
+        ===================================================================== */
+
+        // İlk 11 sırası: 0=Kaleci, 1-4=Defans, 5-8=Orta Saha, 9-10=Forvet
+        function roleOfIdx(i) {
+            if (i === 0) return 'GK';
+            if (i <= 4) return 'DEF';
+            if (i <= 8) return 'MID';
+            return 'FWD';
+        }
+
+        // Sağa hücum eden takım perspektifinde dizilişteki temel yuva (x->100 hücum)
+        function formationSlot(i, defLine) {
+            const yMap = [22, 41, 59, 78];
+            const dl = (defLine ?? 50);
+            if (i === 0) return { x: 6, y: 50 };
+            if (i <= 4) return { x: 17 + dl * 0.10, y: yMap[(i - 1) % 4] };
+            if (i <= 8) return { x: 40 + dl * 0.07, y: yMap[(i - 5) % 4] };
+            return { x: 64, y: i === 9 ? 38 : 62 };
+        }
+
+        function livePlayer(side, idx) {
+            if (idx == null) return null;
+            const team = side === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
+            return team.ilk_11[idx] || null;
+        }
+
+        function pushEvent(text, color) {
+            gameState.matchEvents.unshift({ min: gameState.matchMinute, text, color: color || 'text-slate-300' });
+            if (gameState.matchEvents.length > 60) gameState.matchEvents.pop();
+        }
+
+        // Maç içi canlı reyting (6.0 başlar, 4.0–10.0 aralığı)
+        function rateBump(side, idx, amt) {
+            const p = livePlayer(side, idx);
+            if (!p) return;
+            p._rating = Math.max(4.0, Math.min(10.0, (p._rating ?? 6.0) + amt));
+        }
+
+        function pickAttacker(team) {
+            const atk = team.ilk_11.filter(p => p.mevkii === 'Forvet' || p.mevkii === 'Orta Saha');
+            const pool = atk.length ? atk : team.ilk_11;
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        // Tüm oyuncuların hedef konumunu taktiğe + top konumuna göre hesapla
+        function computeMatchTargets() {
+            const s = gameState.sim;
+            if (!s) return;
+            const [ev, dep] = gameState.currentMatch;
+            const bx = s.ball.tx, by = s.ball.ty;
+
+            ['home', 'away'].forEach(side => {
+                const team = side === 'home' ? ev : dep;
+                const tk = team.taktik || {};
+                const defLine = tk.savunma_hatti ?? 50;
+                const ofans = tk.ofansiflik ?? 50;
+                const attacking = s.possession === side;
+                // Top, bu takımın kendi (sağa hücum) çerçevesindeki x'i
+                const ballXOwn = side === 'home' ? bx : 100 - bx;
+                const ballYOwn = by;
+
+                for (let i = 0; i < 11; i++) {
+                    const slot = formationSlot(i, defLine);
+                    const role = roleOfIdx(i);
+                    // Her hat topu ne kadar takip eder (blok topla birlikte kayar)
+                    const lane = role === 'GK' ? 0.04 : role === 'DEF' ? 0.22 : role === 'MID' ? 0.34 : 0.46;
+                    // Hücumda yukarı bas, savunmada geri çekil
+                    const push = (attacking ? 9 : -7) * (ofans / 50) * (lane / 0.46);
+                    let tx = slot.x + (ballXOwn - 50) * lane + (role === 'GK' ? 0 : push);
+                    // Dikeyde topa doğru kay (yakın hatlar daha çok)
+                    const yPull = role === 'GK' ? 0.10 : role === 'DEF' ? 0.18 : role === 'MID' ? 0.26 : 0.30;
+                    let ty = slot.y + (ballYOwn - slot.y) * yPull;
+                    // Kanat oyuncuları hücumda açılır, savunmada içeri kapanır
+                    if (i === 1 || i === 5) ty -= attacking ? 6 : -3;   // sol kanat
+                    if (i === 4 || i === 8) ty += attacking ? 6 : -3;   // sağ kanat
+                    // Kaleci: top kendi sahasında derinleşince çizgiden çıkar
+                    if (role === 'GK') {
+                        tx = 6 + Math.max(0, 28 - ballXOwn) * 0.14;
+                        ty = 50 + (ballYOwn - 50) * 0.22;
+                    }
+                    tx = Math.max(3, Math.min(97, tx));
+                    ty = Math.max(8, Math.min(92, ty));
+                    const ax = side === 'home' ? tx : 100 - tx; // away için x'i yansıt
+                    s.tgt[side][i] = { x: ax, y: ty };
+                }
+            });
+
+            // Topu taşıyan oyuncu topa yapışır
+            const c = s.carrier;
+            if (c && c.idx != null) {
+                s.tgt[c.side][c.idx] = { x: bx - (c.side === 'home' ? 2.4 : -2.4), y: by };
+            }
+            // Rakip takımın topa en yakın oyuncusu pres yapar
+            if (c && c.idx != null) {
+                const opp = c.side === 'home' ? 'away' : 'home';
+                let best = -1, bestD = 1e9;
+                for (let i = 1; i < 11; i++) {
+                    const t = s.tgt[opp][i];
+                    const d = (t.x - bx) ** 2 + (t.y - by) ** 2;
+                    if (d < bestD) { bestD = d; best = i; }
+                }
+                if (best >= 0) s.tgt[opp][best] = { x: bx + (opp === 'home' ? -3 : 3), y: by + (Math.random() * 4 - 2) };
+            }
+        }
+
+        // 60fps yumuşak hareket döngüsü
+        function animateMatchFrame(ts) {
+            const s = gameState.sim;
+            if (!s || !gameState.isMatchLive) { if (s) s.raf = null; return; }
+            const t = ts / 1000;
+
+            // Top — momentumlu, hedefe doğru ağırlıklı süzülme
+            s.ball.x += (s.ball.tx - s.ball.x) * 0.16;
+            s.ball.y += (s.ball.ty - s.ball.y) * 0.16;
+            if (s.nodes.ball) {
+                s.nodes.ball.style.left = s.ball.x + '%';
+                s.nodes.ball.style.top = s.ball.y + '%';
+            }
+
+            ['home', 'away'].forEach(side => {
+                for (let i = 0; i < 11; i++) {
+                    const d = s.disp[side][i], tg = s.tgt[side][i], el = s.nodes[side][i];
+                    if (!el) continue;
+                    const px = d.x, py = d.y;
+                    const ease = (i === 0) ? 0.09 : 0.13;
+                    d.x += (tg.x - d.x) * ease;
+                    d.y += (tg.y - d.y) * ease;
+                    const wob = Math.sin(t * 2.2 + i * 1.7) * 0.16; // hafif canlılık
+                    el.style.left = d.x + '%';
+                    el.style.top = (d.y + wob) + '%';
+                    // Hareket yönüne göre eğil + koşu adımı (gerçek maç hissi)
+                    const vx = d.x - px, vy = d.y - py;
+                    const speed = Math.hypot(vx, vy);
+                    const kit = el.firstElementChild;
+                    if (kit) {
+                        if (speed > 0.05) {
+                            const lean = Math.max(-16, Math.min(16, vx * 7));
+                            const stride = Math.abs(Math.sin(t * 13 + i)) * Math.min(2.4, speed * 12);
+                            kit.style.transform = `rotate(${lean}deg) translateY(${-stride}px)`;
+                        } else {
+                            kit.style.transform = '';
+                        }
+                    }
+                }
+            });
+
+            s.raf = requestAnimationFrame(animateMatchFrame);
+        }
+
+        // Topu ilerleten mantık adımı (pas / dribbling / şut / top kapma)
+        function matchFlowStep() {
+            const s = gameState.sim;
+            if (!s || !gameState.isMatchLive || gameState.phase !== 'normal') return;
+            const [ev, dep] = gameState.currentMatch;
+            const side = s.possession;
+            const atkTeam = side === 'home' ? ev : dep;
+            const defTeam = side === 'home' ? dep : ev;
+            const dir = side === 'home' ? 1 : -1;
+
+            // Topu hakimiyet istatistiği
+            s.possTicks[side]++;
+            const totalT = s.possTicks.home + s.possTicks.away || 1;
+            gameState.matchStats.home.possession = Math.round((s.possTicks.home / totalT) * 100);
+            gameState.matchStats.away.possession = 100 - gameState.matchStats.home.possession;
+
+            // Top kapma (interception) — rakip presi + taşıyan oyuncu yeteneği
+            const press = (defTeam.taktik.pres ?? 50) / 100;
+            const carrierP = livePlayer(side, s.carrier.idx);
+            const skill = carrierP ? (carrierP.yetenek ?? 70) : 70;
+            const interceptChance = Math.max(0.05, 0.09 + press * 0.13 - (skill - 70) / 320);
+            if (Math.random() < interceptChance) {
+                flipPossession();
+                return;
+            }
+
+            // Topu rakip kaleye doğru ilerlet, ileri bir takım arkadaşına ver
+            const advance = 7 + Math.random() * 15;
+            let nbx = Math.max(4, Math.min(96, s.ball.tx + dir * advance));
+            let nby = Math.max(10, Math.min(90, s.ball.ty + (Math.random() * 28 - 14)));
+
+            let best = -1, bestD = 1e9;
+            for (let i = 1; i < 11; i++) {
+                if (i === s.carrier.idx) continue;
+                const tt = s.tgt[side][i];
+                const fwBonus = i >= 9 ? -130 : i >= 5 ? -45 : 0; // ileri oyunculara öncelik
+                const d = (tt.x - nbx) ** 2 + (tt.y - nby) ** 2 + fwBonus;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            const receiver = best >= 0 ? best : s.carrier.idx;
+
+            s.ball.tx = nbx; s.ball.ty = nby;
+            s.carrier = { side, idx: receiver };
+            computeMatchTargets();
+            soundEngine.playKick();
+            rateBump(side, receiver, 0.05);
+            if (Math.random() < 0.45) {
+                const p = livePlayer(side, receiver) || carrierP;
+                pushEvent(getSpikerText(Math.random() < 0.5 ? 'start' : 'develop', p), 'text-sky-300');
+            }
+
+            // Son bölgede şut ihtimali
+            const ballXOwn = side === 'home' ? nbx : 100 - nbx;
+            if (ballXOwn > 75 && Math.random() < 0.36) {
+                resolveShot(atkTeam, defTeam, side);
+            } else if (Math.random() < 0.06) {
+                triggerMinorEvent(ev, dep);
+            }
+            updateMatchHud();
+        }
+
+        // Top kapıldı → hakimiyet el değiştirir
+        function flipPossession() {
+            const s = gameState.sim;
+            const oldSide = s.possession;
+            const newSide = oldSide === 'home' ? 'away' : 'home';
+            // Topa en yakın yeni-takım oyuncusunu taşıyıcı yap
+            let best = -1, bestD = 1e9;
+            for (let i = 1; i < 11; i++) {
+                const t = s.tgt[newSide][i];
+                const d = (t.x - s.ball.tx) ** 2 + (t.y - s.ball.ty) ** 2;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            s.possession = newSide;
+            s.carrier = { side: newSide, idx: best >= 0 ? best : 5 };
+            const p = livePlayer(newSide, s.carrier.idx);
+            if (p) { pushEvent(getSpikerText('tackle', p), 'text-blue-300'); rateBump(newSide, s.carrier.idx, 0.12); }
+            computeMatchTargets();
+            updateMatchHud();
+        }
+
+        // Şut çözümü: gol / kurtarış / ıska
+        function resolveShot(atkTeam, defTeam, side) {
+            const s = gameState.sim;
+            gameState.phase = 'shot';
+            const shooter = livePlayer(side, s.carrier.idx) || pickAttacker(atkTeam);
+            gameState.matchStats[side].shots++;
+            pushEvent(getSpikerText('shot', shooter), 'text-amber-400 font-bold');
+            rateBump(side, s.carrier.idx, 0.10);
+            soundEngine.playKick();
+
+            // Topu kale ağzına gönder
+            const goalX = side === 'home' ? 99 : 1;
+            s.ball.tx = goalX;
+            s.ball.ty = 42 + Math.random() * 16;
+            computeMatchTargets();
+            updateMatchHud();
+
+            const acc = (shooter.yetenek / 100) * 0.34 + ((shooter.form ?? 75) / 100) * 0.10 + ((atkTeam.taktik.yaraticilik ?? 50) / 400);
+            const defMod = (defTeam.taktik.savunma_hatti ?? 50) > 70 ? 0.05 : 0;
+            const isGoal = Math.random() < Math.min(0.45, acc + defMod);
+            const isOnTarget = isGoal || Math.random() < 0.5 + shooter.yetenek / 220;
+
+            setTimeout(() => {
+                if (!gameState.isMatchLive) return;
+                if (isGoal) {
+                    gameState.lastResult[side === 'home' ? 0 : 1]++;
+                    gameState.matchStats[side].shotsOnTarget++;
+                    gameState.goalScored = true;
+                    soundEngine.playCheer();
+                    pushEvent(getSpikerText('goal', shooter), 'text-emerald-400 font-extrabold text-sm');
+                    shooter.form = Math.min(100, (shooter.form ?? 75) + 4);
+                    shooter._goals = (shooter._goals || 0) + 1;
+                    rateBump(side, s.carrier.idx, 1.2);
+                    showGoalBanner();
+                } else {
+                    if (isOnTarget) {
+                        gameState.matchStats[side].shotsOnTarget++;
+                        gameState.matchStats[side === 'home' ? 'away' : 'home'].saves++;
+                        pushEvent(getSpikerText('save', shooter), 'text-sky-300');
+                    } else {
+                        pushEvent(getSpikerText('miss', shooter), 'text-rose-400');
+                    }
+                }
+                updateMatchHud();
+
+                // Orta açma / kale vuruşu — topu merkeze al, hakimiyeti ver
+                setTimeout(() => {
+                    if (!gameState.isMatchLive) return;
+                    gameState.goalScored = false;
+                    const restartSide = isGoal ? (side === 'home' ? 'away' : 'home') : (Math.random() < 0.5 ? side : (side === 'home' ? 'away' : 'home'));
+                    s.ball.tx = 50; s.ball.ty = 50;
+                    s.possession = restartSide;
+                    s.carrier = { side: restartSide, idx: 6 };
+                    computeMatchTargets();
+                    gameState.phase = 'normal';
+                    updateMatchHud();
+                }, 1100);
+            }, 750);
+        }
+
+        function showGoalBanner() {
+            const pitch = document.getElementById('match-pitch');
+            if (!pitch) return;
+            const b = document.createElement('div');
+            b.className = 'goal-banner';
+            b.innerHTML = `<span class="text-5xl md:text-7xl font-black italic text-white drop-shadow-2xl">GOOOL!</span>`;
+            pitch.appendChild(b);
+            setTimeout(() => b.remove(), 1300);
+        }
+
+        async function triggerMinorEvent(home, away) {
+            gameState.phase = 'action';
+            const evType = Math.random();
+            const homeOrAway = Math.random() < 0.5;
+            const team = homeOrAway ? home : away;
+            const sideKey = homeOrAway ? 'home' : 'away';
+            const eligibles = team.ilk_11.filter(p => !gameState.redCardedPlayers.has(p.ad));
+            if (!eligibles.length) { gameState.phase = 'normal'; return; }
+            const player = eligibles[Math.floor(Math.random() * eligibles.length)];
+
+            // Press tactic raises card rate, attacking tempo raises injury rate
+            const pressFactor = team.taktik.pres / 100;
+            const tempoFactor = team.taktik.tempo / 100;
+
+            if (evType < 0.30 * pressFactor) {
+                // Yellow card
+                gameState.matchStats[sideKey].fouls++;
+                gameState.matchStats[sideKey].yellows++;
+                player.yellowCard = (player.yellowCard || 0) + 1;
+                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('yellow', player), color: 'text-yellow-300 font-bold' });
+                // Second yellow → red
+                if (player.yellowCard >= 2) {
+                    gameState.matchStats[sideKey].reds++;
+                    gameState.redCardedPlayers.add(player.ad);
+                    gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('red', player), color: 'text-rose-500 font-extrabold' });
+                }
+            } else if (evType < 0.40) {
+                // Foul (no card)
+                gameState.matchStats[sideKey].fouls++;
+                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: `Faul: ${player.ad} sert müdahale yaptı.`, color: 'text-slate-400' });
+            } else if (evType < 0.50 + tempoFactor * 0.15) {
+                // Injury — light, reduces energy & form
+                if (!gameState.injuredPlayers.has(player.ad)) {
+                    gameState.injuredPlayers.add(player.ad);
+                    player.enerji = Math.max(15, player.enerji - 30);
+                    player.form = Math.max(20, (player.form||80) - 10);
+                    gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('injury', player), color: 'text-orange-400 font-bold' });
+                }
+            } else if (evType < 0.75) {
+                // Corner
+                gameState.matchStats[sideKey].corners++;
+                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('corner', player), color: 'text-cyan-300' });
+            } else if (evType < 0.85) {
+                // Defensive tackle
+                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('tackle', player), color: 'text-blue-300' });
+            } else {
+                // Save (highlight goalkeeper)
+                gameState.matchStats[sideKey === 'home' ? 'away' : 'home'].saves++;
+                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('save', player), color: 'text-sky-300' });
+            }
+            updateMatchHud();
+            await new Promise(r => setTimeout(r, 700));
+            gameState.phase = 'normal';
+        }
+
+        /* Maç sahnesini SADECE BİR KEZ kur — oyuncu düğümleri ve top kalıcıdır.
+           Bu, her olayda yeniden çizilmeyi (ekran kararmasını) ortadan kaldırır. */
+        function buildMatchDom() {
+            const [ev, dep] = gameState.currentMatch;
+            const container = document.getElementById('screen-content');
+            container.innerHTML = `
+                <div class="max-w-5xl mx-auto space-y-4">
+                    <div class="p-4 bg-slate-900/90 rounded-2xl flex items-center justify-between border border-white/5 shadow-2xl">
+                        <div class="w-1/3 text-center font-black uppercase text-base text-white tracking-tight">${ev.ad}</div>
+                        <div class="w-1/3 flex flex-col items-center">
+                            <span id="m-score" class="text-4xl md:text-5xl font-black text-emerald-400 tabular-nums">0 - 0</span>
+                            <span id="m-clock" class="mt-1 px-3 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full font-black text-xs">0' Dakika</span>
+                        </div>
+                        <div class="w-1/3 text-center font-black uppercase text-base text-white tracking-tight">${dep.ad}</div>
+                    </div>
+
+                    <div class="p-3 bg-slate-950/80 rounded-2xl border border-white/5 shadow-lg">
+                        <div class="flex items-center justify-between text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">
+                            <span>${ev.ad.split(' ')[0]}</span>
+                            <span>📊 CANLI İSTATİSTİK</span>
+                            <span>${dep.ad.split(' ')[0]}</span>
+                        </div>
+                        <!-- Momentum / baskı barı -->
+                        <div class="mb-2">
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                                <span class="text-slate-500">⬅ Baskı</span>
+                                <span id="m-momentum-label" class="text-slate-500 font-bold">DENGELİ</span>
+                                <span class="text-slate-500">Baskı ➡</span>
+                            </div>
+                            <div class="h-2 rounded-full overflow-hidden bg-slate-800 relative">
+                                <div id="m-momentum" class="absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-300" style="left:0;width:50%"></div>
+                            </div>
+                        </div>
+                        <!-- Topla oynama -->
+                        <div class="mb-2">
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                                <span id="m-poss-h" class="font-black text-emerald-400">50%</span>
+                                <span class="text-slate-500">Topla Oynama</span>
+                                <span id="m-poss-a" class="font-black text-rose-400">50%</span>
+                            </div>
+                            <div class="flex h-2 rounded-full overflow-hidden bg-slate-800">
+                                <div id="m-poss-bar-h" class="bg-emerald-500" style="width:50%"></div>
+                                <div id="m-poss-bar-a" class="bg-rose-500" style="width:50%"></div>
+                            </div>
+                        </div>
+                        <div id="m-statgrid" class="grid grid-cols-3 gap-2 text-center"></div>
+                    </div>
+
+                    <div id="m-sub-banner"></div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                        <div id="match-pitch" class="lg:col-span-3 elite-pitch relative min-h-[460px]">
+                            <div class="pitch-line center-line"></div><div class="pitch-line center-circle"></div>
+                            <div class="penalty-area-left pitch-line"></div><div class="penalty-area-right pitch-line"></div>
+                            <div class="goal-v6 goal-left"></div><div class="goal-v6 goal-right"></div>
+                            <div id="match-ball" class="ball-v6" style="left:50%;top:50%"></div>
+                        </div>
+                        <div class="bg-slate-900/60 p-4 rounded-2xl border border-white/5 flex flex-col shadow-xl">
+                            <h4 class="font-black text-slate-400 text-[10px] uppercase mb-3 tracking-widest text-center">Canlı Değişiklik Kulübesi</h4>
+                            <div id="m-bench" class="space-y-2 overflow-y-auto max-h-[400px]"></div>
+                        </div>
+                    </div>
+
+                    <div id="m-eventlog" class="bg-slate-950/90 p-4 rounded-2xl h-36 overflow-y-auto border border-white/5 shadow-inner"></div>
+                    <div id="m-endbtn"></div>
+                </div>`;
+
+            const pitch = document.getElementById('match-pitch');
+            const s = gameState.sim;
+            s.nodes = { home: [], away: [], ball: document.getElementById('match-ball') };
+            ['home', 'away'].forEach(side => {
+                const kitClass = side === 'home' ? 'bg-emerald-600' : 'bg-rose-600';
+                for (let i = 0; i < 11; i++) {
+                    const node = document.createElement('div');
+                    node.className = 'player-node';
+                    const d = s.disp[side][i];
+                    node.style.left = d.x + '%';
+                    node.style.top = d.y + '%';
+                    if (side === 'home') node.setAttribute('onclick', `benchPickFromPitch(${i})`);
+                    node.innerHTML = `<div class="kit-circle ${kitClass} border-white"></div><div class="info-tag"></div>`;
+                    pitch.appendChild(node);
+                    s.nodes[side].push(node);
+                }
+            });
+            refreshPlayerNodes();
+        }
+
+        // Oyuncu düğümlerinin etiket/enerji/reyting bilgisini tazele (konum DEĞİL)
+        function refreshPlayerNodes() {
+            const s = gameState.sim;
+            if (!s || !s.nodes) return;
+            const [ev, dep] = gameState.currentMatch;
+            ['home', 'away'].forEach(side => {
+                const team = side === 'home' ? ev : dep;
+                for (let i = 0; i < 11; i++) {
+                    const el = s.nodes[side][i];
+                    const p = team.ilk_11[i];
+                    if (!el || !p) continue;
+                    const carrier = s.carrier && s.carrier.side === side && s.carrier.idx === i;
+                    el.classList.toggle('has-ball', carrier);
+                    const kit = el.firstElementChild;
+                    const tag = el.lastElementChild;
+                    const energyDot = side === 'home'
+                        ? `<div class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full ${p.enerji < 50 ? 'bg-rose-500' : 'bg-emerald-400'} border border-white flex items-center justify-center text-[7px] text-black font-extrabold">${Math.round(p.enerji)}</div>`
+                        : '';
+                    kit.innerHTML = `${(p.ad || '?')[0]}${energyDot}`;
+                    const rating = (p._rating ?? 6.0).toFixed(1);
+                    tag.innerHTML = `${(p.ad || '').split(' ')[0]}<span class="role-tag">⭐${rating}</span>`;
+                }
+            });
+        }
+
+        // Saha üzerindeki kendi oyuncuna tıklayınca değişiklik akışı
+        function benchPickFromPitch(i) {
+            const p = gameState.myTeam.ilk_11[i];
+            if (p) triggerMatchSubstitution(p.ad);
+        }
+
+        // HUD'u güncelle — skor, saat, istatistik, momentum, kulübe, olay akışı.
+        // Saha düğümleri (oyuncu/top) BURADA değil, animasyon döngüsünde güncellenir.
+        function updateMatchHud() {
+            const s = gameState.sim;
+            if (!document.getElementById('m-score')) return;
+            const [ev, dep] = gameState.currentMatch;
+            const sH = gameState.matchStats.home, sA = gameState.matchStats.away;
+
+            document.getElementById('m-score').textContent = `${gameState.lastResult[0]} - ${gameState.lastResult[1]}`;
+            document.getElementById('m-clock').textContent = `${gameState.matchMinute}' Dakika`;
+
+            const possH = Math.round(sH.possession);
+            document.getElementById('m-poss-h').textContent = possH + '%';
+            document.getElementById('m-poss-a').textContent = (100 - possH) + '%';
+            document.getElementById('m-poss-bar-h').style.width = possH + '%';
+            document.getElementById('m-poss-bar-a').style.width = (100 - possH) + '%';
+
+            // Momentum: hangi takım baskı kuruyor (top konumu + son hakimiyet)
+            if (s) {
+                const ballAdv = s.ball.x; // 0=away baskısı, 100=home baskısı
+                const mEl = document.getElementById('m-momentum');
+                const pct = Math.max(8, Math.min(92, ballAdv));
+                mEl.style.width = pct + '%';
+                const lbl = document.getElementById('m-momentum-label');
+                if (pct > 60) { lbl.textContent = ev.ad.split(' ')[0].toUpperCase() + ' BASKILI'; mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-300'; }
+                else if (pct < 40) { lbl.textContent = dep.ad.split(' ')[0].toUpperCase() + ' BASKILI'; mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-rose-500 to-rose-300 transition-all duration-300'; }
+                else { lbl.textContent = 'DENGELİ'; mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-slate-500 to-slate-300 transition-all duration-300'; }
+            }
+
+            document.getElementById('m-statgrid').innerHTML = [
+                ['Şut', sH.shots, sA.shots],
+                ['İsabet', sH.shotsOnTarget, sA.shotsOnTarget],
+                ['Kurtarış', sH.saves, sA.saves],
+                ['Korner', sH.corners, sA.corners],
+                ['Faul', sH.fouls, sA.fouls],
+                ['🟨/🟥', sH.yellows + '/' + sH.reds, sA.yellows + '/' + sA.reds]
+            ].map(st => `
+                <div class="bg-slate-900/60 rounded-lg p-1.5 border border-white/5">
+                    <div class="text-[9px] text-slate-500 uppercase tracking-wide">${st[0]}</div>
+                    <div class="flex justify-between text-xs font-bold mt-0.5">
+                        <span class="text-emerald-400">${st[1]}</span>
+                        <span class="text-rose-400">${st[2]}</span>
+                    </div>
+                </div>`).join('');
+
+            document.getElementById('m-sub-banner').innerHTML = gameState.selectedSubstitutionOut
+                ? `<div class="p-3 bg-indigo-950/90 border border-indigo-500/40 text-center rounded-xl text-xs font-bold animate-pulse text-indigo-300">🔄 ${gameState.selectedSubstitutionOut.ad} çıkıyor. Yerine girmesi için aşağıdaki yedeklerden birine tıklayın!</div>`
+                : '';
+
+            document.getElementById('m-bench').innerHTML = gameState.myTeam.oyuncular
+                .filter(p => !gameState.myTeam.ilk_11.includes(p))
+                .map(p => `
+                    <div onclick="triggerMatchSubstitution('${p.ad}')" class="p-2.5 bg-slate-950/80 rounded-xl border border-white/5 hover:border-emerald-500/40 transition-all cursor-pointer">
+                        <div class="flex justify-between items-center">
+                            <p class="font-bold text-xs text-white">${p.ad.split(' ')[0]}</p>
+                            <span class="text-[9px] bg-slate-800 text-slate-300 font-black px-1.5 py-0.5 rounded">${p.mevkii}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1.5 text-[10px]">
+                            <span class="text-slate-500 font-semibold">Yetenek: ${p.yetenek}</span>
+                            <span class="${p.enerji < 50 ? 'text-rose-400' : 'text-emerald-400'} font-black">⚡ %${Math.round(p.enerji)}</span>
+                        </div>
+                    </div>`).join('');
+
+            document.getElementById('m-eventlog').innerHTML = gameState.matchEvents
+                .map(e => `<p class="text-xs mb-1.5 border-b border-white/5 pb-1 ${e.color}"><span class="text-slate-500 font-bold mr-3">${e.min}'</span> ${e.text}</p>`).join('');
+
+            document.getElementById('m-endbtn').innerHTML = !gameState.isMatchLive
+                ? `<button onclick="changeView('main_menu')" class="w-full py-4 bg-white text-slate-950 hover:bg-slate-100 rounded-xl font-black uppercase tracking-widest shadow-xl transition-all">ANA MENÜYE DÖN</button>`
+                : '';
+
+            refreshPlayerNodes();
+        }
+
+        function triggerMatchSubstitution(playerAd) {
+            if(!gameState.selectedSubstitutionOut) {
+                const p = gameState.myTeam.ilk_11.find(x => x.ad === playerAd);
+                if(p) {
+                    gameState.selectedSubstitutionOut = p;
+                    triggerToast("DEĞİŞİKLİK", `${p.ad} seçildi. Şimdi yedek kulübesinden bir oyuncu seçin.`);
+                    if (gameState.view === 'match' && gameState.sim) updateMatchHud(); else render();
+                }
+            } else {
+                const pOut = gameState.selectedSubstitutionOut;
+                const pIn = gameState.myTeam.oyuncular.find(x => x.ad === playerAd);
+                if(pIn && !gameState.myTeam.ilk_11.includes(pIn)) {
+                    const idx = gameState.myTeam.ilk_11.indexOf(pOut);
+                    if(idx !== -1) {
+                        gameState.myTeam.ilk_11[idx] = pIn;
+                        gameState.matchEvents.unshift({ min: gameState.matchMinute, text: `🔄 OYUNCU DEĞİŞİKLİĞİ: Giren: ${pIn.ad} | Çıkan: ${pOut.ad}`, color: 'text-emerald-400 font-bold' });
+                        triggerToast("KULÜBE REAKSİYONU", `${pOut.ad} çıktı, ${pIn.ad} oyuna girdi!`);
+                    }
+                }
+                gameState.selectedSubstitutionOut = null;
+                refreshPlayerNodes();
+                if (gameState.view === 'match' && gameState.sim) updateMatchHud(); else render();
+            }
+        }
+
+        // Maç simülasyonunu kur: oyuncuları dizilişlerine yerleştir, top ortada
+        function setupMatchSim() {
+            const [ev, dep] = gameState.currentMatch;
+            const sim = {
+                ball: { x: 50, y: 50, tx: 50, ty: 50 },
+                possession: Math.random() < 0.5 ? 'home' : 'away',
+                carrier: { side: 'home', idx: 6 },
+                possTicks: { home: 1, away: 1 },
+                disp: { home: [], away: [] },
+                tgt: { home: [], away: [] },
+                nodes: null,
+                raf: null,
+                flowTimer: null
+            };
+            ['home', 'away'].forEach(side => {
+                const team = side === 'home' ? ev : dep;
+                const defLine = (team.taktik && team.taktik.savunma_hatti) ?? 50;
+                for (let i = 0; i < 11; i++) {
+                    const slot = formationSlot(i, defLine);
+                    const ax = side === 'home' ? slot.x : 100 - slot.x;
+                    sim.disp[side].push({ x: ax, y: slot.y });
+                    sim.tgt[side].push({ x: ax, y: slot.y });
+                }
+            });
+            sim.carrier = { side: sim.possession, idx: 6 };
+            gameState.sim = sim;
+            // Reyting / maç sayaçlarını sıfırla
+            [ev, dep].forEach(t => t.ilk_11.forEach(p => { p._rating = 6.0; p._goals = 0; }));
+            computeMatchTargets();
+        }
+
+        function runMatch() {
+            soundEngine.playWhistle();
+            soundEngine.playMatchAmbient();
+
+            setupMatchSim();
+            buildMatchDom();
+            updateMatchHud();
+            // 60fps yumuşak hareket döngüsü
+            gameState.sim.raf = requestAnimationFrame(animateMatchFrame);
+            // Top akışı (pas / şut) — dakikadan bağımsız, sürekli oyun hissi
+            gameState.sim.flowTimer = setInterval(matchFlowStep, 620);
+
+            // Dakika saati: enerji, devre arası, maç sonu
+            gameState.matchTimer = setInterval(() => {
+                if (gameState.phase !== 'normal') return;
+                gameState.matchMinute++;
+
+                const presFactor = gameState.myTeam.taktik.pres / 60;
+                const tempoFactor = gameState.myTeam.taktik.tempo / 60;
+                gameState.myTeam.ilk_11.forEach(p => {
+                    let rate = p.karakter === "Cam Adam" ? 0.38 : (p.karakter === "Hırslı" ? 0.28 : 0.20);
+                    rate = rate * presFactor * tempoFactor;
+                    p.enerji = Math.max(10, p.enerji - rate);
+                });
+
+                // Devre arası
+                if (gameState.matchMinute === 45) {
+                    gameState.phase = 'halftime';
+                    pushEvent('⏸️ İLK YARI SONA ERDİ. Devre arası.', 'text-amber-300 font-bold');
+                    soundEngine.playWhistle();
+                    updateMatchHud();
+                    setTimeout(() => { if (gameState.isMatchLive) { gameState.phase = 'normal'; pushEvent('▶️ İkinci yarı başladı!', 'text-emerald-300 font-bold'); updateMatchHud(); } }, 1600);
+                }
+
+                if (gameState.matchMinute >= 90) {
+                    clearInterval(gameState.matchTimer);
+                    clearInterval(gameState.sim.flowTimer);
+                    gameState.isMatchLive = false;
+                    soundEngine.playWhistle();
+                    soundEngine.stopMatchAmbient();
+                    pushEvent('🏁 MAÇ SONA ERDİ!', 'text-white font-black');
+                    finalizeMatch();
+                }
+                // Sadece HUD metinlerini güncelle (saha düğümleri animasyon döngüsünde)
+                updateMatchHud();
+            }, 340);
+        }
+
+        function finalizeMatch() {
+            const [ev, dep] = gameState.currentMatch;
+            const [s1, s2] = gameState.lastResult;
+            ev.atilan_gol += s1; ev.yenilen_gol += s2;
+            dep.atilan_gol += s2; dep.yenilen_gol += s1;
+            if (s1 > s2) {
+                ev.puan += 3; ev.galibiyet++; dep.maglubiyet++;
+                if(ev.isUser) ev.butce += 9.5;
+            } else if (s2 > s1) {
+                dep.puan += 3; dep.galibiyet++; ev.maglubiyet++;
+                if(dep.isUser) dep.butce += 9.5;
+            } else {
+                ev.puan++; dep.puan++; ev.beraberlik++; dep.beraberlik++;
+                if(ev.isUser || dep.isUser) gameState.myTeam.butce += 4.5;
+            }
+
+            simulateOtherMatches();
+            gameState.trainingRights = 1;
+
+            if (gameState.currentWeek < 14) {
+                gameState.currentWeek++;
+            } else {
+                const sorted = [...gameState.league.takimlar].sort((a,b) => b.puan - a.puan);
+                if(sorted[0].isUser) {
+                    gameState.myTeam.butce += 30.0;
+                    triggerToast("KUPAYI KALDIRDIK!", "ŞAMPİYON OLDUNUZ! Kulübünüze 30M € Şampiyonluk ödülü eklendi!", "success");
+                } else {
+                    triggerToast("SEZON SONU", `Şampiyonluğu ${sorted[0].ad} takımına kaptırdınız.`, "error");
+                }
+            }
+            updateWeekIndicator();
+        }
+
+        function simulateOtherMatches() {
+            const otherTeams = gameState.league.takimlar.filter(t => t !== gameState.currentMatch[0] && t !== gameState.currentMatch[1]);
+            for(let i = 0; i < otherTeams.length; i += 2) {
+                if(i+1 >= otherTeams.length) break;
+                const t1 = otherTeams[i];
+                const t2 = otherTeams[i+1];
+
+                const g1 = t1.getGuc() + Math.random()*12;
+                const g2 = t2.getGuc() + Math.random()*12;
+
+                let s1 = 0, s2 = 0;
+                if(g1 > g2 + 6) { s1 = Math.floor(Math.random()*3)+1; s2 = Math.floor(Math.random()*2); }
+                else if(g2 > g1 + 6) { s2 = Math.floor(Math.random()*3)+1; s1 = Math.floor(Math.random()*2); }
+                else { s1 = Math.floor(Math.random()*2); s2 = s1; }
+
+                t1.atilan_gol += s1; t1.yenilen_gol += s2;
+                t2.atilan_gol += s2; t2.yenilen_gol += s1;
+
+                if (s1 > s2) { t1.puan += 3; t1.galibiyet++; t2.maglubiyet++; }
+                else if (s2 > s1) { t2.puan += 3; t2.galibiyet++; t1.maglubiyet++; }
+                else { t1.puan++; t2.puan++; t1.beraberlik++; t2.beraberlik++; }
+            }
+        }
+
+        function updateWeekIndicator() {
+            document.getElementById('week-indicator-ui').textContent = `LİG SEZONU • HAFTA ${gameState.currentWeek}`;
+        }
+
+        function changeView(v) {
+            // Maçtan ayrılırken canlı simülasyon kaynaklarını temizle
+            if (gameState.view === 'match' && v !== 'match' && gameState.sim) {
+                if (gameState.sim.raf) cancelAnimationFrame(gameState.sim.raf);
+                if (gameState.sim.flowTimer) clearInterval(gameState.sim.flowTimer);
+                if (gameState.matchTimer) clearInterval(gameState.matchTimer);
+                gameState.isMatchLive = false;
+                gameState.sim = null;
+            }
+            gameState.view = v;
+            render();
+        }
+
+        function executeTrainingRegime(regimeType) {
+            if(gameState.trainingRights <= 0) {
+                triggerToast("HATA", "Bu hafta zaten antrenman yaptınız! Yeni antrenman hakkı kazanmak için sıradaki maçınızı oynamalısınız.", "error");
+                return;
+            }
+
+            let logs = [];
+            let avgEnergyCost = 0;
+            let targetMevkii = null;
+
+            if(!soundEngine.muted) {
+                soundEngine.init();
+                if (soundEngine.ctx) {
+                    let osc = soundEngine.ctx.createOscillator();
+                    let g = soundEngine.ctx.createGain();
+                    osc.frequency.setValueAtTime(600, soundEngine.ctx.currentTime);
+                    osc.frequency.setValueAtTime(900, soundEngine.ctx.currentTime + 0.1);
+                    g.gain.setValueAtTime(0.05, soundEngine.ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, soundEngine.ctx.currentTime + 0.25);
+                    osc.connect(g);
+                    g.connect(soundEngine.ctx.destination);
+                    osc.start();
+                    osc.stop(soundEngine.ctx.currentTime + 0.3);
+                }
+            }
+
+            switch(regimeType) {
+                case 'hucum':
+                    targetMevkii = "Forvet";
+                    avgEnergyCost = 22;
+                    logs.push("Hücum çalışması forvetlere teknik ve şut performansı sağladı.");
+                    break;
+                case 'savunma':
+                    targetMevkii = "Defans";
+                    avgEnergyCost = 20;
+                    logs.push("Defans oyuncuları sıkı pres antrenmanına tabi tutuldu.");
+                    break;
+                case 'taktik':
+                    targetMevkii = "Orta Saha";
+                    avgEnergyCost = 15;
+                    logs.push("Orta saha pas kombinasyonları ve vizyon odaklı taktik çalıştı.");
+                    break;
+                case 'kondisyon':
+                    avgEnergyCost = 18;
+                    logs.push("Tüm takım kondisyon depoladı. Form grafikleri gözle görülür yükseldi.");
+                    break;
+                case 'dinlenme':
+                    logs.push("Takım hafif rejenerasyon ve masaj seansı alarak enerji topladı.");
+                    break;
+            }
+
+            gameState.myTeam.oyuncular.forEach(p => {
+                if (regimeType === 'dinlenme') {
+                    let recover = p.karakter === "Çalışkan" ? 30 : 25;
+                    p.enerji = Math.min(100, p.enerji + recover);
+                    p.form = Math.max(50, p.form - 2);
+                    logs.push(`${p.ad}: Enerji +${recover}, Form -2`);
+                } else {
+                    let decay = p.karakter === "Cam Adam" ? avgEnergyCost * 1.3 : avgEnergyCost;
+                    p.enerji = Math.max(15, p.enerji - decay);
+                    p.form = Math.min(100, p.form + Math.floor(Math.random() * 12 + 4));
+
+                    if (p.yetenek < p.potansiyel) {
+                        let baseGrowthChance = 0.35;
+                        if (p.karakter === "Çalışkan") baseGrowthChance += 0.2;
+                        if (p.karakter === "Disiplinsiz") baseGrowthChance -= 0.15;
+
+                        if (p.mevkii === targetMevkii || regimeType === 'kondisyon') {
+                            baseGrowthChance += 0.25;
+                        }
+
+                        if (Math.random() < baseGrowthChance) {
+                            p.yetenek += 1;
+                            logs.push(`📈 Gelişim: ${p.ad} yeteneğini ${p.yetenek} seviyesine çıkardı!`);
+                        }
+                    }
+                }
+            });
+
+            gameState.lastTrainingSummary = {
+                title: regimeType.toUpperCase() + " ANTRENMANI RAPORU",
+                items: logs.slice(0, 10)
+            };
+
+            gameState.trainingRights--;
+            triggerToast("ANTRENMAN TAMAMLANDI", "Haftalık antrenman hakkınız kullanıldı. Oyuncu değerleri güncellendi.");
+            render();
+        }
+
+        function hireAcademyScout(scoutId) {
+            const scout = gameState.academyScouts.find(s => s.id === scoutId);
+            if(scout && !scout.hired) {
+                if(gameState.myTeam.butce >= scout.cost) {
+                    gameState.myTeam.butce -= scout.cost;
+                    scout.hired = true;
+                    triggerToast("YENİ GÖZLEMCİ", `${scout.name} scout ekibine katıldı! Altyapı havuzunuz genişletildi.`);
+                    generateAcademyPlayers();
+                    render();
+                } else {
+                    triggerToast("BÜTÇE YETERSİZ", "Bu gözlemciyi kiralamak için paranız yetersiz!", "error");
+                }
+            }
+        }
+
+        function upgradeAcademyFacilities() {
+            const cost = gameState.academyLevel * 8.5;
+            if (gameState.academyLevel >= 5) {
+                triggerToast("MAKSİMUM SEVİYE", "Altyapı tesisleriniz zaten son model dünya standartlarında!", "error");
+                return;
+            }
+            if(gameState.myTeam.butce >= cost) {
+                gameState.myTeam.butce -= cost;
+                gameState.academyLevel++;
+                generateAcademyPlayers();
+                triggerToast("TESİSLER YÜKSELTİLDİ", `Altyapı seviyeniz Seviye ${gameState.academyLevel} oldu!`);
+                render();
+            } else {
+                triggerToast("BÜTÇE YETERSİZ", "Tesisleri yükseltmek için yeterli bütçe yok!", "error");
+            }
+        }
+
+        function trainIndividualYouth(playerAd) {
+            const idx = gameState.academyPool.findIndex(p => p.ad === playerAd);
+            if(idx !== -1) {
+                const p = gameState.academyPool[idx];
+                const trainingCost = 0.8;
+                if(gameState.myTeam.butce >= trainingCost) {
+                    gameState.myTeam.butce -= trainingCost;
+                    let boost = p.karakter === "Dahi" ? 4 : (p.karakter === "Hırslı" ? 3 : 2);
+                    p.yetenek = Math.min(p.potansiyel, p.yetenek + boost);
+                    p.form = Math.min(100, p.form + 15);
+                    triggerToast("ÖZEL EĞİTİM", `${p.ad} adlı gencin yeteneği +${boost} arttı!`);
+                    render();
+                } else {
+                    triggerToast("BÜTÇE YETERSİZ", "Bu antrenman bütçesini karşılayacak nakit yok!", "error");
+                }
+            }
+        }
+
+        function promoteYouthToPro(playerAd) {
+            const idx = gameState.academyPool.findIndex(p => p.ad === playerAd);
+            if(idx !== -1) {
+                const p = gameState.academyPool[idx];
+                const signFee = 1.5;
+                if(gameState.myTeam.butce >= signFee) {
+                    gameState.myTeam.butce -= signFee;
+                    gameState.myTeam.oyuncular.push(p);
+                    gameState.academyPool.splice(idx, 1);
+                    triggerToast("A TAKIMA ÇIKTI", `${p.ad} profesyonel sözleşmeye imza attı! (Maliyet: ${signFee}M €)`);
+                    render();
+                } else {
+                    triggerToast("İMZA ÜCRETİ", `Oyuncunun profesyonel imza ücreti olan ${signFee}M € bütçenizde yok!`, "error");
+                }
+            }
+        }
+
+        function generateAcademyPlayers() {
+            gameState.academyPool = [];
+            const posOptions = ["Kaleci", "Defans", "Orta Saha", "Forvet"];
+            const hiredCount = gameState.academyScouts.filter(s => s.hired).length;
+            const size = 3 + hiredCount;
+
+            for(let i=0; i<size; i++) {
+                const pos = posOptions[Math.floor(Math.random()*4)];
+                const age = 15 + Math.floor(Math.random()*4);
+                const maxScoutLevel = Math.max(...gameState.academyScouts.filter(s => s.hired).map(s => s.level));
+                const baseSkill = 42 + (gameState.academyLevel * 2) + (maxScoutLevel * 2.5) + Math.random()*8;
+                const potential = Math.min(99, baseSkill + 12 + Math.random()*12);
+                const char = ACADEMY_CHARACTERS[Math.floor(Math.random()*ACADEMY_CHARACTERS.length)];
+                gameState.academyPool.push(new Player(getRandomName() + " (Altyapı)", pos, baseSkill, 0, age, potential, 100, 75, "Yedek Gelişim", char));
+            }
+        }
+
+        function buyPlayer(ad) {
+            const p = gameState.transferPool.find(x => x.ad === ad);
+            if(gameState.myTeam.butce >= p.fiyat) {
+                gameState.myTeam.butce -= p.fiyat;
+                gameState.myTeam.oyuncular.push(p);
+                gameState.transferPool.splice(gameState.transferPool.indexOf(p), 1);
+                triggerToast("YENİ YILDIZ KATILDI", `${p.ad} başarıyla transfer edildi!`);
+                render();
+            } else {
+                triggerToast("BÜTÇE YETERSİZ", "Transfer gerçekleştirmek için bütçeniz yetersiz!", "error");
+            }
+        }
+
+        function swapPlayer(ad) {
+            const p = gameState.myTeam.oyuncular.find(x => x.ad === ad);
+            const outIdx = gameState.myTeam.ilk_11.findIndex(x => x.mevkii === p.mevkii);
+            if(outIdx !== -1) {
+                const outPlayer = gameState.myTeam.ilk_11[outIdx];
+                gameState.myTeam.ilk_11[outIdx] = p;
+                triggerToast("KADRO PLANI", `${outPlayer.ad} yerine ${p.ad} ilk 11'e yerleşti.`);
+            } else {
+                gameState.myTeam.ilk_11[0] = p;
+            }
+            render();
+        }
+
+        function applyTacticalTemplate(template) {
+            const t = gameState.myTeam.taktik;
+            if(template === 'tikitaka') {
+                t.ofansiflik = 75; t.savunma_hatti = 45; t.tempo = 40; t.pres = 75; t.genislik = 50; t.yaraticilik = 85;
+                t.pas_tarzi = 'Kısa Pas'; t.hucum_odagi = 'Merkez'; t.savunma_stili = 'Alan';
+                triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Tiki-Taka. Kısa paslaşma ve topa sahip olma ana odak!");
+            } else if (template === 'gegenpress') {
+                t.ofansiflik = 85; t.savunma_hatti = 75; t.tempo = 80; t.pres = 95; t.genislik = 70; t.yaraticilik = 55;
+                t.pas_tarzi = 'Direkt Oyun'; t.hucum_odagi = 'Dengeli'; t.savunma_stili = 'Adam Adama';
+                triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Gegenpressing. Top kaybedildiği anda yoğun ön alan presi!");
+            } else if (template === 'bus') {
+                t.ofansiflik = 18; t.savunma_hatti = 20; t.tempo = 30; t.pres = 35; t.genislik = 40; t.yaraticilik = 15;
+                t.pas_tarzi = 'Uzun Top'; t.hucum_odagi = 'Dengeli'; t.savunma_stili = 'Alan';
+                triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Otobüsü Çek. Katı savunma, ultra defansif duruş!");
+            } else if (template === 'counter') {
+                t.ofansiflik = 55; t.savunma_hatti = 35; t.tempo = 88; t.pres = 50; t.genislik = 78; t.yaraticilik = 60;
+                t.pas_tarzi = 'Direkt Oyun'; t.hucum_odagi = 'Kanatlar'; t.savunma_stili = 'Alan';
+                triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Kontra Atak. Kendi sahasında kabul, hızlı geçiş!");
+            }
+            render();
+        }
+
+        function startNextMatch() {
+            const opps = gameState.league.takimlar.filter(t => !t.isUser);
+            const opp = opps[(gameState.currentWeek - 1) % opps.length];
+            opp.ilk_11.forEach(p => { p.enerji = 100; p.form = 85; });
+
+            gameState.currentMatch = [gameState.myTeam, opp];
+            gameState.matchMinute = 0;
+            gameState.lastResult = [0, 0];
+            gameState.matchEvents = [];
+            gameState.view = 'match';
+            gameState.isMatchLive = true;
+            gameState.selectedSubstitutionOut = null;
+            // Reset match stats
+            gameState.matchStats = {
+                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0 },
+                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0 }
+            };
+            gameState.redCardedPlayers = new Set();
+            gameState.injuredPlayers = new Set();
+            // Clear per-player match counters
+            [gameState.myTeam, opp].forEach(t => t.ilk_11.forEach(p => { p.yellowCard = 0; }));
+            runMatch();
+        }
+
+        function render() {
+            const container = document.getElementById('screen-content');
+            if(!gameState.myTeam) return;
+            document.getElementById('budget-ui').textContent = gameState.myTeam.butce.toFixed(1) + "M €";
+            document.getElementById('strength-ui').textContent = gameState.myTeam.getGuc();
+
+            if (gameState.view === 'main_menu') {
+                soundEngine.toggleMusic(true);
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto py-8 space-y-6 text-center animate-fade-in">
+                        <div class="mb-4">
+                            <h2 class="text-3xl md:text-5xl font-black italic uppercase text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 tracking-tight">KULÜP YÖNETİM OFİSİ</h2>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-2">KULÜBÜNÜZÜ SÜPER LİG ZİRVESİNE TAŞIYIN</p>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-5">
+                            <button onclick="changeView('lineup')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-emerald-500/10 hover:border-emerald-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">📋</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-emerald-400">KADRO PLANLAYICI</span>
+                            </button>
+                            <button onclick="changeView('tactics')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-indigo-500/10 hover:border-indigo-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">⚙️</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-indigo-400">TAKTIK TAHTASI</span>
+                            </button>
+                            <button onclick="changeView('transfer')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-amber-500/10 hover:border-amber-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">💸</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-amber-400">TRANSFER PAZARI</span>
+                            </button>
+                            <button onclick="changeView('league')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-purple-500/10 hover:border-purple-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">🏆</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-purple-400">PUAN DURUMU</span>
+                            </button>
+                            <button onclick="changeView('academy')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-teal-500/10 hover:border-teal-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">🌱</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-teal-400">ALTYAPI & AKADEMİ</span>
+                            </button>
+                            <button onclick="changeView('training')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-pink-500/10 hover:border-pink-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">🏋️‍♂️</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-pink-400">TAKIMSAL ANTRENMAN</span>
+                            </button>
+                        </div>
+                        <button onclick="startNextMatch()" class="w-full py-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 rounded-2xl font-black text-xl shadow-lg shadow-emerald-500/10 mt-6 text-white uppercase italic tracking-widest transition-all transform hover:scale-[1.01]">⚽ HAFTANIN MAÇINI OYNA</button>
+                    </div>`;
+            } else if (gameState.view === 'match') {
+                // Maç sahnesi yalnızca bir kez kurulur; sonrasında sadece HUD ve
+                // animasyon döngüsü konumları günceller (ekran yeniden çizilmez).
+                if (!gameState.sim || !document.getElementById('match-pitch')) {
+                    if (gameState.sim) { buildMatchDom(); }
+                }
+                updateMatchHud();
+            } else if (gameState.view === 'lineup') {
+                container.innerHTML = `
+                    <div class="max-w-full h-full flex flex-col space-y-4 animate-fade-in">
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase tracking-tight">KADRO PLANLAYICI</h2>
+                                <p class="text-xs text-slate-400">Oyuncuların yerini değiştirmek için yedektekilere tıklayın. Roller için saha üzerindeki futbolculara basın.</p>
+                            </div>
+                            <button onclick="changeView('main_menu')" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 px-8 py-3 rounded-xl font-black text-white text-sm shadow-md">KAYDET VE DÖN</button>
+                        </div>
+                        <div class="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-hidden">
+                            <div class="lg:col-span-3 elite-pitch relative" id="lineup-pitch" style="position: relative;">
+                                <div class="pitch-line center-line"></div><div class="pitch-line center-circle"></div>
+                                <div class="goal-v6 goal-left" style="opacity: 0.1"></div><div class="goal-v6 goal-right" style="opacity: 0.1"></div>
+                            </div>
+                            <div class="bg-slate-900/60 p-4 rounded-2xl border border-white/5 flex flex-col h-full shadow-xl overflow-hidden min-h-[400px]">
+                                <h3 class="font-black text-slate-400 text-[10px] uppercase mb-3 tracking-widest text-center">Yedek Kulübesi</h3>
+                                <div class="flex-grow space-y-2 overflow-y-auto pr-1">
+                                    ${gameState.myTeam.oyuncular.filter(p => !gameState.myTeam.ilk_11.includes(p)).map(p => `
+                                        <div onclick="swapPlayer('${p.ad}')" class="elite-bench-item">
+                                            <div>
+                                                <p class="font-bold text-xs text-white">${p.ad}</p>
+                                                <p class="text-[9px] text-slate-500 uppercase font-black">${p.mevkii} • Yetenek: ${p.yetenek} • Gelişim: ${p.karakter}</p>
+                                                <div class="flex gap-2 mt-1">
+                                                    <span class="text-[9px] text-emerald-400">⚡ %${Math.round(p.enerji)}</span>
+                                                    <span class="text-[9px] text-indigo-400">📈 Form: %${p.form}</span>
+                                                </div>
+                                            </div>
+                                            <span class="text-emerald-400 font-extrabold text-xs bg-emerald-500/10 px-2 py-1 rounded-md">DEĞİŞTİR</span>
+                                        </div>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                renderLineupPitch();
+            } else if (gameState.view === 'tactics') {
+                const tact = gameState.myTeam.taktik;
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase">TAKTİK VE SİSTEM YÖNETİMİ</h2>
+                                <p class="text-xs text-slate-300">Taktikleriniz maçlardaki yorulma hızını, şut doğruluğunu ve defans gücünü doğrudan etkiler.</p>
+                            </div>
+                            <button onclick="changeView('main_menu')" class="bg-emerald-500 hover:bg-emerald-400 px-6 py-2.5 rounded-xl text-xs font-black text-white">UYGULA VE ANA MENÜYE DÖN</button>
+                        </div>
+
+                        <div class="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center md:text-left">HAZIR SİSTEM ŞABLONLARI</p>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <button onclick="applyTacticalTemplate('tikitaka')" class="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-lg transition-all">Tiki-Taka</button>
+                                <button onclick="applyTacticalTemplate('gegenpress')" class="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-xs font-bold rounded-lg transition-all">Gegenpressing</button>
+                                <button onclick="applyTacticalTemplate('bus')" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold rounded-lg transition-all">Otobüsü Çek</button>
+                                <button onclick="applyTacticalTemplate('counter')" class="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-xs font-bold rounded-lg transition-all">Hızlı Kontra</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-slate-900/60 p-4 rounded-xl border border-white/5 shadow-lg">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Pas Dağıtım Tarzı</label>
+                                <select onchange="gameState.myTeam.taktik.pas_tarzi = this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg block w-full p-2.5 border border-white/10">
+                                    <option value="Kısa Pas" ${tact.pas_tarzi === 'Kısa Pas' ? 'selected' : ''}>Kısa Pas (Düşük Risk, Sabit Tempo)</option>
+                                    <option value="Uzun Top" ${tact.pas_tarzi === 'Uzun Top' ? 'selected' : ''}>Uzun Top (Defans Arkasına Direkt)</option>
+                                    <option value="Direkt Oyun" ${tact.pas_tarzi === 'Direkt Oyun' ? 'selected' : ''}>Direkt Oyun (Hızlı Geçiş Oyunu)</option>
+                                </select>
+                            </div>
+                            <div class="bg-slate-900/60 p-4 rounded-xl border border-white/5 shadow-lg">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Hücum Odağı</label>
+                                <select onchange="gameState.myTeam.taktik.hucum_odagi = this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg block w-full p-2.5 border border-white/10">
+                                    <option value="Dengeli" ${tact.hucum_odagi === 'Dengeli' ? 'selected' : ''}>Dengeli (Karışık Dağılım)</option>
+                                    <option value="Kanatlar" ${tact.hucum_odagi === 'Kanatlar' ? 'selected' : ''}>Kanat Akınları (Bekleri Destekler)</option>
+                                    <option value="Merkez" ${tact.hucum_odagi === 'Merkez' ? 'selected' : ''}>Merkez Hücum (Oyun Kurucuları Parlatır)</option>
+                                </select>
+                            </div>
+                            <div class="bg-slate-900/60 p-4 rounded-xl border border-white/5 shadow-lg">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Savunma Biçimi</label>
+                                <select onchange="gameState.myTeam.taktik.savunma_stili = this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg block w-full p-2.5 border border-white/10">
+                                    <option value="Alan" ${tact.savunma_stili === 'Alan' ? 'selected' : ''}>Alan Savunması (Sakin, Pozisyonel)</option>
+                                    <option value="Adam Adama" ${tact.savunma_stili === 'Adam Adama' ? 'selected' : ''}>Adam Adama (Agresif, Yakın Markaj)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${["ofansiflik", "savunma_hatti", "tempo", "pres", "genislik", "yaraticilik"].map(key => `
+                                <div class="bg-slate-900/60 p-5 rounded-2xl border border-white/5 shadow-lg">
+                                    <div class="flex justify-between mb-3">
+                                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest">${key.replace('_',' ')}</label>
+                                        <span class="text-emerald-400 font-black tabular-nums bg-emerald-500/10 px-3 py-0.5 rounded-full text-xs">${gameState.myTeam.taktik[key]}</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" value="${gameState.myTeam.taktik[key]}" oninput="gameState.myTeam.taktik['${key}']=parseInt(this.value); render();" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                                </div>`).join('')}
+                        </div>
+
+                        <div class="bg-slate-950/80 p-5 rounded-2xl border border-indigo-500/20 shadow-inner">
+                            <h4 class="text-xs font-black text-indigo-400 uppercase mb-2">💡 TAKTİKLERİN MAÇA DİREKT ETKİLERİ</h4>
+                            <ul class="text-[11px] text-slate-300 space-y-1.5 list-disc pl-4 font-medium">
+                                <li><b>Pres ve Tempo Seviyesi:</b> Ne kadar yüksekse atak şansınız o kadar artar ama oyuncularınızın <b>maç içi enerjisi (fatigue) orantılı şekilde çok daha hızlı tükenir</b>.</li>
+                                <li><b>Savunma Hattı:</b> 70'in üzerine çıkarıldığında rakibe ofsayt baskısı kurulur fakat arkaya sarkan toplarda rakip gole çok daha kolay yaklaşır (Yüksek Risk).</li>
+                                <li><b>Merkez Odağı & Kısa Pas:</b> Orta saha oyuncularınızın mevkisel rol bonuslarını %20 oranında tetikler.</li>
+                                <li><b>Kanat Akınları:</b> Bek oyuncularınızın ofansif niteliklerini artırır, orta/arka direk aksiyonlarını çoğaltır.</li>
+                            </ul>
+                        </div>
+                    </div>`;
+            } else if (gameState.view === 'transfer') {
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase">TRANSFER PAZARI</h2>
+                                <p class="text-xs text-slate-400">Yıldız oyuncuları bonservisiyle kadroya katın.</p>
+                            </div>
+                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">ANA MENÜ</button>
+                        </div>
+                        <div class="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-slate-800/80 text-[10px] font-black uppercase text-slate-400">
+                                        <tr>
+                                            <th class="p-4">Oyuncu Adı</th>
+                                            <th class="p-4">Mevki</th>
+                                            <th class="p-4">Yetenek</th>
+                                            <th class="p-4">Yaş</th>
+                                            <th class="p-4">Değer</th>
+                                            <th class="p-4 text-right">İşlem</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-white/5">
+                                        ${gameState.transferPool.map(p => `
+                                            <tr class="hover:bg-white/[0.02] transition-all">
+                                                <td class="p-4 font-bold text-white text-sm">${p.ad}</td>
+                                                <td class="p-4"><span class="text-[10px] bg-slate-800 text-slate-300 font-black px-2 py-1 rounded-md uppercase">${p.mevkii}</span></td>
+                                                <td class="p-4 font-extrabold text-emerald-400 text-base">${p.yetenek}</td>
+                                                <td class="p-4 text-slate-300 font-medium text-sm">${p.yas}</td>
+                                                <td class="p-4 font-extrabold text-amber-500 text-sm tabular-nums">${p.fiyat.toFixed(1)}M €</td>
+                                                <td class="p-4 text-right">
+                                                    <button onclick="buyPlayer('${p.ad}')" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-[10px] font-black uppercase text-white shadow-md transition-all">SATIN AL</button>
+                                                </td>
+                                            </tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+            } else if (gameState.view === 'league') {
+                const table = [...gameState.league.takimlar].sort((a,b) => b.puan - a.puan || (b.atilan_gol - b.yenilen_gol) - (a.atilan_gol - a.yenilen_gol));
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase">LİG PUAN DURUMU</h2>
+                                <p class="text-xs text-slate-400">Şampiyonluk yarışında son durum.</p>
+                            </div>
+                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">ANA MENÜ</button>
+                        </div>
+                        <div class="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-slate-800/80 text-[10px] font-black uppercase text-slate-400">
+                                        <tr>
+                                            <th class="p-4 w-12 text-center">Sıra</th>
+                                            <th class="p-4">Takım</th>
+                                            <th class="p-4 text-center">O</th>
+                                            <th class="p-4 text-center">G</th>
+                                            <th class="p-4 text-center">B</th>
+                                            <th class="p-4 text-center">M</th>
+                                            <th class="p-4 text-center">A-Y</th>
+                                            <th class="p-4 text-right pr-6">Puan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-white/5">
+                                        ${table.map((t, i) => `
+                                            <tr class="${t.isUser ? 'bg-emerald-500/10 hover:bg-emerald-500/15' : 'hover:bg-white/[0.02]'} transition-all">
+                                                <td class="p-4 font-mono text-slate-400 text-center text-sm">${i+1}</td>
+                                                <td class="p-4 font-black text-white uppercase text-sm">${t.ad} ${t.isUser ? '⭐' : ''}</td>
+                                                <td class="p-4 text-center text-slate-300 text-sm font-semibold">${t.galibiyet+t.beraberlik+t.maglubiyet}</td>
+                                                <td class="p-4 text-center text-emerald-400 text-sm font-bold">${t.galibiyet}</td>
+                                                <td class="p-4 text-center text-slate-400 text-sm font-bold">${t.beraberlik}</td>
+                                                <td class="p-4 text-center text-rose-400 text-sm font-bold">${t.maglubiyet}</td>
+                                                <td class="p-4 text-center text-slate-300 text-xs font-mono">${t.atilan_gol}-${t.yenilen_gol}</td>
+                                                <td class="p-4 font-black text-right text-emerald-400 text-lg pr-6 tabular-nums">${t.puan}</td>
+                                            </tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+            } else if (gameState.view === 'academy') {
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase flex items-center gap-2">🌱 ALTYAPI & AKADEMİ</h2>
+                                <p class="text-xs text-slate-400">Yıldız adayı gençleri gözlemleyin, bireysel eğitip A takıma çıkarın.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="upgradeAcademyFacilities()" class="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 px-4 py-2.5 rounded-xl text-xs font-black text-white shadow-md">
+                                    Tesisleri Geliştir (${(gameState.academyLevel * 8.5).toFixed(1)}M €)
+                                </button>
+                                <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-4 py-2.5 rounded-xl text-xs font-black text-white">ANA MENÜ</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-5 bg-slate-900/60 rounded-2xl border border-white/5 flex justify-between items-center">
+                                <div>
+                                    <p class="text-[10px] text-slate-500 font-black uppercase">Mevcut Tesis Seviyesi</p>
+                                    <p class="text-xl font-black text-teal-400">Derece: Seviye ${gameState.academyLevel} / 5</p>
+                                </div>
+                                <span class="text-3xl">🏗️</span>
+                            </div>
+                            <div class="p-5 bg-slate-900/60 rounded-2xl border border-white/5 flex justify-between items-center">
+                                <div>
+                                    <p class="text-[10px] text-slate-500 font-black uppercase">Yetenek Havuzu Gelişim Katsayısı</p>
+                                    <p class="text-xl font-black text-emerald-400">+${gameState.academyLevel * 2.5} Ekstra Taban Yetenek</p>
+                                </div>
+                                <span class="text-3xl">📈</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/40 p-5 rounded-2xl border border-white/5">
+                            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Gözlemci (Scout) Bürosu</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                ${gameState.academyScouts.map(s => `
+                                    <div class="bg-slate-950/80 p-4 rounded-xl border border-white/5 flex flex-col justify-between gap-3">
+                                        <div>
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-xs font-bold text-slate-200">${s.name}</span>
+                                                <span class="text-[9px] bg-slate-800 text-amber-400 px-1.5 py-0.5 rounded font-black">${s.region}</span>
+                                            </div>
+                                            <p class="text-[10px] text-slate-500 mt-1">Gözlem Kalitesi: Seviye ${s.level}</p>
+                                        </div>
+                                        ${s.hired ?
+                                            `<span class="text-center text-emerald-400 font-bold text-xs bg-emerald-500/10 py-1 rounded">Aktif Görevde</span>` :
+                                            `<button onclick="hireAcademyScout(${s.id})" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-[10px] font-black uppercase transition-all">İşe Al (${s.cost}M €)</button>`
+                                        }
+                                    </div>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            ${gameState.academyPool.map(p => `
+                                <div class="bg-slate-900/40 p-5 rounded-2xl border border-white/5 flex flex-col justify-between gap-4">
+                                    <div>
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="text-[9px] bg-teal-500/20 text-teal-400 font-black px-2 py-0.5 rounded-full uppercase border border-teal-500/20">${p.mevkii}</span>
+                                            <span class="text-xs text-slate-400 font-bold">${p.yas} Yaş</span>
+                                        </div>
+                                        <h4 class="text-base font-bold text-white mt-1">${p.ad.replace(' (Altyapı)','')}</h4>
+
+                                        <div class="mt-4 space-y-1 bg-slate-950/40 p-3 rounded-lg border border-white/5">
+                                            <div class="flex justify-between text-xs"><span class="text-slate-400">Karakter</span><span class="font-bold text-slate-200">${p.karakter}</span></div>
+                                            <div class="flex justify-between text-xs"><span class="text-slate-400">Yetenek</span><span class="font-bold text-teal-400">${p.yetenek}</span></div>
+                                            <div class="flex justify-between text-xs"><span class="text-slate-400">Potansiyel</span><span class="font-bold text-amber-400">${p.potansiyel}</span></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <button onclick="trainIndividualYouth('${p.ad}')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] uppercase rounded-lg transition-all">Özel Antrenman (0.8M €)</button>
+                                        <button onclick="promoteYouthToPro('${p.ad}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase rounded-lg transition-all shadow-md">A TAKIMA YÜKSELT (1.5M €)</button>
+                                    </div>
+                                </div>`).join('')}
+                        </div>
+                    </div>`;
+            } else if (gameState.view === 'training') {
+                const trRightStyle = gameState.trainingRights > 0 ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-rose-400 bg-rose-500/10 border-rose-500/20";
+
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase">🏋️‍♂️ TAKIMSAL ANTRENMAN MERKEZİ</h2>
+                                <p class="text-xs text-slate-400">Gelişim programları uygulayın, form ile enerji dengesini koruyun.</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="px-3 py-1.5 rounded-lg border text-xs font-black uppercase ${trRightStyle}">
+                                    Antrenman Hakkı: ${gameState.trainingRights}/1 ${gameState.trainingRights > 0 ? 'Mevcut' : 'Tükendi (Maç Oynanmalı)'}
+                                </div>
+                                <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">GERİ DÖN</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <button onclick="executeTrainingRegime('hucum')" class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col items-center text-center hover:border-pink-500/40 transition-all gap-2">
+                                <span class="text-3xl">🏹</span>
+                                <h4 class="text-xs font-black text-white uppercase">Hücum & Şut</h4>
+                                <p class="text-[9px] text-slate-500">Forvetleri ve bitiriciliği geliştirir.</p>
+                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -22 Enerji</span>
+                            </button>
+                            <button onclick="executeTrainingRegime('savunma')" class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col items-center text-center hover:border-rose-500/40 transition-all gap-2">
+                                <span class="text-3xl">🛡️</span>
+                                <h4 class="text-xs font-black text-white uppercase">Savunma & Pres</h4>
+                                <p class="text-[9px] text-slate-500">Defansların yeteneğini geliştirir.</p>
+                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -20 Enerji</span>
+                            </button>
+                            <button onclick="executeTrainingRegime('taktik')" class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col items-center text-center hover:border-indigo-500/40 transition-all gap-2">
+                                <span class="text-3xl">🧩</span>
+                                <h4 class="text-xs font-black text-white uppercase">Taktik & Pas</h4>
+                                <p class="text-[9px] text-slate-500">Orta sahaları ve pas kalitesini uçurur.</p>
+                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -15 Enerji</span>
+                            </button>
+                            <button onclick="executeTrainingRegime('kondisyon')" class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col items-center text-center hover:border-amber-500/40 transition-all gap-2">
+                                <span class="text-3xl">🏃‍♂️</span>
+                                <h4 class="text-xs font-black text-white uppercase">Kondisyon</h4>
+                                <p class="text-[9px] text-slate-500">Tüm takımın form seviyesini yükseltir.</p>
+                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -18 Enerji</span>
+                            </button>
+                            <button onclick="executeTrainingRegime('dinlenme')" class="p-4 bg-emerald-950/35 rounded-2xl border border-emerald-500/20 flex flex-col items-center text-center hover:border-emerald-500/40 transition-all gap-2">
+                                <span class="text-3xl">💤</span>
+                                <h4 class="text-xs font-black text-emerald-400 uppercase">Dinlenme</h4>
+                                <p class="text-[9px] text-slate-500">Oyuncuların enerjisini yeniler.</p>
+                                <span class="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ +25 Enerji</span>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-2 bg-slate-900/40 rounded-2xl p-5 border border-white/5">
+                                <h3 class="text-xs font-black text-slate-400 uppercase mb-4">Grup Kondisyon Takip Raporu</h3>
+                                <div class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                                    ${gameState.myTeam.oyuncular.map(p => `
+                                        <div class="flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-white/5">
+                                            <div>
+                                                <p class="text-xs font-bold text-slate-200">${p.ad}</p>
+                                                <p class="text-[9px] text-slate-500 uppercase font-black">${p.mevkii} • Yetenek: ${p.yetenek} • ${p.karakter}</p>
+                                            </div>
+                                            <div class="flex gap-4 items-center">
+                                                <div class="text-right">
+                                                    <p class="text-[10px] text-slate-400">Enerji</p>
+                                                    <span class="text-xs font-black ${p.enerji < 45 ? 'text-rose-400' : 'text-emerald-400'}">%${Math.round(p.enerji)}</span>
+                                                </div>
+                                                <div class="text-right">
+                                                    <p class="text-[10px] text-slate-400">Form</p>
+                                                    <span class="text-xs font-black text-indigo-400">%${p.form}</span>
+                                                </div>
+                                            </div>
+                                        </div>`).join('')}
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/40 rounded-2xl p-5 border border-white/5 flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-xs font-black text-slate-400 uppercase mb-4">Son Antrenman Raporu</h3>
+                                    ${gameState.lastTrainingSummary ? `
+                                        <div class="space-y-2 bg-slate-950/60 p-4 rounded-xl border border-white/5 max-h-[250px] overflow-y-auto">
+                                            <p class="text-[10px] text-emerald-400 font-black tracking-wider uppercase">${gameState.lastTrainingSummary.title}</p>
+                                            <div class="divide-y divide-white/5 space-y-2 pt-2">
+                                                ${gameState.lastTrainingSummary.items.map(item => `<p class="text-[10px] text-slate-300">${item}</p>`).join('')}
+                                            </div>
+                                        </div>
+                                    ` : `
+                                        <div class="text-center py-10 text-slate-500 text-xs font-bold">Henüz antrenman uygulanmadı.</div>
+                                    `}
+                                </div>
+                                <div class="bg-indigo-950/25 p-3 rounded-xl border border-indigo-500/10 text-[10px] text-slate-400 mt-4">
+                                    💡 <b>Taktiksel Tavsiye:</b> Maç öncesinde takım enerjinizin en az %85 olduğundan emin olun!
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function renderLineupPitch() {
+            const pitch = document.getElementById('lineup-pitch'); if(!pitch) return;
+            pitch.querySelectorAll('.player-node').forEach(e => e.remove());
+
+            const locs = {
+                "Kaleci": [[8, 50]],
+                "Defans": [[30, 15], [30, 38], [30, 62], [30, 85]],
+                "Orta Saha": [[55, 15], [55, 38], [55, 62], [55, 85]],
+                "Forvet": [[80, 35], [80, 65]]
+            };
+            const colors = { "Kaleci": "#3b82f6", "Defans": "#ef4444", "Orta Saha": "#ec4899", "Forvet": "#f59e0b" };
+
+            let pIdx = 0;
+            for (let m in locs) {
+                locs[m].forEach(l => {
+                    const p = gameState.myTeam.ilk_11[pIdx]; if (!p) return;
+                    const div = document.createElement('div');
+                    div.className = 'player-node';
+                    div.style.left = l[0] + '%'; div.style.top = l[1] + '%';
+
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        openRoleSelector(p, div);
+                    };
+
+                    div.innerHTML = `
+                        <div class="kit-circle shadow-2xl relative" style="background: ${colors[p.mevkii]}">
+                            ${p.ad[0]}
+                            <div class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full ${p.enerji < 50 ? 'bg-rose-500' : 'bg-emerald-400'} border border-white flex items-center justify-center text-[7px] text-black font-extrabold">${Math.round(p.enerji)}</div>
+                        </div>
+                        <div class="info-tag">${p.ad.split(' ')[0]}<span class="role-tag">${p.role}</span></div>`;
+                    pitch.appendChild(div); pIdx++;
+                });
+            }
+        }
+
+        function openRoleSelector(player, nodeElement) {
+            closeModals();
+            const roles = {
+                "Kaleci": ["Libero Kaleci", "Geleneksel"],
+                "Defans": ["Pasör Stoper", "Kanat Bek", "Çakılı Bek"],
+                "Orta Saha": ["Oyun Kurucu", "Dinamo", "Mezzala"],
+                "Forvet": ["Sahte 9", "Pivot", "Fırsatçı Golcü"]
+            };
+
+            const selector = document.createElement('div');
+            selector.id = "role-selector";
+            selector.className = "role-modal absolute top-full left-1/2 -translate-x-1/2 mt-2";
+            selector.style.minWidth = "150px";
+
+            (roles[player.mevkii] || ["Standart"]).forEach(r => {
+                const btn = document.createElement('button');
+                btn.textContent = r;
+                if(player.role === r) btn.classList.add('active');
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    player.role = r;
+                    closeModals();
+                    render();
+                };
+                selector.appendChild(btn);
+            });
+            nodeElement.appendChild(selector);
+        }
+
+        function closeModals() {
+            const m = document.getElementById('role-selector');
+            if(m) m.remove();
+        }
+
+        window.onload = () => {
+            let p = [];
+            for(let i=0; i<25; i++) {
+                let pos = i===0 ? "Kaleci" : (i<8?"Defans":i<16?"Orta Saha":"Forvet");
+                let char = ACADEMY_CHARACTERS[Math.floor(Math.random()*ACADEMY_CHARACTERS.length)];
+                p.push(new Player(getRandomName(), pos, 52+Math.random()*18, 5+Math.random()*12, 21 + Math.floor(Math.random() * 8), 75+Math.random()*20, 100, 80, "Standart", char));
+            }
+            gameState.myTeam = new Team("PYTHON FC", p, 50.0, true);
+
+            const otherTeams = [
+                "ASLAN SK", "KARTAL SK", "KAPLAN SK", "KUZEY SK",
+                "ANADOLU SK", "EGE SK", "MARMARA SK"
+            ];
+
+            gameState.league = {
+                takimlar: [gameState.myTeam, ...otherTeams.map(name => {
+                    let opP = [];
+                    for(let i=0; i<18; i++) {
+                        let pos = i===0 ? "Kaleci" : (i<7?"Defans":i<14?"Orta Saha":"Forvet");
+                        opP.push(new Player(getRandomName(), pos, 48 + Math.random()*16, 0, 24, 82));
+                    }
+                    return new Team(name, opP, 0);
+                })],
+                oynananMacSayisi: 0
+            };
+
+            for(let i=0; i<15; i++) {
+                let pos = ["Kaleci", "Defans", "Orta Saha", "Forvet"][Math.floor(Math.random()*4)];
+                gameState.transferPool.push(new Player(getRandomName(), pos, 66 + i, (66+i)*0.22, 20+Math.floor(Math.random()*6), 75 + Math.floor(Math.random()*20)));
+            }
+
+            generateAcademyPlayers();
+            render();
+        };
+    </script>
+    <!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->
+    <script src="whatsapp-float.js"></script>
+</body>
+</html>
