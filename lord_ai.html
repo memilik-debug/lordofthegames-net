@@ -208,9 +208,9 @@
         // Clean corrected tactical database for all 10 games - conversational format
         const gameDatabase = {
             futbol: {
-                title: "⚽ Futbol Manager Elite Pro v2.8",
-                desc: "Tam teşekküllü bir menajerlik simülasyonu — altyapı/akademi sistemi, scout bürosu, 5 farklı antrenman rejimi, enerji ve form mekanikleri, oyuncu karakter özellikleri, 4 hazır taktik şablonu, **canlı maç istatistik paneli**, sarı/kırmızı kart, sakatlık, korner, kurtarış olayları, pas/hücum/savunma stili seçimleri ve sentezlenmiş stadyum atmosferi.",
-                tactic: `Dostum, Futbol Manager Elite Pro v2.7 oyununda artık çok katmanlı bir menajerlik seni bekliyor! İşte zirveye çıkmak için bilmen gereken her şey:
+                title: "⚽ Futbol Manager Elite Pro v3.0",
+                desc: "Tam teşekküllü bir menajerlik simülasyonu — **FM tarzı detaylı taktik merkezi (xG önizlemeli)**, **3D stadyumda maç izleme ve dev jumbotron ekran**, **danışman Baldric'in canlı analizi**, altyapı/akademi sistemi, scout bürosu, 5 farklı antrenman rejimi, enerji ve form mekanikleri, oyuncu karakter özellikleri, canlı maç istatistik paneli, sarı/kırmızı kart, sakatlık, korner, kurtarış olayları ve sentezlenmiş stadyum atmosferi.",
+                tactic: `Dostum, Futbol Manager Elite Pro v3.0 oyununda artık çok katmanlı bir menajerlik seni bekliyor! İşte zirveye çıkmak için bilmen gereken her şey:
 
 **1) Enerji & Form Mekaniği (En Kritik Yenilik):** Oyuncularının artık iki bağımsız metriği var. **Enerji** maçlarda ve antrenmanlarda azalır, dinlenme ile dolar. **Form** ise antrenmanlarla yükselir, dinlenince hafif düşer. Maça mutlaka en az %85 enerji ile çık, çünkü oyuncu gücü doğrudan bu iki değer üzerinden çarpılarak hesaplanıyor (Enerji %75 + Form %25 ağırlıkla).
 
@@ -259,7 +259,13 @@
 
 **13) Korner, Faul, Kurtarış, Müdahale Olayları (v2.8 YENİ):** Maç sırasında her olay arasında küçük olay rolleri var — kornerler, taktiksel fauller, kaleci süper kurtarışları, kayarak müdahaleler. Spikerin (yorumcu) artık 7 farklı senaryo türünde toplam ~40 farklı cümle söyleyebiliyor — aynı maç iki kez aynı görünmüyor.
 
-**14) Ekran Karartma Bugu Çözüldü (v2.8):** Eski sürümde her maç olayında ekran kararıp tekrar açılıyordu (animate-fade-in her render'da tetikleniyordu). Düzeltildi.`
+**14) Ekran Karartma Bugu Çözüldü (v2.8):** Eski sürümde her maç olayında ekran kararıp tekrar açılıyordu (animate-fade-in her render'da tetikleniyordu). Düzeltildi.
+
+**15) FM Tarzı Detaylı Taktik Merkezi (v3.0 DEV YENİLİK):** Taktik ekranı baştan yazıldı! Artık dizilim, pas tarzı, hücum odağı, markaj, **pres tetikleyici (Pasif/Orta/Agresif/Ultra)**, çıkış oyunu, top kazanınca (Hızlı Kontra/Topu Tut), **ofsayt tuzağı** ve zaman oyunu seçenekleri var. 7 slider (ofansiflik, savunma hattı, tempo, pres, genişlik, yaratıcılık, riskli paslar) + her ilk 11 oyuncusuna **birey görev** (Savunma/Destek/Hücum) atayabilirsin. En önemlisi: sağdaki **canlı öngörü paneli** sen her ayarı oynattığında maça yansımasını sayısal gösterir — öngörülen **xG**, şut sayısı, top hakimiyeti, hücum/savunma/kontrol/pres çubukları ve riskli kombinasyonlarda uyarı. Yani artık "bu taktik maça ne yapıyor?" tahmin değil, rakamla önünde.
+
+**16) 3D Stadyumda Maç İzleme (v3.0 DEV YENİLİK):** Maça girince artık gerçek bir 3D stadyumda doğuyorsun! Çim şeritli saha, tribünler, ışık kuleleri ve önünde **dev jumbotron ekran** maçın 2D üstten görünümünü canlı yansıtıyor. Sahada **22 gerçek 3B oyuncu** koşuyor (gerçekçi bacak/kol hareketi, viraja yatış). Kamera modları: 📺 Ekran (menajer koltuğundan dev ekranı izle), 📐 Kenar (yandan saha kenarı), 🎥 Geniş açı, 🕹️ Serbest (sürükle-yakınlaştır).
+
+**17) Danışman Baldric (v3.0 YENİ):** Saha kenarında 3B danışman 🧙 Baldric yanında duruyor ve sağ panelden canlı analiz veriyor — takım reytingi, tempo okuması, **xG karşılaştırması**, top hakimiyeti ve duruma göre öneriler: yorgun oyuncu uyarısı, değişiklik tavsiyesi, "öndesin, zaman oyununa geç", "geridesin, presi ve ofansifliği yükselt" gibi. Maç içinde ona kulak ver, kararlarını ona göre ver.`
             },
             birdblast: {
                 title: "🚀 BirdBlast — Uzay & Kum Havuzu",
@@ -414,10 +420,10 @@ Bu yüzden hayatta kalmak için kendi boyalı ve güvenli bölgenden çok fazla 
 Savunma kulelerini stratejik sınır geçişlerine ve geçitlere inşa ederek düşman saldırılarını durdur. Kışlaları ve akademiyi hızla yükselterek askerlerinin teknoloji seviyesini artır; yüksek teknolojili ordular savaşlarda çok daha az kayıp verir.`
             },
             turborush: {
-                title: "🏎️ TURBO RUSH — Kariyer v1.8",
+                title: "🏎️ TURBO RUSH — Kariyer v1.9",
                 mobile: true,
-                desc: "5 farklı pist, 8 takım, kariyer modu, pit stop, nitro, DRİFT mekaniği, AI rakipler ve mobil dokunmatik kontrollerle dolu Three.js tabanlı 3D yarış simülasyonu.",
-                tactic: `TURBO RUSH v1.8 ile karşına çıkan kariyer modu artık hem masaüstünde hem de mobilde çalışan tam bir F1 simülasyonu dostum! İşte zirveye çıkmak için bilmen gereken her şey:
+                desc: "5 farklı pist, 8 takım, kariyer modu, pit stop, nitro, DRİFT mekaniği, **geri vites & başlangıç geri sayımı**, **daha akıllı ve dağınık yarışan AI rakipler**, araç viraj yatışı ve mobil dokunmatik kontrollerle dolu Three.js tabanlı 3D yarış simülasyonu.",
+                tactic: `TURBO RUSH v1.9 ile karşına çıkan kariyer modu artık hem masaüstünde hem de mobilde çalışan tam bir F1 simülasyonu dostum! İşte zirveye çıkmak için bilmen gereken her şey:
 
 **1) 8 Takım Hiyerarşisi (Tier 1-5):** Düşük bütçeli **Anadolu GP** ve **Kobra Racing** (Tier 5) ile başlarsın. İyi sonuçlarla **Papaya Storm**, **Ninja Speed**, **Écurie Bleu** (Orta), sonra **Silver Wing**, **Bulls Energy** (Üst) ve nihayet **Scuderia Rosa** (Tier 1 - Şampiyon Takım) seni transfere çağırır. Takım tier'ı garaj üst limit seviyesini belirler (Lvl 2'den Lvl 5'e).
 
@@ -451,7 +457,14 @@ Tüm butonlar haptik basınç animasyonlu, ekran ölçeklenir.
 
 **10) Sezon Sonu Transferler:** İyi sonuç alırsan üst takım teklif gönderir. Tier 1 (Scuderia Rosa) teklifi için en az 120 puana veya Top 3'e bitmen lazım. Kabul edersen yeni takımda sezona devam.
 
-🔧 **TAVSİYE STRATEJİ:** İlk sezon Anadolu GP'de geçir, en az 40 puan al, Papaya Storm teklifini kabul et. İkinci sezonda Motor + Direksiyon Lvl 3'e çıkar, drift ile sürekli nitro doldurmayı pratiğe dönüştür, Silver Wing'e geç. Üçüncü sezonda Scuderia Rosa kapıyı çalar! 🏆`
+🔧 **TAVSİYE STRATEJİ:** İlk sezon Anadolu GP'de geçir, en az 40 puan al, Papaya Storm teklifini kabul et. İkinci sezonda Motor + Direksiyon Lvl 3'e çıkar, drift ile sürekli nitro doldurmayı pratiğe dönüştür, Silver Wing'e geç. Üçüncü sezonda Scuderia Rosa kapıyı çalar! 🏆
+
+**11) v1.9 Düzeltmeleri & Yenilikleri:**
+- 🔄 **Yön kontrolü düzeltildi:** A/sol artık gerçekten sola, D/sağ sağa döndürüyor (eski sürümde tersti).
+- 🏁 **Başlangıç geri sayımı:** Yarış 3-2-1-GO! ile başlıyor; herkes gridde bekliyor, erken kalkış yok.
+- ↩️ **Geri vites:** Durduğunda fren tuşunu basılı tut → araç geri gider (vites göstergesi "R"), duvara çarpıp sıkışmazsın.
+- 🤖 **Daha akıllı AI:** NPC araçların hızları artık birbirinden belirgin farklı ve her biri ayrı bir şeritte sürüyor — eskiden hepsi merkeze yığılıp üst üste biniyordu, artık dağılarak gerçek bir yarış havası veriyor.
+- 🏎️ **Araç viraj yatışı:** Hem senin araban hem AI araçlar virajda hafifçe yana yatıyor, hareket çok daha gerçekçi.`
             },
             minecraft: {
                 title: "⛏️ Minecraft 2D Pro v3.0",
