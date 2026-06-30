@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <title>Lord of Nations 3D — Başkanlık Ofisi</title>
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.158.0/build/three.module.js" } }
+</script>
+<script type="module">
+  import { GLTFLoader } from 'https://unpkg.com/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
+  window.GLTFLoader = GLTFLoader;
+  window.__gltfReady = true;
+  window.dispatchEvent(new Event('gltf-ready'));
+</script>
+<script src="models_data.js"></script>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; user-select:none; }
   html,body { width:100%; height:100%; overflow:hidden; background:#060812; color:#e6e9ef; font-family:'Segoe UI',Tahoma,sans-serif; }
@@ -116,6 +126,18 @@
   #hitFlash { position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 40%, rgba(200,0,0,.45)); z-index:23; opacity:0; pointer-events:none; transition:opacity .3s; }
   #respawnOverlay { position:absolute; inset:0; background:rgba(120,0,0,.72); display:none; align-items:center; justify-content:center; z-index:26; pointer-events:none; }
   #warStartOverlay { position:absolute; inset:0; background:rgba(0,0,0,.88); display:none; align-items:center; justify-content:center; flex-direction:column; gap:18px; z-index:50; cursor:pointer; }
+  /* ===== SAVAŞ PLANLAYICI ===== */
+  #plannerOverlay { position:absolute; inset:0; background:linear-gradient(135deg,#070d18,#0b1424); z-index:60; display:flex; flex-direction:column; align-items:center; }
+  #plannerBar { width:100%; display:flex; align-items:center; gap:10px; padding:10px 16px; background:rgba(8,14,30,.95); border-bottom:2px solid #ffd86b; box-sizing:border-box; flex-wrap:wrap; }
+  #plannerCanvas { background:#0a1322; border:1px solid #22304c; border-radius:8px; margin-top:12px; max-width:98vw; max-height:74vh; box-shadow:0 12px 50px rgba(0,0,0,.7); cursor:grab; }
+  #plannerCanvas:active { cursor:grabbing; }
+  #plannerHint { margin-top:10px; color:#cfd6e6; font-size:12px; max-width:900px; text-align:center; background:rgba(0,0,0,.4); padding:8px 16px; border-radius:6px; }
+  /* ===== Sinematik renk derecelendirme + vinyet ===== */
+  #cineGrade { position:absolute; inset:0; z-index:13; pointer-events:none; opacity:0; transition:opacity .45s;
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(0,0,0,0) 50%, rgba(4,8,16,.5) 100%),
+      linear-gradient(180deg, rgba(120,150,200,.06), rgba(255,180,120,.05));
+    mix-blend-mode:normal; }
 </style>
 </head>
 <body>
@@ -202,7 +224,7 @@
   </div>
 
   <div class="modal" id="modal"><div class="modal-content"><h2 id="modalTitle"></h2><p id="modalBody"></p><div class="btnrow" id="modalBtns"></div></div></div>
-  <div class="modal" id="warEndModal"><div class="modal-content" style="text-align:center;"><h2 id="warEndTitle"></h2><p id="warEndBody"></p><div id="warEndChanges"></div><div class="btnrow" style="justify-content:center;margin-top:14px;"><button class="btn primary" onclick="returnToOffice()">▶ Ofise Dön</button></div></div></div>
+  <div class="modal" id="warEndModal"><div class="modal-content" style="text-align:center;"><h2 id="warEndTitle"></h2><p id="warEndBody"></p><div id="warEndChanges"></div><div class="btnrow" style="justify-content:center;margin-top:14px;"><button class="btn primary" id="warEndBtn" onclick="returnToOffice()">▶ Ofise Dön</button></div></div></div>
   <div id="toast"></div>
 </div>
 
@@ -324,7 +346,7 @@ const BUILD_TYPES=[
 ];
 
 // ============================ STATE ============================
-const G={scene:'map',year:1,month:1,selectedCountryId:null,player:null,countries:[],events:[],hoveredCountry:null,research:null,ministers:[],war:null,naval:null,notif:0,dialog:null,activePanelTabs:null,currentTab:null,worldTick:0};
+const G={scene:'map',year:1,month:1,selectedCountryId:null,player:null,countries:[],events:[],hoveredCountry:null,research:null,ministers:[],war:null,naval:null,notif:0,dialog:null,activePanelTabs:null,currentTab:null,worldTick:0,pendingWarTargetId:null,driving:false,campaign:null};
 
 function makeCountry(tpl){
  return {id:tpl.name.toLowerCase(),name:tpl.name,customName:tpl.name,color:tpl.color,capital:tpl.cap,biome:tpl.biome,polygon:tpl.polygon,isPlayer:false,
@@ -340,7 +362,45 @@ function makeCountry(tpl){
 function initWorld(){
  G.countries=COUNTRY_TEMPLATES.map(t=>makeCountry(t));
  G.countries.forEach(a=>G.countries.forEach(b=>{if(a.id!==b.id)a.relations[b.id]=irand(35,65);}));
+ computeNeighbors();
 }
+// ---- Komşuluk: polygon kenarları arasındaki en kısa mesafeye göre ----
+function segDist(ax,ay,bx,by,cx,cy,dx,dy){
+ function ptSeg(px,py,x1,y1,x2,y2){
+  const vx=x2-x1,vy=y2-y1,wx=px-x1,wy=py-y1;
+  const c1=vx*wx+vy*wy;if(c1<=0)return Math.hypot(px-x1,py-y1);
+  const c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(px-x2,py-y2);
+  const t=c1/c2;return Math.hypot(px-(x1+t*vx),py-(y1+t*vy));
+ }
+ return Math.min(ptSeg(ax,ay,cx,cy,dx,dy),ptSeg(bx,by,cx,cy,dx,dy),ptSeg(cx,cy,ax,ay,bx,by),ptSeg(dx,dy,ax,ay,bx,by));
+}
+function polyDist(p1,p2){
+ let m=1e9;
+ for(let i=0;i<p1.length;i++){const a=p1[i],b=p1[(i+1)%p1.length];
+  for(let j=0;j<p2.length;j++){const c=p2[j],d=p2[(j+1)%p2.length];
+   m=Math.min(m,segDist(a[0],a[1],b[0],b[1],c[0],c[1],d[0],d[1]));}}
+ return m;
+}
+function isCoastalCountry(c){return c.biome==='coastal'||(c.buildings&&(c.buildings.port||0)>0);}
+function computeNeighbors(){
+ const LAND_T=34, SEA_T=125;
+ G.countries.forEach(c=>{c.landNeighbors=[];c.seaNeighbors=[];c._neighDist={};});
+ for(let i=0;i<G.countries.length;i++)for(let j=i+1;j<G.countries.length;j++){
+  const a=G.countries[i],b=G.countries[j];
+  const dist=polyDist(a.polygon,b.polygon);
+  a._neighDist[b.id]=dist;b._neighDist[a.id]=dist;
+  if(dist<LAND_T){a.landNeighbors.push(b.id);b.landNeighbors.push(a.id);}
+  else if(dist<SEA_T){a.seaNeighbors.push(b.id);b.seaNeighbors.push(a.id);}
+ }
+ G.countries.forEach(c=>{
+  if(c.landNeighbors.length===0&&c.seaNeighbors.length===0){
+   let best=null,bd=1e9;G.countries.forEach(o=>{if(o!==c&&c._neighDist[o.id]<bd){bd=c._neighDist[o.id];best=o;}});
+   if(best){c.landNeighbors.push(best.id);best.landNeighbors.push(c.id);}
+  }
+ });
+}
+function isNeighbor(o){const p=G.player;return p&&((p.landNeighbors||[]).includes(o.id)||(p.seaNeighbors||[]).includes(o.id));}
+function neighborType(o){const p=G.player;if(!p)return null;if((p.landNeighbors||[]).includes(o.id))return 'land';if((p.seaNeighbors||[]).includes(o.id))return 'sea';return null;}
 function initMinisters(){
  const roles=['Maliye Bakanı','Savunma Bakanı','Eğitim Bakanı','Dışişleri Bakanı'];
  G.ministers=roles.map(r=>({name:pick(MINISTER_NAMES),role:r,trait:pick(MINISTER_TRAITS),loyalty:irand(60,90)}));
@@ -588,10 +648,13 @@ function renderPanel(tab){
   <div class="card"><h3>🎭 Kültürel Bayramlar</h3><div class="grid">`+FESTIVALS.map(f=>`<div><div style="font-weight:700;margin-bottom:3px;">${f.name}</div><div class="desc">${f.desc}</div><button class="btn primary" onclick="act_fest('${f.id}')">Düzenle (-${f.cost})</button></div>`).join('')+`</div></div>`;
  }
  else if(tab==='diplomacy'){
-  p.innerHTML=`<h2>🤝 Diplomasi</h2>`+G.countries.filter(o=>!o.isPlayer).map(o=>{
+  const others=G.countries.filter(o=>!o.isPlayer).slice().sort((a,b)=>(isNeighbor(b)?1:0)-(isNeighbor(a)?1:0)||(a._neighDist[c.id]||999)-(b._neighDist[c.id]||999));
+  p.innerHTML=`<h2>🤝 Diplomasi</h2><div class="card"><div class="desc">⚔️ Savaş yalnızca <b style="color:#ffd86b">kara veya deniz komşularına</b> ilan edilebilir. Savaş kararı için Dışişleri sizi <b>Genelkurmay</b>'a yönlendirir — arabanıza binip askeri üsse gidin.</div></div>`+others.map(o=>{
    const rel=Math.round(c.relations[o.id]||50),atWar=c.atWarWith.includes(o.id),allied=c.alliedWith.includes(o.id);
-   return `<div class="country-row" style="border-color:${o.color}"><div style="flex:1;min-width:200px;"><div class="name">${o.customName} ${atWar?'<span style="color:#ff7878">⚔️ SAVAŞ</span>':''} ${allied?'<span style="color:#6fdc8c">🤝</span>':''}</div><div class="stats">İlişki: ${rel} · Asker: ${fmt(o.soldiers)} · Ordu: ${Math.round(o.military)} · ${o.aiTrait}</div></div><div class="actions">
-   ${!atWar?`<button class="btn danger" onclick="confirmWar('${o.id}')">⚔️ Savaş</button>`:`<button class="btn" onclick="act_peace('${o.id}')">Barış</button>`}
+   const nt=neighborType(o);const nbadge=nt==='land'?'<span style="color:#7ad07a">🗺️ Kara komşusu</span>':nt==='sea'?'<span style="color:#6fb8e8">⚓ Deniz komşusu</span>':'<span style="color:#778">🌐 Uzak</span>';
+   const pending=G.pendingWarTargetId===o.id;
+   return `<div class="country-row" style="border-color:${o.color};${nt?'':'opacity:.82;'}"><div style="flex:1;min-width:200px;"><div class="name">${o.customName} ${atWar?'<span style="color:#ff7878">⚔️ SAVAŞ</span>':''} ${allied?'<span style="color:#6fdc8c">🤝</span>':''} ${pending?'<span style="color:#ffb04a">⏳ Genelkurmaya gidin</span>':''}</div><div class="stats">${nbadge} · İlişki: ${rel} · Asker: ${fmt(o.soldiers)} · Ordu: ${Math.round(o.military)} · ${o.aiTrait}</div></div><div class="actions">
+   ${atWar?`<button class="btn" onclick="act_peace('${o.id}')">Barış</button>`:nt?(pending?`<button class="btn danger" onclick="requestWarPlanning('${o.id}')">⚔️ Yönergeyi gör</button>`:`<button class="btn danger" onclick="requestWarPlanning('${o.id}')">⚔️ Savaş Planla</button>`):`<span style="font-size:11px;color:#889;align-self:center;">komşu değil</span>`}
    ${!allied&&!atWar?`<button class="btn" onclick="act_alliance('${o.id}')">İttifak (-500)</button>`:''}
    <button class="btn" onclick="act_gift('${o.id}')">Hediye (-300)</button>
    <button class="btn" onclick="act_spy('${o.id}')">🕵️ Casus (-800)</button></div></div>`;}).join('');
@@ -666,10 +729,20 @@ function confirmWar(id){
  showModal('⚔️ Savaş İlan Et',`<b>${o.customName}</b>'a savaş?<br><br>Düşman: ${fmt(o.soldiers)} asker, ${o.tanks} tank<br>Sen: ${fmt(G.player.soldiers)} asker, ${G.player.tanks} tank<br><br><i>Saldıran sensin: kara savaşında açık alanda hücum edersin, denizde çıkartma yaparsın!</i>`,btns);
 }
 function doDeclareWar(o){
- G.player.atWarWith.push(o.id);o.atWarWith.push(G.player.id);
+ if(!G.player.atWarWith.includes(o.id)){G.player.atWarWith.push(o.id);o.atWarWith.push(G.player.id);}
  G.player.relations[o.id]=0;o.relations[G.player.id]=0;
  addEvent('war',`⚔️ ${o.customName}'a savaş ilan ettik!`);
  closePanel();
+}
+// Dışişleri → Genelkurmaya yönlendirme
+function requestWarPlanning(id){
+ const o=G.countries.find(x=>x.id===id);
+ if(!isNeighbor(o)){toast('Yalnızca komşulara savaş açılabilir!','bad');return;}
+ G.pendingWarTargetId=id;
+ const nt=neighborType(o)==='sea'?'deniz aşırı bir cephe':'kara cephesi';
+ showModal('🤝 Dışişleri Bakanı',
+  `<div style="line-height:1.7">Sayın Başkan, <b style="color:#ffd86b">${o.customName}</b> ile savaş ${nt} demek. Bu benim yetkimde değil — <b>savaşı Genelkurmay planlar.</b><br><br>Önce Başkanlık Sarayı'ndan <b>🏙️ Şehre çıkın</b>, sonra <b>🚗 makam aracınıza binip</b> şehrin doğusundaki <b>🎖️ Genelkurmay / Askeri Üs</b>'e gidin. Harita masasında tümenlerinizi cephelere yerleştirip harekâtı başlatabilirsiniz.</div>`,
+  [{text:'Anlaşıldı',cls:'primary',onClick:()=>{closePanel();toast('🎖️ Arabaya bin, doğudaki askeri üsse git!','good');}}]);
 }
 </script>
 
@@ -691,19 +764,33 @@ function drawMap(){
  mapCtx.strokeStyle='rgba(120,180,230,.08)';mapCtx.lineWidth=1;
  for(let y=0;y<h;y+=20){mapCtx.beginPath();for(let x=0;x<=w;x+=16){const yy=y+Math.sin(x*.03+G.worldTick*.02)*3;x===0?mapCtx.moveTo(x,yy):mapCtx.lineTo(x,yy);}mapCtx.stroke();}
  mapCtx.save();mapCtx.translate(t.ox,t.oy);mapCtx.scale(t.s,t.s);
+ const cById=id=>G.countries.find(x=>x.id===id);
+ const ctrOf=c=>{if(!c._ctr)c._ctr=polyCenter(c.polygon);return c._ctr;};
+ // ---- komşuluk bağlantı çizgileri (kara: sarı düz, deniz: mavi kesik) ----
+ const drawnLink={};
  G.countries.forEach(c=>{
-  const hover=c===G.hoveredCountry;
+  const a=ctrOf(c);
+  (c.landNeighbors||[]).forEach(id=>{const key=[c.id,id].sort().join('|');if(drawnLink[key])return;drawnLink[key]=1;const o=cById(id);if(!o)return;const b=ctrOf(o);mapCtx.setLineDash([]);mapCtx.strokeStyle='rgba(255,216,107,.22)';mapCtx.lineWidth=1.6;mapCtx.beginPath();mapCtx.moveTo(a.x,a.y);mapCtx.lineTo(b.x,b.y);mapCtx.stroke();});
+  (c.seaNeighbors||[]).forEach(id=>{const key=[c.id,id].sort().join('|');if(drawnLink[key])return;drawnLink[key]=1;const o=cById(id);if(!o)return;const b=ctrOf(o);mapCtx.setLineDash([6,6]);mapCtx.strokeStyle='rgba(110,184,232,.22)';mapCtx.lineWidth=1.4;mapCtx.beginPath();mapCtx.moveTo(a.x,a.y);mapCtx.lineTo(b.x,b.y);mapCtx.stroke();});
+ });
+ mapCtx.setLineDash([]);
+ const hov=G.hoveredCountry;
+ const hovNeigh=hov?new Set([...(hov.landNeighbors||[]),...(hov.seaNeighbors||[])]):null;
+ G.countries.forEach(c=>{
+  const hover=c===hov;
+  const isHovNeigh=hovNeigh&&hovNeigh.has(c.id);
   mapCtx.beginPath();
   c.polygon.forEach((p,i)=>{i===0?mapCtx.moveTo(p[0],p[1]):mapCtx.lineTo(p[0],p[1]);});
   mapCtx.closePath();
-  mapCtx.fillStyle=c.color;mapCtx.globalAlpha=hover?1:.8;mapCtx.fill();mapCtx.globalAlpha=1;
-  mapCtx.strokeStyle=hover?'#ffd86b':'rgba(0,0,0,.6)';mapCtx.lineWidth=hover?3:1.5;mapCtx.stroke();
-  const ctr=polyCenter(c.polygon);
+  mapCtx.fillStyle=c.color;mapCtx.globalAlpha=hover?1:isHovNeigh?.92:hov?.45:.8;mapCtx.fill();mapCtx.globalAlpha=1;
+  mapCtx.strokeStyle=hover?'#ffd86b':isHovNeigh?'#7ad0ff':'rgba(0,0,0,.6)';mapCtx.lineWidth=hover?3:isHovNeigh?2.4:1.5;mapCtx.stroke();
+  const ctr=ctrOf(c);
   mapCtx.fillStyle='#ffd86b';mapCtx.beginPath();mapCtx.arc(ctr.x,ctr.y,4,0,Math.PI*2);mapCtx.fill();
   mapCtx.fillStyle='#fff';mapCtx.font='bold 13px Georgia';mapCtx.textAlign='center';
   mapCtx.strokeStyle='#000';mapCtx.lineWidth=3;
   mapCtx.strokeText(c.customName.toUpperCase(),ctr.x,ctr.y-12);
   mapCtx.fillText(c.customName.toUpperCase(),ctr.x,ctr.y-12);
+  if(isHovNeigh){const lt=(hov.landNeighbors||[]).includes(c.id)?'🗺️ kara komşusu':'⚓ deniz komşusu';mapCtx.font='bold 10px Segoe UI';mapCtx.fillStyle='#7ad0ff';mapCtx.strokeText(lt,ctr.x,ctr.y+16);mapCtx.fillText(lt,ctr.x,ctr.y+16);}
  });
  mapCtx.restore();
 }
@@ -766,24 +853,26 @@ function init3D(){
  if(THREE.SRGBColorSpace)renderer.outputColorSpace=THREE.SRGBColorSpace;
  else if(renderer.outputEncoding!==undefined)renderer.outputEncoding=3001; // sRGBEncoding
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
- renderer.toneMappingExposure=1.15;
+ renderer.toneMappingExposure=1.22;
  $('threeWrap').appendChild(renderer.domElement);
  $('threeWrap').classList.remove('hidden');
+ if(!document.getElementById('cineGrade')){const cg=document.createElement('div');cg.id='cineGrade';document.body.appendChild(cg);}
  camera=new THREE.PerspectiveCamera(62,window.innerWidth/window.innerHeight,.1,800);
  camera.rotation.order='YXZ';
  clock=new THREE.Clock();
  window.addEventListener('resize',()=>{renderer.setSize(window.innerWidth,window.innerHeight);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();});
- document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;for(const k in keys)keys[k]=false;$('lockHint').style.display=(G.scene==='office'||G.scene==='city')?'block':'none';});
+ document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;for(const k in keys)keys[k]=false;$('lockHint').style.display=(G.scene==='office'||G.scene==='city'||G.scene==='genstaff')?'block':'none';});
  window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
  document.addEventListener('mousemove',e=>{
   if(!locked)return;
-  player.yaw-=e.movementX*.0024;
-  player.pitch-=e.movementY*.0024;
+  const s=(G.scene==='war'&&G.war&&G.war.ads)?.0014:.0024;
+  player.yaw-=e.movementX*s;
+  player.pitch-=e.movementY*s;
   player.pitch=clamp(player.pitch,-1.35,1.35);
  });
  renderer.domElement.addEventListener('click',()=>{
-  if(G.activePanelTabs||G.dialog)return;
-  if((G.scene==='office'||G.scene==='city'||G.scene==='war')&&!locked){try{renderer.domElement.requestPointerLock();}catch(e){}}
+  if(G.activePanelTabs||G.dialog||G.planner)return;
+  if((G.scene==='office'||G.scene==='city'||G.scene==='genstaff'||G.scene==='war')&&!locked&&!G.driving){try{renderer.domElement.requestPointerLock();}catch(e){}}
  });
  window.addEventListener('keydown',e=>{
   if(e.key.toLowerCase()==='e')onInteract();
@@ -880,7 +969,7 @@ function addPlant(scene,x,z){
 const ROOMS=[
  {id:'economy',name:'EKONOMİ ODASI',side:'west',cz:-12,color:0x2a4a3a,carpet:0x1d3a2a,
   npc:{name:'Maliye Bakanı',emoji:'💼',suit:0x2a3a55,lines:['Başkanım, hoş geldiniz! Hazine raporları masamda.','Vergileri, bütçeyi ve inşaatları buradan yönetebiliriz.','Bilgisayarı açıyorum, buyrun...']},
-  tabs:['economy','budget','resources','build','tech']},
+  tabs:['economy','budget','resources','build']},
  {id:'army',name:'ORDU ODASI',side:'west',cz:0,color:0x3a3326,carpet:0x2c2618,
   npc:{name:'Genelkurmay Başkanı',emoji:'⚔️',suit:0x33402a,lines:['Komutanım! Ordu emrinizde.','Asker alımı, doktrinler ve askeri reformlar için buradayım.','Harita masasına gelin, durumu gösereyim...']},
   tabs:['military','armydetail']},
@@ -901,6 +990,7 @@ const ROOMS=[
 function buildOffice(){
  officeScene=new THREE.Scene();
  officeScene.background=new THREE.Color(0x1a1d26);
+ applyEnv(officeScene);
  const amb=new THREE.AmbientLight(0xd8d0c0,.85);officeScene.add(amb);
  officeScene.add(new THREE.HemisphereLight(0xfff0d8,0x3a3328,.6));
  const sun=new THREE.DirectionalLight(0xfff2e0,.7);sun.position.set(10,20,5);officeScene.add(sun);
@@ -1083,7 +1173,7 @@ function baldrickTalk(){
  if(c.food<35)tips.push('Kıtlık kapıda! Çiftlik inşa edin efendim.');
  if(c.military<30)tips.push('Ordumuz zayıf. Komşular bunu fark etmeden asker alın.');
  if(c.inflation>10)tips.push('Enflasyon canavarı büyüyor. Banka inşa edin, para basmayın.');
- if(!G.research)tips.push('Laboratuvar boş duruyor. Ekonomi odasından bir teknoloji araştırın.');
+ if(!G.research)tips.push('Laboratuvar boş duruyor. Şehirdeki 🔬 Araştırma Merkezi\'ne gidip bir teknoloji başlatın.');
  if(tips.length===0)tips.push('Her şey yolunda görünüyor efendim. Şüpheli derecede yolunda...');
  G.dialog={lines:['Kurnaz bir planım var efendim!',pick(tips),'Bir de... maaş zammı mümkün mü efendim? (değil mi... peki.)'],idx:0,name:'🥔 Danışman Baldrick',after:null};
  showDialogLine();
@@ -1124,7 +1214,12 @@ function updateInteract(){
 }
 function onInteract(){
  if(G.dialog){advanceDialog();return;}
- if(G.activePanelTabs)return;
+ if(G.activePanelTabs||G.planner)return;
+ if(G.scene==='city'&&G.driving){
+  // sürerken E: genelkurmay kapısındaysa gir, değilse arabadan in
+  if(nearInteract&&nearInteract.isGsDoor){exitCar(true);enterGenStaff();return;}
+  exitCar();return;
+ }
  if(nearInteract)nearInteract.action();
 }
 
@@ -1132,6 +1227,7 @@ function onInteract(){
 function buildCity(){
  cityScene=new THREE.Scene();
  cityScene.background=makeSkyTexture('#4a86c8','#9fc4e8','#dceaf2');
+ applyEnv(cityScene);
  cityScene.fog=new THREE.Fog(0xbcd4e8,120,480);
  const amb=new THREE.AmbientLight(0xc8d8f0,.7);cityScene.add(amb);
  cityScene.add(new THREE.HemisphereLight(0xbfe0ff,0x5a7a4a,.8));
@@ -1159,8 +1255,11 @@ function buildCity(){
  for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
   if(Math.random()<.5)continue;
   const lx=gx*45+9,lz=gz*45+9;
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,6),new THREE.MeshLambertMaterial({color:0x2a2a30}));pole.position.set(lx,3,lz);cityScene.add(pole);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.4,8,8),new THREE.MeshBasicMaterial({color:0xfff0b0}));head.position.set(lx,6,lz);cityScene.add(head);
+  if(hasModel('lamp')){const lm=getModel('lamp',{yaw:rand(0,Math.PI*2)});lm.position.set(lx,0,lz);cityScene.add(lm);}
+  else{
+   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,6),new THREE.MeshLambertMaterial({color:0x2a2a30}));pole.position.set(lx,3,lz);cityScene.add(pole);
+   const head=new THREE.Mesh(new THREE.SphereGeometry(.4,8,8),new THREE.MeshBasicMaterial({color:0xfff0b0}));head.position.set(lx,6,lz);cityScene.add(head);
+  }
   const lp=new THREE.PointLight(0xffe0a0,.4,18);lp.position.set(lx,6,lz);cityScene.add(lp);
  }
  // Office building (player spawn in front)
@@ -1178,13 +1277,45 @@ function buildCity(){
  const fp=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,8),new THREE.MeshLambertMaterial({color:0x222}));
  fp.position.set(-2,18,0);off.add(fp);
  off.position.set(0,0,-30);
- cityScene.add(off);
+ let palaceObj=off;
+ if(hasModel('palace')){palaceObj=getModel('palace');palaceObj.position.set(0,0,-30);
+  const fpole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,9),new THREE.MeshLambertMaterial({color:0x222}));fpole.position.set(9,21,-22);cityScene.add(fpole);
+  const fflag=new THREE.Mesh(new THREE.PlaneGeometry(4,2.4),new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color),side:THREE.DoubleSide}));fflag.position.set(11,23.5,-22);cityScene.add(fflag);}
+ cityScene.add(palaceObj);
  addCityCollider(0,-30,26,16);
  const offSign=makeTextSprite('🏛️ BAŞKANLIK SARAYI',{w:8});
  offSign.position.set(0,16.5,-20);cityScene.add(offSign);
  // Door back into office
  cityInteractables.length=0;
  cityInteractables.push({scene:'city',x:0,z:-20.5,radius:4,label:'<b>E</b> — Ofise gir',action:()=>enterOffice()});
+
+ // ===== Makam aracı (park halinde, sarayın yanında) =====
+ playerCar=makePlayerCar(new THREE.Color(G.player.color).getHex());
+ playerCar.position.set(CAR_PARK.x,0,CAR_PARK.z);playerCar.userData.heading=Math.PI;
+ cityScene.add(playerCar);
+ const carSign=makeTextSprite('🚗 Makam Aracı — E ile bin',{w:5,border:'#ffd86b',color:'#ffd86b'});
+ carSign.position.set(CAR_PARK.x,3.2,CAR_PARK.z);cityScene.add(carSign);
+ cityInteractables.push({scene:'city',x:CAR_PARK.x,z:CAR_PARK.z,radius:4,label:'<b>E</b> — 🚗 Arabaya bin (WASD ile sür)',action:()=>enterCar(),isCar:true});
+
+ // ===== Genelkurmay / Askeri Üs (şehrin doğusunda, uzakta — araba ile git) =====
+ const gsB=buildGenStaffExterior();
+ gsB.position.set(GENSTAFF_POS.x,0,GENSTAFF_POS.z);cityScene.add(gsB);
+ addCityCollider(GENSTAFF_POS.x,GENSTAFF_POS.z+6,40,26);
+ const gsSign=makeTextSprite('🎖️ GENELKURMAY — ASKERİ ÜS',{w:11});
+ gsSign.position.set(GENSTAFF_POS.x,18,GENSTAFF_POS.z+2);cityScene.add(gsSign);
+ const gsDoorZ=GENSTAFF_POS.z-9;
+ cityInteractables.push({scene:'city',x:GENSTAFF_POS.x,z:gsDoorZ,radius:6,label:'<b>E</b> — 🎖️ Genelkurmaya gir',action:()=>enterGenStaff(),isGsDoor:true});
+ // yol işareti: doğuya ok
+ const arrowSign=makeTextSprite('→ Genelkurmay bu yönde',{w:6,border:'#7ad0ff',color:'#7ad0ff'});
+ arrowSign.position.set(60,5,3);cityScene.add(arrowSign);
+
+ // ===== Araştırma Merkezi (şehirde, yürüyerek ulaşılır) =====
+ const rcB=buildResearchCenter();
+ rcB.position.set(RESEARCH_POS.x,0,RESEARCH_POS.z);cityScene.add(rcB);
+ addCityCollider(RESEARCH_POS.x,RESEARCH_POS.z,18,14);
+ const rcSign=makeTextSprite('🔬 ARAŞTIRMA MERKEZİ',{w:8});
+ rcSign.position.set(RESEARCH_POS.x,12,RESEARCH_POS.z-8);cityScene.add(rcSign);
+ cityInteractables.push({scene:'city',x:RESEARCH_POS.x,z:RESEARCH_POS.z-9,radius:5,label:'<b>E</b> — 🔬 Araştırma merkezine gir',action:()=>openResearchCenter()});
 
  // Buildings from player's economy
  const b=G.player.buildings;
@@ -1227,15 +1358,19 @@ function buildCity(){
   h.rotation.y=rand(0,Math.PI*2);
   cityScene.add(h);
  }
- // Trees (2 katmanlı yaprak, daha dolgun)
+ // Trees
  for(let i=0;i<55;i++){
-  const t=new THREE.Group();
-  const tr=new THREE.Mesh(new THREE.CylinderGeometry(.25,.35,2.4),new THREE.MeshLambertMaterial({color:0x5a3a20}));
-  tr.position.y=1.2;t.add(tr);
-  const le=new THREE.Mesh(new THREE.SphereGeometry(rand(1.4,2.2),8,7),new THREE.MeshLambertMaterial({color:0x3a7a2a}));
-  le.position.y=3.2;le.castShadow=true;t.add(le);
-  const le2=new THREE.Mesh(new THREE.SphereGeometry(rand(1.0,1.6),8,7),new THREE.MeshLambertMaterial({color:0x4a8a36}));
-  le2.position.set(rand(-.6,.6),4.2,rand(-.6,.6));t.add(le2);
+  let t;
+  if(hasModel('tree')){t=getModel('tree',{yaw:rand(0,Math.PI*2)});t.scale.setScalar(rand(.8,1.5));}
+  else{
+   t=new THREE.Group();
+   const tr=new THREE.Mesh(new THREE.CylinderGeometry(.25,.35,2.4),new THREE.MeshLambertMaterial({color:0x5a3a20}));
+   tr.position.y=1.2;t.add(tr);
+   const le=new THREE.Mesh(new THREE.SphereGeometry(rand(1.4,2.2),8,7),new THREE.MeshLambertMaterial({color:0x3a7a2a}));
+   le.position.y=3.2;le.castShadow=true;t.add(le);
+   const le2=new THREE.Mesh(new THREE.SphereGeometry(rand(1.0,1.6),8,7),new THREE.MeshLambertMaterial({color:0x4a8a36}));
+   le2.position.set(rand(-.6,.6),4.2,rand(-.6,.6));t.add(le2);
+  }
   const ang=rand(0,Math.PI*2),rr=rand(40,230);
   t.position.set(Math.cos(ang)*rr,0,Math.sin(ang)*rr);
   cityScene.add(t);
@@ -1271,12 +1406,13 @@ function buildPort(){const g=new THREE.Group();const w=new THREE.Mesh(new THREE.
 function buildMarket(){const g=new THREE.Group();for(let i=0;i<3;i++){const st=bbox(3,2,2.4,0xb08858);st.position.set(i*4-4,1,0);g.add(st);const aw=new THREE.Mesh(new THREE.BoxGeometry(3.4,.15,3),new THREE.MeshLambertMaterial({color:i%2?0xcc4444:0x44aa66}));aw.position.set(i*4-4,2.3,.3);g.add(aw);}return g;}
 function buildRefinery(){const g=new THREE.Group();for(let i=0;i<3;i++){const t=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,6,14),new THREE.MeshLambertMaterial({color:0xc0c4cc}));t.position.set(i*5.5-5.5,3,0);t.castShadow=true;g.add(t);}const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,12),new THREE.MeshLambertMaterial({color:0x8a8e96}));pipe.rotation.z=Math.PI/2;pipe.position.y=5.5;g.add(pipe);return g;}
 function buildBank(){const g=new THREE.Group();g.add(bbox(10,7,8,0xd8d4c8));for(let i=-1;i<=1;i++){const col=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,6),new THREE.MeshLambertMaterial({color:0xe8e4d8}));col.position.set(i*3,3,4.4);g.add(col);}const sign=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,.3,16),new THREE.MeshBasicMaterial({color:0xd8b040}));sign.rotation.x=Math.PI/2;sign.position.set(0,8,4);g.add(sign);return g;}
-function buildHouse(){const g=new THREE.Group();const w=rand(4,6),d=rand(4,6);g.add(bbox(w,3,d,pick([0xc8b8a0,0xb8a890,0xd0c0a8,0xa89880])));const roof=new THREE.Mesh(new THREE.ConeGeometry(Math.max(w,d)*.8,2,4),new THREE.MeshLambertMaterial({color:0x8a4030}));roof.position.y=4;roof.rotation.y=Math.PI/4;g.add(roof);return g;}
+function buildHouse(){if(hasModel('house')){const m=getModel('house',{yaw:rand(0,Math.PI*2)});m.scale.setScalar(rand(.9,1.3));return m;}const g=new THREE.Group();const w=rand(4,6),d=rand(4,6);g.add(bbox(w,3,d,pick([0xc8b8a0,0xb8a890,0xd0c0a8,0xa89880])));const roof=new THREE.Mesh(new THREE.ConeGeometry(Math.max(w,d)*.8,2,4),new THREE.MeshLambertMaterial({color:0x8a4030}));roof.position.y=4;roof.rotation.y=Math.PI/4;g.add(roof);return g;}
 
 // ============================ SCENE SWITCH ============================
 function enterOffice(){
  if(!officeScene)buildOffice();
- G.scene='office';curScene=officeScene;
+ if(camera){camera.fov=62;camera.updateProjectionMatrix();}
+ G.scene='office';curScene=officeScene;G.driving=false;
  for(const k in keys)keys[k]=false;
  player.pos.set(0,1.7,12);player.yaw=0;player.pitch=0;
  $('hud').style.display='flex';
@@ -1290,7 +1426,8 @@ function enterOffice(){
 }
 function enterCity(){
  if(!cityScene||G.cityDirty)buildCity();
- G.scene='city';curScene=cityScene;
+ if(camera){camera.fov=62;camera.updateProjectionMatrix();}
+ G.scene='city';curScene=cityScene;G.driving=false;
  for(const k in keys)keys[k]=false;
  player.pos.set(0,1.7,-14);player.yaw=Math.PI;player.pitch=0;
  $('sceneLabel').textContent='🏙️ '+G.player.customName+' — Başkent '+G.player.capital;
@@ -1314,7 +1451,7 @@ function tryMove(nx,nz,cols){
  player.pos.x=x;player.pos.z=z;
 }
 function updateWalk(dt){
- if(G.dialog||G.activePanelTabs)return;
+ if(G.dialog||G.activePanelTabs||G.planner)return;
  // --- BAKIŞ ---
  // Fare kilidi varsa fareyle bakış (global mousemove) çalışır.
  // Ok tuşları her zaman bakışı kontrol eder (fareye gerek yok):
@@ -1337,12 +1474,15 @@ function updateWalk(dt){
  if(mvx||mvz){
   const len=Math.hypot(mvx,mvz);mvx/=len;mvz/=len;
   const sp=(keys['shift']?8.5:5)*dt;
-  const cols=G.scene==='office'?colliders:cityColliders;
+  const cols=G.scene==='office'?colliders:G.scene==='genstaff'?gsColliders:cityColliders;
   tryMove(player.pos.x+mvx*sp,player.pos.z+mvz*sp,cols);
  }
  if(G.scene==='office'){
   player.pos.x=clamp(player.pos.x,-22.2,22.2);
   player.pos.z=clamp(player.pos.z,-18.2,18.2);
+ } else if(G.scene==='genstaff'){
+  player.pos.x=clamp(player.pos.x,-13.4,13.4);
+  player.pos.z=clamp(player.pos.z,-13.4,15.4);
  } else {
   player.pos.x=clamp(player.pos.x,-240,240);
   player.pos.z=clamp(player.pos.z,-240,240);
@@ -1351,13 +1491,20 @@ function updateWalk(dt){
 function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(.05,clock.getDelta());
- if(G.scene==='office'||G.scene==='city'){
-  updateWalk(dt);
-  camera.position.copy(player.pos);
-  camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
+ const _cg=document.getElementById('cineGrade');
+ if(_cg){const on=(G.scene==='office'||G.scene==='city'||G.scene==='war'||G.scene==='naval'||G.scene==='genstaff')&&!G.planner&&!G.activePanelTabs;_cg.style.opacity=on?'1':'0';}
+ if(G.scene==='office'||G.scene==='city'||G.scene==='genstaff'){
+  if(G.scene==='city'&&G.driving){
+   updateDrive(dt);
+  } else {
+   updateWalk(dt);
+   camera.position.copy(player.pos);
+   camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
+  }
   // idle NPC bob
   const t=clock.elapsedTime;
   if(G.scene==='office')Object.values(officeNPCs).forEach((n,i)=>{n.mesh.position.y=Math.sin(t*1.5+i)*.02;});
+  if(G.scene==='genstaff')gsNPCs.forEach((n,i)=>{n.position.y=Math.sin(t*1.4+i)*.025;});
   // şehir arabaları
   if(G.scene==='city'&&cityCars.length){
    cityCars.forEach(car=>{
@@ -1367,6 +1514,8 @@ function animate(){
     else{car.position.set(u.lane+2.2,0,u.pos);car.rotation.y=u.sp>0?Math.PI/2:-Math.PI/2;}
    });
   }
+  // araba etkileşimini aracın güncel konumuyla senkronla (park yerinden ayrılsa da bin)
+  if(G.scene==='city'&&playerCar&&!G.driving){const ci=cityInteractables.find(i=>i.isCar);if(ci){ci.x=playerCar.position.x;ci.z=playerCar.position.z;}}
   // city interactables share list
   updateInteractList();
   updateInteract();
@@ -1389,16 +1538,18 @@ let interactablesView=[];
 // patch updateInteract to use view
 function updateInteract(){
  nearInteract=null;
- if(G.dialog||G.activePanelTabs){$('interactPrompt').style.display='none';return;}
- const list=G.scene==='city'?cityInteractables:interactables;
+ if(G.dialog||G.activePanelTabs||G.planner){$('interactPrompt').style.display='none';return;}
+ const list=G.scene==='city'?cityInteractables:G.scene==='genstaff'?gsInteractables:interactables;
  let best=null,bd=99;
  list.forEach(it=>{
+  if(G.driving&&it.isCar)return; // sürerken araba istemini gösterme
   const dx=player.pos.x-it.x,dz=player.pos.z-it.z;
   const d=Math.hypot(dx,dz);
   if(d<it.radius&&d<bd){bd=d;best=it;}
  });
  nearInteract=best;
- if(best){$('interactPrompt').innerHTML=best.label;$('interactPrompt').style.display='block';}
+ if(best){const lbl=(G.driving&&best.isGsDoor)?'<b>E</b> — 🎖️ Genelkurmaya gir (arabadan in)':best.label;$('interactPrompt').innerHTML=lbl;$('interactPrompt').style.display='block';}
+ else if(G.driving){$('interactPrompt').innerHTML='<b>E</b> — 🚗 Arabadan in';$('interactPrompt').style.display='block';}
  else $('interactPrompt').style.display='none';
 }
 </script>
@@ -1422,6 +1573,7 @@ window.addEventListener('keydown',e=>{
 });
 
 function makeWarSoldier(color){
+ if(hasModel('soldier'))return getModel('soldier',{recolor:color});
  const g=new THREE.Group();
  const mat=c=>new THREE.MeshLambertMaterial({color:c});
  const body=new THREE.Mesh(new THREE.BoxGeometry(.55,.9,.35),mat(color));body.position.y=.85;body.castShadow=true;g.add(body);
@@ -1432,6 +1584,7 @@ function makeWarSoldier(color){
  return g;
 }
 function makeWarTank(color){
+ if(hasModel('tank'))return getModel('tank');
  const g=new THREE.Group();
  const mat=c=>new THREE.MeshLambertMaterial({color:c});
  const hull=new THREE.Mesh(new THREE.BoxGeometry(3.2,.9,2.1),mat(color));hull.position.y=.75;hull.castShadow=true;g.add(hull);
@@ -1465,25 +1618,43 @@ function makeMGMesh(color){
  return g;
 }
 function warTracer(from,to,color){
- const geom=new THREE.BufferGeometry().setFromPoints([from,to]);
- const line=new THREE.Line(geom,new THREE.LineBasicMaterial({color,transparent:true,opacity:.8}));
- warScene.add(line);
- G.war.fx.push({mesh:line,life:6});
+ const dir=new THREE.Vector3().subVectors(to,from);const len=dir.length();
+ if(len<0.01)return;
+ const geom=new THREE.CylinderGeometry(0.055,0.055,len,5,1,true);
+ const m=new THREE.Mesh(geom,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.92,blending:THREE.AdditiveBlending,depthWrite:false}));
+ m.position.copy(from).addScaledVector(dir,0.5);
+ m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+ warScene.add(m);
+ G.war.fx.push({mesh:m,life:7});
+}
+function warMuzzle(pos){
+ if(!G.war)return;
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffd060,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false}));
+ s.position.copy(pos);s.scale.setScalar(1.3);
+ warScene.add(s);
+ G.war.fx.push({mesh:s,life:5});
 }
 function warExplosion(pos,sz=1){
  const m=new THREE.Mesh(new THREE.SphereGeometry(.5,12,10),new THREE.MeshBasicMaterial({color:0xffb030,transparent:true,opacity:1}));
  m.position.copy(pos);warScene.add(m);
  G.war.fx.push({mesh:m,life:22,grow:.5*sz,isExpl:true});
+ sfx('explosion');
+ const d=camera.position.distanceTo(pos);shake(clamp((1-d/45)*sz*.5,0,.8));
 }
 
 function startWar(playerCountry,enemyCountry,defending){
- hideWarUI();closePanel();$('dialogBox').style.display='none';G.dialog=null;
+ hideWarUI();closePanel();$('dialogBox').style.display='none';G.dialog=null;ensureWarHud();
  for(const k in keys)keys[k]=false;
  const isAssault=!defending;
- const targetKills=Math.round((isAssault?14:11)+enemyCountry.military*.2);
- const lives=Math.min(40,Math.max(14,Math.floor(playerCountry.soldiers/3000)));
+ const buff=G._battleBuff||{};
+ let targetKills=Math.round((isAssault?14:11)+enemyCountry.military*.2);
+ let lives=Math.min(40,Math.max(14,Math.floor(playerCountry.soldiers/3000)));
+ targetKills=Math.max(6,Math.round(targetKills*(buff.targetMul||1)));
+ lives+= (buff.extraLives||0);
+ const allyCount=Math.min(16,8+(buff.extraAllies||0));
  warScene=new THREE.Scene();
  warScene.background=makeSkyTexture('#5a82b8','#a8c0dc','#e0d4bc');
+ applyEnv(warScene);
  warScene.fog=new THREE.Fog(0xc8cdc8,110,340);
  warScene.add(new THREE.AmbientLight(0xc8d0e0,1.05));
  const sun=new THREE.DirectionalLight(0xfff4e0,1.15);sun.position.set(40,80,30);sun.castShadow=true;
@@ -1564,11 +1735,13 @@ function startWar(playerCountry,enemyCountry,defending){
   spawnTimer:60,supplyTimer:1800,supplyCrate:null,
   inTank:false,respawning:false,respawnTimer:0,
   over:false,time:0,enemyArtyTimer:600,
+  shake:0,recoil:0,ads:false,allyMax:allyCount,
  };
  // allies
- for(let i=0;i<8;i++){
+ w.allyMax=allyCount;
+ for(let i=0;i<allyCount;i++){
   const m=makeWarSoldier(new THREE.Color(playerCountry.color).getHex());
-  m.position.set(-14+i*4,0,isAssault?36:32);
+  m.position.set(-14+(i%8)*4,0,(isAssault?36:32)+(i>=8?-3:0));
   warScene.add(m);
   w.allies.push({mesh:m,dead:false,fireCool:irand(60,160),advTarget:isAssault?rand(-40,-30):null,speed:rand(.8,1.6)});
  }
@@ -1619,7 +1792,7 @@ function startWar(playerCountry,enemyCountry,defending){
  G.scene='war';
  $('warTitle').textContent=(isAssault?'⚔️ TAARRUZ: ':'🛡️ SAVUNMA: ')+playerCountry.customName+' vs '+enemyCountry.customName;
  $('enemyTarget').textContent=targetKills;$('enemyKilled').textContent=0;
- $('livesText').textContent=lives;$('artyText').textContent=w.artyShells;$('allyAlive').textContent=8;
+ $('livesText').textContent=lives;$('artyText').textContent=w.artyShells;$('allyAlive').textContent=allyCount;
  $('warStartTitle').textContent=isAssault?'⚔️ TAARRUZ EMRİ':'🛡️ VATAN SAVUNMASI';
  $('warStartDesc').innerHTML=(isAssault
   ?'Düşman bunkerlerini, topçularını ve makineli mevzilerini <b>yok et</b>! Askerlerin seninle hücum edecek.<br>'
@@ -1637,7 +1810,7 @@ function startWar(playerCountry,enemyCountry,defending){
 function warReload(){
  const w=G.war;
  if(w.reloading||w.mag===30||w.reserve===0)return;
- w.reloading=true;
+ w.reloading=true;sfx('reload');
  setTimeout(()=>{if(!G.war)return;const need=30-w.mag,take=Math.min(need,w.reserve);w.mag+=take;w.reserve-=take;w.reloading=false;},1300);
 }
 function warGrenade(){
@@ -1699,7 +1872,8 @@ function warFire(){
  if(w.reloading)return;
  if(w.mag<=0){warReload();return;}
  if(w.shootCool>0)return;
- w.shootCool=8;w.mag--;
+ w.shootCool=w.ads?7:8;w.mag--;
+ muzzle();sfx('shot');w.recoil=(w.recoil||0)+(w.ads?.004:.009);shake(w.ads?.015:.04);
  const dir=new THREE.Vector3();camera.getWorldDirection(dir);
  const origin=camera.position.clone();
  const ray=new THREE.Raycaster(origin,dir,0,180);
@@ -1722,8 +1896,11 @@ function warFire(){
    const {ent,kind}=rec;
    const dmg=kind==='soldier'?60:kind==='mg'?22:kind==='arty'?18:kind==='tank'?7:9;
    ent.hp-=dmg;
+   hitMark(ent.hp<=0);sfx('hit');
    if(ent.hp<=0&&!ent.dead){
     ent.dead=true;
+    const knm={soldier:'asker',mg:'makineli',arty:'topçu',tank:'tank',bunker:'bunker'}[kind]||kind;
+    addKill('💀 <b style="color:#ff9a9a">'+w.enemyCountry.customName+'</b> · '+knm);
     warExplosion(ent.mesh.position.clone().setY(1),kind==='soldier'?.6:1.6);
     if(kind==='soldier'){ent.mesh.rotation.x=Math.PI/2;ent.mesh.position.y=.3;warScore(1);}
     else{ent.mesh.traverse(o=>{if(o.material&&o.material.color)o.material=new THREE.MeshLambertMaterial({color:0x222});});
@@ -1745,6 +1922,7 @@ function warHurt(dmg){
  w.lastHit=w.time;
  $('hitFlash').style.opacity=.85;
  setTimeout(()=>{$('hitFlash').style.opacity=0;},220);
+ sfx('hurt');shake(clamp(dmg*.03,.08,.5));
  if(w.hp<=0)warRespawn();
 }
 function warRespawn(){
@@ -1762,7 +1940,7 @@ function updateWar3D(dt){
  if($('warStartOverlay').style.display==='flex')return; // başlama ekranı açık
  w.time+=dt;
  // Ok tuşları ile nişan al (fare kilidi olmasa da)
- const turn=2.2*dt;
+ const turn=2.2*dt*(w.ads?.5:1);
  if(keys['arrowleft'])player.yaw+=turn;
  if(keys['arrowright'])player.yaw-=turn;
  if(keys['arrowup'])player.pitch=clamp(player.pitch+turn*.7,-1.2,1.2);
@@ -1814,6 +1992,7 @@ function updateWar3D(dt){
  }
  camera.position.copy(player.pos);
  camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
+ applyWarFeel(dt);
  if(w.shootCool>0)w.shootCool--;
  if(w.artyCool>0)w.artyCool--;
  if(w.rallyCool>0)w.rallyCool--;
@@ -1942,22 +2121,24 @@ function updateWar3D(dt){
   }
   a.fireCool--;
   if(a.fireCool<=0){
-   a.fireCool=irand(80,180);
+   a.fireCool=irand(28,75);
    const targets=w.enemies.filter(e=>!e.dead&&e.up);
    const structs=[...w.mgNests,...w.bunkers,...w.artyPieces].filter(s=>!s.dead);
    const all=[...targets,...structs];
-   if(all.length){
-    const t=pick(all);
-    const from=a.mesh.position.clone().setY(1.4);
-    warTracer(from,t.mesh.position.clone().setY(1.2),0xffffaa);
-    if(Math.random()<.4){
-     t.hp-=targets.includes(t)?40:8;
-     if(t.hp<=0&&!t.dead){
-      t.dead=true;
-      warExplosion(t.mesh.position.clone().setY(1),1);
-      if(targets.includes(t)){t.mesh.rotation.x=Math.PI/2;t.mesh.position.y=.3;warScore(1);}
-      else{t.mesh.traverse(o=>{if(o.material&&o.material.color)o.material=new THREE.MeshLambertMaterial({color:0x222});});if(t.tag)t.tag.visible=false;warScore(3);}
-     }
+   const from=a.mesh.position.clone().setY(1.5);
+   let aim,hitTarget=null;
+   if(all.length){hitTarget=pick(all);aim=hitTarget.mesh.position.clone().setY(1.2);}
+   else {aim=new THREE.Vector3(from.x+rand(-14,14),1.0,-58);} // hedef yoksa düşman hattına baskı ateşi
+   warMuzzle(a.mesh.position.clone().setY(1.55).add(new THREE.Vector3(rand(-.2,.2),0,-.5)));
+   warTracer(from,aim,0xfff2a0);
+   if(hitTarget&&Math.random()<.5){
+    const t=hitTarget;
+    t.hp-=targets.includes(t)?42:9;
+    if(t.hp<=0&&!t.dead){
+     t.dead=true;
+     warExplosion(t.mesh.position.clone().setY(1),1);
+     if(targets.includes(t)){t.mesh.rotation.x=Math.PI/2;t.mesh.position.y=.3;warScore(1);}
+     else{t.mesh.traverse(o=>{if(o.material&&o.material.color)o.material=new THREE.MeshLambertMaterial({color:0x222});});if(t.tag)t.tag.visible=false;warScore(3);}
     }
    }
   }
@@ -2002,11 +2183,11 @@ function updateWar3D(dt){
  w.fx.forEach(f=>{
   f.life--;
   if(f.isExpl){f.mesh.scale.multiplyScalar(1+f.grow*.3);f.mesh.material.opacity=f.life/22;}
-  if(f.life<=0){warScene.remove(f.mesh);}
+  if(f.life<=0){warScene.remove(f.mesh);if(f.mesh.geometry)f.mesh.geometry.dispose();if(f.mesh.material&&f.mesh.material.dispose)f.mesh.material.dispose();}
  });
  w.fx=w.fx.filter(f=>f.life>0);
  // morale drift
- const tm=clamp(40+(alive/8)*60,0,100);
+ const tm=clamp(40+(alive/(w.allyMax||8))*60,0,100);
  w.morale+=(tm-w.morale)*.02;
  // HUD
  $('hpBar').style.width=w.hp+'%';
@@ -2019,6 +2200,7 @@ function endWar(won){
  const w=G.war;if(!w||w.over)return;
  w.over=true;
  if(document.pointerLockElement)document.exitPointerLock();
+ if(G.campaign){campaignBattleDone(won);return;}
  const p=G.player,e=w.enemyCountry,changes=[];
  if(won){
   const rep=Math.round(e.gold*.3+2000);
@@ -2052,6 +2234,10 @@ function endWar(won){
 function returnToOffice(){
  $('warEndModal').classList.remove('show');
  G.war=null;G.naval=null;warScene=null;navalScene=null;
+ if(G.campaign&&!G.campaign.aborted&&G.campaign.idx<G.campaign.battles.length-1){
+  G.campaign.idx++;startCampaignBattle();return;
+ }
+ if(G.campaign){finishCampaign();return;}
  enterOffice();
  renderHUD();
 }
@@ -2092,6 +2278,7 @@ function startNaval(playerCountry,enemyCountry,defending){
  const isAssault=!defending;
  navalScene=new THREE.Scene();
  navalScene.background=makeSkyTexture('#3a78c0','#8fc0e8','#d6ecf6');
+ applyEnv(navalScene);
  navalScene.fog=new THREE.Fog(0xbfe0f0,220,820);
  navalScene.add(new THREE.AmbientLight(0xb8d0ec,.85));
  navalScene.add(new THREE.HemisphereLight(0xcfeaff,0x2a5a7a,.8));
@@ -2354,6 +2541,8 @@ function updateNaval3D(dt){
 function endNaval(won){
  const n=G.naval;if(!n||n.over)return;
  n.over=true;
+ if(document.pointerLockElement)document.exitPointerLock();
+ if(G.campaign){campaignBattleDone(won);return;}
  const p=G.player,e=n.enemyCountry,changes=[];
  if(won){
   const rep=Math.round(e.gold*.3+3000);
@@ -2378,7 +2567,609 @@ function endNaval(won){
  $('warEndModal').classList.add('show');
 }
 
+// ====================================================================
+// =============== GÜNCELLEME: ARABA · GENELKURMAY · PLANLAYICI ========
+// ====================================================================
+const CAR_PARK={x:9,z:-18};
+const GENSTAFF_POS={x:185,z:0};
+const RESEARCH_POS={x:-70,z:-8};
+let playerCar=null;
+let gsScene=null,gsColliders=[],gsNPCs=[],gsInteractables=[];
+
+// ---------- Araç modeli ----------
+function makePlayerCar(color){
+ if(hasModel('car')){const m=getModel('car',{yaw:Math.PI});m.userData={heading:Math.PI,speed:0};return m;}
+ const g=new THREE.Group();
+ const mat=c=>new THREE.MeshLambertMaterial({color:c});
+ // gövde (ileri yön = +Z)
+ const body=new THREE.Mesh(new THREE.BoxGeometry(2.2,.9,4.6),mat(color));body.position.y=.85;body.castShadow=true;g.add(body);
+ const lower=new THREE.Mesh(new THREE.BoxGeometry(2.3,.5,4.7),mat(0x14181f));lower.position.y=.45;g.add(lower);
+ // kabin
+ const cab=new THREE.Mesh(new THREE.BoxGeometry(1.9,.85,2.2),mat(new THREE.Color(color).multiplyScalar(.85).getHex()));cab.position.set(0,1.5,-.1);g.add(cab);
+ // camlar
+ const glass=new THREE.MeshLambertMaterial({color:0x16263a});
+ const wf=new THREE.Mesh(new THREE.BoxGeometry(1.7,.7,.08),glass);wf.position.set(0,1.5,1.02);wf.rotation.x=.25;g.add(wf);
+ const wb=new THREE.Mesh(new THREE.BoxGeometry(1.7,.7,.08),glass);wb.position.set(0,1.5,-1.22);wb.rotation.x=-.25;g.add(wb);
+ [[-.96],[.96]].forEach(([x])=>{const ws=new THREE.Mesh(new THREE.BoxGeometry(.08,.6,2),glass);ws.position.set(x,1.5,-.1);g.add(ws);});
+ // tekerlekler
+ [[-1,1.5],[1,1.5],[-1,-1.5],[1,-1.5]].forEach(([x,z])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.4,14),mat(0x0c0c0e));w.rotation.z=Math.PI/2;w.position.set(x,.5,z);g.add(w);const hub=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.42,10),mat(0xb8b8c0));hub.rotation.z=Math.PI/2;hub.position.set(x,.5,z);g.add(hub);});
+ // farlar
+ [[-.6],[.6]].forEach(([x])=>{const h=new THREE.Mesh(new THREE.BoxGeometry(.4,.25,.1),new THREE.MeshBasicMaterial({color:0xfff6cc}));h.position.set(x,.85,2.32);g.add(h);});
+ [[-.6],[.6]].forEach(([x])=>{const tl=new THREE.Mesh(new THREE.BoxGeometry(.4,.22,.1),new THREE.MeshBasicMaterial({color:0xcc2222}));tl.position.set(x,.85,-2.32);g.add(tl);});
+ // makam flamaları
+ [[-.9,2],[.9,2]].forEach(([x,z])=>{const pole=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.9),mat(0x222));pole.position.set(x,1.4,z);g.add(pole);const fl=new THREE.Mesh(new THREE.PlaneGeometry(.5,.32),new THREE.MeshBasicMaterial({color:new THREE.Color(color),side:THREE.DoubleSide}));fl.position.set(x+.28,1.7,z);g.add(fl);});
+ g.userData={heading:Math.PI,speed:0};
+ return g;
+}
+
+// ---------- Binalar ----------
+function buildGenStaffExterior(){
+ if(hasModel('genstaff'))return getModel('genstaff');
+ const g=new THREE.Group();
+ const main=new THREE.Mesh(new THREE.BoxGeometry(38,15,22),new THREE.MeshLambertMaterial({color:0x5b6450}));main.position.set(0,7.5,4);main.castShadow=true;g.add(main);
+ // alçak kanatlar
+ [[-22],[22]].forEach(([x])=>{const w=new THREE.Mesh(new THREE.BoxGeometry(10,8,16),new THREE.MeshLambertMaterial({color:0x4f5747}));w.position.set(x,4,4);g.add(w);});
+ // çatı korniş
+ const cor=new THREE.Mesh(new THREE.BoxGeometry(40,1.2,24),new THREE.MeshLambertMaterial({color:0x3c4336}));cor.position.set(0,15.2,4);g.add(cor);
+ // büyük yıldız amblemi
+ const star=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,.4,5),new THREE.MeshBasicMaterial({color:0xffd86b}));star.rotation.x=Math.PI/2;star.position.set(0,11,-7.1);g.add(star);
+ // giriş + sütunlar
+ const ent=new THREE.Mesh(new THREE.BoxGeometry(8,5,2),new THREE.MeshLambertMaterial({color:0x6a7460}));ent.position.set(0,2.5,-9);g.add(ent);
+ const door=new THREE.Mesh(new THREE.BoxGeometry(3.2,3.4,.4),new THREE.MeshLambertMaterial({color:0x2a2f26}));door.position.set(0,1.7,-10.1);g.add(door);
+ for(let i=-3;i<=3;i+=2){const c=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,5),new THREE.MeshLambertMaterial({color:0x808a72}));c.position.set(i*1.8,2.5,-9.4);g.add(c);}
+ // bariyer çuvalları
+ for(let x=-10;x<=10;x+=2){const sb=new THREE.Mesh(new THREE.BoxGeometry(1.6,.7,1),new THREE.MeshLambertMaterial({color:0x6a5a3a}));sb.position.set(x,.35,-13);g.add(sb);}
+ // bayrak direkleri
+ [[-14],[14]].forEach(([x])=>{const p=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,12),new THREE.MeshLambertMaterial({color:0x222}));p.position.set(x,6,-12);g.add(p);const fl=new THREE.Mesh(new THREE.PlaneGeometry(3,1.8),new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color),side:THREE.DoubleSide}));fl.position.set(x+1.6,10.5,-12);g.add(fl);});
+ // radar
+ const mast=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,6),new THREE.MeshLambertMaterial({color:0x333}));mast.position.set(12,18,4);g.add(mast);
+ const dish=new THREE.Mesh(new THREE.SphereGeometry(1.6,12,8,0,Math.PI*2,0,Math.PI/2),new THREE.MeshLambertMaterial({color:0xcfd6e0}));dish.position.set(12,21,4);dish.rotation.x=Math.PI/2.4;g.add(dish);
+ return g;
+}
+function buildResearchCenter(){
+ if(hasModel('research'))return getModel('research');
+ const g=new THREE.Group();
+ g.add((function(){const m=new THREE.Mesh(new THREE.BoxGeometry(16,8,12),new THREE.MeshLambertMaterial({color:0xcdd6e2}));m.position.y=4;m.castShadow=true;return m;})());
+ const stripe=new THREE.Mesh(new THREE.BoxGeometry(16.2,1,12.2),new THREE.MeshBasicMaterial({color:0x66ccff}));stripe.position.y=6.6;g.add(stripe);
+ const dome=new THREE.Mesh(new THREE.SphereGeometry(4,18,12,0,Math.PI*2,0,Math.PI/2),new THREE.MeshLambertMaterial({color:0xe8eef6}));dome.position.set(0,8,0);g.add(dome);
+ const ant=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,6),new THREE.MeshLambertMaterial({color:0x444}));ant.position.set(0,13,0);g.add(ant);
+ const ball=new THREE.Mesh(new THREE.SphereGeometry(.7,12,12),new THREE.MeshBasicMaterial({color:0x66ffcc}));ball.position.set(0,16,0);g.add(ball);
+ const door=new THREE.Mesh(new THREE.BoxGeometry(3,3.2,.3),new THREE.MeshLambertMaterial({color:0x2a4a6a}));door.position.set(0,1.6,-6.1);g.add(door);
+ const atom=new THREE.Mesh(new THREE.TorusGeometry(1.6,.12,8,24),new THREE.MeshBasicMaterial({color:0x66ccff}));atom.position.set(0,4.5,-6.05);g.add(atom);
+ const atom2=atom.clone();atom2.rotation.y=Math.PI/3;g.add(atom2);
+ return g;
+}
+
+// ---------- Araştırma Merkezi paneli ----------
+function openResearchCenter(){
+ openPanel('🔬 Araştırma Merkezi',['tech']);
+ toast('Tüm araştırmalar yalnızca buradan başlatılır.','good');
+}
+
+// ---------- Araç sürüşü ----------
+function enterCar(){
+ if(!playerCar)return;
+ G.driving=true;
+ if(document.pointerLockElement)document.exitPointerLock();
+ playerCar.userData.speed=0;
+ $('interactPrompt').style.display='none';
+ $('lockHint').textContent='🚗 SÜRÜŞ — W: gaz | S: fren/geri | A/D: direksiyon | E: in / üsse gir';
+ $('lockHint').style.display='block';
+ toast('🚗 Direksiyon başındasın. Doğuya sür → Genelkurmay.','good');
+}
+function exitCar(silent){
+ if(!playerCar)return;
+ G.driving=false;
+ const u=playerCar.userData;u.speed=0;
+ const rx=Math.cos(u.heading),rz=-Math.sin(u.heading); // sağ yön
+ player.pos.set(playerCar.position.x+rx*2.6,1.7,playerCar.position.z+rz*2.6);
+ player.yaw=u.heading;player.pitch=0;
+ $('lockHint').textContent='WASD: yürü | OK TUŞLARI: etrafına bak | E: etkileşim | Tıkla: fareyle bak';
+ if(!silent)toast('Araçtan indin.','info');
+}
+function updateDrive(dt){
+ const u=playerCar.userData;
+ const accel=22,maxF=40,maxR=14,brake=34,fric=10;
+ if(keys['w'])u.speed+=accel*dt;
+ else if(keys['s']){u.speed-= (u.speed>0?brake:accel)*dt;}
+ else { // sürtünme
+  if(u.speed>0)u.speed=Math.max(0,u.speed-fric*dt);
+  else if(u.speed<0)u.speed=Math.min(0,u.speed+fric*dt);
+ }
+ u.speed=clamp(u.speed,-maxR,maxF);
+ // direksiyon (hıza bağlı)
+ const steer=1.7*dt*clamp(Math.abs(u.speed)/8,0,1)*(u.speed>=0?1:-1);
+ if(keys['a'])u.heading+=steer;
+ if(keys['d'])u.heading-=steer;
+ // ileri vektör (+Z yerel)
+ const fx=Math.sin(u.heading),fz=Math.cos(u.heading);
+ let nx=playerCar.position.x+fx*u.speed*dt;
+ let nz=playerCar.position.z+fz*u.speed*dt;
+ // çarpışma (cityColliders) — basit
+ const r=1.4;
+ const blocked=cityColliders.some(c=>nx>c.minX-r&&nx<c.maxX+r&&nz>c.minZ-r&&nz<c.maxZ+r);
+ if(blocked){u.speed*=-.25;} else {playerCar.position.x=clamp(nx,-238,238);playerCar.position.z=clamp(nz,-238,238);}
+ playerCar.rotation.y=u.heading;
+ // gövde hafif yatış
+ playerCar.rotation.z=clamp(-(keys['a']?1:keys['d']?-1:0)*Math.abs(u.speed)*.004,-.07,.07);
+ // oyuncu konumu araçla senkron (etkileşim mesafesi için)
+ player.pos.set(playerCar.position.x,1.7,playerCar.position.z);
+ // chase kamera
+ const camDist=9,camH=4.2;
+ const cx=playerCar.position.x-fx*camDist, cz=playerCar.position.z-fz*camDist;
+ camera.position.set(cx,camH,cz);
+ camera.lookAt(playerCar.position.x+fx*5,1.6,playerCar.position.z+fz*5);
+}
+
+// ---------- Genelkurmay iç mekan ----------
+function buildGenStaff(){
+ gsScene=new THREE.Scene();
+ gsScene.background=new THREE.Color(0x141a18);
+ applyEnv(gsScene);
+ gsScene.add(new THREE.AmbientLight(0xcdd6c8,.8));
+ gsScene.add(new THREE.HemisphereLight(0xdfe8f0,0x2a302a,.6));
+ const sun=new THREE.DirectionalLight(0xfff2e0,.5);sun.position.set(8,18,6);gsScene.add(sun);
+ gsColliders=[];gsNPCs=[];gsInteractables.length=0;
+ const addGsCol=(x,z,w,d)=>gsColliders.push({minX:x-w/2,maxX:x+w/2,minZ:z-d/2,maxZ:z+d/2});
+ // zemin & tavan
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(30,.2,32),new THREE.MeshLambertMaterial({color:0x2c3330}));floor.position.set(0,-.1,1);gsScene.add(floor);
+ const rug=new THREE.Mesh(new THREE.BoxGeometry(12,.04,12),new THREE.MeshLambertMaterial({color:0x3a4d3a}));rug.position.set(0,.04,2);gsScene.add(rug);
+ const ceil=new THREE.Mesh(new THREE.BoxGeometry(30,.2,32),new THREE.MeshLambertMaterial({color:0x20262a}));ceil.position.set(0,5.1,1);gsScene.add(ceil);
+ for(let z=-8;z<=12;z+=8){const l=new THREE.PointLight(0xe8f0e0,.5,20);l.position.set(0,4.6,z);gsScene.add(l);const lm=new THREE.Mesh(new THREE.BoxGeometry(2,.1,2),new THREE.MeshBasicMaterial({color:0xf0f6e8}));lm.position.set(0,4.95,z);gsScene.add(lm);}
+ // duvarlar
+ const wc=0x4a5248;
+ wallMesh(gsScene,0,-15,30,.6,5,wc);wallMesh(gsScene,0,17,30,.6,5,wc);
+ wallMesh(gsScene,-15,1,.6,32,5,wc);wallMesh(gsScene,15,1,.6,32,5,wc);
+ addGsCol(0,-15,30,1.2);addGsCol(0,17,30,1.2);addGsCol(-15,1,1.2,32);addGsCol(15,1,1.2,32);
+ // duvar ekranları (durum panoları)
+ [[-14.6,-6,0x224a6a],[-14.6,6,0x6a2a2a],[14.6,-6,0x2a5a3a]].forEach(([x,z,c])=>{const s=new THREE.Mesh(new THREE.BoxGeometry(.2,2.4,4),new THREE.MeshBasicMaterial({color:c}));s.position.set(x,2.6,z);gsScene.add(s);});
+ // büyük harita masası (merkez)
+ const tLeg=new THREE.Mesh(new THREE.BoxGeometry(5.6,1,3.6),new THREE.MeshLambertMaterial({color:0x2a2018}));tLeg.position.set(0,.5,2);gsScene.add(tLeg);
+ const mapTexCv=document.createElement('canvas');mapTexCv.width=256;mapTexCv.height=160;const mc=mapTexCv.getContext('2d');
+ mc.fillStyle='#6f8a55';mc.fillRect(0,0,256,160);mc.fillStyle='#5577aa';mc.fillRect(0,110,256,50);mc.strokeStyle='#22331a';mc.lineWidth=2;for(let i=0;i<6;i++){mc.beginPath();mc.moveTo(20+i*38,10);mc.lineTo(30+i*38,108);mc.stroke();}mc.fillStyle='#cc2222';for(let i=0;i<8;i++)mc.fillRect(120+Math.random()*60,20+Math.random()*70,6,6);
+ const mapTex=new THREE.CanvasTexture(mapTexCv);
+ const tableTop=new THREE.Mesh(new THREE.BoxGeometry(6,.16,4),new THREE.MeshLambertMaterial({map:mapTex}));tableTop.position.set(0,1.06,2);tableTop.castShadow=true;gsScene.add(tableTop);
+ addGsCol(0,2,6.4,4.4);
+ // masa üstü minik birlik blokları
+ for(let i=0;i<10;i++){const b=new THREE.Mesh(new THREE.BoxGeometry(.35,.2,.22),new THREE.MeshLambertMaterial({color:i%2?0x2a55aa:0xaa3322}));b.position.set(rand(-2.6,2.6),1.24,2+rand(-1.6,1.6));gsScene.add(b);}
+ // generaller / subaylar
+ const officers=[
+  {x:-3.4,z:3.6,suit:0x3a4a2c,name:'⭐ Genelkurmay Bşk.'},
+  {x:3.4,z:3.6,suit:0x33402a,name:'🎖️ Kara Kuv. Kom.'},
+  {x:-3.4,z:.4,suit:0x2c3a4a,name:'⚓ Deniz Kuv. Kom.'},
+  {x:3.4,z:.4,suit:0x4a3a2c,name:'✈️ Hava Kuv. Kom.'},
+  {x:0,z:5.2,suit:0x3a3326,name:'🪖 Harekât Subayı'},
+ ];
+ officers.forEach(o=>{const p=makePerson(o.suit);p.position.set(o.x,0,o.z);p.lookAt(new THREE.Vector3(0,0,2));gsScene.add(p);gsNPCs.push(p);const tag=makeTextSprite(o.name,{w:3.2,border:'#ffd86b'});tag.position.set(o.x,2.5,o.z);gsScene.add(tag);});
+ // bayraklar
+ [-6,6].forEach(x=>{const pole=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,4),new THREE.MeshLambertMaterial({color:0x222}));pole.position.set(x,2,-14);gsScene.add(pole);const fl=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.1),new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color),side:THREE.DoubleSide}));fl.position.set(x+.9,3,-14);gsScene.add(fl);});
+ // kapı (şehre çık)
+ const door=new THREE.Mesh(new THREE.BoxGeometry(3,3,.3),new THREE.MeshLambertMaterial({color:0x2a3526}));door.position.set(0,1.5,16.8);gsScene.add(door);
+ const dsign=makeTextSprite('🚪 ÇIK (şehre)',{w:3.4,border:'#6fdc8c',color:'#6fdc8c'});dsign.position.set(0,3.3,16);gsScene.add(dsign);
+ const tsign=makeTextSprite('🗺️ HAREKÂT MASASI — E ile planla',{w:6,border:'#ffd86b',color:'#ffd86b'});tsign.position.set(0,2.6,2);gsScene.add(tsign);
+ gsInteractables.push({scene:'genstaff',x:0,z:5.4,radius:3.4,label:'<b>E</b> — 🗺️ Harekât masası (savaş planla)',action:()=>openWarPlanner()});
+ gsInteractables.push({scene:'genstaff',x:0,z:14.5,radius:3,label:'<b>E</b> — 🚪 Şehre çık',action:()=>leaveGenStaff()});
+}
+function enterGenStaff(){
+ if(!gsScene)buildGenStaff();
+ G.scene='genstaff';curScene=gsScene;G.driving=false;
+ for(const k in keys)keys[k]=false;
+ player.pos.set(0,1.7,13);player.yaw=Math.PI;player.pitch=0;
+ $('hud').style.display='flex';$('crosshairDot').style.display='block';
+ $('sceneLabel').textContent='🎖️ Genelkurmay Harekât Salonu';$('sceneLabel').style.display='block';
+ $('lockHint').textContent='WASD: yürü | OK TUŞLARI: bak | E: etkileşim | Harita masasına git';
+ $('lockHint').style.display='block';
+ hideWarUI();renderHUD();
+ if(G.pendingWarTargetId){const o=G.countries.find(x=>x.id===G.pendingWarTargetId);if(o)toast(`Harita masasına git → ${o.customName} harekâtını planla.`,'good');}
+}
+function leaveGenStaff(){
+ if(!cityScene||G.cityDirty)buildCity();
+ G.scene='city';curScene=cityScene;G.driving=false;
+ for(const k in keys)keys[k]=false;
+ player.pos.set(GENSTAFF_POS.x,1.7,GENSTAFF_POS.z-13);player.yaw=Math.PI;player.pitch=0;
+ $('sceneLabel').textContent='🏙️ '+G.player.customName+' — Başkent '+G.player.capital;
+ $('lockHint').textContent='WASD: yürü | OK TUŞLARI: bak | E: etkileşim | Araca dön';
+ toast('Üsten çıktın. Araçla şehre dönebilirsin.','info');
+}
+
+// ====================================================================
+// =============== HOI4 TARZI SAVAŞ PLANLAYICI ========================
+// ====================================================================
+function chooseWarTarget(cb){
+ const neigh=G.countries.filter(o=>!o.isPlayer&&isNeighbor(o)&&!G.player.alliedWith.includes(o.id));
+ if(!neigh.length){toast('Savaş açılabilecek komşu yok.','bad');return;}
+ const rows=neigh.map(o=>{const t=neighborType(o)==='sea'?'⚓ Deniz':'🗺️ Kara';return `<button class="btn danger" style="display:block;width:100%;margin-bottom:6px;text-align:left;" onclick="(window.__pickWar||function(){})('${o.id}')">${t} · <b>${o.customName}</b> — ${fmt(o.soldiers)} asker, ordu ${Math.round(o.military)}</button>`;}).join('');
+ showModal('🎯 Hedef Cephe Seç',rows,[{text:'Vazgeç'}]);
+ window.__pickWar=id=>{$('modal').classList.remove('show');window.__pickWar=null;cb(id);};
+}
+function openWarPlanner(){
+ let tid=G.pendingWarTargetId;
+ const valid=tid&&G.countries.find(o=>o.id===tid&&isNeighbor(o)&&!G.player.alliedWith.includes(o.id));
+ if(!valid){chooseWarTarget(id=>buildPlanner(id));return;}
+ buildPlanner(tid);
+}
+function generateDivisions(){
+ const c=G.player,divs=[];let id=0;
+ const spec=[['infantry',6000,'🪖',0x4f7a3a],['cavalry',2500,'🐎',0x7a5a2a],['artillery',1200,'💥',0x8a3a2a],['special',900,'🗡️',0x5a3a7a]];
+ spec.forEach(([k,sz,icon,col])=>{const n=Math.min(5,Math.floor((c.armyComp[k]||0)/sz));for(let i=0;i<n;i++)divs.push({id:id++,type:k,icon,men:sz,color:col,home:'tray',x:0,y:0});});
+ if((c.tanks||0)>=40){const n=Math.min(2,Math.floor(c.tanks/60));for(let i=0;i<n;i++)divs.push({id:id++,type:'armor',icon:'🛡️',men:4000,color:0x556655,home:'tray',x:0,y:0});}
+ if(divs.length<3){for(let i=divs.length;i<3;i++)divs.push({id:id++,type:'infantry',icon:'🪖',men:5000,color:0x4f7a3a,home:'tray',x:0,y:0});}
+ return divs.slice(0,12);
+}
+function buildPlanner(targetId){
+ const target=G.countries.find(o=>o.id===targetId);
+ if(!target){toast('Hedef bulunamadı','bad');return;}
+ const sea=neighborType(target)==='sea';
+ const N=sea?2:3;
+ const sectors=[];for(let i=0;i<N;i++)sectors.push({stance:'attack',divs:[]});
+ const ov=document.createElement('div');ov.id='plannerOverlay';
+ ov.innerHTML=`<div id="plannerBar">
+   <div style="font-weight:800;color:#ffd86b;font-size:16px;">🗺️ HAREKÂT PLANI — ${G.player.customName} ⚔️ ${target.customName} <span style="color:${sea?'#6fb8e8':'#7ad07a'};font-size:12px;">(${sea?'DENİZ CEPHESİ':'KARA CEPHESİ'})</span></div>
+   <div style="flex:1"></div>
+   <div id="plannerInfo" style="font-size:12px;color:#cfd6e6;"></div>
+   <button class="btn" id="plannerHelpBtn">❔ Nasıl</button>
+   <button class="btn good" id="plannerLaunch">⚔️ Harekâtı Başlat</button>
+   <button class="btn danger" id="plannerClose">✖ Kapat</button>
+ </div>
+ <canvas id="plannerCanvas"></canvas>
+ <div id="plannerHint">Tümen sayaçlarını alttan tutup cephe sektörlerine <b>sürükle</b>. Sektör başlığına tıklayarak <b>SALDIRI ↔ SAVUNMA</b> değiştir. Yerleştirdiğin her sektör 1 muharebedir.</div>`;
+ document.body.appendChild(ov);
+ const cv=document.getElementById('plannerCanvas');
+ const P=G.planner={target,sea,sectors,divs:generateDivisions(),drag:null,cv,ctx:cv.getContext('2d'),W:980,H:600,target};
+ cv.width=P.W;cv.height=P.H;
+ reflowPlanner();drawPlanner();
+ cv.addEventListener('mousedown',plannerDown);
+ window.addEventListener('mousemove',plannerMove);
+ window.addEventListener('mouseup',plannerUp);
+ document.getElementById('plannerLaunch').onclick=launchOperation;
+ document.getElementById('plannerClose').onclick=closePlanner;
+ document.getElementById('plannerHelpBtn').onclick=()=>toast('Sürükle-bırak ile tümenleri cephelere koy. Saldırı sektörü = taarruz muharebesi, Savunma = savunma muharebesi.','info');
+ if(document.pointerLockElement)document.exitPointerLock();
+}
+function sectorBand(i){const P=G.planner;const top=46,h=400/P.sectors.length;return{y0:top+i*h,y1:top+(i+1)*h,cy:top+i*h+h/2,h};}
+const PLAN_CX=520;
+function reflowPlanner(){
+ const P=G.planner;
+ // tray
+ const trayDivs=P.divs.filter(d=>d.home==='tray');
+ trayDivs.forEach((d,i)=>{d.x=40+i*82;d.y=P.H-78;});
+ // sektörlerdeki — cephe hattı boyunca dizili (line of battle)
+ P.sectors.forEach((s,si)=>{const band=sectorBand(si);const n=s.divs.length;s.divs.forEach((d,i)=>{d.x=PLAN_CX-84;d.y=band.cy-21+(i-(n-1)/2)*26;});});
+}
+function counterAt(mx,my){
+ const P=G.planner;const all=[...P.divs];
+ for(let i=all.length-1;i>=0;i--){const d=all[i];if(mx>=d.x&&mx<=d.x+76&&my>=d.y&&my<=d.y+42)return d;}
+ return null;
+}
+function stanceBtnAt(mx,my){
+ const P=G.planner;
+ for(let i=0;i<P.sectors.length;i++){const b=sectorBand(i);if(mx>=PLAN_CX-460&&mx<=PLAN_CX-360&&my>=b.cy-16&&my<=b.cy+16)return i;}
+ return -1;
+}
+function plannerDown(e){
+ const P=G.planner;if(!P)return;
+ const r=P.cv.getBoundingClientRect();const mx=(e.clientX-r.left)*(P.W/r.width),my=(e.clientY-r.top)*(P.H/r.height);
+ const sb=stanceBtnAt(mx,my);
+ if(sb>=0){P.sectors[sb].stance=P.sectors[sb].stance==='attack'?'defense':'attack';drawPlanner();return;}
+ const d=counterAt(mx,my);
+ if(d){P.drag={d,dx:mx-d.x,dy:my-d.y};}
+}
+function plannerMove(e){
+ const P=G.planner;if(!P||!P.drag)return;
+ const r=P.cv.getBoundingClientRect();const mx=(e.clientX-r.left)*(P.W/r.width),my=(e.clientY-r.top)*(P.H/r.height);
+ P.drag.d.x=mx-P.drag.dx;P.drag.d.y=my-P.drag.dy;drawPlanner();
+}
+function plannerUp(e){
+ const P=G.planner;if(!P||!P.drag)return;
+ const d=P.drag.d;const cx=d.x+37,cy=d.y+22;
+ // hangi sektöre?
+ let dropped=false;
+ if(cx>PLAN_CX-200&&cx<PLAN_CX+200){
+  for(let i=0;i<P.sectors.length;i++){const b=sectorBand(i);if(cy>=b.y0&&cy<b.y1){removeDivFromHome(d);P.sectors[i].divs.push(d);d.home=i;dropped=true;break;}}
+ }
+ if(!dropped&&cy>P.H-110){removeDivFromHome(d);d.home='tray';}
+ P.drag=null;reflowPlanner();drawPlanner();
+}
+function removeDivFromHome(d){const P=G.planner;if(typeof d.home==='number'){const s=P.sectors[d.home];const idx=s.divs.indexOf(d);if(idx>=0)s.divs.splice(idx,1);}}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawCounter(ctx,d,ghost){
+ const w=76,h=42,x=d.x,y=d.y;
+ ctx.save();if(ghost)ctx.globalAlpha=.92;
+ // gövde (NATO birlik sayacı — dost mavi)
+ const grad=ctx.createLinearGradient(x,y,x,y+h);grad.addColorStop(0,ghost?'#3f63a8':'#34538f');grad.addColorStop(1,ghost?'#2c477e':'#243c6b');
+ roundRect(ctx,x,y,w,h,4);ctx.fillStyle=grad;ctx.fill();
+ ctx.lineWidth=2;ctx.strokeStyle='#cfe0f5';ctx.stroke();
+ // echelon (XX = tümen)
+ ctx.fillStyle='#dfeaff';ctx.font='bold 9px Segoe UI';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText('XX',x+w/2,y-2);
+ // iç sembol kutusu
+ const ix=x+8,iy=y+6,iw=w-16,ih=h-18;
+ ctx.strokeStyle='#eaf2ff';ctx.lineWidth=1.8;ctx.strokeRect(ix,iy,iw,ih);
+ ctx.beginPath();
+ if(d.type==='infantry'){ctx.moveTo(ix,iy);ctx.lineTo(ix+iw,iy+ih);ctx.moveTo(ix+iw,iy);ctx.lineTo(ix,iy+ih);ctx.stroke();}
+ else if(d.type==='armor'){ctx.ellipse(ix+iw/2,iy+ih/2,iw*0.32,ih*0.36,0,0,Math.PI*2);ctx.stroke();}
+ else if(d.type==='artillery'){ctx.arc(ix+iw/2,iy+ih/2,3.6,0,Math.PI*2);ctx.fillStyle='#eaf2ff';ctx.fill();}
+ else if(d.type==='cavalry'){ctx.moveTo(ix,iy+ih);ctx.lineTo(ix+iw,iy);ctx.stroke();}
+ else{ctx.moveTo(ix,iy);ctx.lineTo(ix+iw,iy+ih);ctx.moveTo(ix+iw,iy);ctx.lineTo(ix,iy+ih);ctx.moveTo(ix+iw/2,iy);ctx.lineTo(ix+iw/2,iy+ih);ctx.stroke();}
+ // güç
+ ctx.fillStyle='#ffe6a2';ctx.font='bold 9px Segoe UI';ctx.fillText((d.men/1000).toFixed(1)+'k',x+w/2,y+h-3);
+ ctx.restore();
+}
+function offensiveArrow(ctx,x,y,len,color){
+ ctx.save();ctx.globalAlpha=.92;
+ const g=ctx.createLinearGradient(x,0,x+len,0);g.addColorStop(0,color+'66');g.addColorStop(1,color);ctx.fillStyle=g;
+ const sw=7,headW=20,headLen=26,tipX=x+len;
+ ctx.beginPath();
+ ctx.moveTo(x,y-sw);
+ ctx.quadraticCurveTo(x+len*0.55,y-sw-7,tipX-headLen,y-sw-1);
+ ctx.lineTo(tipX-headLen,y-headW);
+ ctx.lineTo(tipX,y);
+ ctx.lineTo(tipX-headLen,y+headW);
+ ctx.lineTo(tipX-headLen,y+sw+1);
+ ctx.quadraticCurveTo(x+len*0.55,y+sw+7,x,y+sw);
+ ctx.closePath();ctx.fill();
+ ctx.restore();
+}
+function drawPlanner(){
+ const P=G.planner;if(!P)return;const ctx=P.ctx,W=P.W,H=P.H;
+ ctx.clearRect(0,0,W,H);
+ const mapY0=40,mapY1=452,RX=W-120;
+ // arka plan
+ const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#0c1626');bg.addColorStop(1,'#070d18');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ // ülke toprakları (arazi dokusu)
+ function terrain(x0,x1,base){
+  const g=ctx.createLinearGradient(0,mapY0,0,mapY1);g.addColorStop(0,base[0]);g.addColorStop(1,base[1]);
+  ctx.fillStyle=g;ctx.fillRect(x0,mapY0,x1-x0,mapY1-mapY0);
+  ctx.save();ctx.beginPath();ctx.rect(x0,mapY0,x1-x0,mapY1-mapY0);ctx.clip();
+  ctx.globalAlpha=.10;ctx.fillStyle='#000';
+  for(let i=0;i<80;i++)ctx.fillRect(x0+Math.random()*(x1-x0),mapY0+Math.random()*(mapY1-mapY0),3,2);
+  ctx.globalAlpha=.06;ctx.strokeStyle='#fff';ctx.lineWidth=1;
+  for(let gx=x0;gx<x1;gx+=34){ctx.beginPath();ctx.moveTo(gx,mapY0);ctx.lineTo(gx,mapY1);ctx.stroke();}
+  for(let gy=mapY0;gy<mapY1;gy+=34){ctx.beginPath();ctx.moveTo(x0,gy);ctx.lineTo(x1,gy);ctx.stroke();}
+  ctx.restore();
+ }
+ terrain(60,PLAN_CX,['#26456f','#1a3050']);          // biz (mavi toprak)
+ terrain(PLAN_CX,RX,['#6e3030','#4a2020']);            // düşman (kırmızı toprak)
+ // başlıklar
+ ctx.fillStyle='#9fc0ff';ctx.font='bold 14px Segoe UI';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+ ctx.fillText('▣ '+G.player.customName.toUpperCase()+'  (BİZ)',(60+PLAN_CX)/2,mapY0-12);
+ ctx.fillStyle='#ff9f9f';ctx.fillText('▣ '+P.target.customName.toUpperCase()+'  (DÜŞMAN)',(PLAN_CX+RX)/2,mapY0-12);
+ // ---- CEPHE HATTI (lines of battle) ----
+ P.sectors.forEach((s,i)=>{
+  const b=sectorBand(i);const hasDiv=s.divs.length>0;
+  // sektör ayraç
+  ctx.strokeStyle='rgba(255,255,255,.10)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,b.y1);ctx.lineTo(RX,b.y1);ctx.stroke();
+  // taarruz oku / savunma siperi
+  if(hasDiv&&s.stance==='attack')offensiveArrow(ctx,PLAN_CX,b.cy,Math.min(150,40+s.divs.reduce((a,d)=>a+d.men,0)/1200),'#ff6a4a');
+  if(hasDiv&&s.stance==='defense'){ctx.strokeStyle='#5ab0ff';ctx.lineWidth=2;for(let ty=b.y0+10;ty<b.y1-6;ty+=14){ctx.beginPath();ctx.moveTo(PLAN_CX,ty);ctx.lineTo(PLAN_CX-12,ty+6);ctx.stroke();}}
+  // cephe çizgisi (kalın = tümen var)
+  ctx.strokeStyle=!hasDiv?'rgba(255,255,255,.35)':s.stance==='attack'?'#ff7a5a':'#6ab8ff';
+  ctx.lineWidth=hasDiv?6:2.5;ctx.setLineDash(hasDiv?[]:[6,7]);ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(PLAN_CX,b.y0+3);ctx.lineTo(PLAN_CX,b.y1-3);ctx.stroke();ctx.setLineDash([]);ctx.lineCap='butt';
+  // stance butonu
+  roundRect(ctx,PLAN_CX-460,b.cy-16,100,32,6);ctx.fillStyle=s.stance==='attack'?'#7a2a1a':'#1a3a6a';ctx.fill();ctx.strokeStyle='#ffd86b';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='bold 12px Segoe UI';ctx.textAlign='center';ctx.fillText(s.stance==='attack'?'⚔ SALDIRI':'🛡 SAVUNMA',PLAN_CX-410,b.cy+4);
+  ctx.fillStyle='#9fb0cc';ctx.font='10px Segoe UI';ctx.fillText('Sektör '+(i+1)+(hasDiv?' · tıkla→değiştir':''),PLAN_CX-410,b.cy-21);
+  if(hasDiv){const men=s.divs.reduce((a,d)=>a+d.men,0);ctx.fillStyle='#ffe6a2';ctx.font='bold 11px Segoe UI';ctx.textAlign='left';ctx.fillText((men/1000).toFixed(1)+'k asker',PLAN_CX+158,b.cy+4);}
+ });
+ // dış çerçeve
+ ctx.strokeStyle='rgba(255,216,107,.4)';ctx.lineWidth=1.5;ctx.strokeRect(60,mapY0,RX-60,mapY1-mapY0);
+ // tray zemin
+ ctx.fillStyle='rgba(255,255,255,.06)';ctx.fillRect(0,H-110,W,110);
+ ctx.strokeStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.moveTo(0,H-110);ctx.lineTo(W,H-110);ctx.stroke();
+ ctx.fillStyle='#cfd6e6';ctx.font='bold 12px Segoe UI';ctx.textAlign='left';ctx.fillText('🪖 TÜMENLER — cephe hattına sürükle (XX = tümen):',24,H-86);
+ // sayaçlar (cephe boyunca dizili)
+ P.divs.forEach(d=>{if(P.drag&&P.drag.d===d)return;drawCounter(ctx,d);});
+ if(P.drag)drawCounter(ctx,P.drag.d,true);
+ // bilgi
+ const battles=P.sectors.filter(s=>s.divs.length>0);
+ const atk=battles.filter(s=>s.stance==='attack').length,def=battles.filter(s=>s.stance==='defense').length;
+ const info=document.getElementById('plannerInfo');if(info)info.innerHTML=`Muharebe: <b style="color:#ffd86b">${battles.length}</b> · ⚔️ ${atk} saldırı · 🛡️ ${def} savunma`;
+}
+function closePlanner(){
+ const P=G.planner;if(!P)return;
+ P.cv.removeEventListener('mousedown',plannerDown);
+ window.removeEventListener('mousemove',plannerMove);
+ window.removeEventListener('mouseup',plannerUp);
+ const ov=document.getElementById('plannerOverlay');if(ov)ov.remove();
+ G.planner=null;
+}
+function launchOperation(){
+ const P=G.planner;if(!P)return;
+ const used=P.sectors.filter(s=>s.divs.length>0);
+ if(!used.length){toast('En az bir cepheye tümen yerleştir!','bad');return;}
+ const target=P.target,sea=P.sea;
+ const battles=used.map((s,i)=>{
+  const men=s.divs.reduce((a,d)=>a+d.men,0);
+  const attack=s.stance==='attack';
+  return {mode:sea?'naval':'land',attack,men,sector:i+1,
+   buff:{extraAllies:clamp(Math.floor(men/2500),0,8),extraLives:clamp(Math.floor(men/3500),0,12),targetMul:clamp(attack?(1.25-men/45000):(1.05-men/60000),.62,1.25)}};
+ });
+ // saldırılar önce, savunmalar sonra
+ battles.sort((a,b)=>(a.attack?0:1)-(b.attack?0:1));
+ closePlanner();
+ G.campaign={targetId:target.id,battles,idx:0,results:[],aborted:false};
+ const atk=battles.filter(b=>b.attack).length,def=battles.length-atk;
+ showModal('⚔️ Harekât Onayı',`<b>${target.customName}</b> üzerine harekât başlıyor.<br><br>🎖️ Toplam <b>${battles.length}</b> muharebe — ⚔️ ${atk} taarruz, 🛡️ ${def} savunma.<br>Her cepheyi bizzat komuta edeceksin. Tümen gücün ne kadar fazlaysa o cephe o kadar kolay olur.<br><br><i>Hazır mısın komutanım?</i>`,
+  [{text:'Vazgeç',onClick:()=>{G.campaign=null;}},{text:'▶ Harekâtı Başlat',cls:'danger',onClick:()=>startCampaignBattle()}]);
+}
+function doDeclareWarSilent(o){
+ if(!G.player.atWarWith.includes(o.id)){G.player.atWarWith.push(o.id);o.atWarWith.push(G.player.id);}
+ G.player.relations[o.id]=0;o.relations[G.player.id]=0;
+ if(!G._warAnnounced)G._warAnnounced={};
+ if(!G._warAnnounced[o.id]){addEvent('war',`⚔️ ${o.customName}'a savaş ilan edildi! Harekât başladı.`);G._warAnnounced[o.id]=true;}
+}
+function startCampaignBattle(){
+ const c=G.campaign;if(!c)return;
+ const b=c.battles[c.idx];
+ const enemy=G.countries.find(x=>x.id===c.targetId);
+ doDeclareWarSilent(enemy);
+ G._battleBuff=b.buff;
+ toast(`🎖️ Cephe ${c.idx+1}/${c.battles.length} — ${b.attack?'TAARRUZ':'SAVUNMA'} (${(b.men/1000).toFixed(1)}k asker)`,b.attack?'bad':'good');
+ if(b.mode==='naval')startNaval(G.player,enemy,!b.attack);
+ else startWar(G.player,enemy,!b.attack);
+ G._battleBuff=null;
+}
+function campaignBattleDone(won){
+ const c=G.campaign;
+ c.results.push({won});
+ const idx=c.idx,total=c.battles.length,more=idx<total-1;
+ const wins=c.results.filter(r=>r.won).length;
+ $('warEndTitle').textContent=won?'🏆 Cephe Kazanıldı':'💀 Cephe Kaybedildi';
+ $('warEndTitle').className=won?'win':'lose';
+ $('warEndBody').innerHTML=`Cephe <b>${idx+1}/${total}</b> tamamlandı · Kazanılan: <b style="color:#6fdc8c">${wins}</b> / ${total}<br>${more?'Sıradaki cepheye geçmeye hazır mısın?':'Tüm cepheler bitti — sonuçlar hesaplanıyor.'}`;
+ $('warEndChanges').innerHTML='';
+ $('warEndBtn').textContent=more?'▶ Sıradaki Cephe':'📊 Sonuçları Gör';
+ $('warEndModal').classList.add('show');
+}
+function finishCampaign(){
+ const c=G.campaign;const p=G.player,e=G.countries.find(x=>x.id===c.targetId);
+ const wins=c.results.filter(r=>r.won).length,total=c.battles.length;
+ const overall=wins>total/2;
+ const changes=[];
+ if(overall){
+  const rep=Math.round(e.gold*.3+1500*wins);p.gold+=rep;e.gold=Math.max(0,e.gold-rep);
+  const pop=+(rand(.4,1.2)*wins).toFixed(1);p.population+=pop;e.population=Math.max(1,e.population-pop);
+  p.happiness=clamp(p.happiness+6+wins,0,100);p.reputation=clamp(p.reputation+4+wins,0,100);p.military=clamp(p.military+4,0,100);
+  const sLost=irand(4000,9000)+ (total-wins)*4000;p.soldiers=Math.max(0,p.soldiers-sLost);
+  e.soldiers=Math.max(0,e.soldiers-irand(12000,30000));e.military=clamp(e.military-12,0,100);e.happiness=clamp(e.happiness-18,0,100);
+  changes.push({k:'💰 Tazminat',v:'+'+fmt(rep),pos:true},{k:'👥 İlhak',v:'+'+pop+'M',pos:true},{k:'😊 Mutluluk',v:'+'+(6+wins),pos:true},{k:'💀 Kayıp',v:'-'+fmt(sLost),pos:false});
+  addEvent('good',`🏆 ${e.customName} cephesinde zafer! (${wins}/${total})`);
+ } else {
+  const lost=Math.round(p.gold*.2+2500);p.gold=Math.max(0,p.gold-lost);
+  p.happiness=clamp(p.happiness-12,0,100);p.reputation=clamp(p.reputation-7,0,100);p.military=clamp(p.military-6,0,100);
+  const sLost=irand(10000,24000);p.soldiers=Math.max(0,p.soldiers-sLost);
+  changes.push({k:'💰 Tazminat',v:'-'+fmt(lost),pos:false},{k:'😊 Mutluluk',v:'-12',pos:false},{k:'💀 Kayıp',v:'-'+fmt(sLost),pos:false});
+  addEvent('bad',`💔 ${e.customName} harekâtı başarısız (${wins}/${total}).`);
+ }
+ p.atWarWith=p.atWarWith.filter(x=>x!==e.id);e.atWarWith=(e.atWarWith||[]).filter(x=>x!==p.id);
+ if(G.pendingWarTargetId===e.id)G.pendingWarTargetId=null;
+ if(G._warAnnounced)delete G._warAnnounced[e.id];
+ G.campaign=null;
+ $('warEndTitle').textContent=overall?'🏆 HAREKÂT BAŞARILI':'💀 HAREKÂT BAŞARISIZ';
+ $('warEndTitle').className=overall?'win':'lose';
+ $('warEndBody').innerHTML=`${e.customName} cephesi — Kazanılan muharebe: <b>${wins}/${total}</b><br>Ülkeye etkisi:`;
+ $('warEndChanges').innerHTML=changes.map(x=>`<div class="stat-change" style="color:${x.pos?'#6fdc8c':'#ff7878'}">${x.k}: <b>${x.v}</b></div>`).join('');
+ $('warEndBtn').textContent='▶ Ofise Dön';
+ $('warEndModal').classList.add('show');
+}
+
+// ====================================================================
+// =============== SES (WebAudio) + FPS HİS / SARSINTI ================
+// ====================================================================
+let _ac=null;
+function audioCtx(){if(!_ac){try{_ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){_ac=null;}}return _ac;}
+function sfx(type){
+ const ac=audioCtx();if(!ac)return;if(ac.state==='suspended')ac.resume();
+ const t=ac.currentTime;
+ if(type==='shot'){
+  const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(80,t+.08);g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+.11);
+  // noise burst
+  noise(ac,t,.06,.12,1200);
+ } else if(type==='explosion'){
+  noise(ac,t,.5,.32,500,true);const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(35,t+.4);g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+.5);
+ } else if(type==='hit'){const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.setValueAtTime(900,t);o.frequency.exponentialRampToValueAtTime(1500,t+.05);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.07);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+.08);
+ } else if(type==='reload'){const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.setValueAtTime(140,t);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+.13);
+ } else if(type==='hurt'){noise(ac,t,.18,.2,300,true);}
+}
+function noise(ac,t,dur,vol,freq,low){
+ const n=Math.floor(ac.sampleRate*dur);const buf=ac.createBuffer(1,n,ac.sampleRate);const d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+ const src=ac.createBufferSource();src.buffer=buf;const g=ac.createGain();g.gain.value=vol;const f=ac.createBiquadFilter();f.type=low?'lowpass':'bandpass';f.frequency.value=freq;src.connect(f).connect(g).connect(ac.destination);src.start(t);
+}
+// FPS HUD ek katmanları
+function ensureWarHud(){
+ if(document.getElementById('muzzleFlash'))return;
+ const mk=(id,css)=>{const d=document.createElement('div');d.id=id;d.style.cssText=css;document.body.appendChild(d);return d;};
+ mk('muzzleFlash','position:absolute;left:50%;top:50%;width:120px;height:120px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(255,220,120,.9),rgba(255,140,40,0) 70%);z-index:23;pointer-events:none;opacity:0;');
+ mk('hitMarker','position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-size:26px;font-weight:900;z-index:24;pointer-events:none;opacity:0;text-shadow:0 0 4px #000;');
+ mk('adsVignette','position:absolute;inset:0;z-index:22;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 26%, rgba(0,0,0,.78) 33%);transition:opacity .12s;');
+ mk('killFeed','position:absolute;right:16px;top:70px;z-index:25;pointer-events:none;display:flex;flex-direction:column;gap:4px;align-items:flex-end;');
+}
+function muzzle(){const m=document.getElementById('muzzleFlash');if(!m)return;m.style.opacity=Math.random()*.4+.6;m.style.transform=`translate(-50%,-50%) scale(${.7+Math.random()*.5}) rotate(${Math.random()*360}deg)`;setTimeout(()=>{m.style.opacity=0;},45);}
+function hitMark(kill){const h=document.getElementById('hitMarker');if(!h)return;h.textContent=kill?'✖':'✕';h.style.color=kill?'#ff5a5a':'#fff';h.style.fontSize=kill?'34px':'24px';h.style.opacity=1;setTimeout(()=>{h.style.opacity=0;},kill?260:130);}
+function addKill(txt){const f=document.getElementById('killFeed');if(!f)return;const d=document.createElement('div');d.style.cssText='background:rgba(0,0,0,.6);border-right:3px solid #ff7878;color:#fff;font-size:12px;padding:3px 8px;border-radius:3px;';d.innerHTML=txt;f.appendChild(d);setTimeout(()=>{d.style.transition='opacity .5s';d.style.opacity=0;setTimeout(()=>d.remove(),500);},2600);}
+function shake(amt){if(G.war)G.war.shake=Math.min(1.2,(G.war.shake||0)+amt);}
+function applyWarFeel(dt){
+ const w=G.war;if(!w)return;
+ // ADS fov
+ const targetFov=w.ads?40:62;camera.fov+=(targetFov-camera.fov)*Math.min(1,dt*10);camera.updateProjectionMatrix();
+ const av=document.getElementById('adsVignette');if(av)av.style.opacity=w.ads?1:0;
+ // recoil + shake
+ if(w.recoil){camera.rotation.x+=w.recoil;w.recoil*=.78;if(Math.abs(w.recoil)<.0005)w.recoil=0;}
+ if(w.shake){const s=w.shake;camera.rotation.x+=rand(-s,s)*.03;camera.rotation.y+=rand(-s,s)*.03;camera.rotation.z=rand(-s,s)*.02;w.shake*=.86;if(w.shake<.01)w.shake=0;}
+}
+
+// pointer lock / scene listesi genişlet
+(function(){
+ document.addEventListener('mousedown',e=>{if(e.button===2&&G.scene==='war'&&G.war&&!G.war.over){G.war.ads=true;}});
+ document.addEventListener('mouseup',e=>{if(e.button===2&&G.war){G.war.ads=false;}});
+ document.addEventListener('contextmenu',e=>{if(G.scene==='war'||G.driving)e.preventDefault();});
+})();
+
+// ====================================================================
+// =============== BLENDER GLB MODEL SİSTEMİ + ENVIRONMENT =============
+// ====================================================================
+const G_MODELS={};
+// GLB/Blender model katmanı geçici olarak KAPALI (prosedürel görseller daha iyiydi).
+// Düzgün bir görsel iyileştirme yapınca true'ya çekilecek.
+const USE_GLB=false;
+let _modelsReady=false, _modelsStarted=false;
+function _b64ToArrayBuffer(b64){const bin=atob(b64);const len=bin.length;const bytes=new Uint8Array(len);for(let i=0;i<len;i++)bytes[i]=bin.charCodeAt(i);return bytes.buffer;}
+function preloadModels(){
+ if(!USE_GLB)return;
+ if(_modelsStarted)return;
+ if(!window.GLTFLoader||!window.MODELS_B64){window.addEventListener('gltf-ready',preloadModels,{once:true});return;}
+ _modelsStarted=true;
+ const loader=new window.GLTFLoader();
+ const names=Object.keys(window.MODELS_B64);
+ let pending=names.length;if(!pending){_modelsReady=true;return;}
+ names.forEach(name=>{
+  const fin=()=>{if(--pending<=0){_modelsReady=true;G.cityDirty=true;console.log('✓ Blender modelleri yüklendi');}};
+  try{
+   loader.parse(_b64ToArrayBuffer(window.MODELS_B64[name]),'',gltf=>{
+    const root=gltf.scene;
+    root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
+     const mats=Array.isArray(o.material)?o.material:[o.material];
+     mats.forEach(m=>{if(!m)return;if('metalness'in m)m.metalness=Math.min(m.metalness,0.35);if('roughness'in m&&m.roughness>0.95)m.roughness=0.9;m.envMapIntensity=1.1;});}});
+    G_MODELS[name]=root;fin();
+   },err=>{console.warn('GLB hata',name,err);fin();});
+  }catch(e){console.warn('GLB istisna',name,e);fin();}
+ });
+}
+function hasModel(n){return USE_GLB&&!!G_MODELS[n];}
+function getModel(name,opts){
+ opts=opts||{};
+ const t=G_MODELS[name];if(!t)return null;
+ const c=t.clone(true);
+ if(opts.recolor||opts.tint){
+  let first=true;
+  c.traverse(o=>{if(o.isMesh){const mats=Array.isArray(o.material)?o.material:[o.material];
+   const nm=mats.map(m=>{const x=m.clone();if(opts.tint)x.color.multiply(new THREE.Color(opts.tint));if(opts.recolor&&first){x.color.set(opts.recolor);first=false;}return x;});
+   o.material=Array.isArray(o.material)?nm:nm[0];}});
+ }
+ if(opts.scale)c.scale.setScalar(opts.scale);
+ if(opts.yaw)c.rotation.y=opts.yaw;
+ const g=new THREE.Group();g.add(c);
+ return g;
+}
+// Ortam haritası (equirect) — PBR malzemeler güzel görünsün (yansıma/IBL)
+let _envTex=null;
+function getEnvTexture(){
+ if(_envTex)return _envTex;
+ const cv=document.createElement('canvas');cv.width=256;cv.height=128;const ctx=cv.getContext('2d');
+ const g=ctx.createLinearGradient(0,0,0,128);
+ g.addColorStop(0,'#9fc4e8');g.addColorStop(.48,'#dceaf2');g.addColorStop(.52,'#8a9a7a');g.addColorStop(1,'#3a4a2a');
+ ctx.fillStyle=g;ctx.fillRect(0,0,256,128);
+ // güneş parlaklığı
+ const sg=ctx.createRadialGradient(180,30,2,180,30,40);sg.addColorStop(0,'rgba(255,250,230,1)');sg.addColorStop(1,'rgba(255,250,230,0)');
+ ctx.fillStyle=sg;ctx.fillRect(140,0,80,60);
+ _envTex=new THREE.CanvasTexture(cv);_envTex.mapping=THREE.EquirectangularReflectionMapping;
+ if(THREE.SRGBColorSpace)_envTex.colorSpace=THREE.SRGBColorSpace;
+ return _envTex;
+}
+function applyEnv(scene){if(!USE_GLB)return;try{scene.environment=getEnvTexture();}catch(e){}}
+
 // ============================ BOOT ============================
+preloadModels();
 initWorld();
 mapLoop();
 </script>

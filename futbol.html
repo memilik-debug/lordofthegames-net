@@ -6,6 +6,8 @@
     <title>Python Football Manager - Elite Pro v2.7</title>
     <!-- Tailwind CSS for high fidelity responsive layouts -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 — 3D stadyum motoru -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap');
 
@@ -226,6 +228,13 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in { animation: fade-in 0.35s ease-out; }
+
+        /* 3D maç kamera butonları */
+        .cam-btn { background: rgba(30,41,59,0.7); color: #94a3b8; transition: all .15s; }
+        .cam-btn:hover { background: rgba(51,65,85,0.9); color: #e2e8f0; }
+        .cam-btn.active { background: #10b981; color: #fff; box-shadow: 0 0 14px rgba(16,185,129,0.5); }
+        #stadium3d-canvas { cursor: grab; }
+        #stadium3d-canvas:active { cursor: grabbing; }
     </style>
 </head>
 <body class="p-2 md:p-4 min-h-screen" onclick="closeModals();">
@@ -492,6 +501,7 @@
                 this.yetenek = Math.floor(yetenek);
                 this.fiyat = Math.round(fiyat * 10) / 10;
                 this.role = rolu;
+                this.gorev = 'Destek'; // FM görev: Savunma / Destek / Hücum (oyuncu bazlı talimat)
                 this.number = Math.floor(Math.random() * 98) + 1;
                 this.yas = yas;
                 this.potansiyel = Math.floor(potansiyel);
@@ -521,7 +531,15 @@
                     yaraticilik: 50,
                     pas_tarzi: 'Kısa Pas',
                     hucum_odagi: 'Dengeli',
-                    savunma_stili: 'Alan'
+                    savunma_stili: 'Alan',
+                    // === FM tarzı gelişmiş takım talimatları ===
+                    dizilim: '4-4-2',            // 4-4-2 / 4-3-3 / 4-2-3-1 / 3-5-2 / 5-3-2
+                    pres_tetikleyici: 'Orta',   // Pasif / Orta / Agresif / Ultra
+                    ofsayt_tuzagi: false,        // savunma hattını yukarı çek + ofsayt riski
+                    cikis_oyunu: 'Dengeli',     // Kaleciden Kur / Dengeli / Uzun Açılım
+                    top_kazaninca: 'Dengeli',   // Hızlı Kontra / Dengeli / Topu Tut
+                    zaman_oyunu: false,          // öndeyken tempoyu düşür, enerji koru
+                    riskli_paslar: 50            // yaratıcılık ile birlikte risk seviyesi
                 };
                 this.isUser = isUser;
                 this.ilk_11 = [];
@@ -564,6 +582,101 @@
             }
         }
 
+        /* =====================================================================
+           FM TARZI TAKTİK MOTORU
+           tacticalModifiers(team) → maç motorunun kullandığı sayısal çarpanlar.
+           tacticalAnalysis(team)  → taktik ekranında gösterilen canlı öngörü
+                                     (xG, şut, top hakimiyeti, yorulma, uyarılar).
+           Böylece her ayar maça NET ve ölçülebilir şekilde yansır.
+        ===================================================================== */
+        const PRES_FAKTOR = { 'Pasif': 0.55, 'Orta': 1.0, 'Agresif': 1.35, 'Ultra': 1.7 };
+
+        function tacticalModifiers(team) {
+            const t = team.taktik || {};
+            const o = (t.ofansiflik ?? 50) / 50;       // 0..2
+            const dl = (t.savunma_hatti ?? 50);
+            const tempo = (t.tempo ?? 50) / 50;
+            const pres = (t.pres ?? 50) / 50;
+            const gen = (t.genislik ?? 50) / 50;
+            const yar = (t.yaraticilik ?? 50) / 50;
+            const risk = (t.riskli_paslar ?? 50) / 50;
+            const presK = PRES_FAKTOR[t.pres_tetikleyici] ?? 1.0;
+            const offside = t.ofsayt_tuzagi ? 1 : 0;
+
+            // Çizgi yüksekliği (ofsayt tuzağı +15 iter, max 95)
+            const lineHeight = Math.min(95, dl + offside * 15);
+
+            // Şut isabeti: yaratıcılık + ofansiflik + risk; aşırı risk biraz düşürür
+            const shotAccuracy = 0.82 + yar * 0.16 + o * 0.06 - Math.max(0, risk - 1) * 0.05;
+            // Son bölgede şut sıklığı: ofansiflik + tempo + hücum odağı
+            let shotFrequency = 0.30 * o * (0.7 + tempo * 0.3);
+            if (t.hucum_odagi === 'Kanatlar') shotFrequency *= 0.95 + gen * 0.08;
+            if (t.hucum_odagi === 'Merkez') shotFrequency *= 1.04;
+
+            // İlerleme hızı: tempo + direkt/uzun oyun hızlandırır
+            let advanceSpeed = 0.75 + tempo * 0.4;
+            if (t.pas_tarzi === 'Direkt Oyun') advanceSpeed *= 1.18;
+            if (t.pas_tarzi === 'Uzun Top') advanceSpeed *= 1.10;
+            if (t.pas_tarzi === 'Kısa Pas') advanceSpeed *= 0.92;
+
+            // Top kapma RİSKİ (kendi topumuzu kaptırma): yüksek hat + risk + uzun top artırır
+            let lossRisk = 1.0 + (lineHeight - 50) / 160 + Math.max(0, risk - 1) * 0.18;
+            if (t.pas_tarzi === 'Uzun Top') lossRisk *= 1.12;
+            if (t.pas_tarzi === 'Kısa Pas') lossRisk *= 0.86;
+            if (t.cikis_oyunu === 'Kaleciden Kur') lossRisk *= 1.06;
+
+            // Pres yoğunluğu: rakibi ne kadar zorlar (top kapma şansımız)
+            const pressIntensity = pres * presK;
+
+            // Top hakimiyeti eğilimi (%): kısa pas + düşük tempo + yaratıcılık
+            let possTilt = 50;
+            possTilt += (t.pas_tarzi === 'Kısa Pas' ? 8 : t.pas_tarzi === 'Uzun Top' ? -7 : 0);
+            possTilt += (yar - 1) * 6 + (1 - tempo) * 5 + (pressIntensity - 1) * 6;
+            if (t.top_kazaninca === 'Topu Tut') possTilt += 5;
+            if (t.top_kazaninca === 'Hızlı Kontra') possTilt -= 4;
+            possTilt = Math.max(30, Math.min(72, possTilt));
+
+            // Savunma sağlamlığı (0.6..1.5): düşük hat + alan + zaman oyunu artırır
+            let defSolidity = 1.0 + (55 - lineHeight) / 120;
+            defSolidity += (t.savunma_stili === 'Alan' ? 0.06 : -0.04);
+            defSolidity -= Math.max(0, o - 1) * 0.10;
+            if (offside) defSolidity -= 0.08;          // ofsayt tuzağı bozulursa açık
+            defSolidity = Math.max(0.6, Math.min(1.5, defSolidity));
+
+            // Yorulma hızı: tempo + pres + pres tetikleyici; zaman oyunu düşürür
+            let fatigueRate = (0.55 + tempo * 0.30 + pres * 0.25) * (0.7 + presK * 0.3);
+            if (t.zaman_oyunu) fatigueRate *= 0.82;
+            fatigueRate = Math.max(0.5, Math.min(2.2, fatigueRate));
+
+            // Kontra hızı (top kazanınca direkt geçiş)
+            const counter = t.top_kazaninca === 'Hızlı Kontra' ? 1.25 : (t.top_kazaninca === 'Topu Tut' ? 0.85 : 1.0);
+
+            return { lineHeight, shotAccuracy, shotFrequency, advanceSpeed, lossRisk,
+                     pressIntensity, possTilt, defSolidity, fatigueRate, counter, offside };
+        }
+
+        // Taktik ekranı için zengin canlı öngörü (rakipten bağımsız temel kalite)
+        function tacticalAnalysis(team) {
+            const m = tacticalModifiers(team);
+            const guc = team.getGuc();
+            // Maç başına öngörülen xG: güç + şut sıklığı + isabet
+            const projShots = Math.round(6 + m.shotFrequency * 22 + (guc - 75) * 0.12);
+            const projXG = Math.max(0.3, (projShots * 0.11 * m.shotAccuracy)).toFixed(2);
+            const projPoss = Math.round(m.possTilt);
+            const attack = Math.round(Math.min(99, 40 + m.shotFrequency * 90 + m.shotAccuracy * 18 + (guc - 75) * 0.5));
+            const defense = Math.round(Math.min(99, 30 + m.defSolidity * 38 + (guc - 75) * 0.4));
+            const control = Math.round(Math.min(99, m.possTilt + (team.taktik.pas_tarzi === 'Kısa Pas' ? 8 : 0)));
+            const intensity = Math.round(Math.min(99, 30 + m.pressIntensity * 28 + (team.taktik.tempo ?? 50) * 0.3));
+            const fatiguePct = Math.round(m.fatigueRate * 45); // göreli %
+            const warnings = [];
+            if (m.lineHeight > 78) warnings.push('Çok yüksek savunma hattı: arkaya atılan toplarda gol yeme riski yüksek.');
+            if (m.fatigueRate > 1.5) warnings.push('Yüksek tempo + pres: oyuncular 70. dakikadan sonra çökebilir.');
+            if (team.taktik.ofsayt_tuzagi && team.taktik.savunma_stili === 'Adam Adama') warnings.push('Ofsayt tuzağı + adam adama markaj uyumsuz; tuzak bozulabilir.');
+            if (m.lossRisk > 1.35) warnings.push('Riskli paslar/uzun toplar: top kaybı ve kontra yeme oranı artıyor.');
+            if (m.pressIntensity < 0.7) warnings.push('Düşük pres: rakip orta sahada rahat oyun kuracak.');
+            return { ...m, guc, projShots, projXG, projPoss, attack, defense, control, intensity, fatiguePct, warnings };
+        }
+
         let gameState = {
             view: 'main_menu',
             myTeam: null,
@@ -592,8 +705,8 @@
             selectedSubstitutionOut: null,
             // Live match stats
             matchStats: {
-                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0 },
-                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0 }
+                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0 },
+                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0 }
             },
             // Players banned this match for red cards
             redCardedPlayers: new Set(),
@@ -748,7 +861,8 @@
             ['home', 'away'].forEach(side => {
                 const team = side === 'home' ? ev : dep;
                 const tk = team.taktik || {};
-                const defLine = tk.savunma_hatti ?? 50;
+                const mod = tacticalModifiers(team);
+                const defLine = mod.lineHeight;      // ofsayt tuzağı + çizgi yüksekliği burada görünür
                 const ofans = tk.ofansiflik ?? 50;
                 const attacking = s.possession === side;
                 // Top, bu takımın kendi (sağa hücum) çerçevesindeki x'i
@@ -859,18 +973,25 @@
             gameState.matchStats.home.possession = Math.round((s.possTicks.home / totalT) * 100);
             gameState.matchStats.away.possession = 100 - gameState.matchStats.home.possession;
 
-            // Top kapma (interception) — rakip presi + taşıyan oyuncu yeteneği
-            const press = (defTeam.taktik.pres ?? 50) / 100;
+            // Taktik çarpanları — top kapma ve ilerleme buradan sayısal etkilenir
+            const atkMod = tacticalModifiers(atkTeam);
+            const defMod = tacticalModifiers(defTeam);
+            s._atkMod = atkMod; s._defMod = defMod;
+
+            // Top kapma (interception) — rakip pres yoğunluğu + bizim top kaybı riskimiz - yetenek
             const carrierP = livePlayer(side, s.carrier.idx);
             const skill = carrierP ? (carrierP.yetenek ?? 70) : 70;
-            const interceptChance = Math.max(0.05, 0.09 + press * 0.13 - (skill - 70) / 320);
+            const interceptChance = Math.max(0.04, Math.min(0.42,
+                0.07 + defMod.pressIntensity * 0.085 + (atkMod.lossRisk - 1) * 0.12 - (skill - 70) / 320));
             if (Math.random() < interceptChance) {
                 flipPossession();
                 return;
             }
 
-            // Topu rakip kaleye doğru ilerlet, ileri bir takım arkadaşına ver
-            const advance = 7 + Math.random() * 15;
+            // Topu rakip kaleye doğru ilerlet — tempo/pas tarzı hızı belirler (kontra dahil)
+            const advance = (6 + Math.random() * 13) * atkMod.advanceSpeed *
+                            (s._counterBurst ? atkMod.counter : 1);
+            s._counterBurst = false;
             let nbx = Math.max(4, Math.min(96, s.ball.tx + dir * advance));
             let nby = Math.max(10, Math.min(90, s.ball.ty + (Math.random() * 28 - 14)));
 
@@ -894,9 +1015,10 @@
                 pushEvent(getSpikerText(Math.random() < 0.5 ? 'start' : 'develop', p), 'text-sky-300');
             }
 
-            // Son bölgede şut ihtimali
+            // Son bölgede şut ihtimali — ofansiflik/tempo/hücum odağı sıklığı belirler
             const ballXOwn = side === 'home' ? nbx : 100 - nbx;
-            if (ballXOwn > 75 && Math.random() < 0.36) {
+            const shotProb = Math.min(0.62, 0.15 + atkMod.shotFrequency * 0.85);
+            if (ballXOwn > 75 && Math.random() < shotProb) {
                 resolveShot(atkTeam, defTeam, side);
             } else if (Math.random() < 0.06) {
                 triggerMinorEvent(ev, dep);
@@ -918,6 +1040,9 @@
             }
             s.possession = newSide;
             s.carrier = { side: newSide, idx: best >= 0 ? best : 5 };
+            // Top kazanınca "Hızlı Kontra" talimatı bir sonraki ilerlemeyi patlatır
+            const newTeam = newSide === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
+            s._counterBurst = (newTeam.taktik && newTeam.taktik.top_kazaninca === 'Hızlı Kontra');
             const p = livePlayer(newSide, s.carrier.idx);
             if (p) { pushEvent(getSpikerText('tackle', p), 'text-blue-300'); rateBump(newSide, s.carrier.idx, 0.12); }
             computeMatchTargets();
@@ -941,9 +1066,14 @@
             computeMatchTargets();
             updateMatchHud();
 
-            const acc = (shooter.yetenek / 100) * 0.34 + ((shooter.form ?? 75) / 100) * 0.10 + ((atkTeam.taktik.yaraticilik ?? 50) / 400);
-            const defMod = (defTeam.taktik.savunma_hatti ?? 50) > 70 ? 0.05 : 0;
-            const isGoal = Math.random() < Math.min(0.45, acc + defMod);
+            const atkMod = tacticalModifiers(atkTeam);
+            const dMod = tacticalModifiers(defTeam);
+            // Şut isabeti taktikle çarpılır; rakip savunma sağlamlığı gol şansını böler
+            const acc = ((shooter.yetenek / 100) * 0.34 + ((shooter.form ?? 75) / 100) * 0.10 + ((atkTeam.taktik.yaraticilik ?? 50) / 400)) * atkMod.shotAccuracy;
+            const goalChance = Math.max(0.04, Math.min(0.50, acc / dMod.defSolidity));
+            const isGoal = Math.random() < goalChance;
+            // xG kaydı — atılan her şutun beklenen gol değeri (Baldric için)
+            gameState.matchStats[side].xg = (gameState.matchStats[side].xg || 0) + Math.min(0.92, goalChance * 1.5);
             const isOnTarget = isGoal || Math.random() < 0.5 + shooter.yetenek / 220;
 
             setTimeout(() => {
@@ -1055,65 +1185,81 @@
             const [ev, dep] = gameState.currentMatch;
             const container = document.getElementById('screen-content');
             container.innerHTML = `
-                <div class="max-w-5xl mx-auto space-y-4">
-                    <div class="p-4 bg-slate-900/90 rounded-2xl flex items-center justify-between border border-white/5 shadow-2xl">
-                        <div class="w-1/3 text-center font-black uppercase text-base text-white tracking-tight">${ev.ad}</div>
-                        <div class="w-1/3 flex flex-col items-center">
-                            <span id="m-score" class="text-4xl md:text-5xl font-black text-emerald-400 tabular-nums">0 - 0</span>
-                            <span id="m-clock" class="mt-1 px-3 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full font-black text-xs">0' Dakika</span>
-                        </div>
-                        <div class="w-1/3 text-center font-black uppercase text-base text-white tracking-tight">${dep.ad}</div>
+                <div id="match-root" class="relative w-full" style="height:calc(100vh - 150px);min-height:600px;">
+                    <!-- ===== 3D STADYUM (arka plan) ===== -->
+                    <div id="stadium3d-wrap" class="absolute inset-0 rounded-2xl overflow-hidden border border-white/10 bg-black">
+                        <canvas id="stadium3d-canvas" class="w-full h-full block"></canvas>
+                        <div id="stadium3d-loading" class="absolute inset-0 flex items-center justify-center text-slate-400 text-sm font-bold bg-slate-950">🏟️ Stadyuma giriliyor...</div>
                     </div>
 
-                    <div class="p-3 bg-slate-950/80 rounded-2xl border border-white/5 shadow-lg">
-                        <div class="flex items-center justify-between text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">
-                            <span>${ev.ad.split(' ')[0]}</span>
-                            <span>📊 CANLI İSTATİSTİK</span>
-                            <span>${dep.ad.split(' ')[0]}</span>
-                        </div>
-                        <!-- Momentum / baskı barı -->
-                        <div class="mb-2">
-                            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
-                                <span class="text-slate-500">⬅ Baskı</span>
-                                <span id="m-momentum-label" class="text-slate-500 font-bold">DENGELİ</span>
-                                <span class="text-slate-500">Baskı ➡</span>
-                            </div>
-                            <div class="h-2 rounded-full overflow-hidden bg-slate-800 relative">
-                                <div id="m-momentum" class="absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-300" style="left:0;width:50%"></div>
-                            </div>
-                        </div>
-                        <!-- Topla oynama -->
-                        <div class="mb-2">
-                            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
-                                <span id="m-poss-h" class="font-black text-emerald-400">50%</span>
-                                <span class="text-slate-500">Topla Oynama</span>
-                                <span id="m-poss-a" class="font-black text-rose-400">50%</span>
-                            </div>
-                            <div class="flex h-2 rounded-full overflow-hidden bg-slate-800">
-                                <div id="m-poss-bar-h" class="bg-emerald-500" style="width:50%"></div>
-                                <div id="m-poss-bar-a" class="bg-rose-500" style="width:50%"></div>
-                            </div>
-                        </div>
-                        <div id="m-statgrid" class="grid grid-cols-3 gap-2 text-center"></div>
-                    </div>
-
-                    <div id="m-sub-banner"></div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                        <div id="match-pitch" class="lg:col-span-3 elite-pitch relative min-h-[460px]">
+                    <!-- Gizli 2D motor sahası — sim konumlarını besler (3D & jumbotron buradan okur) -->
+                    <div style="position:absolute;left:-99999px;top:0;width:680px;height:440px;pointer-events:none;opacity:0;">
+                        <div id="match-pitch" class="elite-pitch relative" style="width:680px;height:440px;">
                             <div class="pitch-line center-line"></div><div class="pitch-line center-circle"></div>
                             <div class="penalty-area-left pitch-line"></div><div class="penalty-area-right pitch-line"></div>
                             <div class="goal-v6 goal-left"></div><div class="goal-v6 goal-right"></div>
                             <div id="match-ball" class="ball-v6" style="left:50%;top:50%"></div>
                         </div>
-                        <div class="bg-slate-900/60 p-4 rounded-2xl border border-white/5 flex flex-col shadow-xl">
-                            <h4 class="font-black text-slate-400 text-[10px] uppercase mb-3 tracking-widest text-center">Canlı Değişiklik Kulübesi</h4>
-                            <div id="m-bench" class="space-y-2 overflow-y-auto max-h-[400px]"></div>
+                    </div>
+
+                    <!-- ===== ÜST SKOR + KAMERA KONTROL ===== -->
+                    <div class="absolute top-0 left-0 right-0 p-3 flex items-start justify-between pointer-events-none">
+                        <div class="bg-slate-950/85 backdrop-blur rounded-2xl px-4 py-2 flex items-center gap-4 border border-white/10 shadow-2xl pointer-events-auto">
+                            <span class="font-black uppercase text-xs md:text-sm text-emerald-400 tracking-tight">${ev.ad.split(' ')[0]}</span>
+                            <div class="flex flex-col items-center">
+                                <span id="m-score" class="text-2xl md:text-3xl font-black text-white tabular-nums leading-none">0 - 0</span>
+                                <span id="m-clock" class="mt-0.5 text-[10px] text-emerald-400 font-black">0' Dakika</span>
+                            </div>
+                            <span class="font-black uppercase text-xs md:text-sm text-rose-400 tracking-tight">${dep.ad.split(' ')[0]}</span>
+                        </div>
+                        <div class="flex flex-col gap-1.5 items-end pointer-events-auto">
+                            <div class="bg-slate-950/85 backdrop-blur rounded-xl p-1 flex gap-1 border border-white/10 shadow-xl">
+                                <button onclick="stadium3dSetCamera('screen')" id="cam-screen" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">📺 Ekran</button>
+                                <button onclick="stadium3dSetCamera('pitchside')" id="cam-pitchside" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">📐 Kenar</button>
+                                <button onclick="stadium3dSetCamera('broadcast')" id="cam-broadcast" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">🎥 Geniş</button>
+                                <button onclick="stadium3dSetCamera('free')" id="cam-free" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">🕹️ Serbest</button>
+                            </div>
+                            <button onclick="toggleMatchStats()" class="bg-slate-950/85 backdrop-blur rounded-xl px-3 py-1.5 text-[10px] font-black text-slate-200 border border-white/10 shadow-xl">📊 İstatistik</button>
                         </div>
                     </div>
 
-                    <div id="m-eventlog" class="bg-slate-950/90 p-4 rounded-2xl h-36 overflow-y-auto border border-white/5 shadow-inner"></div>
-                    <div id="m-endbtn"></div>
+                    <!-- ===== İSTATİSTİK PANELİ (gizlenebilir) ===== -->
+                    <div id="match-stats-panel" class="absolute top-16 left-3 w-72 bg-slate-950/90 backdrop-blur rounded-2xl border border-white/10 shadow-2xl p-3 pointer-events-auto" style="display:none;">
+                        <div class="mb-2">
+                            <div class="flex justify-between text-[9px] text-slate-400 mb-0.5"><span>⬅ Baskı</span><span id="m-momentum-label" class="font-bold">DENGELİ</span><span>Baskı ➡</span></div>
+                            <div class="h-2 rounded-full overflow-hidden bg-slate-800 relative"><div id="m-momentum" class="absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-300" style="left:0;width:50%"></div></div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="flex justify-between text-[9px] text-slate-400 mb-0.5"><span id="m-poss-h" class="font-black text-emerald-400">50%</span><span>Topla Oynama</span><span id="m-poss-a" class="font-black text-rose-400">50%</span></div>
+                            <div class="flex h-2 rounded-full overflow-hidden bg-slate-800"><div id="m-poss-bar-h" class="bg-emerald-500" style="width:50%"></div><div id="m-poss-bar-a" class="bg-rose-500" style="width:50%"></div></div>
+                        </div>
+                        <div id="m-statgrid" class="grid grid-cols-3 gap-1.5 text-center"></div>
+                    </div>
+
+                    <!-- ===== SAĞ: DANIŞMAN BALDRIC + KULÜBE ===== -->
+                    <div class="absolute top-16 right-3 bottom-3 w-72 flex flex-col gap-3 pointer-events-none">
+                        <div class="bg-gradient-to-br from-indigo-950/95 to-slate-950/95 backdrop-blur rounded-2xl border border-indigo-500/30 shadow-2xl p-3 pointer-events-auto">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-lg shadow-lg">🧙</div>
+                                <div>
+                                    <p class="text-xs font-black text-amber-300 leading-none">Danışman Baldric</p>
+                                    <p class="text-[9px] text-slate-400">Saha kenarı analisti</p>
+                                </div>
+                            </div>
+                            <div id="baldric-content" class="space-y-2 text-[11px]"></div>
+                        </div>
+                        <div id="m-sub-banner" class="pointer-events-auto"></div>
+                        <div class="bg-slate-950/90 backdrop-blur rounded-2xl border border-white/10 shadow-2xl p-3 flex flex-col flex-grow min-h-0 pointer-events-auto">
+                            <h4 class="font-black text-slate-400 text-[10px] uppercase mb-2 tracking-widest text-center">🔄 Değişiklik Kulübesi</h4>
+                            <div id="m-bench" class="space-y-2 overflow-y-auto flex-grow min-h-0"></div>
+                        </div>
+                    </div>
+
+                    <!-- ===== ALT: OLAY AKIŞI ===== -->
+                    <div class="absolute bottom-3 left-3 w-80 pointer-events-auto">
+                        <div id="m-eventlog" class="bg-slate-950/85 backdrop-blur p-3 rounded-2xl h-28 overflow-y-auto border border-white/10 shadow-2xl"></div>
+                        <div id="m-endbtn" class="mt-2"></div>
+                    </div>
                 </div>`;
 
             const pitch = document.getElementById('match-pitch');
@@ -1199,9 +1345,9 @@
             document.getElementById('m-statgrid').innerHTML = [
                 ['Şut', sH.shots, sA.shots],
                 ['İsabet', sH.shotsOnTarget, sA.shotsOnTarget],
+                ['xG', (sH.xg||0).toFixed(2), (sA.xg||0).toFixed(2)],
                 ['Kurtarış', sH.saves, sA.saves],
                 ['Korner', sH.corners, sA.corners],
-                ['Faul', sH.fouls, sA.fouls],
                 ['🟨/🟥', sH.yellows + '/' + sH.reds, sA.yellows + '/' + sA.reds]
             ].map(st => `
                 <div class="bg-slate-900/60 rounded-lg p-1.5 border border-white/5">
@@ -1265,6 +1411,399 @@
             }
         }
 
+        /* =====================================================================
+           3D STADYUM MOTORU (Three.js r128)
+           - Gerçek 3B oyuncular sahada sim konumlarına göre gerçekçi hareket eder.
+           - Jumbotron dev ekran maçın 2D üstten görünümünü canlı yansıtır.
+           - Kamera modları: Ekran (koltuktan izle), Kenar (yandan), Geniş, Serbest.
+           - Danışman Baldric saha kenarında 3B figür olarak durur.
+        ===================================================================== */
+        const Stadium3D = (function () {
+            const PITCH_L = 64, PITCH_W = 42, HALF_L = PITCH_L / 2, HALF_W = PITCH_W / 2;
+            let renderer, scene, camera, raf = null;
+            let players = { home: [], away: [] }, ball = null, ballShadow = null;
+            let jumboTex, jumboCtx, jumboCanvas;
+            let camMode = 'screen';
+            let orbit = { az: 0.6, el: 0.5, r: 70, drag: false, px: 0, py: 0 };
+            const tmp = new THREE.Vector3();
+
+            // sim(0..100) -> dünya koordinatı
+            function toWorld(sx, sy) {
+                return { x: (sx / 100 - 0.5) * PITCH_L, z: (sy / 100 - 0.5) * PITCH_W };
+            }
+
+            function makePitchTexture() {
+                const c = document.createElement('canvas'); c.width = 1024; c.height = 680;
+                const x = c.getContext('2d');
+                // çim şeritleri
+                const stripes = 18, sw = c.width / stripes;
+                for (let i = 0; i < stripes; i++) {
+                    x.fillStyle = i % 2 ? '#1f8a3b' : '#197a33';
+                    x.fillRect(i * sw, 0, sw, c.height);
+                }
+                x.strokeStyle = 'rgba(255,255,255,0.85)'; x.lineWidth = 4;
+                const m = 26;
+                x.strokeRect(m, m, c.width - 2 * m, c.height - 2 * m);
+                x.beginPath(); x.moveTo(c.width / 2, m); x.lineTo(c.width / 2, c.height - m); x.stroke();
+                x.beginPath(); x.arc(c.width / 2, c.height / 2, 80, 0, 7); x.stroke();
+                x.beginPath(); x.arc(c.width / 2, c.height / 2, 4, 0, 7); x.fillStyle = '#fff'; x.fill();
+                // ceza sahaları
+                const paH = 250, paW = 130, gaH = 120, gaW = 55;
+                [0, 1].forEach(side => {
+                    const bx = side ? c.width - m - paW : m;
+                    x.strokeRect(bx, c.height / 2 - paH / 2, paW, paH);
+                    const gx = side ? c.width - m - gaW : m;
+                    x.strokeRect(gx, c.height / 2 - gaH / 2, gaW, gaH);
+                });
+                const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+            }
+
+            function makeCrowdTexture(base) {
+                const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+                const x = c.getContext('2d');
+                x.fillStyle = base; x.fillRect(0, 0, c.width, c.height);
+                for (let i = 0; i < 1400; i++) {
+                    const r = Math.random();
+                    x.fillStyle = r < 0.33 ? '#e2e8f0' : r < 0.66 ? '#94a3b8' : ['#ef4444','#facc15','#22c55e','#3b82f6'][Math.floor(Math.random()*4)];
+                    x.fillRect(Math.random() * c.width, Math.random() * c.height, 2.2, 2.2);
+                }
+                const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(8, 2); return t;
+            }
+
+            function buildPlayer(kitColor, shortColor) {
+                const g = new THREE.Group();
+                const skin = 0xe2b48c;
+                const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.42, 1.25, 10),
+                    new THREE.MeshStandardMaterial({ color: kitColor, roughness: 0.8 }));
+                torso.position.y = 1.7; torso.castShadow = true; g.add(torso);
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.36, 12, 12),
+                    new THREE.MeshStandardMaterial({ color: skin, roughness: 0.7 }));
+                head.position.y = 2.6; head.castShadow = true; g.add(head);
+                const legMat = new THREE.MeshStandardMaterial({ color: shortColor, roughness: 0.85 });
+                const legGeo = new THREE.BoxGeometry(0.32, 1.1, 0.32);
+                const lL = new THREE.Mesh(legGeo, legMat); lL.position.set(-0.24, 0.55, 0); lL.castShadow = true; g.add(lL);
+                const lR = new THREE.Mesh(legGeo, legMat); lR.position.set(0.24, 0.55, 0); lR.castShadow = true; g.add(lR);
+                const armGeo = new THREE.BoxGeometry(0.2, 0.95, 0.2);
+                const aMat = new THREE.MeshStandardMaterial({ color: kitColor, roughness: 0.8 });
+                const aL = new THREE.Mesh(armGeo, aMat); aL.position.set(-0.72, 1.7, 0); g.add(aL);
+                const aR = new THREE.Mesh(armGeo, aMat); aR.position.set(0.72, 1.7, 0); g.add(aR);
+                g.userData = { legL: lL, legR: lR, armL: aL, armR: aR, phase: Math.random() * 6, cx: 0, cz: 0, hdg: 0 };
+                g.scale.setScalar(0.92);
+                return g;
+            }
+
+            function buildStand(w, color, len) {
+                const grp = new THREE.Group();
+                const tiers = 4;
+                for (let i = 0; i < tiers; i++) {
+                    const geo = new THREE.BoxGeometry(len, 2.2, 4);
+                    const mat = new THREE.MeshStandardMaterial({ map: makeCrowdTexture(color), roughness: 1 });
+                    const m = new THREE.Mesh(geo, mat);
+                    m.position.set(0, 2 + i * 1.8, -(i * 3.4));
+                    grp.add(m);
+                }
+                return grp;
+            }
+
+            function buildFigure(robe, hat) {
+                const g = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 2.0, 10),
+                    new THREE.MeshStandardMaterial({ color: robe, roughness: 0.9 }));
+                body.position.y = 1.0; body.castShadow = true; g.add(body);
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 12),
+                    new THREE.MeshStandardMaterial({ color: 0xe2b48c })); head.position.y = 2.3; g.add(head);
+                const h = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.7, 12),
+                    new THREE.MeshStandardMaterial({ color: hat })); h.position.y = 2.9; g.add(h);
+                return g;
+            }
+
+            function init() {
+                const canvas = document.getElementById('stadium3d-canvas');
+                if (!canvas || !window.THREE) { console.warn('3D yok'); return false; }
+                const W = canvas.clientWidth || 800, H = canvas.clientHeight || 500;
+                renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.setSize(W, H, false);
+                renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x070b14);
+                scene.fog = new THREE.Fog(0x070b14, 90, 200);
+                camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 600);
+
+                scene.add(new THREE.HemisphereLight(0xbcd4ff, 0x16331f, 0.75));
+                const moon = new THREE.DirectionalLight(0xffffff, 0.7);
+                moon.position.set(40, 80, 30); moon.castShadow = true;
+                moon.shadow.mapSize.set(1024, 1024); moon.shadow.camera.left = -60; moon.shadow.camera.right = 60;
+                moon.shadow.camera.top = 60; moon.shadow.camera.bottom = -60; scene.add(moon);
+
+                // saha
+                const pitch = new THREE.Mesh(new THREE.PlaneGeometry(PITCH_L, PITCH_W),
+                    new THREE.MeshStandardMaterial({ map: makePitchTexture(), roughness: 0.95 }));
+                pitch.rotation.x = -Math.PI / 2; pitch.receiveShadow = true; scene.add(pitch);
+                const surround = new THREE.Mesh(new THREE.PlaneGeometry(PITCH_L + 26, PITCH_W + 22),
+                    new THREE.MeshStandardMaterial({ color: 0x0c1322 }));
+                surround.rotation.x = -Math.PI / 2; surround.position.y = -0.05; scene.add(surround);
+
+                // kaleler
+                [-1, 1].forEach(s => {
+                    const gm = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                    const post = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.4, 0.2), gm);
+                    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 8), gm);
+                    const gx = s * (HALF_L + 0.3);
+                    post.position.set(gx, 1.7, -4); scene.add(post.clone());
+                    const p2 = post.clone(); p2.position.set(gx, 1.7, 4); scene.add(p2);
+                    bar.position.set(gx, 3.4, 0); scene.add(bar);
+                });
+
+                // tribünler (4 kenar)
+                const sN = buildStand(0, 0x1e293b, PITCH_L + 18); sN.position.set(0, 0, -(HALF_W + 6)); scene.add(sN);
+                const sS = buildStand(0, 0x1e293b, PITCH_L + 18); sS.position.set(0, 0, HALF_W + 6); sS.rotation.y = Math.PI; scene.add(sS);
+                const sE = buildStand(0, 0x223044, PITCH_W + 14); sE.position.set(HALF_L + 6, 0, 0); sE.rotation.y = -Math.PI / 2; scene.add(sE);
+                const sW = buildStand(0, 0x223044, PITCH_W + 14); sW.position.set(-(HALF_L + 6), 0, 0); sW.rotation.y = Math.PI / 2; scene.add(sW);
+
+                // ışık kuleleri + spot
+                [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx, sz]) => {
+                    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 26, 8),
+                        new THREE.MeshStandardMaterial({ color: 0x334155 }));
+                    pole.position.set(sx * (HALF_L + 10), 13, sz * (HALF_W + 9)); scene.add(pole);
+                    const lamp = new THREE.Mesh(new THREE.BoxGeometry(4, 1.6, 1),
+                        new THREE.MeshStandardMaterial({ color: 0xfff7d6, emissive: 0xfff2c0, emissiveIntensity: 1 }));
+                    lamp.position.set(sx * (HALF_L + 9), 25, sz * (HALF_W + 8)); scene.add(lamp);
+                    const spot = new THREE.SpotLight(0xfff4d6, 0.5, 200, Math.PI / 4, 0.4);
+                    spot.position.copy(lamp.position); spot.target.position.set(0, 0, 0);
+                    scene.add(spot); scene.add(spot.target);
+                });
+
+                // JUMBOTRON dev ekran (kuzey tribün üstü, +Z izleyiciye bakar)
+                jumboCanvas = document.createElement('canvas'); jumboCanvas.width = 512; jumboCanvas.height = 320;
+                jumboCtx = jumboCanvas.getContext('2d');
+                jumboTex = new THREE.CanvasTexture(jumboCanvas);
+                const screen = new THREE.Mesh(new THREE.PlaneGeometry(34, 21),
+                    new THREE.MeshBasicMaterial({ map: jumboTex }));
+                screen.position.set(0, 15, -(HALF_W + 9.4)); scene.add(screen);
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(36.5, 23.5, 1),
+                    new THREE.MeshStandardMaterial({ color: 0x0a0f1a }));
+                frame.position.set(0, 15, -(HALF_W + 10)); scene.add(frame);
+                // direkler
+                [-12, 12].forEach(dx => {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 14, 8),
+                        new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+                    leg.position.set(dx, 6, -(HALF_W + 10)); scene.add(leg);
+                });
+
+                // TEKNİK ALAN (güney kenar) + kulübe + Baldric + menajer
+                const dug = new THREE.Mesh(new THREE.BoxGeometry(14, 2.4, 3),
+                    new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+                dug.position.set(0, 1.2, HALF_W + 3.5); scene.add(dug);
+                const baldric = buildFigure(0x4338ca, 0xf59e0b);
+                baldric.position.set(3.4, 0, HALF_W + 2.6); baldric.rotation.y = Math.PI;
+                baldric.scale.setScalar(1.05); scene.add(baldric);
+                const manager = buildFigure(0x0f766e, 0x111827);
+                manager.position.set(-1.2, 0, HALF_W + 2.6); manager.rotation.y = Math.PI; scene.add(manager);
+
+                // OYUNCULAR
+                const [ev, dep] = gameState.currentMatch;
+                for (let i = 0; i < 11; i++) {
+                    const hp = buildPlayer(0x10b981, 0x065f46); scene.add(hp); players.home.push(hp);
+                    const ap = buildPlayer(0xef4444, 0x7f1d1d); scene.add(ap); players.away.push(ap);
+                }
+                // TOP
+                ball = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16),
+                    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
+                ball.castShadow = true; scene.add(ball);
+                ballShadow = new THREE.Mesh(new THREE.CircleGeometry(0.4, 16),
+                    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
+                ballShadow.rotation.x = -Math.PI / 2; ballShadow.position.y = 0.02; scene.add(ballShadow);
+
+                bindOrbit(canvas);
+                setCamera('screen');
+                window.addEventListener('resize', onResize);
+                const ld = document.getElementById('stadium3d-loading'); if (ld) ld.style.display = 'none';
+                loop();
+                return true;
+            }
+
+            function bindOrbit(canvas) {
+                canvas.addEventListener('pointerdown', e => { if (camMode !== 'free') return; orbit.drag = true; orbit.px = e.clientX; orbit.py = e.clientY; });
+                window.addEventListener('pointerup', () => orbit.drag = false);
+                window.addEventListener('pointermove', e => {
+                    if (!orbit.drag) return;
+                    orbit.az -= (e.clientX - orbit.px) * 0.005; orbit.el += (e.clientY - orbit.py) * 0.005;
+                    orbit.el = Math.max(0.15, Math.min(1.4, orbit.el));
+                    orbit.px = e.clientX; orbit.py = e.clientY;
+                });
+                canvas.addEventListener('wheel', e => { if (camMode !== 'free') return; e.preventDefault(); orbit.r = Math.max(30, Math.min(140, orbit.r + e.deltaY * 0.05)); }, { passive: false });
+            }
+
+            function onResize() {
+                const canvas = document.getElementById('stadium3d-canvas');
+                if (!canvas || !renderer) return;
+                const W = canvas.clientWidth, H = canvas.clientHeight;
+                renderer.setSize(W, H, false); camera.aspect = W / H; camera.updateProjectionMatrix();
+            }
+
+            function setCamera(mode) {
+                camMode = mode;
+                ['screen', 'pitchside', 'broadcast', 'free'].forEach(m => {
+                    const b = document.getElementById('cam-' + m);
+                    if (b) b.classList.toggle('active', m === mode);
+                });
+            }
+
+            function positionCamera() {
+                if (camMode === 'screen') {
+                    // Menajer koltuğundan: önde dev ekran, arada 3B oyuncular, yanda Baldric
+                    camera.position.set(-2, 6.5, HALF_W + 9);
+                    camera.lookAt(0, 7, -(HALF_W + 6));
+                } else if (camMode === 'pitchside') {
+                    camera.position.set(0, 4, HALF_W + 7);
+                    camera.lookAt(0, 1.5, 0);
+                } else if (camMode === 'broadcast') {
+                    camera.position.set(-HALF_L * 0.6, 26, HALF_W + 20);
+                    camera.lookAt(0, 0, 0);
+                } else { // free
+                    const x = Math.sin(orbit.az) * Math.cos(orbit.el) * orbit.r;
+                    const y = Math.sin(orbit.el) * orbit.r;
+                    const z = Math.cos(orbit.az) * Math.cos(orbit.el) * orbit.r;
+                    camera.position.set(x, Math.max(3, y), z); camera.lookAt(0, 2, 0);
+                }
+            }
+
+            function drawJumbotron() {
+                const s = gameState.sim; if (!s || !jumboCtx) return;
+                const x = jumboCtx, W = jumboCanvas.width, H = jumboCanvas.height;
+                // saha
+                x.fillStyle = '#0b3d1f'; x.fillRect(0, 0, W, H);
+                const pad = 24;
+                for (let i = 0; i < 12; i++) { x.fillStyle = i % 2 ? '#15803d' : '#13702f'; x.fillRect(pad + i * (W - 2 * pad) / 12, pad, (W - 2 * pad) / 12, H - 2 * pad); }
+                x.strokeStyle = 'rgba(255,255,255,0.8)'; x.lineWidth = 2;
+                x.strokeRect(pad, pad, W - 2 * pad, H - 2 * pad);
+                x.beginPath(); x.moveTo(W / 2, pad); x.lineTo(W / 2, H - pad); x.stroke();
+                x.beginPath(); x.arc(W / 2, H / 2, 28, 0, 7); x.stroke();
+                const px = sx => pad + (sx / 100) * (W - 2 * pad);
+                const py = sy => pad + (sy / 100) * (H - 2 * pad);
+                const dot = (sx, sy, col, r) => { x.beginPath(); x.arc(px(sx), py(sy), r, 0, 7); x.fillStyle = col; x.fill(); };
+                ['home', 'away'].forEach(side => {
+                    for (let i = 0; i < 11; i++) { const d = s.disp[side][i]; if (d) dot(d.x, d.y, side === 'home' ? '#34d399' : '#f87171', 5); }
+                });
+                dot(s.ball.x, s.ball.y, '#ffffff', 3.5);
+                // skor şeridi
+                x.fillStyle = 'rgba(2,6,23,0.85)'; x.fillRect(0, 0, W, 20);
+                x.fillStyle = '#fff'; x.font = 'bold 13px sans-serif'; x.textAlign = 'center';
+                x.fillText(`${gameState.lastResult[0]} - ${gameState.lastResult[1]}   ${gameState.matchMinute}'`, W / 2, 15);
+                jumboTex.needsUpdate = true;
+            }
+
+            function updateEntities(dt) {
+                const s = gameState.sim; if (!s) return;
+                ['home', 'away'].forEach(side => {
+                    for (let i = 0; i < 11; i++) {
+                        const mesh = players[side][i]; const d = s.disp[side][i]; if (!mesh || !d) continue;
+                        const w = toWorld(d.x, d.y);
+                        const ud = mesh.userData;
+                        const dx = w.x - mesh.position.x, dz = w.z - mesh.position.z;
+                        const speed = Math.hypot(dx, dz);
+                        mesh.position.x += dx * 0.12; mesh.position.z += dz * 0.12;
+                        if (speed > 0.02) {
+                            const hdg = Math.atan2(dx, dz);
+                            let diff = hdg - ud.hdg; while (diff > Math.PI) diff -= 2 * Math.PI; while (diff < -Math.PI) diff += 2 * Math.PI;
+                            ud.hdg += diff * 0.2; mesh.rotation.y = ud.hdg;
+                            ud.phase += dt * (6 + speed * 30);
+                            const sw = Math.sin(ud.phase) * Math.min(0.7, speed * 6);
+                            ud.legL.rotation.x = sw; ud.legR.rotation.x = -sw;
+                            ud.armL.rotation.x = -sw * 0.7; ud.armR.rotation.x = sw * 0.7;
+                            mesh.children[0].rotation.x = Math.min(0.18, speed * 1.5); // gövde öne eğim
+                        } else {
+                            ud.legL.rotation.x *= 0.8; ud.legR.rotation.x *= 0.8;
+                            mesh.children[0].rotation.x *= 0.8;
+                        }
+                    }
+                });
+                if (ball) {
+                    const w = toWorld(s.ball.x, s.ball.y);
+                    ball.position.x += (w.x - ball.position.x) * 0.18;
+                    ball.position.z += (w.z - ball.position.z) * 0.18;
+                    const moving = Math.hypot(w.x - ball.position.x, w.z - ball.position.z);
+                    ball.position.y = 0.45 + Math.abs(Math.sin(performance.now() / 130)) * Math.min(1.4, moving * 0.8);
+                    ball.rotation.x += 0.2; ball.rotation.z += 0.15;
+                    ballShadow.position.x = ball.position.x; ballShadow.position.z = ball.position.z;
+                }
+            }
+
+            let last = performance.now();
+            function loop() {
+                if (!renderer) return;
+                raf = requestAnimationFrame(loop);
+                const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
+                if (gameState.sim) { updateEntities(dt); drawJumbotron(); }
+                positionCamera();
+                renderer.render(scene, camera);
+            }
+
+            function dispose() {
+                if (raf) cancelAnimationFrame(raf); raf = null;
+                window.removeEventListener('resize', onResize);
+                if (renderer) { renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); }
+                renderer = null; scene = null; camera = null;
+                players = { home: [], away: [] }; ball = null;
+            }
+
+            return { init, dispose, setCamera, isReady: () => !!renderer };
+        })();
+
+        function stadium3dSetCamera(mode) { if (Stadium3D.isReady()) Stadium3D.setCamera(mode); }
+        function toggleMatchStats() {
+            const p = document.getElementById('match-stats-panel');
+            if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+        }
+
+        /* ===== DANIŞMAN BALDRIC — canlı saha kenarı analizi ===== */
+        function teamAvgRating(team) {
+            const arr = team.ilk_11.map(p => p._rating ?? 6.0);
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+        function updateBaldric() {
+            const el = document.getElementById('baldric-content');
+            if (!el || !gameState.sim) return;
+            const [ev, dep] = gameState.currentMatch;
+            const sH = gameState.matchStats.home, sA = gameState.matchStats.away;
+            const my = ev; // kullanıcı her zaman ev sahibi
+            const rating = teamAvgRating(my);
+            const tiredCount = my.ilk_11.filter(p => p.enerji < 45).length;
+            const mod = tacticalModifiers(my);
+            const poss = sH.possession;
+            const lead = gameState.lastResult[0] - gameState.lastResult[1];
+
+            // tempo okuması
+            let tempoTxt, tempoColor;
+            if (mod.fatigueRate > 1.5) { tempoTxt = 'ÇOK YÜKSEK'; tempoColor = 'text-rose-400'; }
+            else if (mod.fatigueRate > 1.1) { tempoTxt = 'YÜKSEK'; tempoColor = 'text-amber-400'; }
+            else if (mod.fatigueRate > 0.85) { tempoTxt = 'DENGELİ'; tempoColor = 'text-emerald-400'; }
+            else { tempoTxt = 'DÜŞÜK'; tempoColor = 'text-sky-400'; }
+
+            // öneriler
+            const tips = [];
+            if (tiredCount >= 2) tips.push(`⚡ ${tiredCount} oyuncu yorgun (<%45). Değişiklik düşün.`);
+            if (poss < 42) tips.push('🎯 Top bizde durmuyor — tempoyu düşür, kısa pasa geç.');
+            if (poss > 60 && gameState.matchMinute > 20 && lead <= 0) tips.push('🔓 Hakimiyet var ama gol yok — yaratıcılığı/ofansifliği artır.');
+            if (lead > 0 && gameState.matchMinute > 70) tips.push('🛡️ Öndesin, son bölüm: zaman oyunu + savunma hattını düşür.');
+            if (lead < 0 && gameState.matchMinute > 60) tips.push('🔥 Gerideyiz — pres ve ofansifliği yükselt, risk al.');
+            if (sH.xg > 1.2 && gameState.lastResult[0] === 0) tips.push('😬 xG yüksek ama gol yok — bitiricilik kötü, forvet değiştir.');
+            if (!tips.length) tips.push('👍 Plan tutuyor. Mevcut düzeni koru.');
+
+            const ratColor = rating >= 7.2 ? 'text-emerald-400' : rating >= 6.4 ? 'text-amber-400' : 'text-rose-400';
+            el.innerHTML = `
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">Takım Reytingi</p><p class="text-base font-black ${ratColor}">${rating.toFixed(1)}</p></div>
+                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">Tempo</p><p class="text-base font-black ${tempoColor}">${tempoTxt}</p></div>
+                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">xG</p><p class="text-sm font-black text-sky-400">${(sH.xg||0).toFixed(2)}<span class="text-slate-500 text-[9px]"> vs ${(sA.xg||0).toFixed(2)}</span></p></div>
+                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">Hakimiyet</p><p class="text-sm font-black text-emerald-400">%${poss}</p></div>
+                </div>
+                <div class="mt-2 space-y-1.5">
+                    ${tips.map(t => `<p class="text-[10px] text-slate-200 bg-indigo-900/30 border border-indigo-500/20 rounded-lg px-2 py-1.5 leading-snug">${t}</p>`).join('')}
+                </div>`;
+        }
+
         // Maç simülasyonunu kur: oyuncuları dizilişlerine yerleştir, top ortada
         function setupMatchSim() {
             const [ev, dep] = gameState.currentMatch;
@@ -1303,6 +1842,11 @@
             setupMatchSim();
             buildMatchDom();
             updateMatchHud();
+            // 3D stadyumu kur (DOM yerleştikten sonra ölçü doğru olsun diye bir frame bekle)
+            requestAnimationFrame(() => { try { Stadium3D.init(); } catch (e) { console.warn('3D init hata:', e); } });
+            // Baldric canlı analiz döngüsü
+            updateBaldric();
+            gameState.baldricTimer = setInterval(updateBaldric, 2500);
             // 60fps yumuşak hareket döngüsü
             gameState.sim.raf = requestAnimationFrame(animateMatchFrame);
             // Top akışı (pas / şut) — dakikadan bağımsız, sürekli oyun hissi
@@ -1313,11 +1857,11 @@
                 if (gameState.phase !== 'normal') return;
                 gameState.matchMinute++;
 
-                const presFactor = gameState.myTeam.taktik.pres / 60;
-                const tempoFactor = gameState.myTeam.taktik.tempo / 60;
+                // Yorulma artık taktik yoğunluğuna (tempo+pres+pres tetikleyici) bağlı
+                const fatigueRate = tacticalModifiers(gameState.myTeam).fatigueRate;
                 gameState.myTeam.ilk_11.forEach(p => {
                     let rate = p.karakter === "Cam Adam" ? 0.38 : (p.karakter === "Hırslı" ? 0.28 : 0.20);
-                    rate = rate * presFactor * tempoFactor;
+                    rate = rate * fatigueRate;
                     p.enerji = Math.max(10, p.enerji - rate);
                 });
 
@@ -1411,6 +1955,8 @@
                 if (gameState.sim.raf) cancelAnimationFrame(gameState.sim.raf);
                 if (gameState.sim.flowTimer) clearInterval(gameState.sim.flowTimer);
                 if (gameState.matchTimer) clearInterval(gameState.matchTimer);
+                if (gameState.baldricTimer) clearInterval(gameState.baldricTimer);
+                try { Stadium3D.dispose(); } catch (e) {}
                 gameState.isMatchLive = false;
                 gameState.sim = null;
             }
@@ -1617,23 +2163,33 @@
             render();
         }
 
+        function setPlayerDuty(idx, value) {
+            const p = gameState.myTeam.ilk_11[idx];
+            if (p) p.gorev = value;
+            render();
+        }
+
         function applyTacticalTemplate(template) {
             const t = gameState.myTeam.taktik;
             if(template === 'tikitaka') {
-                t.ofansiflik = 75; t.savunma_hatti = 45; t.tempo = 40; t.pres = 75; t.genislik = 50; t.yaraticilik = 85;
+                t.ofansiflik = 75; t.savunma_hatti = 45; t.tempo = 40; t.pres = 75; t.genislik = 50; t.yaraticilik = 85; t.riskli_paslar = 35;
                 t.pas_tarzi = 'Kısa Pas'; t.hucum_odagi = 'Merkez'; t.savunma_stili = 'Alan';
+                t.pres_tetikleyici = 'Agresif'; t.cikis_oyunu = 'Kaleciden Kur'; t.top_kazaninca = 'Topu Tut'; t.ofsayt_tuzagi = false; t.zaman_oyunu = false;
                 triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Tiki-Taka. Kısa paslaşma ve topa sahip olma ana odak!");
             } else if (template === 'gegenpress') {
-                t.ofansiflik = 85; t.savunma_hatti = 75; t.tempo = 80; t.pres = 95; t.genislik = 70; t.yaraticilik = 55;
+                t.ofansiflik = 85; t.savunma_hatti = 75; t.tempo = 80; t.pres = 95; t.genislik = 70; t.yaraticilik = 55; t.riskli_paslar = 55;
                 t.pas_tarzi = 'Direkt Oyun'; t.hucum_odagi = 'Dengeli'; t.savunma_stili = 'Adam Adama';
+                t.pres_tetikleyici = 'Ultra'; t.cikis_oyunu = 'Dengeli'; t.top_kazaninca = 'Hızlı Kontra'; t.ofsayt_tuzagi = true; t.zaman_oyunu = false;
                 triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Gegenpressing. Top kaybedildiği anda yoğun ön alan presi!");
             } else if (template === 'bus') {
-                t.ofansiflik = 18; t.savunma_hatti = 20; t.tempo = 30; t.pres = 35; t.genislik = 40; t.yaraticilik = 15;
+                t.ofansiflik = 18; t.savunma_hatti = 20; t.tempo = 30; t.pres = 35; t.genislik = 40; t.yaraticilik = 15; t.riskli_paslar = 20;
                 t.pas_tarzi = 'Uzun Top'; t.hucum_odagi = 'Dengeli'; t.savunma_stili = 'Alan';
+                t.pres_tetikleyici = 'Pasif'; t.cikis_oyunu = 'Uzun Açılım'; t.top_kazaninca = 'Dengeli'; t.ofsayt_tuzagi = false; t.zaman_oyunu = true;
                 triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Otobüsü Çek. Katı savunma, ultra defansif duruş!");
             } else if (template === 'counter') {
-                t.ofansiflik = 55; t.savunma_hatti = 35; t.tempo = 88; t.pres = 50; t.genislik = 78; t.yaraticilik = 60;
+                t.ofansiflik = 55; t.savunma_hatti = 35; t.tempo = 88; t.pres = 50; t.genislik = 78; t.yaraticilik = 60; t.riskli_paslar = 65;
                 t.pas_tarzi = 'Direkt Oyun'; t.hucum_odagi = 'Kanatlar'; t.savunma_stili = 'Alan';
+                t.pres_tetikleyici = 'Orta'; t.cikis_oyunu = 'Dengeli'; t.top_kazaninca = 'Hızlı Kontra'; t.ofsayt_tuzagi = false; t.zaman_oyunu = false;
                 triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Kontra Atak. Kendi sahasında kabul, hızlı geçiş!");
             }
             render();
@@ -1653,8 +2209,8 @@
             gameState.selectedSubstitutionOut = null;
             // Reset match stats
             gameState.matchStats = {
-                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0 },
-                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0 }
+                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0 },
+                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0 }
             };
             gameState.redCardedPlayers = new Set();
             gameState.injuredPlayers = new Set();
@@ -1749,71 +2305,140 @@
                 renderLineupPitch();
             } else if (gameState.view === 'tactics') {
                 const tact = gameState.myTeam.taktik;
+                const an = tacticalAnalysis(gameState.myTeam);
+                const opt = (val, cur) => `<option value="${val}" ${cur === val ? 'selected' : ''}>${val}</option>`;
+                const bar = (label, val, color) => `
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1"><span class="text-slate-400 font-bold uppercase tracking-wider">${label}</span><span class="font-black ${color}">${val}</span></div>
+                        <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full ${color.replace('text-','bg-')}" style="width:${val}%"></div></div>
+                    </div>`;
                 container.innerHTML = `
-                    <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
+                    <div class="max-w-6xl mx-auto py-4 space-y-5 animate-fade-in">
                         <div class="flex justify-between items-center">
                             <div>
-                                <h2 class="text-2xl font-black italic text-white uppercase">TAKTİK VE SİSTEM YÖNETİMİ</h2>
-                                <p class="text-xs text-slate-300">Taktikleriniz maçlardaki yorulma hızını, şut doğruluğunu ve defans gücünü doğrudan etkiler.</p>
+                                <h2 class="text-2xl font-black italic text-white uppercase">⚙️ TAKTİK MERKEZİ <span class="text-indigo-400">FM PRO</span></h2>
+                                <p class="text-xs text-slate-300">Her ayar maça <b class="text-emerald-400">canlı ve sayısal</b> olarak yansır. Sağdaki panelden öngörülen etkiyi izle.</p>
                             </div>
-                            <button onclick="changeView('main_menu')" class="bg-emerald-500 hover:bg-emerald-400 px-6 py-2.5 rounded-xl text-xs font-black text-white">UYGULA VE ANA MENÜYE DÖN</button>
+                            <button onclick="changeView('main_menu')" class="bg-emerald-500 hover:bg-emerald-400 px-6 py-2.5 rounded-xl text-xs font-black text-white">UYGULA VE DÖN</button>
                         </div>
 
-                        <div class="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center md:text-left">HAZIR SİSTEM ŞABLONLARI</p>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <button onclick="applyTacticalTemplate('tikitaka')" class="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-lg transition-all">Tiki-Taka</button>
-                                <button onclick="applyTacticalTemplate('gegenpress')" class="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-xs font-bold rounded-lg transition-all">Gegenpressing</button>
-                                <button onclick="applyTacticalTemplate('bus')" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold rounded-lg transition-all">Otobüsü Çek</button>
-                                <button onclick="applyTacticalTemplate('counter')" class="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-xs font-bold rounded-lg transition-all">Hızlı Kontra</button>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                          <!-- SOL: AYARLAR -->
+                          <div class="lg:col-span-2 space-y-4">
+                            <div class="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">HAZIR SİSTEM ŞABLONLARI</p>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <button onclick="applyTacticalTemplate('tikitaka')" class="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-lg">Tiki-Taka</button>
+                                    <button onclick="applyTacticalTemplate('gegenpress')" class="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-xs font-bold rounded-lg">Gegenpressing</button>
+                                    <button onclick="applyTacticalTemplate('bus')" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold rounded-lg">Otobüsü Çek</button>
+                                    <button onclick="applyTacticalTemplate('counter')" class="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-xs font-bold rounded-lg">Hızlı Kontra</button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="bg-slate-900/60 p-4 rounded-xl border border-white/5 shadow-lg">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Pas Dağıtım Tarzı</label>
-                                <select onchange="gameState.myTeam.taktik.pas_tarzi = this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg block w-full p-2.5 border border-white/10">
-                                    <option value="Kısa Pas" ${tact.pas_tarzi === 'Kısa Pas' ? 'selected' : ''}>Kısa Pas (Düşük Risk, Sabit Tempo)</option>
-                                    <option value="Uzun Top" ${tact.pas_tarzi === 'Uzun Top' ? 'selected' : ''}>Uzun Top (Defans Arkasına Direkt)</option>
-                                    <option value="Direkt Oyun" ${tact.pas_tarzi === 'Direkt Oyun' ? 'selected' : ''}>Direkt Oyun (Hızlı Geçiş Oyunu)</option>
-                                </select>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Dizilim</label>
+                                    <select onchange="gameState.myTeam.taktik.dizilim=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
+                                        ${['4-4-2','4-3-3','4-2-3-1','3-5-2','5-3-2'].map(v=>opt(v,tact.dizilim)).join('')}
+                                    </select>
+                                </div>
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Pas Tarzı</label>
+                                    <select onchange="gameState.myTeam.taktik.pas_tarzi=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
+                                        ${['Kısa Pas','Direkt Oyun','Uzun Top'].map(v=>opt(v,tact.pas_tarzi)).join('')}
+                                    </select>
+                                </div>
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Hücum Odağı</label>
+                                    <select onchange="gameState.myTeam.taktik.hucum_odagi=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
+                                        ${['Dengeli','Kanatlar','Merkez'].map(v=>opt(v,tact.hucum_odagi)).join('')}
+                                    </select>
+                                </div>
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Markaj</label>
+                                    <select onchange="gameState.myTeam.taktik.savunma_stili=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
+                                        ${['Alan','Adam Adama'].map(v=>opt(v,tact.savunma_stili)).join('')}
+                                    </select>
+                                </div>
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Pres Tetikleyici</label>
+                                    <select onchange="gameState.myTeam.taktik.pres_tetikleyici=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
+                                        ${['Pasif','Orta','Agresif','Ultra'].map(v=>opt(v,tact.pres_tetikleyici)).join('')}
+                                    </select>
+                                </div>
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Çıkış Oyunu</label>
+                                    <select onchange="gameState.myTeam.taktik.cikis_oyunu=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
+                                        ${['Kaleciden Kur','Dengeli','Uzun Açılım'].map(v=>opt(v,tact.cikis_oyunu)).join('')}
+                                    </select>
+                                </div>
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Top Kazanınca</label>
+                                    <select onchange="gameState.myTeam.taktik.top_kazaninca=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
+                                        ${['Hızlı Kontra','Dengeli','Topu Tut'].map(v=>opt(v,tact.top_kazaninca)).join('')}
+                                    </select>
+                                </div>
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5 flex flex-col justify-between">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Ofsayt Tuzağı</label>
+                                    <button onclick="gameState.myTeam.taktik.ofsayt_tuzagi=!gameState.myTeam.taktik.ofsayt_tuzagi; render();" class="w-full p-2 rounded-lg text-xs font-black ${tact.ofsayt_tuzagi?'bg-emerald-500 text-white':'bg-slate-800 text-slate-400'}">${tact.ofsayt_tuzagi?'AÇIK ⚠️':'KAPALI'}</button>
+                                </div>
+                                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5 flex flex-col justify-between">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Zaman Oyunu</label>
+                                    <button onclick="gameState.myTeam.taktik.zaman_oyunu=!gameState.myTeam.taktik.zaman_oyunu; render();" class="w-full p-2 rounded-lg text-xs font-black ${tact.zaman_oyunu?'bg-amber-500 text-white':'bg-slate-800 text-slate-400'}">${tact.zaman_oyunu?'AÇIK':'KAPALI'}</button>
+                                </div>
                             </div>
-                            <div class="bg-slate-900/60 p-4 rounded-xl border border-white/5 shadow-lg">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Hücum Odağı</label>
-                                <select onchange="gameState.myTeam.taktik.hucum_odagi = this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg block w-full p-2.5 border border-white/10">
-                                    <option value="Dengeli" ${tact.hucum_odagi === 'Dengeli' ? 'selected' : ''}>Dengeli (Karışık Dağılım)</option>
-                                    <option value="Kanatlar" ${tact.hucum_odagi === 'Kanatlar' ? 'selected' : ''}>Kanat Akınları (Bekleri Destekler)</option>
-                                    <option value="Merkez" ${tact.hucum_odagi === 'Merkez' ? 'selected' : ''}>Merkez Hücum (Oyun Kurucuları Parlatır)</option>
-                                </select>
-                            </div>
-                            <div class="bg-slate-900/60 p-4 rounded-xl border border-white/5 shadow-lg">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Savunma Biçimi</label>
-                                <select onchange="gameState.myTeam.taktik.savunma_stili = this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg block w-full p-2.5 border border-white/10">
-                                    <option value="Alan" ${tact.savunma_stili === 'Alan' ? 'selected' : ''}>Alan Savunması (Sakin, Pozisyonel)</option>
-                                    <option value="Adam Adama" ${tact.savunma_stili === 'Adam Adama' ? 'selected' : ''}>Adam Adama (Agresif, Yakın Markaj)</option>
-                                </select>
-                            </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            ${["ofansiflik", "savunma_hatti", "tempo", "pres", "genislik", "yaraticilik"].map(key => `
-                                <div class="bg-slate-900/60 p-5 rounded-2xl border border-white/5 shadow-lg">
-                                    <div class="flex justify-between mb-3">
-                                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest">${key.replace('_',' ')}</label>
-                                        <span class="text-emerald-400 font-black tabular-nums bg-emerald-500/10 px-3 py-0.5 rounded-full text-xs">${gameState.myTeam.taktik[key]}</span>
-                                    </div>
-                                    <input type="range" min="0" max="100" value="${gameState.myTeam.taktik[key]}" oninput="gameState.myTeam.taktik['${key}']=parseInt(this.value); render();" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
-                                </div>`).join('')}
-                        </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                ${[["ofansiflik","Ofansiflik"],["savunma_hatti","Savunma Hattı"],["tempo","Tempo"],["pres","Pres Şiddeti"],["genislik","Genişlik"],["yaraticilik","Yaratıcılık"],["riskli_paslar","Riskli Paslar"]].map(([key,lbl]) => `
+                                    <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-white/5">
+                                        <div class="flex justify-between mb-2">
+                                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">${lbl}</label>
+                                            <span class="text-emerald-400 font-black tabular-nums bg-emerald-500/10 px-2.5 py-0.5 rounded-full text-xs">${gameState.myTeam.taktik[key]}</span>
+                                        </div>
+                                        <input type="range" min="0" max="100" value="${gameState.myTeam.taktik[key]}" oninput="gameState.myTeam.taktik['${key}']=parseInt(this.value); render();" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                                    </div>`).join('')}
+                            </div>
 
-                        <div class="bg-slate-950/80 p-5 rounded-2xl border border-indigo-500/20 shadow-inner">
-                            <h4 class="text-xs font-black text-indigo-400 uppercase mb-2">💡 TAKTİKLERİN MAÇA DİREKT ETKİLERİ</h4>
-                            <ul class="text-[11px] text-slate-300 space-y-1.5 list-disc pl-4 font-medium">
-                                <li><b>Pres ve Tempo Seviyesi:</b> Ne kadar yüksekse atak şansınız o kadar artar ama oyuncularınızın <b>maç içi enerjisi (fatigue) orantılı şekilde çok daha hızlı tükenir</b>.</li>
-                                <li><b>Savunma Hattı:</b> 70'in üzerine çıkarıldığında rakibe ofsayt baskısı kurulur fakat arkaya sarkan toplarda rakip gole çok daha kolay yaklaşır (Yüksek Risk).</li>
-                                <li><b>Merkez Odağı & Kısa Pas:</b> Orta saha oyuncularınızın mevkisel rol bonuslarını %20 oranında tetikler.</li>
-                                <li><b>Kanat Akınları:</b> Bek oyuncularınızın ofansif niteliklerini artırır, orta/arka direk aksiyonlarını çoğaltır.</li>
-                            </ul>
+                            <div class="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">OYUNCU GÖREVLERİ (İLK 11)</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+                                    ${gameState.myTeam.ilk_11.map((p,i) => `
+                                        <div class="flex items-center justify-between bg-slate-950/70 rounded-lg p-2 border border-white/5">
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-bold text-white truncate">${p.ad}</p>
+                                                <p class="text-[9px] text-slate-500 uppercase font-black">${p.mevkii} • ${p.role}</p>
+                                            </div>
+                                            <select onchange="setPlayerDuty(${i}, this.value)" class="bg-slate-900 text-slate-100 text-[10px] rounded-md p-1.5 border border-white/10 ml-2 shrink-0">
+                                                ${['Savunma','Destek','Hücum'].map(v=>opt(v,p.gorev)).join('')}
+                                            </select>
+                                        </div>`).join('')}
+                                </div>
+                            </div>
+                          </div>
+
+                          <!-- SAĞ: CANLI ÖNGÖRÜ PANELİ -->
+                          <div class="space-y-4">
+                            <div class="bg-gradient-to-br from-indigo-950/80 to-slate-950 p-5 rounded-2xl border border-indigo-500/30 shadow-xl sticky top-2">
+                                <h4 class="text-xs font-black text-indigo-300 uppercase mb-1 flex items-center gap-2">📊 ÖNGÖRÜLEN MAÇ ETKİSİ</h4>
+                                <p class="text-[9px] text-slate-500 mb-4">Bu rakamlar mevcut taktiğin maça yansımasıdır.</p>
+                                <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">xG / Maç</p><p class="text-lg font-black text-emerald-400">${an.projXG}</p></div>
+                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">Şut</p><p class="text-lg font-black text-sky-400">${an.projShots}</p></div>
+                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">Hakimiyet</p><p class="text-lg font-black text-amber-400">%${an.projPoss}</p></div>
+                                </div>
+                                <div class="space-y-2.5">
+                                    ${bar('Hücum', an.attack, 'text-rose-400')}
+                                    ${bar('Savunma', an.defense, 'text-sky-400')}
+                                    ${bar('Top Kontrolü', an.control, 'text-emerald-400')}
+                                    ${bar('Pres Şiddeti', an.intensity, 'text-orange-400')}
+                                    ${bar('Yorulma Hızı', an.fatiguePct, 'text-amber-400')}
+                                </div>
+                                ${an.warnings.length ? `
+                                <div class="mt-4 space-y-1.5">
+                                    ${an.warnings.map(w=>`<p class="text-[10px] text-rose-300 bg-rose-950/40 border border-rose-500/20 rounded-lg p-2">⚠️ ${w}</p>`).join('')}
+                                </div>` : `<p class="mt-4 text-[10px] text-emerald-300 bg-emerald-950/30 border border-emerald-500/20 rounded-lg p-2">✅ Dengeli ve sürdürülebilir bir sistem.</p>`}
+                            </div>
+                          </div>
                         </div>
                     </div>`;
             } else if (gameState.view === 'transfer') {
