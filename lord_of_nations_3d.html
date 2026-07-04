@@ -271,13 +271,29 @@ const TECHS=[
  {id:'flight',name:'🚀 Jet Çağı',cost:50,desc:'Hava üstünlüğü',effect:{military:10}},
 ];
 const LAWS=[
- {id:'conscript',name:'🪖 Zorunlu Askerlik',desc:'+20% asker üretimi, -mutluluk',mod:{recruitBoost:.2,happinessPerTurn:-.3}},
- {id:'freepress',name:'📰 Basın Özgürlüğü',desc:'+mutluluk, +itibar',mod:{happinessPerTurn:.3,reputationPerTurn:.2}},
- {id:'protect',name:'🛡️ Ekonomik Koruma',desc:'+sanayi',mod:{industryPerTurn:.4}},
- {id:'subsidy',name:'💸 Sübvansiyon',desc:'-altın, +mutluluk',mod:{goldDrain:300,happinessPerTurn:.5}},
- {id:'meritcracy',name:'⭐ Liyakat',desc:'-yolsuzluk, +bilim',mod:{corruptionPerTurn:-.5,techPerTurn:.3}},
- {id:'patriotism',name:'🚩 Vatanseverlik',desc:'+moral',mod:{moralePerTurn:.6,happinessPerTurn:-.1}},
+ // ⚔️ Askeri
+ {id:'conscript',cat:'⚔️ Askeri',name:'🪖 Zorunlu Askerlik',desc:'+%20 asker üretimi, -0.3 mutluluk/ay',mod:{recruitBoost:.2,happinessPerTurn:-.3}},
+ {id:'profarmy',cat:'⚔️ Askeri',name:'🎖️ Profesyonel Ordu',desc:'+0.4 moral/ay, pahalı (-400 altın/ay)',mod:{moralePerTurn:.4,goldDrain:400}},
+ {id:'reserves',cat:'⚔️ Askeri',name:'🔵 Yedek Sistemi',desc:'+%10 asker, hafif -mutluluk',mod:{recruitBoost:.1,happinessPerTurn:-.1}},
+ {id:'veterans',cat:'⚔️ Askeri',name:'🏅 Gazi Hakları',desc:'+0.3 moral, +0.2 mutluluk, -250 altın/ay',mod:{moralePerTurn:.3,happinessPerTurn:.2,goldDrain:250}},
+ // 💼 Ekonomi
+ {id:'protect',cat:'💼 Ekonomi',name:'🛡️ Ekonomik Koruma',desc:'+0.4 sanayi/ay',mod:{industryPerTurn:.4}},
+ {id:'freetrade',cat:'💼 Ekonomi',name:'🔄 Serbest Ticaret',desc:'+0.2 sanayi, +0.2 itibar/ay',mod:{industryPerTurn:.2,reputationPerTurn:.2}},
+ {id:'subsidy',cat:'💼 Ekonomi',name:'💸 Sübvansiyon',desc:'+0.5 mutluluk, -300 altın/ay',mod:{goldDrain:300,happinessPerTurn:.5}},
+ {id:'progtax',cat:'💼 Ekonomi',name:'📊 Artan Oranlı Vergi',desc:'+250 altın/ay gelir, -0.2 mutluluk',mod:{goldDrain:-250,happinessPerTurn:-.2}},
+ {id:'laborrights',cat:'💼 Ekonomi',name:'👷 İşçi Hakları',desc:'+0.4 mutluluk, -0.15 sanayi/ay',mod:{happinessPerTurn:.4,industryPerTurn:-.15}},
+ // ❤️ Sosyal
+ {id:'freepress',cat:'❤️ Sosyal',name:'📰 Basın Özgürlüğü',desc:'+0.3 mutluluk, +0.2 itibar/ay',mod:{happinessPerTurn:.3,reputationPerTurn:.2}},
+ {id:'healthcare',cat:'❤️ Sosyal',name:'🏥 Genel Sağlık Sistemi',desc:'+0.4 mutluluk, -350 altın/ay',mod:{happinessPerTurn:.4,goldDrain:350}},
+ {id:'education',cat:'❤️ Sosyal',name:'📚 Zorunlu Eğitim',desc:'+0.3 bilim, -300 altın/ay',mod:{techPerTurn:.3,goldDrain:300}},
+ {id:'welfare',cat:'❤️ Sosyal',name:'🤲 Sosyal Yardım',desc:'+0.5 mutluluk, -400 altın, +0.1 yolsuzluk',mod:{happinessPerTurn:.5,goldDrain:400,corruptionPerTurn:.1}},
+ // ⚖️ Adalet & Bilim
+ {id:'meritcracy',cat:'⚖️ Adalet & Bilim',name:'⭐ Liyakat Sistemi',desc:'-0.5 yolsuzluk, +0.3 bilim/ay',mod:{corruptionPerTurn:-.5,techPerTurn:.3}},
+ {id:'anticorrupt',cat:'⚖️ Adalet & Bilim',name:'🕵️ Yolsuzlukla Mücadele',desc:'-0.6 yolsuzluk, -200 altın/ay',mod:{corruptionPerTurn:-.6,goldDrain:200}},
+ {id:'patriotism',cat:'⚖️ Adalet & Bilim',name:'🚩 Vatanseverlik',desc:'+0.6 moral, -0.1 mutluluk/ay',mod:{moralePerTurn:.6,happinessPerTurn:-.1}},
+ {id:'rndfund',cat:'⚖️ Adalet & Bilim',name:'🔬 AR-GE Fonu',desc:'+0.5 bilim, -500 altın/ay',mod:{techPerTurn:.5,goldDrain:500}},
 ];
+const LAW_MOD_LABELS={recruitBoost:'Asker',happinessPerTurn:'Mutluluk',industryPerTurn:'Sanayi',goldDrain:'Altın gideri',corruptionPerTurn:'Yolsuzluk',techPerTurn:'Bilim',moralePerTurn:'Moral',reputationPerTurn:'İtibar'};
 const IDEOLOGIES=[
  {id:'monarchy',name:'👑 Monarşi',desc:'Hızlı kararlar, +ordu, %10 vergi bonusu.',mods:{happiness:-3,military:5,taxBonus:1.1}},
  {id:'democracy',name:'🗳️ Demokrasi',desc:'+mutluluk +itibar, yavaş ordu.',mods:{happiness:5,reputation:5,recruitMul:.9}},
@@ -534,8 +550,15 @@ function openPanel(title,tabs,defTab){
  renderPanel(G.currentTab);
  $('panelWrap').style.display='block';
  if(document.pointerLockElement)document.exitPointerLock();
+ tutPanelCheck(tabs,G.currentTab);
 }
-function switchTab(t){G.currentTab=t;document.querySelectorAll('.ptab').forEach(x=>x.classList.toggle('active',x.textContent===(TAB_NAMES[t]||t)));renderPanel(t);}
+function tutPanelCheck(tabs,cur){
+ if(typeof tut!=='function'||!G.tutorial||!G.tutorial.active)return;
+ const mins=['economy','budget','military','armydetail','laws','diplomacy','trade','ops','religion','ideology','resources','build','tech'];
+ if((tabs||[]).some(x=>mins.includes(x)))tut('talk');
+ if(cur==='economy'||cur==='budget'||(tabs||[]).includes('economy')||(tabs||[]).includes('budget'))tut('economy');
+}
+function switchTab(t){G.currentTab=t;document.querySelectorAll('.ptab').forEach(x=>x.classList.toggle('active',x.textContent===(TAB_NAMES[t]||t)));renderPanel(t);tutPanelCheck(G.activePanelTabs,t);}
 function closePanel(){$('panelWrap').style.display='none';G.activePanelTabs=null;}
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&G.activePanelTabs)closePanel();});
 
@@ -623,17 +646,50 @@ function renderPanel(tab){
   <div class="card"><h3>🎖️ Eğitim</h3><button class="btn" onclick="act_train()">🏋️ Tatbikat (-2000, +5 ordu/moral)</button> <button class="btn" onclick="act_parade()">🚩 Geçit (-1000, +8 moral)</button></div></div>`;
  }
  else if(tab==='armydetail'){
-  const total=Object.values(c.armyComp).reduce((s,v)=>s+v,0);
+  const comp=c.armyComp||{};
+  const total=Object.values(comp).reduce((s,v)=>s+v,0)||0;
+  let atk=0,def=0;
+  ARMY_UNITS.forEach(u=>{atk+=(comp[u.id]||0)*u.atk;def+=(comp[u.id]||0)*u.def;});
+  atk+=(c.tanks||0)*40+(c.planes||0)*70;def+=(c.tanks||0)*30+(c.planes||0)*10;
+  let dAtk=1,dDef=1;
+  if(c.doctrine==='blitz'){dAtk=1.2;dDef=.9;}else if(c.doctrine==='fortress'){dDef=1.25;}else if(c.doctrine==='elite'){dAtk=1.15;dDef=1.1;}else if(c.doctrine==='guerrilla'){dDef=1.1;}
+  const techMul=1+(c.tech||0)/200,moraleMul=.7+(c.morale||0)/167;
+  const finalAtk=Math.round(atk*dAtk*techMul*moraleMul),finalDef=Math.round(def*dDef*techMul*moraleMul);
+  const score=Math.round((finalAtk+finalDef)/1000);
+  const tt=total||1;
+  const compBars=ARMY_UNITS.map(u=>{const n=comp[u.id]||0,pct=Math.round(n/tt*100);
+    return `<div class="kv"><span class="lbl">${u.name} <span style="color:#778">(⚔${u.atk} 🛡${u.def})</span></span><span class="v">${fmt(n)} <span style="color:#778">%${pct}</span></span></div>
+    <div style="height:6px;background:#1a2438;border-radius:3px;margin:2px 0 8px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#6fb8dc,#4a86c8);"></div></div>
+    <div style="display:flex;gap:5px;margin-bottom:10px;"><button class="btn" style="font-size:11px;padding:4px 8px;" onclick="act_unit('${u.id}',500,${Math.round(u.cost*500)})">+500 (${Math.round(u.cost*500)})</button><button class="btn" style="font-size:11px;padding:4px 8px;" onclick="act_unit('${u.id}',2000,${Math.round(u.cost*2000)})">+2000 (${Math.round(u.cost*2000)})</button></div>`;}).join('');
   p.innerHTML=`<h2>🪖 Detaylı Ordu</h2>
-  <div class="card"><h3>Birlik Dağılımı (toplam ${fmt(total)})</h3>`+
-  ARMY_UNITS.map(u=>`<div class="kv"><span class="lbl">${u.name} <span style="color:#778">(saldırı ${u.atk} · savunma ${u.def})</span></span><span class="v">${fmt(c.armyComp[u.id]||0)}</span></div>
-   <div style="display:flex;gap:5px;margin-bottom:8px;"><button class="btn" style="font-size:11px;padding:4px 8px;" onclick="act_unit('${u.id}',500,${Math.round(u.cost*500)})">+500 (${Math.round(u.cost*500)})</button><button class="btn" style="font-size:11px;padding:4px 8px;" onclick="act_unit('${u.id}',2000,${Math.round(u.cost*2000)})">+2000 (${Math.round(u.cost*2000)})</button></div>`).join('')+`</div>
+  <div class="card" style="border-left:4px solid #ffd86b;"><h3>📊 Muharebe Gücü Analizi</h3>
+   <div class="kv"><span class="lbl">⚔️ Toplam Saldırı Gücü</span><span class="v" style="color:#e0a060;">${fmt(finalAtk)}</span></div>
+   <div class="kv"><span class="lbl">🛡️ Toplam Savunma Gücü</span><span class="v" style="color:#6fb8dc;">${fmt(finalDef)}</span></div>
+   <div class="kv"><span class="lbl">🎖️ Ordu Skoru</span><span class="v" style="color:#6fdc8c;">${score}</span></div>
+   <div class="desc" style="margin-top:6px;">Teknoloji ×${techMul.toFixed(2)} · Moral ×${moraleMul.toFixed(2)} · Doktrin ⚔×${dAtk} 🛡×${dDef}</div>
+   ${bar('Ordu Seviyesi',c.military)}${bar('Moral',c.morale)}</div>
+  <div class="card"><h3>Birlik Dağılımı (toplam ${fmt(total)})</h3>${compBars}</div>
+  <div class="card"><h3>🚜 Ağır Ekipman</h3><div class="kv"><span class="lbl">🛡️ Tank</span><span class="v">${fmt(c.tanks||0)}</span></div><div class="kv"><span class="lbl">✈️ Uçak</span><span class="v">${fmt(c.planes||0)}</span></div></div>
   <div class="card"><h3>📖 Askeri Doktrin</h3><div class="desc">Aktif: <b style="color:#ffd86b">${c.doctrine?DOCTRINES.find(d=>d.id===c.doctrine).name:'Yok'}</b></div>`+
   DOCTRINES.map(d=>`<div class="kv"><span class="lbl">${d.name} — <span style="color:#99a6c0">${d.desc}</span></span><span>${c.doctrine===d.id?'<span style="color:#6fdc8c">✓</span>':`<button class="btn" style="font-size:11px;padding:4px 10px;" onclick="act_doctrine('${d.id}')">Seç (-1500)</button>`}</span></div>`).join('')+`</div>`;
  }
  else if(tab==='laws'){
-  p.innerHTML=`<h2>⚖️ Kanunlar</h2>`+LAWS.map(law=>{const active=c.laws&&c.laws[law.id];
-   return `<div class="card" style="${active?'border-left:4px solid #6fdc8c;':''}"><h3>${active?'✓ ':''}${law.name}</h3><div class="desc">${law.desc}</div><button class="btn ${active?'danger':'primary'}" onclick="act_law('${law.id}')">${active?'Kaldır':'Yürürlüğe Sok'}</button></div>`;}).join('');
+  const cats=[...new Set(LAWS.map(l=>l.cat))];
+  const activeCount=LAWS.filter(l=>c.laws&&c.laws[l.id]).length;
+  const net={};LAWS.forEach(l=>{if(c.laws&&c.laws[l.id])Object.entries(l.mod).forEach(([k,v])=>net[k]=(net[k]||0)+v);});
+  const netStr=Object.keys(net).length?Object.entries(net).map(([k,v])=>{
+    const lbl=LAW_MOD_LABELS[k]||k;const good=(k==='goldDrain'||k==='corruptionPerTurn')?v<0:v>0;
+    const disp=(k==='goldDrain')?((v>0?'-'+v:'+'+(-v))+' altın/ay'):((v>0?'+':'')+(Math.round(v*100)/100));
+    return `<span style="color:${good?'#6fdc8c':'#e08a8a'};margin-right:12px;white-space:nowrap;">${lbl}: ${disp}</span>`;}).join(''):'<span style="color:#99a6c0">Aktif kanun yok</span>';
+  let html=`<h2>⚖️ Kanunlar <span style="color:#99a6c0;font-size:13px;">(${activeCount}/${LAWS.length} aktif)</span></h2>`;
+  html+=`<div class="card" style="border-left:4px solid #ffd86b;"><h3>📋 Yürürlükteki Net Etkiler (aylık)</h3><div style="line-height:2;">${netStr}</div></div>`;
+  cats.forEach(cat=>{
+   html+=`<h3 style="margin:14px 0 6px;color:#ffd86b;border-bottom:1px solid #2a3a55;padding-bottom:4px;">${cat}</h3><div class="grid">`;
+   html+=LAWS.filter(l=>l.cat===cat).map(law=>{const active=c.laws&&c.laws[law.id];
+     return `<div class="card" style="${active?'border-left:4px solid #6fdc8c;':''}"><h3 style="font-size:14px;">${active?'✓ ':''}${law.name}</h3><div class="desc">${law.desc}</div><button class="btn ${active?'danger':'primary'}" style="font-size:12px;padding:5px 10px;" onclick="act_law('${law.id}')">${active?'Kaldır':'Yürürlüğe Sok'}</button></div>`;}).join('');
+   html+=`</div>`;
+  });
+  p.innerHTML=html;
  }
  else if(tab==='ideology'){
   p.innerHTML=`<h2>🏛️ Rejim</h2><div class="grid">`+IDEOLOGIES.map(ido=>{const a=c.ideology===ido.id;
@@ -685,13 +741,13 @@ function act_sell(k,amt,gold){if((G.player.resources[k]||0)<amt){toast('Yetersiz
 function act_build(k,cost){if(!spend(cost))return;G.player.buildings[k]=(G.player.buildings[k]||0)+1;addEvent('good','🏗️ Yeni yapı inşa edildi.');toast('Yapı tamam! Şehirde görünecek.','good');G.cityDirty=true;rrr();}
 function act_research(id){if(G.research){toast('Önce mevcut araştırmayı bitir','bad');return;}G.research={id,progress:0};toast('Araştırma başladı','good');rrr();}
 function act_cancelResearch(){G.research=null;rrr();}
-function act_recruit(n,cost){if(!spend(cost))return;G.player.soldiers+=n;toast(`+${fmt(n)} asker`,'good');rrr();}
+function act_recruit(n,cost){if(!spend(cost))return;G.player.soldiers+=n;toast(`+${fmt(n)} asker`,'good');if(typeof tut==='function')tut('recruit');rrr();}
 function act_equip(t,n,cost){if(!spend(cost))return;G.player[t]+=n;toast(`+${n} ${t==='tanks'?'tank':'uçak'}`,'good');rrr();}
 function act_train(){if(!spend(2000))return;G.player.military=clamp(G.player.military+5,0,100);G.player.morale=clamp(G.player.morale+5,0,100);toast('Ordu eğitildi','good');rrr();}
 function act_parade(){if(!spend(1000))return;G.player.morale=clamp(G.player.morale+8,0,100);toast('Moral arttı','good');rrr();}
-function act_unit(id,n,cost){if(!spend(cost))return;G.player.armyComp[id]=(G.player.armyComp[id]||0)+n;G.player.soldiers+=n;toast(`+${fmt(n)} ${ARMY_UNITS.find(u=>u.id===id).name}`,'good');rrr();}
+function act_unit(id,n,cost){if(!spend(cost))return;G.player.armyComp[id]=(G.player.armyComp[id]||0)+n;G.player.soldiers+=n;toast(`+${fmt(n)} ${ARMY_UNITS.find(u=>u.id===id).name}`,'good');if(typeof tut==='function')tut('recruit');rrr();}
 function act_doctrine(id){if(!spend(1500))return;G.player.doctrine=id;toast(`Doktrin: ${DOCTRINES.find(d=>d.id===id).name}`,'good');rrr();}
-function act_law(id){if(!G.player.laws)G.player.laws={};G.player.laws[id]=!G.player.laws[id];toast(G.player.laws[id]?'Kanun yürürlükte':'Kanun kaldırıldı',G.player.laws[id]?'good':'bad');rrr();}
+function act_law(id){if(!G.player.laws)G.player.laws={};G.player.laws[id]=!G.player.laws[id];toast(G.player.laws[id]?'Kanun yürürlükte':'Kanun kaldırıldı',G.player.laws[id]?'good':'bad');if(G.player.laws[id]&&typeof tut==='function')tut('law');rrr();}
 function act_ideology(id){if(!spend(3000))return;G.player.ideology=id;G.player.happiness=clamp(G.player.happiness-5,0,100);const ido=IDEOLOGIES.find(x=>x.id===id);['happiness','military','industry','morale','reputation'].forEach(k=>{if(ido.mods[k])G.player[k]=clamp(G.player[k]+ido.mods[k],0,100);});addEvent('good',`🏛️ Rejim değişti: ${ido.name}`);toast(`Yeni rejim: ${ido.name}`,'good');rrr();}
 function act_religion(id){if(!spend(2000))return;G.player.religion=id;G.player.happiness=clamp(G.player.happiness-8,0,100);const r=RELIGIONS.find(x=>x.id===id);Object.entries(r.mods).forEach(([k,v])=>{if(typeof G.player[k]==='number')G.player[k]=clamp(G.player[k]+v,0,100);});addEvent('good',`⛪ Devlet dini: ${r.name}`);toast(`Yeni din: ${r.name}`,'good');if(officeNPCs.religion)updateReligionNPC();rrr();}
 function act_fest(id){const f=FESTIVALS.find(x=>x.id===id);if(!spend(f.cost))return;f.apply(G.player);addEvent('good',`${f.name} düzenlendi.`);toast(`${f.name} kutlandı!`,'good');rrr();}
@@ -828,6 +884,7 @@ function startGame(){
  init3D();
  enterOffice();
  toast(`Hoş geldin Başkan! Bakanlarınla konuşmak için yanlarına git ve E bas.`,'good');
+ setTimeout(()=>{try{startTutorial(false);}catch(e){}},600);
 }
 
 // ============================ 3D CORE ============================
@@ -904,7 +961,20 @@ function _mkTex(key,w,h,draw,rep){
 function texGrass(rep){return _mkTex('grass'+rep,128,128,(c,w,h)=>{c.fillStyle='#4f7a38';c.fillRect(0,0,w,h);for(let i=0;i<900;i++){const g=irand(0,40);c.fillStyle=`rgb(${60+g},${100+g},${45+g})`;c.fillRect(rand(0,w),rand(0,h),2,3);}},rep);}
 function texDirt(rep){return _mkTex('dirt'+rep,128,128,(c,w,h)=>{c.fillStyle='#6e5538';c.fillRect(0,0,w,h);for(let i=0;i<700;i++){const g=irand(-25,25);c.fillStyle=`rgb(${110+g},${85+g},${56+g})`;c.fillRect(rand(0,w),rand(0,h),3,3);}},rep);}
 function texAsphalt(rep){return _mkTex('asph'+rep,128,128,(c,w,h)=>{c.fillStyle='#3a3c42';c.fillRect(0,0,w,h);for(let i=0;i<600;i++){const g=irand(-12,18);c.fillStyle=`rgb(${58+g},${60+g},${66+g})`;c.fillRect(rand(0,w),rand(0,h),2,2);}},rep);}
-function texMarble(){return _mkTex('marble',256,256,(c,w,h)=>{const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'#e8e2d4');g.addColorStop(.5,'#d4ccba');g.addColorStop(1,'#e2dccc');c.fillStyle=g;c.fillRect(0,0,w,h);c.strokeStyle='rgba(150,140,120,.35)';c.lineWidth=1;for(let i=0;i<14;i++){c.beginPath();c.moveTo(rand(0,w),0);c.bezierCurveTo(rand(0,w),h*.3,rand(0,w),h*.6,rand(0,w),h);c.stroke();}});}
+function texMarble(rep){return _mkTex('marble'+(rep||1),256,256,(c,w,h)=>{
+  // cilalı mermer taban
+  const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'#f4efe4');g.addColorStop(.5,'#ded6c6');g.addColorStop(1,'#ece5d6');c.fillStyle=g;c.fillRect(0,0,w,h);
+  // yumuşak bulut lekeleri
+  for(let i=0;i<24;i++){const s=irand(-18,18);c.fillStyle=`rgba(${205+s},${196+s},${176+s},.07)`;c.beginPath();c.arc(rand(0,w),rand(0,h),rand(12,54),0,7);c.fill();}
+  // damarlar (kalın + ince)
+  c.strokeStyle='rgba(120,110,90,.32)';c.lineWidth=1.6;for(let i=0;i<9;i++){c.beginPath();c.moveTo(rand(0,w),0);c.bezierCurveTo(rand(0,w),h*.3,rand(0,w),h*.6,rand(0,w),h);c.stroke();}
+  c.strokeStyle='rgba(90,82,66,.16)';c.lineWidth=.6;for(let i=0;i<7;i++){c.beginPath();c.moveTo(0,rand(0,h));c.bezierCurveTo(w*.3,rand(0,h),w*.6,rand(0,h),w,rand(0,h));c.stroke();}
+  // döşeme derz kenarı
+  c.strokeStyle='rgba(66,58,46,.6)';c.lineWidth=6;c.strokeRect(0,0,w,h);
+  c.strokeStyle='rgba(255,255,255,.25)';c.lineWidth=1.5;c.strokeRect(3,3,w-6,h-6);
+  // cila parıltısı
+  const hl=c.createLinearGradient(0,0,w,h);hl.addColorStop(0,'rgba(255,255,255,.12)');hl.addColorStop(.5,'rgba(255,255,255,0)');hl.addColorStop(1,'rgba(255,255,255,.05)');c.fillStyle=hl;c.fillRect(0,0,w,h);
+},rep);}
 function texCarpet(rep,base,edge){return _mkTex('carp'+base+rep,128,128,(c,w,h)=>{c.fillStyle=base;c.fillRect(0,0,w,h);c.strokeStyle=edge;c.lineWidth=8;c.strokeRect(10,10,w-20,h-20);c.lineWidth=2;c.strokeRect(20,20,w-40,h-40);for(let i=0;i<200;i++){c.fillStyle='rgba(0,0,0,.05)';c.fillRect(rand(0,w),rand(0,h),2,2);}},rep);}
 function texWall(rep){return _mkTex('wall'+rep,128,128,(c,w,h)=>{c.fillStyle='#9a8d76';c.fillRect(0,0,w,h);for(let i=0;i<300;i++){const g=irand(-14,14);c.fillStyle=`rgba(${130+g},${120+g},${100+g},.5)`;c.fillRect(rand(0,w),rand(0,h),3,3);}},rep);}
 function texWater(rep){return _mkTex('water'+rep,128,128,(c,w,h)=>{c.fillStyle='#1d5d96';c.fillRect(0,0,w,h);for(let i=0;i<300;i++){c.fillStyle=`rgba(140,200,240,${rand(.05,.18)})`;c.fillRect(rand(0,w),rand(0,h),rand(2,6),1);}},rep);}
@@ -991,12 +1061,16 @@ function buildOffice(){
  officeScene=new THREE.Scene();
  officeScene.background=new THREE.Color(0x1a1d26);
  applyEnv(officeScene);
- const amb=new THREE.AmbientLight(0xd8d0c0,.85);officeScene.add(amb);
- officeScene.add(new THREE.HemisphereLight(0xfff0d8,0x3a3328,.6));
- const sun=new THREE.DirectionalLight(0xfff2e0,.7);sun.position.set(10,20,5);officeScene.add(sun);
+ // Işıklandırma: az sayıda gerçek ışık + güçlü ortam ışığı (performans için)
+ const amb=new THREE.AmbientLight(0xe6ddc9,1.15);officeScene.add(amb);
+ officeScene.add(new THREE.HemisphereLight(0xfff2dc,0x4a4234,.85));
+ const sun=new THREE.DirectionalLight(0xfff2e0,.65);sun.position.set(10,20,5);officeScene.add(sun);
  colliders=[];interactables=[];
- // Floor (mermer doku) & ceiling
- const floor=new THREE.Mesh(new THREE.BoxGeometry(46,.2,38),new THREE.MeshLambertMaterial({map:texMarble()}));
+ // Floor (cilalı mermer döşeme) & ceiling
+ const floorMat=new THREE.MeshLambertMaterial({map:texMarble(6)});
+ floorMat.map.wrapS=floorMat.map.wrapT=THREE.RepeatWrapping;floorMat.map.repeat.set(13,11);
+ if(renderer&&renderer.capabilities)floorMat.map.anisotropy=renderer.capabilities.getMaxAnisotropy();
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(46,.2,38),floorMat);
  floor.position.set(0,-.1,0);floor.receiveShadow=true;officeScene.add(floor);
  // corridor carpet (kırmızı işlemeli halı)
  const carpet=new THREE.Mesh(new THREE.BoxGeometry(6,.04,36),new THREE.MeshLambertMaterial({map:texCarpet(6,'#7a1822','#d8b048')}));
@@ -1005,12 +1079,15 @@ function buildOffice(){
  ceil.position.set(0,4.1,0);officeScene.add(ceil);
  // tavan kornişi
  [[-19],[19]].forEach(([z])=>{const t=new THREE.Mesh(new THREE.BoxGeometry(46,.3,.4),new THREE.MeshLambertMaterial({color:0xc8a850}));t.position.set(0,3.9,z);officeScene.add(t);});
- // ceiling lights
+ // Tavan lambaları: parlayan mesh + tek yumuşak ışık (çok ışık = lag olduğu için)
  for(let z=-14;z<=14;z+=7){
-  const l=new THREE.PointLight(0xffe8c0,.55,16);l.position.set(0,3.6,z);officeScene.add(l);
-  const lamp=new THREE.Mesh(new THREE.BoxGeometry(1.2,.1,1.2),new THREE.MeshBasicMaterial({color:0xfff2cc}));
+  const lamp=new THREE.Mesh(new THREE.BoxGeometry(1.4,.12,1.4),new THREE.MeshBasicMaterial({color:0xfff2cc}));
   lamp.position.set(0,3.95,z);officeScene.add(lamp);
+  const halo=new THREE.Mesh(new THREE.BoxGeometry(2.2,.02,2.2),new THREE.MeshBasicMaterial({color:0xffe8b0,transparent:true,opacity:.18}));
+  halo.position.set(0,3.9,z);officeScene.add(halo);
  }
+ // koridoru aydınlatan tek merkezi ışık
+ const corridorLight=new THREE.PointLight(0xffe8c0,.5,60);corridorLight.position.set(0,3.7,0);officeScene.add(corridorLight);
  const wallC=0x8a7d6a;
  // Outer walls
  wallMesh(officeScene,0,-19,46,.6,4,wallC); // north
@@ -1041,7 +1118,9 @@ function buildOffice(){
   // carpet
   const rc=new THREE.Mesh(new THREE.BoxGeometry(13,.04,10),new THREE.MeshLambertMaterial({color:r.carpet}));
   rc.position.set(cx,.05,r.cz);officeScene.add(rc);
-  const rl=new THREE.PointLight(0xffe0b8,.6,14);rl.position.set(cx,3.4,r.cz);officeScene.add(rl);
+  // oda tavan lambası (parlayan mesh — ışık hesabı yok)
+  const rlamp=new THREE.Mesh(new THREE.BoxGeometry(1.1,.1,1.1),new THREE.MeshBasicMaterial({color:0xfff0d0}));
+  rlamp.position.set(cx,3.9,r.cz);officeScene.add(rlamp);
   // Desk
   const desk=new THREE.Mesh(new THREE.BoxGeometry(2.6,.9,1.2),new THREE.MeshLambertMaterial({color:0x5a4630}));
   desk.position.set(cx,0.45,r.cz);desk.castShadow=true;officeScene.add(desk);
@@ -1114,6 +1193,38 @@ function buildOffice(){
  addPlant(officeScene,-2.3,-5.5);addPlant(officeScene,2.3,-5.5);
  // kırmızı kadife perde sütunları (başkanlık girişinde)
  [[-2.6],[2.6]].forEach(([x])=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,3.6,8),new THREE.MeshLambertMaterial({color:0xc8a850}));c.position.set(x,1.8,-6.2);officeScene.add(c);});
+ addOfficeDeco();
+}
+// Ofis dekor eklentileri (ışık eklemeden — performans dostu)
+function addOfficeDeco(){
+ const S=officeScene;
+ const baseMat=new THREE.MeshLambertMaterial({color:0x5a4c38});   // koyu ahşap süpürgelik
+ const wainMat=new THREE.MeshLambertMaterial({color:0x746550});   // lambri bandı
+ // dış duvar süpürgelik + lambri (güney duvarda çıkış kapısı için boşluk bırak)
+ const walls=[[0,-19,46,.7],[-13,19,20,.7],[13,19,20,.7],[-23,0,.7,38],[23,0,.7,38]];
+ walls.forEach(([x,z,w,d])=>{
+  const b=new THREE.Mesh(new THREE.BoxGeometry(w+.1,.35,d+.1),baseMat);b.position.set(x,.18,z);S.add(b);
+  const wa=new THREE.Mesh(new THREE.BoxGeometry(w+.05,.5,d+.05),wainMat);wa.position.set(x,1.15,z);S.add(wa);
+ });
+ // Başkanlık arkasında büyük pencere (kuzey duvar) — sıcak gün ışığı
+ const winBack=new THREE.Mesh(new THREE.PlaneGeometry(9,3),new THREE.MeshBasicMaterial({map:makeSkyTexture('#bcd6f2','#e6d8b8','#f3e6c2'),side:THREE.DoubleSide}));
+ winBack.position.set(0,2.3,-18.85);S.add(winBack);
+ const frameMat=new THREE.MeshLambertMaterial({color:0x3a2c1e});
+ [[0,.75,9.4,.18],[0,3.85,9.4,.18],[-4.6,2.3,.18,3.4],[4.6,2.3,.18,3.4],[0,2.3,.14,3.2],[-2.3,2.3,4.6,.12],[2.3,2.3,4.6,.12]].forEach(([x,y,w,h])=>{
+  const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,.12),frameMat);f.position.set(x,y,-18.7);S.add(f);
+ });
+ // makam koltuğu (başkan masasının arkasında)
+ const chairMat=new THREE.MeshLambertMaterial({color:0x5c1a1a});
+ const seat=new THREE.Mesh(new THREE.BoxGeometry(1.1,.2,1.1),chairMat);seat.position.set(0,.75,-16.3);S.add(seat);
+ const back=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.6,.2),chairMat);back.position.set(0,1.55,-16.85);S.add(back);
+ // yaldızlı taht başlığı
+ const crown=new THREE.Mesh(new THREE.BoxGeometry(1.2,.25,.25),new THREE.MeshLambertMaterial({color:0xc8a850}));crown.position.set(0,2.4,-16.85);S.add(crown);
+ // masa üstü evrak + kalemlik
+ const papers=new THREE.Mesh(new THREE.BoxGeometry(.6,.04,.8),new THREE.MeshLambertMaterial({color:0xf2ead6}));papers.position.set(-.9,.98,-15);S.add(papers);
+ const lampBase=new THREE.Mesh(new THREE.CylinderGeometry(.05,.12,.4,8),new THREE.MeshLambertMaterial({color:0x2a2a2a}));lampBase.position.set(1.1,.75,-15);S.add(lampBase);
+ const lampShade=new THREE.Mesh(new THREE.CylinderGeometry(.22,.28,.28,10),new THREE.MeshBasicMaterial({color:0x2e7d4a}));lampShade.position.set(1.1,1.05,-15);S.add(lampShade);
+ // tavan göbeği (madalyon)
+ const med=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,.08,20),new THREE.MeshLambertMaterial({color:0xd8cbb0}));med.position.set(0,4.02,0);S.add(med);
 }
 function currentClericName(){const r=RELIGIONS.find(x=>x.id===G.player.religion)||RELIGIONS[0];return r.cleric;}
 function updateReligionNPC(){
@@ -1166,6 +1277,8 @@ function startDialog(room){
 }
 function baldrickTalk(){
  if(document.pointerLockElement)document.exitPointerLock();
+ // Eğitim tamamlanmadıysa Baldrick rehberli eğitimi (yeniden) başlatır
+ if(!G.tutorial||!G.tutorial.completed){startTutorial(false);return;}
  const c=G.player;
  const tips=[];
  if(c.gold<3000)tips.push('Hazine boşalıyor efendim. Vergileri artırın ya da kaynak satın.');
@@ -1175,9 +1288,56 @@ function baldrickTalk(){
  if(c.inflation>10)tips.push('Enflasyon canavarı büyüyor. Banka inşa edin, para basmayın.');
  if(!G.research)tips.push('Laboratuvar boş duruyor. Şehirdeki 🔬 Araştırma Merkezi\'ne gidip bir teknoloji başlatın.');
  if(tips.length===0)tips.push('Her şey yolunda görünüyor efendim. Şüpheli derecede yolunda...');
- G.dialog={lines:['Kurnaz bir planım var efendim!',pick(tips),'Bir de... maaş zammı mümkün mü efendim? (değil mi... peki.)'],idx:0,name:'🥔 Danışman Baldrick',after:null};
+ G.dialog={lines:['Kurnaz bir planım var efendim!',pick(tips),'Eğitimi tekrar görmek isterseniz, aşağıdan başlatabilirsiniz.','Bir de... maaş zammı mümkün mü efendim? (değil mi... peki.)'],idx:0,name:'🥔 Danışman Baldrick',after:()=>{if(confirm('Baldrick eğitimini baştan görmek ister misin?'))startTutorial(true);}};
  showDialogLine();
 }
+// ===================== BALDRICK REHBERLİ EĞİTİM =====================
+const TUT_STEPS=[
+ {key:'talk',   text:'Bir bakanlık odasına gir, E ile bakanla konuş'},
+ {key:'economy',text:'Ekonomi/Bütçe panelinde gelir-giderini incele'},
+ {key:'recruit',text:'Ordu panelinden asker topla'},
+ {key:'law',    text:'Hukuk odasında bir kanun yürürlüğe sok'},
+ {key:'city',   text:'Ofisten çıkıp şehri keşfet'},
+];
+function startTutorial(replay){
+ if(!G.tutorial||replay)G.tutorial={done:{},completed:false};
+ G.tutorial.active=true;
+ if(document.pointerLockElement)document.exitPointerLock();
+ renderTutorialBanner();
+ G.dialog={name:'🥔 Danışman Baldrick',idx:0,after:()=>renderTutorialBanner(),lines:[
+  'Hoş geldiniz Sayın Başkan! Ben Baldrick, baş danışmanınız.',
+  'Ülkeyi bu ofisten yönetirsiniz: WASD ile yürür, fareyle bakar, E ile etkileşime girersiniz.',
+  'Amacınız ekonomiyi büyütmek, halkı memnun etmek, orduyu güçlendirmek ve ulusu zafere taşımaktır.',
+  'Koridordaki her kapı bir bakanlığa açılır: 💼 Ekonomi, ⚔️ Ordu, ⚖️ Hukuk, 🤝 Diplomasi, 🕵️ Operasyon, ⛪ Din.',
+  'Sağ üstteki görev listesini takip edin — her adımı yaptıkça ✓ işaretlenecek.',
+  'İlk görev: bir bakanlık odasına girip E ile bakanla konuşun. Başlayalım!',
+ ]};
+ showDialogLine();
+}
+function tut(key){
+ const t=G.tutorial;if(!t||!t.active||t.completed||t.done[key])return;
+ t.done[key]=true;
+ const step=TUT_STEPS.find(s=>s.key===key);
+ if(step)toast('✓ Görev tamam: '+step.text,'good');
+ renderTutorialBanner();
+ if(TUT_STEPS.every(s=>t.done[s.key])){
+  t.completed=true;t.active=false;
+  G.player.gold+=3000;G.player.happiness=clamp(G.player.happiness+5,0,100);
+  toast('🎓 Eğitim tamamlandı! Baldrick +3000 altın ve +5 mutluluk hediye etti.','good');
+  try{rrr();}catch(e){}
+  setTimeout(()=>{const b=$('tutorialBanner');if(b)b.remove();},600);
+ }
+}
+function renderTutorialBanner(){
+ const t=G.tutorial;let b=$('tutorialBanner');
+ if(!t||!t.active){if(b)b.style.display='none';return;}
+ if(!b){b=document.createElement('div');b.id='tutorialBanner';b.style.cssText='position:absolute;top:70px;right:12px;width:252px;background:rgba(10,16,28,.92);border:1px solid #ffd86b;border-radius:8px;padding:10px 12px;z-index:40;font-size:12px;color:#e6ecf5;box-shadow:0 4px 16px rgba(0,0,0,.5);';document.body.appendChild(b);}
+ b.style.display='block';
+ b.innerHTML='<div style="color:#ffd86b;font-weight:700;margin-bottom:6px;">🥔 Baldrick — Eğitim Görevleri</div>'+
+  TUT_STEPS.map(s=>{const d=t.done[s.key];return `<div style="margin:5px 0;color:${d?'#6fdc8c':'#c8d2e0'};line-height:1.35;">${d?'✓':'○'} ${s.text}</div>`;}).join('')+
+  '<div style="margin-top:8px;text-align:right;"><button onclick="skipTutorial()" style="background:#22304c;border:1px solid #3a4a6a;color:#b8c8e0;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;">Eğitimi kapat</button></div>';
+}
+function skipTutorial(){if(G.tutorial)G.tutorial.active=false;const b=$('tutorialBanner');if(b)b.remove();toast('Eğitim kapatıldı. Baldrick ile tekrar başlatabilirsin.','info');}
 function showDialogLine(){
  const d=G.dialog;if(!d)return;
  $('dialogName').textContent=d.name;
@@ -1260,7 +1420,7 @@ function buildCity(){
    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,6),new THREE.MeshLambertMaterial({color:0x2a2a30}));pole.position.set(lx,3,lz);cityScene.add(pole);
    const head=new THREE.Mesh(new THREE.SphereGeometry(.4,8,8),new THREE.MeshBasicMaterial({color:0xfff0b0}));head.position.set(lx,6,lz);cityScene.add(head);
   }
-  const lp=new THREE.PointLight(0xffe0a0,.4,18);lp.position.set(lx,6,lz);cityScene.add(lp);
+  // Not: gündüz sahnesi olduğu için sokak lambalarına gerçek ışık eklenmez (performans)
  }
  // Office building (player spawn in front)
  const off=new THREE.Group();
@@ -1349,12 +1509,13 @@ function buildCity(){
    cityScene.add(lbl);
   }
  });
- // Houses by population
+ // Houses by population (yol üzerine gelmeyecek şekilde)
  const houses=Math.min(Math.floor(G.player.population),24);
  for(let i=0;i<houses;i++){
   const h=buildHouse();
-  const ang=rand(0,Math.PI*2),rr=rand(100,200);
-  h.position.set(Math.cos(ang)*rr,0,Math.sin(ang)*rr);
+  let x=0,z=0,tries=0;
+  do{ const ang=rand(0,Math.PI*2),rr=rand(100,200); x=Math.cos(ang)*rr; z=Math.sin(ang)*rr; tries++; }while(onRoad(x,z,10)&&tries<12);
+  h.position.set(x,0,z);
   h.rotation.y=rand(0,Math.PI*2);
   cityScene.add(h);
  }
@@ -1371,8 +1532,9 @@ function buildCity(){
    const le2=new THREE.Mesh(new THREE.SphereGeometry(rand(1.0,1.6),8,7),new THREE.MeshLambertMaterial({color:0x4a8a36}));
    le2.position.set(rand(-.6,.6),4.2,rand(-.6,.6));t.add(le2);
   }
-  const ang=rand(0,Math.PI*2),rr=rand(40,230);
-  t.position.set(Math.cos(ang)*rr,0,Math.sin(ang)*rr);
+  let x=0,z=0,tries=0;
+  do{ const ang=rand(0,Math.PI*2),rr=rand(40,230); x=Math.cos(ang)*rr; z=Math.sin(ang)*rr; tries++; }while(onRoad(x,z,7)&&tries<10);
+  t.position.set(x,0,z);
   cityScene.add(t);
  }
  // Hareketli arabalar (yollarda)
@@ -1387,7 +1549,71 @@ function buildCity(){
   car.userData={horiz,lane,sp:rand(8,16)*(Math.random()<.5?1:-1),pos:rand(-240,240)};
   cityScene.add(car);cityCars.push(car);
  }
+ buildDowntown();
+ buildPlazaFountain();
  G.cityDirty=false;
+}
+// Gökdelen dokusu önbelleği (renk+tekrar başına tek doku → düşük GPU yükü)
+const _towerTexCache={};
+function towerTex(colStr,rx,ry){
+ const key=colStr+'_'+rx+'_'+ry;
+ if(_towerTexCache[key])return _towerTexCache[key];
+ const tex=texBuilding(colStr).clone();tex.needsUpdate=true;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(rx,ry);
+ _towerTexCache[key]=tex;return tex;
+}
+function makeTower(w,d,h,colStr){
+ const tex=towerTex(colStr,Math.max(1,Math.round(w/5)),Math.max(2,Math.round(h/6)));
+ const g=new THREE.Group();
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({map:tex}));m.position.y=h/2;m.castShadow=true;g.add(m);
+ const roof=new THREE.Mesh(new THREE.BoxGeometry(w*.7,1.5,d*.7),new THREE.MeshLambertMaterial({color:0x3a3f48}));roof.position.y=h+.75;g.add(roof);
+ return g;
+}
+// Yol kontrolü: yol çizgileri 45'in katlarında (-90..90), yarım genişlik+kaldırım ~8
+const ROAD_LINES=[-90,-45,0,45,90];
+function onRoad(x,z,margin){
+ const m=margin||8;
+ for(const g of ROAD_LINES){ if(Math.abs(x-g)<m||Math.abs(z-g)<m) return true; }
+ return false;
+}
+function buildDowntown(){
+ const cols=['#8894a8','#9aa0ac','#b0a894','#7e8a9c','#a89c88','#6f7d90','#7d8ba0','#94a0b4'];
+ // Kuleleri yolların ARASINDAKİ bloklara diz (blok merkezi = k*45 + 22.5)
+ const centers=[];for(let k=-4;k<=3;k++)centers.push(k*45+22.5);
+ centers.forEach(bx=>centers.forEach(bz=>{
+  if(Math.hypot(bx,bz+30)<42||Math.hypot(bx,bz-12)<40)return; // saray & başlangıç boş
+  const dist=Math.hypot(bx,bz);
+  if(Math.random()>(dist>95?0.75:0.45))return;                // merkez seyrek, dış yoğun
+  // kaldırım/beton pad (blok tabanı)
+  const pad=new THREE.Mesh(new THREE.PlaneGeometry(32,32),new THREE.MeshLambertMaterial({color:0x9a958c}));
+  pad.rotation.x=-Math.PI/2;pad.position.set(bx,.03,bz);pad.receiveShadow=true;cityScene.add(pad);
+  const n=irand(1,2);
+  for(let i=0;i<n;i++){
+   const ox=rand(-11,11),oz=rand(-11,11);
+   const h=dist>95?rand(24,62):rand(14,34);
+   const t=makeTower(rand(7,13),rand(7,13),h,pick(cols));
+   t.position.set(bx+ox,0,bz+oz);t.rotation.y=irand(0,3)*Math.PI/2;cityScene.add(t);
+   addCityCollider(bx+ox,bz+oz,9,9);
+  }
+ }));
+ // uzak arka silüet (yol şebekesinin dışında, |z|>250)
+ for(let i=0;i<14;i++){
+  const t=makeTower(rand(10,18),rand(10,18),rand(30,72),pick(cols));
+  t.position.set(rand(-220,220),0,-rand(255,360));cityScene.add(t);
+ }
+}
+function buildPlazaFountain(){
+ // saray önü taş meydan
+ const pmat=new THREE.MeshLambertMaterial({map:texMarble(8)});
+ pmat.map.wrapS=pmat.map.wrapT=THREE.RepeatWrapping;pmat.map.repeat.set(12,9);
+ const plaza=new THREE.Mesh(new THREE.PlaneGeometry(46,34),pmat);
+ plaza.rotation.x=-Math.PI/2;plaza.position.set(0,.05,-8);plaza.receiveShadow=true;cityScene.add(plaza);
+ // çeşme (yolu kapatmadan, meydan içinde yan tarafta)
+ const fx=15,fz=-15;
+ const basin=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.6,.8,20),new THREE.MeshLambertMaterial({color:0xbcb4a2}));basin.position.set(fx,.4,fz);cityScene.add(basin);
+ const water=new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.1,.2,20),new THREE.MeshLambertMaterial({map:texWater(2)}));water.position.set(fx,.82,fz);cityScene.add(water);
+ const pillar=new THREE.Mesh(new THREE.CylinderGeometry(.3,.5,1.6,12),new THREE.MeshLambertMaterial({color:0xcac2ae}));pillar.position.set(fx,1.3,fz);cityScene.add(pillar);
+ const top=new THREE.Mesh(new THREE.CylinderGeometry(.9,.4,.4,14),new THREE.MeshLambertMaterial({color:0xcac2ae}));top.position.set(fx,2.1,fz);cityScene.add(top);
+ addCityCollider(fx,fz,3,3);
 }
 let cityCars=[];
 let cityColliders=[];
@@ -1434,6 +1660,8 @@ function enterCity(){
  $('lockHint').textContent='WASD: yürü | OK TUŞLARI: etrafına bak | E: etkileşim | Tıkla: fareyle bak';
  $('lockHint').style.display='block';
  toast('Şehrindesin! İnşa ettiğin yapılar burada. Saraya dönmek için kapıya git.','good');
+ if(typeof tut==='function')tut('city');
+ if(G.tutorial&&G.tutorial.active)renderTutorialBanner();
 }
 function hideWarUI(){
  $('warHud').style.display='none';$('warInstr').style.display='none';$('warCross').style.display='none';
@@ -1664,8 +1892,8 @@ function startWar(playerCountry,enemyCountry,defending){
  // güneş küresi
  const sunOrb=new THREE.Mesh(new THREE.SphereGeometry(10,16,16),new THREE.MeshBasicMaterial({color:0xfff0c0}));
  sunOrb.position.set(90,70,-160);warScene.add(sunOrb);
- // zemin (daha açık, çimenli toprak)
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(360,360),new THREE.MeshLambertMaterial({color:0x6e5a38}));
+ // zemin (dokulu savaş toprağı)
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(360,360),new THREE.MeshLambertMaterial({map:texDirt(48)}));
  ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;warScene.add(ground);
  // çim yamalar
  for(let i=0;i<60;i++){

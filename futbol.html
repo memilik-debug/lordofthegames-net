@@ -19,6 +19,10 @@
             overflow-x: hidden;
         }
 
+        .lang-pill { padding: 4px 8px; font-size: 11px; font-weight: 700; border-radius: 8px; color: #cbd5e1; transition: all .15s; }
+        .lang-pill:hover { color: #fff; }
+        .lang-active { background: #10b981; color: #fff; }
+
         .glass {
             background: rgba(15, 23, 42, 0.75);
             backdrop-filter: blur(20px);
@@ -247,7 +251,7 @@
     <!-- Back to home nav -->
     <div id="lotg-nav" class="fixed top-4 left-4 z-[9999] bg-slate-900/80 backdrop-blur-md rounded-xl px-4 py-2 text-xs border border-white/10 shadow-lg">
         <a href="index.html" class="text-white hover:text-emerald-400 font-bold flex items-center gap-2">
-            <span>←</span> Ana Sayfa
+            <span>←</span> <span data-i18n="nav_home">Ana Sayfa</span>
         </a>
     </div>
 
@@ -268,13 +272,20 @@
             <div class="flex items-center gap-4 w-full md:w-auto justify-end">
                 <div class="flex gap-3">
                     <div class="px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-center min-w-[120px]">
-                        <p class="text-[9px] text-slate-500 font-bold uppercase mb-0.5">Kulüp Bütçesi</p>
+                        <p data-i18n="hdr_budget" class="text-[9px] text-slate-500 font-bold uppercase mb-0.5">Kulüp Bütçesi</p>
                         <p id="budget-ui" class="text-emerald-400 font-black text-lg">50.0M €</p>
                     </div>
                     <div class="px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-center min-w-[100px]">
-                        <p class="text-[9px] text-slate-500 font-bold uppercase mb-0.5">Takım Gücü</p>
+                        <p data-i18n="hdr_strength" class="text-[9px] text-slate-500 font-bold uppercase mb-0.5">Takım Gücü</p>
                         <p id="strength-ui" class="text-amber-400 font-black text-lg">0</p>
                     </div>
+                </div>
+                <div class="flex items-center gap-0.5 bg-white/5 rounded-xl border border-white/10 px-1 py-1">
+                    <button id="lang-tr-btn" onclick="setGameLang('tr')" class="lang-pill">TR</button>
+                    <button id="lang-en-btn" onclick="setGameLang('en')" class="lang-pill">EN</button>
+                    <button id="lang-de-btn" onclick="setGameLang('de')" class="lang-pill">DE</button>
+                    <button id="lang-fr-btn" onclick="setGameLang('fr')" class="lang-pill">FR</button>
+                    <button id="lang-zh-btn" onclick="setGameLang('zh')" class="lang-pill">中文</button>
                 </div>
                 <button onclick="toggleSound(event)" id="sound-btn" class="w-12 h-12 flex items-center justify-center bg-white/5 rounded-xl border border-white/10 hover:bg-white/15 transition-all text-xl" title="Sesi Aç/Kapat">🔇</button>
             </div>
@@ -292,6 +303,238 @@
     </div>
 
     <script>
+        /* =====================================================
+           ÇOK DİLLİ SİSTEM (TR/EN/DE/FR/ZH) — Aşama 1: menü + başlık
+        ===================================================== */
+        const I18N_LANGS = ['tr','en','de','fr','zh'];
+        let gameLang = 'tr';
+        try { const _l = localStorage.getItem('lotg_lang'); if (I18N_LANGS.indexOf(_l) !== -1) gameLang = _l; } catch(e) {}
+        const DICT = {
+            nav_home:     {tr:'Ana Sayfa', en:'Home', de:'Startseite', fr:'Accueil', zh:'主页'},
+            hdr_budget:   {tr:'Kulüp Bütçesi', en:'Club Budget', de:'Vereinsbudget', fr:'Budget du club', zh:'俱乐部预算'},
+            hdr_strength: {tr:'Takım Gücü', en:'Team Strength', de:'Teamstärke', fr:'Force de l\'équipe', zh:'球队实力'},
+            mm_title:     {tr:'KULÜP YÖNETİM OFİSİ', en:'CLUB MANAGEMENT OFFICE', de:'VEREINSBÜRO', fr:'BUREAU DU CLUB', zh:'俱乐部管理办公室'},
+            mm_sub:       {tr:'KULÜBÜNÜZÜ SÜPER LİG ZİRVESİNE TAŞIYIN', en:'LEAD YOUR CLUB TO THE TOP OF THE LEAGUE', de:'FÜHRE DEINEN VEREIN AN DIE SPITZE', fr:'MÈNE TON CLUB AU SOMMET', zh:'带领你的俱乐部登顶联赛'},
+            mm_lineup:    {tr:'KADRO PLANLAYICI', en:'SQUAD PLANNER', de:'KADERPLANER', fr:'COMPOSITION', zh:'阵容规划'},
+            mm_tactics:   {tr:'TAKTİK TAHTASI', en:'TACTICS BOARD', de:'TAKTIKTAFEL', fr:'TABLEAU TACTIQUE', zh:'战术板'},
+            mm_transfer:  {tr:'TRANSFER PAZARI', en:'TRANSFER MARKET', de:'TRANSFERMARKT', fr:'MARCHÉ DES TRANSFERTS', zh:'转会市场'},
+            mm_league:    {tr:'PUAN DURUMU', en:'STANDINGS', de:'TABELLE', fr:'CLASSEMENT', zh:'积分榜'},
+            mm_academy:   {tr:'ALTYAPI & AKADEMİ', en:'YOUTH & ACADEMY', de:'JUGEND & AKADEMIE', fr:'CENTRE DE FORMATION', zh:'青训学院'},
+            mm_training:  {tr:'TAKIMSAL ANTRENMAN', en:'TEAM TRAINING', de:'MANNSCHAFTSTRAINING', fr:'ENTRAÎNEMENT', zh:'球队训练'},
+            mm_play:      {tr:'⚽ HAFTANIN MAÇINI OYNA', en:'⚽ PLAY THE WEEK\'S MATCH', de:'⚽ SPIEL DER WOCHE', fr:'⚽ MATCH DE LA SEMAINE', zh:'⚽ 本周比赛'}
+        };
+        function T(key){ const o = DICT[key]; if(!o) return key; return (o[gameLang] !== undefined) ? o[gameLang] : (o.en !== undefined ? o.en : o.tr); }
+        // Kaynağı Türkçe metin olan çeviri tablosu — DEĞER Türkçe kalır, sadece görünen çevrilir.
+        const TX = {
+            // Taktik seçenek DEĞERLERİ (oyun mantığı bunları Türkçe bekler; sadece görünüm çevrilir)
+            'Kısa Pas':{en:'Short Pass',de:'Kurzpass',fr:'Passe courte',zh:'短传'},
+            'Direkt Oyun':{en:'Direct',de:'Direktspiel',fr:'Jeu direct',zh:'直接打法'},
+            'Uzun Top':{en:'Long Ball',de:'Lange Bälle',fr:'Jeu long',zh:'长传'},
+            'Dengeli':{en:'Balanced',de:'Ausgewogen',fr:'Équilibré',zh:'均衡'},
+            'Kanatlar':{en:'Wings',de:'Flügel',fr:'Ailes',zh:'边路'},
+            'Merkez':{en:'Central',de:'Zentrum',fr:'Axe',zh:'中路'},
+            'Alan':{en:'Zonal',de:'Raumdeckung',fr:'Zone',zh:'区域'},
+            'Adam Adama':{en:'Man-to-Man',de:'Manndeckung',fr:'Homme à homme',zh:'盯人'},
+            'Pasif':{en:'Passive',de:'Passiv',fr:'Passif',zh:'被动'},
+            'Orta':{en:'Medium',de:'Mittel',fr:'Moyen',zh:'中等'},
+            'Agresif':{en:'Aggressive',de:'Aggressiv',fr:'Agressif',zh:'激进'},
+            'Ultra':{en:'Ultra',de:'Ultra',fr:'Ultra',zh:'极限'},
+            'Kaleciden Kur':{en:'Play from GK',de:'Vom Torwart',fr:'Relance du gardien',zh:'门将发起'},
+            'Uzun Açılım':{en:'Long Launch',de:'Langer Aufbau',fr:'Longue relance',zh:'长传开球'},
+            'Hızlı Kontra':{en:'Fast Counter',de:'Schneller Konter',fr:'Contre rapide',zh:'快速反击'},
+            'Topu Tut':{en:'Hold Ball',de:'Ball halten',fr:'Conserver',zh:'控球'},
+            'Savunma':{en:'Defend',de:'Verteidigen',fr:'Défense',zh:'防守'},
+            'Destek':{en:'Support',de:'Unterstützung',fr:'Soutien',zh:'支援'},
+            'Hücum':{en:'Attack',de:'Angriff',fr:'Attaque',zh:'进攻'},
+            // Etiketler / başlıklar / butonlar (görünüm)
+            'Dizilim':{en:'Formation',de:'Formation',fr:'Formation',zh:'阵型'},
+            'Pas Tarzı':{en:'Passing Style',de:'Passstil',fr:'Style de passe',zh:'传球风格'},
+            'Hücum Odağı':{en:'Attack Focus',de:'Angriffsfokus',fr:'Axe d\'attaque',zh:'进攻重心'},
+            'Markaj':{en:'Marking',de:'Deckung',fr:'Marquage',zh:'盯防'},
+            'Pres Tetikleyici':{en:'Press Trigger',de:'Pressing-Auslöser',fr:'Déclencheur de pressing',zh:'压迫触发'},
+            'Çıkış Oyunu':{en:'Build-up',de:'Spielaufbau',fr:'Relance',zh:'出球组织'},
+            'Top Kazanınca':{en:'On Ball Win',de:'Bei Ballgewinn',fr:'À la récupération',zh:'夺球后'},
+            'Ofsayt Tuzağı':{en:'Offside Trap',de:'Abseitsfalle',fr:'Piège du hors-jeu',zh:'越位陷阱'},
+            'Zaman Oyunu':{en:'Time Wasting',de:'Zeitspiel',fr:'Gestion du temps',zh:'拖延时间'},
+            'Ofansiflik':{en:'Attacking',de:'Offensivdrang',fr:'Attaque',zh:'进攻性'},
+            'Savunma Hattı':{en:'Defensive Line',de:'Abwehrlinie',fr:'Ligne défensive',zh:'防线'},
+            'Tempo':{en:'Tempo',de:'Tempo',fr:'Tempo',zh:'节奏'},
+            'Pres Şiddeti':{en:'Press Intensity',de:'Pressing-Intensität',fr:'Intensité du pressing',zh:'压迫强度'},
+            'Genişlik':{en:'Width',de:'Breite',fr:'Largeur',zh:'宽度'},
+            'Yaratıcılık':{en:'Creativity',de:'Kreativität',fr:'Créativité',zh:'创造力'},
+            'Riskli Paslar':{en:'Risky Passes',de:'Riskante Pässe',fr:'Passes risquées',zh:'冒险传球'},
+            'Top Kontrolü':{en:'Ball Control',de:'Ballkontrolle',fr:'Contrôle',zh:'控球'},
+            'Yorulma Hızı':{en:'Fatigue Rate',de:'Ermüdung',fr:'Fatigue',zh:'疲劳速度'},
+            'Şut':{en:'Shots',de:'Schüsse',fr:'Tirs',zh:'射门'},
+            'Hakimiyet':{en:'Possession',de:'Ballbesitz',fr:'Possession',zh:'控球率'},
+            'Otobüsü Çek':{en:'Park the Bus',de:'Bus parken',fr:'Bloc bas',zh:'摆大巴'},
+            'UYGULA VE DÖN':{en:'APPLY & RETURN',de:'ANWENDEN & ZURÜCK',fr:'APPLIQUER & RETOUR',zh:'应用并返回'},
+            'ANA MENÜ':{en:'MAIN MENU',de:'HAUPTMENÜ',fr:'MENU',zh:'主菜单'},
+            'ANA MENÜYE DÖN':{en:'BACK TO MAIN MENU',de:'ZURÜCK ZUM HAUPTMENÜ',fr:'RETOUR AU MENU',zh:'返回主菜单'},
+            'KAYDET VE DÖN':{en:'SAVE & RETURN',de:'SPEICHERN & ZURÜCK',fr:'ENREGISTRER & RETOUR',zh:'保存并返回'},
+            'HAZIR SİSTEM ŞABLONLARI':{en:'PRESET SYSTEM TEMPLATES',de:'VOREINGESTELLTE SYSTEME',fr:'MODÈLES PRÉDÉFINIS',zh:'预设战术模板'},
+            'OYUNCU GÖREVLERİ (İLK 11)':{en:'PLAYER DUTIES (STARTING XI)',de:'SPIELERAUFGABEN (STARTELF)',fr:'RÔLES DES JOUEURS (ONZE DE DÉPART)',zh:'球员职责（首发11人）'},
+            'AÇIK':{en:'ON',de:'AN',fr:'ACTIVÉ',zh:'开'},
+            'KAPALI':{en:'OFF',de:'AUS',fr:'DÉSACTIVÉ',zh:'关'},
+            'AÇIK ⚠️':{en:'ON ⚠️',de:'AN ⚠️',fr:'ACTIVÉ ⚠️',zh:'开 ⚠️'},
+            'TAKTİK MERKEZİ':{en:'TACTICS CENTER',de:'TAKTIKZENTRUM',fr:'CENTRE TACTIQUE',zh:'战术中心'},
+            'ÖNGÖRÜLEN MAÇ ETKİSİ':{en:'PROJECTED MATCH IMPACT',de:'ERWARTETE SPIELWIRKUNG',fr:'IMPACT PRÉVU',zh:'预计比赛影响'},
+            'xG / Maç':{en:'xG / Match',de:'xG / Spiel',fr:'xG / Match',zh:'xG / 场'},
+            'Her ayar maça canlı ve sayısal olarak yansır.':{en:'Every setting affects the match live and numerically. Watch the projected impact on the right.',de:'Jede Einstellung wirkt sich live und numerisch auf das Spiel aus. Beobachte rechts die erwartete Wirkung.',fr:'Chaque réglage influe sur le match en direct et chiffré. Observe l\'impact prévu à droite.',zh:'每项设置都会实时、量化地影响比赛。在右侧查看预计影响。'},
+            'Bu rakamlar mevcut taktiğin maça yansımasıdır.':{en:'These figures reflect how your current tactics play out.',de:'Diese Werte spiegeln die Wirkung deiner aktuellen Taktik wider.',fr:'Ces chiffres reflètent l\'effet de ta tactique actuelle.',zh:'这些数字反映了你当前战术的效果。'},
+            'Ekran':{en:'Screen',de:'Bildschirm',fr:'Écran',zh:'屏幕'},
+            'Kenar':{en:'Pitchside',de:'Seitenlinie',fr:'Bord',zh:'边线'},
+            'Geniş':{en:'Wide',de:'Weit',fr:'Large',zh:'广角'},
+            'Serbest':{en:'Free',de:'Frei',fr:'Libre',zh:'自由'},
+            'İstatistik':{en:'Stats',de:'Statistik',fr:'Stats',zh:'数据'},
+            'İsabet':{en:'On Target',de:'aufs Tor',fr:'Cadrés',zh:'射正'},
+            'Kurtarış':{en:'Saves',de:'Paraden',fr:'Arrêts',zh:'扑救'},
+            'Korner':{en:'Corners',de:'Ecken',fr:'Corners',zh:'角球'},
+            'DENGELİ':{en:'BALANCED',de:'AUSGEGLICHEN',fr:'ÉQUILIBRÉ',zh:'均势'},
+            'BASKILI':{en:'ON TOP',de:'ÜBERLEGEN',fr:'DOMINE',zh:'占优'},
+            'Yetenek':{en:'Talent',de:'Talent',fr:'Talent',zh:'天赋'},
+            'Dakika':{en:'Minute',de:'Minute',fr:'Minute',zh:'分钟'},
+            'Kaleci':{en:'GK',de:'TW',fr:'GB',zh:'门将'},
+            'Defans':{en:'DEF',de:'ABW',fr:'DÉF',zh:'后卫'},
+            'Orta Saha':{en:'MID',de:'MF',fr:'MIL',zh:'中场'},
+            'Forvet':{en:'FWD',de:'ST',fr:'ATT',zh:'前锋'},
+            'çıkıyor. Yerine girmesi için aşağıdaki yedeklerden birine tıklayın!':{en:'is coming off. Tap a substitute below to bring them on!',de:'geht raus. Tippe unten auf einen Ersatzspieler, um ihn einzuwechseln!',fr:'sort. Touche un remplaçant ci-dessous pour le faire entrer !',zh:'即将下场。点击下方替补席上的球员完成换人！'},
+            'Baskı':{en:'Pressure',de:'Druck',fr:'Pression',zh:'压制'},
+            'Topla Oynama':{en:'Possession',de:'Ballbesitz',fr:'Possession',zh:'控球率'},
+            'Danışman Baldric':{en:'Advisor Baldric',de:'Berater Baldric',fr:'Conseiller Baldric',zh:'顾问巴尔德里克'},
+            'Saha kenarı analisti':{en:'Touchline analyst',de:'Seitenlinien-Analyst',fr:'Analyste de terrain',zh:'场边分析师'},
+            'Değişiklik Kulübesi':{en:'Substitutes Bench',de:'Auswechselbank',fr:'Banc des remplaçants',zh:'替补席'},
+            'Takım Reytingi':{en:'Team Rating',de:'Team-Bewertung',fr:'Note d\'équipe',zh:'球队评分'},
+            'ÇOK YÜKSEK':{en:'VERY HIGH',de:'SEHR HOCH',fr:'TRÈS ÉLEVÉ',zh:'非常高'},
+            'YÜKSEK':{en:'HIGH',de:'HOCH',fr:'ÉLEVÉ',zh:'高'},
+            'DÜŞÜK':{en:'LOW',de:'NIEDRIG',fr:'FAIBLE',zh:'低'},
+            'oyuncu yorgun (<%45). Değişiklik düşün.':{en:'player(s) tired (<45%). Consider a substitution.',de:'Spieler müde (<45%). Denk an einen Wechsel.',fr:'joueur(s) fatigué(s) (<45%). Envisage un changement.',zh:'名球员疲劳（<45%）。考虑换人。'},
+            '🎯 Top bizde durmuyor — tempoyu düşür, kısa pasa geç.':{en:'🎯 We can\'t keep the ball — lower the tempo, switch to short passing.',de:'🎯 Wir halten den Ball nicht — Tempo senken, auf Kurzpass umstellen.',fr:'🎯 On ne garde pas le ballon — baisse le tempo, passe au jeu court.',zh:'🎯 我们控不住球——降低节奏，改打短传。'},
+            '🔓 Hakimiyet var ama gol yok — yaratıcılığı/ofansifliği artır.':{en:'🔓 Lots of possession but no goals — raise creativity/attacking.',de:'🔓 Viel Ballbesitz, aber keine Tore — Kreativität/Offensive erhöhen.',fr:'🔓 Beaucoup de possession mais pas de but — augmente créativité/attaque.',zh:'🔓 控球很多但没进球——提升创造力/进攻性。'},
+            '🛡️ Öndesin, son bölüm: zaman oyunu + savunma hattını düşür.':{en:'🛡️ You\'re ahead, final stretch: waste time + drop the defensive line.',de:'🛡️ Du führst, Schlussphase: Zeitspiel + Abwehrlinie senken.',fr:'🛡️ Tu mènes, dernière ligne droite : gestion du temps + baisse la ligne défensive.',zh:'🛡️ 你领先，最后阶段：拖延时间＋压低防线。'},
+            '🔥 Gerideyiz — pres ve ofansifliği yükselt, risk al.':{en:'🔥 We\'re behind — raise pressing and attacking, take risks.',de:'🔥 Wir liegen zurück — Pressing und Offensive erhöhen, Risiko gehen.',fr:'🔥 On est mené — augmente le pressing et l\'attaque, prends des risques.',zh:'🔥 我们落后了——加强压迫和进攻，冒险一搏。'},
+            '😬 xG yüksek ama gol yok — bitiricilik kötü, forvet değiştir.':{en:'😬 High xG but no goals — poor finishing, change the striker.',de:'😬 Hoher xG, aber keine Tore — schwacher Abschluss, Stürmer wechseln.',fr:'😬 xG élevé mais pas de but — finition médiocre, change l\'attaquant.',zh:'😬 xG 高却没进球——终结太差，换前锋。'},
+            '👍 Plan tutuyor. Mevcut düzeni koru.':{en:'👍 The plan is working. Keep the current setup.',de:'👍 Der Plan geht auf. Behalte die aktuelle Ordnung bei.',fr:'👍 Le plan fonctionne. Garde le dispositif actuel.',zh:'👍 计划奏效。保持当前部署。'},
+            '⏸️ İLK YARI SONA ERDİ. Devre arası.':{en:'⏸️ FIRST HALF OVER. Half-time.',de:'⏸️ ERSTE HALBZEIT VORBEI. Halbzeit.',fr:'⏸️ FIN DE LA PREMIÈRE MI-TEMPS. Mi-temps.',zh:'⏸️ 上半场结束。中场休息。'},
+            '▶️ İkinci yarı başladı!':{en:'▶️ Second half under way!',de:'▶️ Zweite Halbzeit läuft!',fr:'▶️ La seconde mi-temps débute !',zh:'▶️ 下半场开始！'},
+            '🏁 MAÇ SONA ERDİ!':{en:'🏁 FULL TIME!',de:'🏁 SPIELENDE!',fr:'🏁 FIN DU MATCH !',zh:'🏁 比赛结束！'},
+            'Faul':{en:'Foul',de:'Foul',fr:'Faute',zh:'犯规'},
+            'sert müdahale yaptı.':{en:'made a hard challenge.',de:'ging hart rein.',fr:'a commis un tacle appuyé.',zh:'做出凶狠拼抢。'},
+            'DEĞİŞİKLİK':{en:'SUBSTITUTION',de:'WECHSEL',fr:'REMPLACEMENT',zh:'换人'},
+            'seçildi. Şimdi yedek kulübesinden bir oyuncu seçin.':{en:'selected. Now pick a player from the bench.',de:'ausgewählt. Wähle nun einen Spieler von der Bank.',fr:'sélectionné. Choisis maintenant un joueur sur le banc.',zh:'已选择。现在从替补席挑选一名球员。'},
+            'KULÜBE REAKSİYONU':{en:'BENCH REACTION',de:'BANK-REAKTION',fr:'RÉACTION DU BANC',zh:'替补席反应'},
+            'çıktı,':{en:'off,',de:'raus,',fr:'sort,',zh:'下场，'},
+            'oyuna girdi!':{en:'comes on!',de:'kommt rein!',fr:'entre en jeu !',zh:'登场！'},
+            // Yönetim ekranları
+            'KADRO PLANLAYICI':{en:'SQUAD PLANNER',de:'KADERPLANER',fr:'COMPOSITION',zh:'阵容规划'},
+            'TRANSFER PAZARI':{en:'TRANSFER MARKET',de:'TRANSFERMARKT',fr:'MARCHÉ DES TRANSFERTS',zh:'转会市场'},
+            'LİG PUAN DURUMU':{en:'LEAGUE STANDINGS',de:'LIGATABELLE',fr:'CLASSEMENT',zh:'联赛积分榜'},
+            'ALTYAPI & AKADEMİ':{en:'YOUTH & ACADEMY',de:'JUGEND & AKADEMIE',fr:'CENTRE DE FORMATION',zh:'青训学院'},
+            'TAKIMSAL ANTRENMAN MERKEZİ':{en:'TEAM TRAINING CENTER',de:'MANNSCHAFTS-TRAININGSZENTRUM',fr:'CENTRE D\'ENTRAÎNEMENT',zh:'球队训练中心'},
+            'Yedek Kulübesi':{en:'Substitutes Bench',de:'Auswechselbank',fr:'Banc des remplaçants',zh:'替补席'},
+            'GERİ DÖN':{en:'BACK',de:'ZURÜCK',fr:'RETOUR',zh:'返回'},
+            'DEĞİŞTİR':{en:'SWAP',de:'TAUSCHEN',fr:'ÉCHANGER',zh:'替换'},
+            'Oyuncuların yerini değiştirmek için yedektekilere tıklayın. Roller için saha üzerindeki futbolculara basın.':{en:'Tap a substitute to swap positions. Tap players on the pitch to set roles.',de:'Tippe auf einen Ersatzspieler, um Positionen zu tauschen. Tippe auf Spieler auf dem Feld für Rollen.',fr:'Touche un remplaçant pour échanger les positions. Touche les joueurs sur le terrain pour les rôles.',zh:'点击替补球员交换位置。点击场上球员设置角色。'},
+            'Yıldız oyuncuları bonservisiyle kadroya katın.':{en:'Sign star players for a transfer fee.',de:'Verpflichte Starspieler gegen eine Ablöse.',fr:'Recrute des stars contre une indemnité.',zh:'支付转会费签下球星。'},
+            'Şampiyonluk yarışında son durum.':{en:'The latest in the title race.',de:'Der aktuelle Stand im Titelrennen.',fr:'La dernière situation dans la course au titre.',zh:'冠军争夺的最新形势。'},
+            'Yıldız adayı gençleri gözlemleyin, bireysel eğitip A takıma çıkarın.':{en:'Scout prospects, train them individually and promote to the first team.',de:'Sichte Talente, trainiere sie einzeln und befördere sie in die erste Mannschaft.',fr:'Repère les talents, forme-les et fais-les monter en équipe première.',zh:'球探发掘新星，单独培养并升入一队。'},
+            'Gelişim programları uygulayın, form ile enerji dengesini koruyun.':{en:'Run development programs, balance form and energy.',de:'Führe Entwicklungsprogramme durch, halte Form und Energie im Gleichgewicht.',fr:'Applique des programmes, équilibre forme et énergie.',zh:'实施发展计划，平衡状态与体能。'},
+            'Oyuncu Adı':{en:'Player Name',de:'Spielername',fr:'Nom du joueur',zh:'球员姓名'},
+            'Mevki':{en:'Position',de:'Position',fr:'Poste',zh:'位置'},
+            'Yaş':{en:'Age',de:'Alter',fr:'Âge',zh:'年龄'},
+            'Değer':{en:'Value',de:'Wert',fr:'Valeur',zh:'身价'},
+            'İşlem':{en:'Action',de:'Aktion',fr:'Action',zh:'操作'},
+            'SATIN AL':{en:'BUY',de:'KAUFEN',fr:'ACHETER',zh:'购买'},
+            'Sıra':{en:'Pos',de:'Pl.',fr:'Pos',zh:'排名'},
+            'Takım':{en:'Team',de:'Team',fr:'Équipe',zh:'球队'},
+            'Puan':{en:'Pts',de:'Pkt',fr:'Pts',zh:'积分'},
+            'Tesisleri Geliştir':{en:'Upgrade Facilities',de:'Anlagen ausbauen',fr:'Améliorer les installations',zh:'升级设施'},
+            'Mevcut Tesis Seviyesi':{en:'Current Facility Level',de:'Aktuelles Anlagen-Level',fr:'Niveau des installations',zh:'当前设施等级'},
+            'Yetenek Havuzu Gelişim Katsayısı':{en:'Talent Pool Growth Factor',de:'Talentpool-Wachstumsfaktor',fr:'Facteur de croissance du vivier',zh:'人才库成长系数'},
+            'Ekstra Taban Yetenek':{en:'Extra Base Talent',de:'Extra-Grundtalent',fr:'Talent de base bonus',zh:'额外基础天赋'},
+            'Gözlemci (Scout) Bürosu':{en:'Scouting Office',de:'Scouting-Büro',fr:'Bureau de recrutement',zh:'球探办公室'},
+            'Gözlem Kalitesi':{en:'Scouting Quality',de:'Scouting-Qualität',fr:'Qualité de recrutement',zh:'球探质量'},
+            'Aktif Görevde':{en:'On Active Duty',de:'Im Einsatz',fr:'En mission',zh:'执勤中'},
+            'İşe Al':{en:'Hire',de:'Anheuern',fr:'Engager',zh:'雇用'},
+            'Karakter':{en:'Character',de:'Charakter',fr:'Caractère',zh:'性格'},
+            'Potansiyel':{en:'Potential',de:'Potenzial',fr:'Potentiel',zh:'潜力'},
+            'Özel Antrenman':{en:'Private Training',de:'Einzeltraining',fr:'Entraînement privé',zh:'私人训练'},
+            'A TAKIMA YÜKSELT':{en:'PROMOTE TO FIRST TEAM',de:'IN DIE ERSTE MANNSCHAFT',fr:'PROMOUVOIR EN ÉQUIPE 1',zh:'升入一队'},
+            'Derece':{en:'Grade',de:'Rang',fr:'Grade',zh:'等级'},
+            'Seviye':{en:'Level',de:'Stufe',fr:'Niveau',zh:'等级'},
+            'Antrenman Hakkı':{en:'Training Slot',de:'Trainingsrecht',fr:'Séance dispo',zh:'训练次数'},
+            'Mevcut':{en:'Available',de:'Verfügbar',fr:'Disponible',zh:'可用'},
+            'Tükendi (Maç Oynanmalı)':{en:'Used up (Play a match)',de:'Aufgebraucht (Spiel nötig)',fr:'Épuisé (Jouer un match)',zh:'已用完（需比赛）'},
+            'Hücum & Şut':{en:'Attack & Shooting',de:'Angriff & Schuss',fr:'Attaque & Tir',zh:'进攻与射门'},
+            'Savunma & Pres':{en:'Defense & Pressing',de:'Abwehr & Pressing',fr:'Défense & Pressing',zh:'防守与压迫'},
+            'Taktik & Pas':{en:'Tactics & Passing',de:'Taktik & Pässe',fr:'Tactique & Passes',zh:'战术与传球'},
+            'Kondisyon':{en:'Fitness',de:'Kondition',fr:'Condition',zh:'体能'},
+            'Dinlenme':{en:'Rest',de:'Erholung',fr:'Repos',zh:'休息'},
+            'Forvetleri ve bitiriciliği geliştirir.':{en:'Improves strikers and finishing.',de:'Verbessert Stürmer und Abschluss.',fr:'Améliore les attaquants et la finition.',zh:'提升前锋与终结能力。'},
+            'Defansların yeteneğini geliştirir.':{en:'Improves defenders\' ability.',de:'Verbessert die Verteidiger.',fr:'Améliore les défenseurs.',zh:'提升后卫能力。'},
+            'Orta sahaları ve pas kalitesini uçurur.':{en:'Boosts midfielders and passing quality.',de:'Steigert Mittelfeld und Passqualität.',fr:'Booste les milieux et la qualité de passe.',zh:'大幅提升中场与传球质量。'},
+            'Tüm takımın form seviyesini yükseltir.':{en:'Raises the whole team\'s form.',de:'Hebt die Form des ganzen Teams.',fr:'Augmente la forme de toute l\'équipe.',zh:'提升全队状态。'},
+            'Oyuncuların enerjisini yeniler.':{en:'Restores players\' energy.',de:'Stellt die Energie der Spieler wieder her.',fr:'Restaure l\'énergie des joueurs.',zh:'恢复球员体能。'},
+            'Grup Kondisyon Takip Raporu':{en:'Group Fitness Report',de:'Gruppen-Fitnessbericht',fr:'Rapport de forme du groupe',zh:'团队体能报告'},
+            'Enerji':{en:'Energy',de:'Energie',fr:'Énergie',zh:'体能'},
+            'Gelişim':{en:'Growth',de:'Entwicklung',fr:'Progression',zh:'成长'},
+            'Form':{en:'Form',de:'Form',fr:'Forme',zh:'状态'},
+            'Son Antrenman Raporu':{en:'Last Training Report',de:'Letzter Trainingsbericht',fr:'Dernier rapport d\'entraînement',zh:'上次训练报告'},
+            'Henüz antrenman uygulanmadı.':{en:'No training done yet.',de:'Noch kein Training durchgeführt.',fr:'Aucun entraînement effectué.',zh:'尚未进行训练。'},
+            'Taktiksel Tavsiye:':{en:'Tactical Tip:',de:'Taktischer Tipp:',fr:'Conseil tactique :',zh:'战术建议：'},
+            'Maç öncesinde takım enerjinizin en az %85 olduğundan emin olun!':{en:'Make sure your team energy is at least 85% before a match!',de:'Stelle sicher, dass die Team-Energie vor dem Spiel mindestens 85% beträgt!',fr:'Assure-toi que l\'énergie de l\'équipe est d\'au moins 85% avant un match !',zh:'比赛前确保球队体能至少85%！'},
+            // Bildirimler (toast)
+            'SES AKTİF':{en:'SOUND ON',de:'TON AN',fr:'SON ACTIVÉ',zh:'声音开启'},
+            'Oyun müziği ve ses efektleri başlatıldı!':{en:'Game music and sound effects started!',de:'Spielmusik und Soundeffekte gestartet!',fr:'Musique et effets sonores activés !',zh:'游戏音乐和音效已启动！'},
+            'KUPAYI KALDIRDIK!':{en:'WE LIFTED THE TROPHY!',de:'WIR HABEN DEN POKAL!',fr:'ON SOULÈVE LE TROPHÉE !',zh:'我们捧起奖杯！'},
+            'ŞAMPİYON OLDUNUZ! Kulübünüze 30M € Şampiyonluk ödülü eklendi!':{en:'YOU ARE CHAMPIONS! A €30M title bonus was added to your club!',de:'IHR SEID MEISTER! Eine Titelprämie von 30 Mio. € wurde gutgeschrieben!',fr:'VOUS ÊTES CHAMPIONS ! Une prime de 30M € a été ajoutée !',zh:'你们夺冠了！俱乐部获得3000万欧元冠军奖金！'},
+            'SEZON SONU':{en:'SEASON OVER',de:'SAISONENDE',fr:'FIN DE SAISON',zh:'赛季结束'},
+            'Şampiyonluğu':{en:'You lost the title to',de:'Du hast den Titel an',fr:'Tu as perdu le titre au profit de',zh:'你把冠军让给了'},
+            'takımına kaptırdınız.':{en:'.',de:'verloren.',fr:'.',zh:'。'},
+            'HATA':{en:'ERROR',de:'FEHLER',fr:'ERREUR',zh:'错误'},
+            'Bu hafta zaten antrenman yaptınız! Yeni antrenman hakkı kazanmak için sıradaki maçınızı oynamalısınız.':{en:'You already trained this week! Play your next match to earn a new training slot.',de:'Du hast diese Woche schon trainiert! Spiele dein nächstes Spiel für ein neues Trainingsrecht.',fr:'Tu t\'es déjà entraîné cette semaine ! Joue ton prochain match pour une nouvelle séance.',zh:'本周已训练！打完下一场比赛才能获得新的训练次数。'},
+            'ANTRENMAN TAMAMLANDI':{en:'TRAINING DONE',de:'TRAINING ABGESCHLOSSEN',fr:'ENTRAÎNEMENT TERMINÉ',zh:'训练完成'},
+            'Haftalık antrenman hakkınız kullanıldı. Oyuncu değerleri güncellendi.':{en:'Your weekly training slot is used. Player stats updated.',de:'Dein Wochentraining wurde genutzt. Spielerwerte aktualisiert.',fr:'Ta séance hebdomadaire est utilisée. Stats mises à jour.',zh:'本周训练次数已使用。球员数值已更新。'},
+            'YENİ GÖZLEMCİ':{en:'NEW SCOUT',de:'NEUER SCOUT',fr:'NOUVEAU RECRUTEUR',zh:'新球探'},
+            'scout ekibine katıldı! Altyapı havuzunuz genişletildi.':{en:'joined the scouting team! Your youth pool expanded.',de:'ist dem Scouting-Team beigetreten! Dein Jugendpool wurde erweitert.',fr:'a rejoint l\'équipe de recrutement ! Ton vivier s\'est élargi.',zh:'加入了球探团队！你的青训人才库扩大了。'},
+            'BÜTÇE YETERSİZ':{en:'INSUFFICIENT BUDGET',de:'BUDGET ZU GERING',fr:'BUDGET INSUFFISANT',zh:'预算不足'},
+            'Bu gözlemciyi kiralamak için paranız yetersiz!':{en:'You can\'t afford to hire this scout!',de:'Du kannst dir diesen Scout nicht leisten!',fr:'Tu ne peux pas engager ce recruteur !',zh:'你的资金不足以雇用这名球探！'},
+            'MAKSİMUM SEVİYE':{en:'MAX LEVEL',de:'MAX. STUFE',fr:'NIVEAU MAX',zh:'满级'},
+            'Altyapı tesisleriniz zaten son model dünya standartlarında!':{en:'Your youth facilities are already world-class!',de:'Deine Jugendanlagen sind bereits Weltklasse!',fr:'Tes installations sont déjà au top mondial !',zh:'你的青训设施已是世界一流！'},
+            'TESİSLER YÜKSELTİLDİ':{en:'FACILITIES UPGRADED',de:'ANLAGEN AUSGEBAUT',fr:'INSTALLATIONS AMÉLIORÉES',zh:'设施已升级'},
+            'Altyapı seviyeniz yükseldi! Yeni seviye: ':{en:'Your academy level increased! New level: ',de:'Dein Akademie-Level ist gestiegen! Neues Level: ',fr:'Ton niveau de formation a augmenté ! Nouveau niveau : ',zh:'青训等级提升！新等级：'},
+            'Tesisleri yükseltmek için yeterli bütçe yok!':{en:'Not enough budget to upgrade facilities!',de:'Nicht genug Budget für den Ausbau!',fr:'Budget insuffisant pour améliorer les installations !',zh:'预算不足以升级设施！'},
+            'ÖZEL EĞİTİM':{en:'PRIVATE TRAINING',de:'EINZELTRAINING',fr:'ENTRAÎNEMENT PRIVÉ',zh:'私人训练'},
+            'arttı!':{en:'up!',de:'gestiegen!',fr:'en hausse !',zh:'提升！'},
+            'Bu antrenman bütçesini karşılayacak nakit yok!':{en:'Not enough cash for this training budget!',de:'Nicht genug Bargeld für dieses Trainingsbudget!',fr:'Pas assez de liquidités pour ce budget !',zh:'现金不足以支付这笔训练费用！'},
+            'A TAKIMA ÇIKTI':{en:'PROMOTED TO FIRST TEAM',de:'IN DIE ERSTE MANNSCHAFT',fr:'PROMU EN ÉQUIPE 1',zh:'升入一队'},
+            'profesyonel sözleşmeye imza attı! (Maliyet:':{en:'signed a pro contract! (Cost:',de:'unterschrieb einen Profivertrag! (Kosten:',fr:'a signé un contrat pro ! (Coût :',zh:'签下职业合同！（费用：'},
+            'İMZA ÜCRETİ':{en:'SIGNING FEE',de:'ABLÖSE',fr:'FRAIS DE SIGNATURE',zh:'签约费'},
+            'imza ücreti bütçenizde yok!':{en:'signing fee is not in your budget!',de:'Ablöse ist nicht im Budget!',fr:'ces frais de signature dépassent ton budget !',zh:'的签约费超出你的预算！'},
+            'YENİ YILDIZ KATILDI':{en:'NEW STAR SIGNED',de:'NEUER STAR VERPFLICHTET',fr:'NOUVELLE STAR SIGNÉE',zh:'新星加盟'},
+            'başarıyla transfer edildi!':{en:'was successfully transferred!',de:'wurde erfolgreich transferiert!',fr:'a été transféré avec succès !',zh:'转会成功！'},
+            'Transfer gerçekleştirmek için bütçeniz yetersiz!':{en:'Your budget isn\'t enough to complete the transfer!',de:'Dein Budget reicht für den Transfer nicht!',fr:'Ton budget est insuffisant pour ce transfert !',zh:'你的预算不足以完成转会！'},
+            'KADRO PLANI':{en:'SQUAD PLAN',de:'KADERPLAN',fr:'COMPOSITION',zh:'阵容安排'},
+            'ilk 11\'e girdi, çıkan:':{en:'enters the XI, out:',de:'kommt in die Elf, raus:',fr:'entre dans le onze, sort :',zh:'进入首发，替下：'},
+            'TAKTİK DEĞİŞTİ':{en:'TACTICS CHANGED',de:'TAKTIK GEÄNDERT',fr:'TACTIQUE MODIFIÉE',zh:'战术已改变'},
+            'Sistem: Tiki-Taka. Kısa paslaşma ve topa sahip olma ana odak!':{en:'System: Tiki-Taka. Short passing and possession are the focus!',de:'System: Tiki-Taka. Kurzpass und Ballbesitz im Fokus!',fr:'Système : Tiki-Taka. Passes courtes et possession !',zh:'体系：Tiki-Taka。短传控球为核心！'},
+            'Sistem: Gegenpressing. Top kaybedildiği anda yoğun ön alan presi!':{en:'System: Gegenpressing. Intense high press the moment the ball is lost!',de:'System: Gegenpressing. Intensives Anlaufen sofort nach Ballverlust!',fr:'Système : Gegenpressing. Pressing haut intense dès la perte !',zh:'体系：Gegenpressing。丢球瞬间高位逼抢！'},
+            'Sistem: Otobüsü Çek. Katı savunma, ultra defansif duruş!':{en:'System: Park the Bus. Solid defense, ultra-defensive stance!',de:'System: Bus parken. Solide Abwehr, ultradefensiv!',fr:'Système : Bloc bas. Défense solide, ultra-défensif !',zh:'体系：摆大巴。稳固防守，极度防守姿态！'},
+            'Sistem: Kontra Atak. Kendi sahasında kabul, hızlı geçiş!':{en:'System: Counter-Attack. Absorb in your half, fast transitions!',de:'System: Konter. Tief stehen, schnelle Umschaltmomente!',fr:'Système : Contre-attaque. Bloc bas et transitions rapides !',zh:'体系：防守反击。退守本方半场，快速转换！'}
+        };
+        function tx(s){ if (gameLang === 'tr') return s; const o = TX[s]; if(!o) return s; return (o[gameLang] !== undefined) ? o[gameLang] : (o.en !== undefined ? o.en : s); }
+        function applyStaticLang(){
+            document.querySelectorAll('[data-i18n]').forEach(function(el){ el.textContent = T(el.getAttribute('data-i18n')); });
+            I18N_LANGS.forEach(function(l){ var b = document.getElementById('lang-'+l+'-btn'); if(b) b.classList.toggle('lang-active', gameLang === l); });
+        }
+        function setGameLang(L){
+            if (I18N_LANGS.indexOf(L) === -1) return;
+            gameLang = L;
+            try { localStorage.setItem('lotg_lang', L); } catch(e){}
+            applyStaticLang();
+            try { if (typeof render === 'function') render(); } catch(e){}
+        }
+
         /* =====================================================
            SES MOTORU - Web Audio API ile sentezlenmiş efekt ve müzik
         ===================================================== */
@@ -436,7 +679,7 @@
             const btn = document.getElementById('sound-btn');
             if (btn) btn.textContent = '🔊';
             audioUnlocked = true;
-            triggerToast("SES AKTİF", "Oyun müziği ve ses efektleri başlatıldı!", "success");
+            triggerToast(tx("SES AKTİF"), tx("Oyun müziği ve ses efektleri başlatıldı!"), "success");
             document.removeEventListener('click', unlockAudio);
             document.removeEventListener('touchstart', unlockAudio);
         }
@@ -715,86 +958,84 @@
             sim: null
         };
 
+        // Spiker cümleleri — {P} oyuncu adının yerine geçer. 5 dilli.
+        const SPIKER = {
+            tr: {
+                start: ["{P} orta sahada rüzgar gibi topu kaptı!","{P} enfes bir vücut çalımıyla rakibini arkasında bıraktı!","{P} rakiplerini tek tek ekale ederek takımını atağa kaldırdı!","{P} taca atılan topu kontrol etti ve hemen hücumu başlattı.","{P} kornerin ardından topu kapıp orta sahayı yardı.","{P} kalecinin uzun pasıyla buluştu, bakalım ne yapacak?","{P} bir aşırtmayla rakibi geride bıraktı, koşu başlıyor!"],
+                develop: ["{P} ceza sahasına fırtına gibi sokuluyor!","{P} muhteşem bir ara pasla savunma arkasına sarktı!","{P} ceza yayı üzerinde kontrolü sağladı, şut hazırlığında!","{P} sağ kanattan içe doğru kıvrıldı, taraftarlar ayakta!","{P} duvar pasıyla bir-iki kombinasyonu kurdu, çok temiz futbol.","{P} topu hafifletip yanındaki arkadaşına bıraktı, ondan geri aldı!","{P} sol kanattan içeri akıyor, savunma geriliyor."],
+                shot: ["{P} kaleyi tam karşıdan gördü, müthiş bir füze yolladı!","{P} plaseyle kalecinin uzanamayacağı köşeyi hedefledi!","{P} ceza sahası dışından sert şutunu gönderdi!","{P} röveşata denedi, taraftarlar nefesini tuttu!","{P} kafayı vurmak için sıçradı, top o tarafa gidiyor!","{P} serbest vuruşu Brezilya usulü kıvırdı!","{P} topun üzerine düşüp düz vurdu, hava sıkıştı!"],
+                goal: ["GOOOOL! Top ağlarda! {P} adeta iğne deliğinden geçirdi!","İNANILMAZ GOL! {P} kaleciyi çaresiz bıraktı!","VE GOL! Harika şut direğin içine çarpıp filelerle buluşuyor!","GOOL! {P} kalecinin altından sokuverdi — alkış kıyamet!","KAFA GOLÜ! {P} sıçradı, çarptı, ağları havalandırdı!","GOOL! {P}'ın kıvırma şutu üst köşeye saplandı, mükemmellik!","BAŞKA NE DENİR! {P} 25 metreden bombayı patlattı, tribün ayakta!"],
+                miss: ["AZ FARKLA DIŞARI! {P} vurdu ama top üst direği sıyırdı.","MÜTHİŞ KURTARIŞ! Kaleci parmaklarının ucuyla çıkardı, {P} gole inanamıyor!","SAVUNMA SON ANDA! Savunmanın cansiperane müdahalesiyle top kornere çıktı!","DİREK! {P}'ın şutu direğe çarpıp dışarı çıktı — kaleci el bile süremedi!","Üstten dışarı. {P} hızını kontrol edemedi, tribünü selamladı.","OFSAYT! {P} gole gitti ama yan hakem bayrağı kaldırdı.","SAVUNMA BLOK! {P}'ın şutuna stoper kendini siper etti."],
+                yellow: ["🟨 SARI KART! {P} sert bir müdahaleden kart gördü.","🟨 {P} oyunu geciktirme bahanesiyle sarıya boyandı.","🟨 Hakem {P}'a sarı uzattı — taktiksel faul."],
+                red: ["🟥 KIRMIZI KART! {P} ihraç edildi! Takım 10 kişi!","🟥 {P} ikinci sarıdan kırmızı gördü, oyundan atıldı!"],
+                injury: ["🩹 {P} yere yığıldı! Sağlık ekibi sahaya giriyor...","🩹 {P} bacağını tutuyor, formu düşüyor!","🩹 {P} kasık problemiyle sahadan çıkmak zorunda kalabilir."],
+                corner: ["🚩 KORNER! {P} sol köşeden topu çekecek.","🚩 Korner kullanılıyor — ceza sahası kalabalık!"],
+                penalty: ["⚠️ PENALTI! Hakem noktayı gösterdi! {P} faul yapıldı!","⚠️ VAR penaltı dedi! {P} ceza alanında düşürüldü."],
+                save: ["🧤 SÜPER KURTARIŞ! Kaleci {P}'ın bombasını çelmek için uzandı!","🧤 Kaleci tek elle çevirdi, {P}'ın golüne izin vermedi!"],
+                tackle: ["🛡️ Müthiş bir müdahale! {P}'tan topu kayarak söküp aldı!","🛡️ {P} omuz omuza mücadelede kazandı!"]
+            },
+            en: {
+                start: ["{P} wins the ball in midfield like a whirlwind!","{P} leaves the defender behind with a gorgeous body feint!","{P} beats opponents one by one and launches the attack!","{P} controls the throw-in and starts the move at once.","{P} snaps up the ball after the corner and drives forward.","{P} latches onto the keeper's long pass — what will he do?","{P} chips it over and races clear!"],
+                develop: ["{P} storms into the box!","{P} slips in behind the defence with a brilliant through ball!","{P} settles it on the edge of the box, ready to shoot!","{P} cuts inside from the right, the crowd is on its feet!","{P} plays a slick one-two, lovely football.","{P} lays it off and gets it straight back!","{P} drifts in from the left, the defence backs off."],
+                shot: ["{P} faces the goal and unleashes a rocket!","{P} places it into the corner beyond the keeper's reach!","{P} fires a fierce shot from outside the box!","{P} tries an overhead kick — the crowd holds its breath!","{P} leaps for the header, the ball is headed that way!","{P} bends the free kick Brazilian style!","{P} pounces and drives it low, tension in the air!"],
+                goal: ["GOOOAL! In the net! {P} threaded it through the eye of a needle!","UNBELIEVABLE GOAL! {P} left the keeper helpless!","AND IT'S IN! A superb strike off the post and into the net!","GOAL! {P} slots it under the keeper — bedlam in the stands!","HEADER GOAL! {P} rose, connected, and buried it!","GOAL! {P}'s curling shot flew into the top corner, perfection!","WHAT ELSE CAN YOU SAY! {P} smashed a bomb from 25 metres, crowd on its feet!"],
+                miss: ["JUST WIDE! {P} struck it but the ball grazed the crossbar.","WHAT A SAVE! The keeper tipped it with his fingertips, {P} can't believe it!","LAST-DITCH DEFENDING! A desperate block sends it out for a corner!","POST! {P}'s shot cannoned off the post and out — the keeper couldn't get near it!","Over the bar. {P} couldn't control the pace and saluted the stands.","OFFSIDE! {P} went through but the linesman raised the flag.","BLOCKED! The centre-back threw himself in front of {P}'s shot."],
+                yellow: ["🟨 YELLOW CARD! {P} is booked for a hard challenge.","🟨 {P} gets a yellow for time-wasting.","🟨 The referee shows {P} a yellow — a tactical foul."],
+                red: ["🟥 RED CARD! {P} is sent off! Down to ten men!","🟥 {P} gets a second yellow and is dismissed!"],
+                injury: ["🩹 {P} goes down! The medics are coming on...","🩹 {P} is holding his leg, his form is dropping!","🩹 {P} may have to come off with a groin problem."],
+                corner: ["🚩 CORNER! {P} will take it from the left.","🚩 The corner is taken — a crowded box!"],
+                penalty: ["⚠️ PENALTY! The referee points to the spot! {P} was fouled!","⚠️ VAR says penalty! {P} was brought down in the area."],
+                save: ["🧤 SUPER SAVE! The keeper stretched to deny {P}'s screamer!","🧤 The keeper turned it away one-handed, denying {P} a goal!"],
+                tackle: ["🛡️ Brilliant tackle! Slid in and stripped the ball off {P}!","🛡️ {P} won the shoulder-to-shoulder battle!"]
+            },
+            de: {
+                start: ["{P} erobert den Ball im Mittelfeld wie ein Wirbelwind!","{P} lässt den Gegner mit einer herrlichen Körpertäuschung stehen!","{P} tanzt die Gegner einzeln aus und leitet den Angriff ein!","{P} nimmt den Einwurf an und startet sofort die Aktion.","{P} schnappt sich den Ball nach der Ecke und zieht nach vorn.","{P} nimmt den langen Pass des Torwarts an — was macht er?","{P} lupft ihn drüber und ist durch!"],
+                develop: ["{P} stürmt in den Strafraum!","{P} steckt mit einem brillanten Pass hinter die Abwehr durch!","{P} legt sich den Ball am Strafraumrand zurecht, schussbereit!","{P} zieht von rechts nach innen, die Fans stehen!","{P} spielt einen feinen Doppelpass, schöner Fußball.","{P} legt ab und bekommt ihn direkt zurück!","{P} kommt von links, die Abwehr weicht zurück."],
+                shot: ["{P} sieht das Tor und feuert eine Rakete ab!","{P} platziert ihn unhaltbar in die Ecke!","{P} zieht aus der Distanz scharf ab!","{P} versucht einen Fallrückzieher — die Fans halten den Atem an!","{P} steigt zum Kopfball hoch, der Ball fliegt dorthin!","{P} zirkelt den Freistoß brasilianisch!","{P} wirft sich drauf und drückt ihn flach ab, es wird eng!"],
+                goal: ["TOOOR! Im Netz! {P} hat ihn durchs Nadelöhr gezirkelt!","UNGLAUBLICHES TOR! {P} ließ den Torwart chancenlos!","UND DRIN! Ein herrlicher Schuss vom Innenpfosten ins Netz!","TOR! {P} schiebt ihn unter dem Torwart durch — Ekstase auf den Rängen!","KOPFBALLTOR! {P} stieg hoch, traf und versenkte ihn!","TOR! {P}s Bogenschuss schlug im Winkel ein, perfekt!","WAS SOLL MAN SAGEN! {P} hämmerte ihn aus 25 Metern rein, die Tribüne steht!"],
+                miss: ["KNAPP DANEBEN! {P} schoss, doch der Ball strich über die Latte.","WAS FÜR EINE PARADE! Der Torwart lenkte ihn mit den Fingerspitzen ab, {P} fassungslos!","ABWEHR IN LETZTER SEKUNDE! Ein verzweifelter Block lenkt ihn zur Ecke!","PFOSTEN! {P}s Schuss knallte an den Pfosten und raus — unhaltbar für den Keeper!","Drüber. {P} bekam das Tempo nicht in den Griff und grüßte die Tribüne.","ABSEITS! {P} war durch, doch der Linienrichter hob die Fahne.","GEBLOCKT! Der Innenverteidiger warf sich in {P}s Schuss."],
+                yellow: ["🟨 GELBE KARTE! {P} sieht Gelb für ein hartes Foul.","🟨 {P} kassiert Gelb wegen Zeitspiels.","🟨 Der Schiedsrichter zeigt {P} Gelb — ein taktisches Foul."],
+                red: ["🟥 ROTE KARTE! {P} fliegt vom Platz! Nur noch zehn Mann!","🟥 {P} sieht Gelb-Rot und muss runter!"],
+                injury: ["🩹 {P} bricht zusammen! Die Sanitäter kommen aufs Feld...","🩹 {P} hält sein Bein, die Form fällt ab!","🩹 {P} muss womöglich mit Leistenproblemen runter."],
+                corner: ["🚩 ECKE! {P} tritt sie von links.","🚩 Die Ecke wird ausgeführt — der Strafraum ist voll!"],
+                penalty: ["⚠️ ELFMETER! Der Schiedsrichter zeigt auf den Punkt! {P} wurde gefoult!","⚠️ VAR sagt Elfmeter! {P} wurde im Strafraum zu Fall gebracht."],
+                save: ["🧤 SUPER-PARADE! Der Torwart streckte sich gegen {P}s Hammer!","🧤 Der Torwart lenkte ihn einhändig ab und verhinderte {P}s Tor!"],
+                tackle: ["🛡️ Starke Grätsche! Rutschte rein und nahm {P} den Ball ab!","🛡️ {P} gewann den Zweikampf Schulter an Schulter!"]
+            },
+            fr: {
+                start: ["{P} récupère le ballon au milieu tel un tourbillon !","{P} laisse le défenseur sur place d'une superbe feinte de corps !","{P} élimine les adversaires un à un et lance l'attaque !","{P} contrôle la touche et lance l'action aussitôt.","{P} récupère le ballon après le corner et perce le milieu.","{P} reçoit le long ballon du gardien — que va-t-il faire ?","{P} le lobe et file au but !"],
+                develop: ["{P} s'engouffre dans la surface !","{P} se glisse derrière la défense d'une passe en profondeur magnifique !","{P} contrôle à l'entrée de la surface, prêt à frapper !","{P} rentre dans l'axe depuis la droite, le public est debout !","{P} joue un une-deux limpide, du beau football.","{P} remise et récupère aussitôt le ballon !","{P} déboule depuis la gauche, la défense recule."],
+                shot: ["{P} voit le but et décoche une fusée !","{P} la place dans le coin hors de portée du gardien !","{P} envoie une frappe puissante de loin !","{P} tente un retourné — le public retient son souffle !","{P} s'élève pour la tête, le ballon part par là !","{P} enroule le coup franc à la brésilienne !","{P} se jette dessus et frappe à ras de terre, ça chauffe !"],
+                goal: ["BUUUT ! Dans les filets ! {P} l'a glissé dans un trou de souris !","BUT INCROYABLE ! {P} a laissé le gardien impuissant !","ET ÇA RENTRE ! Une superbe frappe sur le poteau puis au fond !","BUT ! {P} le glisse sous le gardien — le stade explose !","BUT DE LA TÊTE ! {P} a sauté, touché et enfoncé le ballon !","BUT ! La frappe enroulée de {P} se loge dans la lucarne, la perfection !","QUE DIRE DE PLUS ! {P} a claqué une bombe de 25 mètres, le stade debout !"],
+                miss: ["JUSTE À CÔTÉ ! {P} a frappé mais le ballon a frôlé la barre.","QUEL ARRÊT ! Le gardien l'a détournée du bout des doigts, {P} n'y croit pas !","DÉFENSE IN EXTREMIS ! Un contre désespéré l'envoie en corner !","POTEAU ! La frappe de {P} a claqué le poteau et est sortie — imparable !","Au-dessus. {P} n'a pas maîtrisé la puissance et a salué les tribunes.","HORS-JEU ! {P} était parti mais le juge de touche a levé le drapeau.","CONTRÉE ! Le défenseur central s'est jeté sur la frappe de {P}."],
+                yellow: ["🟨 CARTON JAUNE ! {P} est averti pour un tacle appuyé.","🟨 {P} écope d'un jaune pour perte de temps.","🟨 L'arbitre montre un jaune à {P} — faute tactique."],
+                red: ["🟥 CARTON ROUGE ! {P} est expulsé ! À dix !","🟥 {P} prend un second jaune et est expulsé !"],
+                injury: ["🩹 {P} s'écroule ! Les soigneurs entrent sur le terrain...","🩹 {P} se tient la jambe, sa forme baisse !","🩹 {P} pourrait sortir sur un problème aux adducteurs."],
+                corner: ["🚩 CORNER ! {P} va le tirer depuis la gauche.","🚩 Le corner est joué — la surface est bondée !"],
+                penalty: ["⚠️ PENALTY ! L'arbitre désigne le point ! {P} a été fauché !","⚠️ La VAR accorde le penalty ! {P} a été renversé dans la surface."],
+                save: ["🧤 SUPER ARRÊT ! Le gardien s'est détendu pour repousser la frappe de {P} !","🧤 Le gardien l'a détournée d'une main, privant {P} d'un but !"],
+                tackle: ["🛡️ Superbe tacle ! Il a glissé et pris le ballon à {P} !","🛡️ {P} a gagné le duel épaule contre épaule !"]
+            },
+            zh: {
+                start: ["{P}在中场如旋风般抢下皮球！","{P}一个漂亮的假动作过掉了防守球员！","{P}逐个晃过对手，发动了进攻！","{P}控住界外球，立刻发起进攻。","{P}在角球后抢到球，直插中场。","{P}接到门将的长传——他会怎么做？","{P}一记挑传，突入禁区！"],
+                develop: ["{P}如风暴般杀入禁区！","{P}一记精彩的直塞插入防线身后！","{P}在禁区弧顶控住球，准备射门！","{P}从右路内切，球迷全体起立！","{P}打出一脚漂亮的撞墙配合，非常流畅。","{P}做球后立刻回接！","{P}从左路杀入，防线不断后退。"],
+                shot: ["{P}正对球门，射出一记火箭！","{P}巧妙推射，打向门将够不到的死角！","{P}在禁区外劲射！","{P}尝试倒钩，球迷屏住呼吸！","{P}高高跃起争顶，球飞向那边！","{P}把任意球踢出巴西式弧线！","{P}扑上去低射，气氛紧张！"],
+                goal: ["进球啦！皮球入网！{P}穿针引线般破门！","难以置信的进球！{P}让门将束手无策！","球进了！精彩的射门打在立柱内侧入网！","进球！{P}从门将胯下捅入——看台沸腾！","头球破门！{P}高高跃起，顶入网窝！","进球！{P}的弧线球直挂上角，完美！","还能说什么！{P}25米外轰入一记重炮，全场起立！"],
+                miss: ["稍稍偏出！{P}射门，但球擦横梁而过。","精彩扑救！门将指尖将球托出，{P}难以置信！","最后一刻解围！后卫拼命封堵，将球挡出角球！","中柱！{P}的射门砸在立柱上弹出——门将都够不着！","高出横梁。{P}没控制好力度，向看台致意。","越位！{P}杀入却被边裁举旗示意。","被封堵！中卫飞身挡下了{P}的射门。"],
+                yellow: ["🟨 黄牌！{P}因一次凶狠拼抢吃到黄牌。","🟨 {P}因拖延时间被出示黄牌。","🟨 裁判向{P}出示黄牌——战术犯规。"],
+                red: ["🟥 红牌！{P}被罚下！球队少一人！","🟥 {P}两黄变一红，被罚出场！"],
+                injury: ["🩹 {P}倒地！医疗组进场……","🩹 {P}捂着腿，状态下滑！","🩹 {P}或因腹股沟伤势被迫下场。"],
+                corner: ["🚩 角球！{P}将从左侧开出。","🚩 角球开出——禁区里人满为患！"],
+                penalty: ["⚠️ 点球！裁判指向罚球点！{P}被侵犯！","⚠️ VAR判罚点球！{P}在禁区内被放倒。"],
+                save: ["🧤 神扑！门将奋力扑出{P}的劲射！","🧤 门将单手将球托出，拒绝了{P}的进球！"],
+                tackle: ["🛡️ 精彩抢断！滑铲把球从{P}脚下断下！","🛡️ {P}在肩并肩的对抗中获胜！"]
+            }
+        };
         const getSpikerText = (type, player) => {
-            const scripts = {
-                start: [
-                    `${player.ad} orta sahada rüzgar gibi topu kaptı!`,
-                    `${player.ad} enfes bir vücut çalımıyla rakibini arkasında bıraktı!`,
-                    `${player.ad} rakiplerini tek tek ekale ederek takımını atağa kaldırdı!`,
-                    `${player.ad} taca atılan topu kontrol etti ve hemen hücumu başlattı.`,
-                    `${player.ad} kornerin ardından topu kapıp orta sahayı yardı.`,
-                    `${player.ad} kalecinin uzun pasıyla buluştu, bakalım ne yapacak?`,
-                    `${player.ad} bir aşırtmayla rakibi geride bıraktı, koşu başlıyor!`
-                ],
-                develop: [
-                    `${player.ad} ceza sahasına fırtına gibi sokuluyor!`,
-                    `${player.ad} muhteşem bir ara pasla savunma arkasına sarktı!`,
-                    `${player.ad} ceza yayı üzerinde kontrolü sağladı, şut hazırlığında!`,
-                    `${player.ad} sağ kanattan içe doğru kıvrıldı, taraftarlar ayakta!`,
-                    `${player.ad} duvar pasıyla bir-iki kombinasyonu kurdu, çok temiz futbol.`,
-                    `${player.ad} topu hafifletip yanındaki arkadaşına bıraktı, ondan geri aldı!`,
-                    `${player.ad} sol kanattan içeri akıyor, savunma geriliyor.`
-                ],
-                shot: [
-                    `${player.ad} kaleyi tam karşıdan gördü, müthiş bir füze yolladı!`,
-                    `${player.ad} plaseyle kalecinin uzanamayacağı köşeyi hedefledi!`,
-                    `${player.ad} ceza sahası dışından sert şutunu gönderdi!`,
-                    `${player.ad} röveşata denedi, taraftarlar nefesini tuttu!`,
-                    `${player.ad} kafayı vurmak için sıçradı, top o tarafa gidiyor!`,
-                    `${player.ad} serbest vuruşu Brezilya usulü kıvırdı!`,
-                    `${player.ad} topun üzerine düşüp düz vurdu, hava sıkıştı!`
-                ],
-                goal: [
-                    `GOOOOL! Top ağlarda! ${player.ad} adeta iğne deliğinden geçirdi!`,
-                    `İNANILMAZ GOL! ${player.ad} kaleciyi çaresiz bıraktı!`,
-                    `VE GOL! Harika şut direğin içine çarpıp filelerle buluşuyor!`,
-                    `GOOL! ${player.ad} kalecinin altından sokuverdi — alkış kıyamet!`,
-                    `KAFA GOLÜ! ${player.ad} sıçradı, çarptı, ağları havalandırdı!`,
-                    `GOOL! ${player.ad}'ın kıvırma şutu üst köşeye saplandı, mükemmellik!`,
-                    `BAŞKA NE DENİR! ${player.ad} 25 metreden bombayı patlattı, tribün ayakta!`
-                ],
-                miss: [
-                    `AZ FARKLA DIŞARI! ${player.ad} vurdu ama top üst direği sıyırdı.`,
-                    `MÜTHİŞ KURTARIŞ! Kaleci parmaklarının ucuyla çıkardı, ${player.ad} gole inanamıyor!`,
-                    `SAVUNMA SON ANDA! Savunmanın cansiperane müdahalesiyle top kornere çıktı!`,
-                    `DİREK! ${player.ad}'ın şutu direğe çarpıp dışarı çıktı — kaleci el bile süremedi!`,
-                    `Üstten dışarı. ${player.ad} hızını kontrol edemedi, tribünü selamladı.`,
-                    `OFSAYT! ${player.ad} gole gitti ama yan hakem bayrağı kaldırdı.`,
-                    `SAVUNMA BLOK! ${player.ad}'ın şutuna stoper kendini siper etti.`
-                ],
-                yellow: [
-                    `🟨 SARI KART! ${player.ad} sert bir müdahaleden kart gördü.`,
-                    `🟨 ${player.ad} oyunu geciktirme bahanesiyle sarıya boyandı.`,
-                    `🟨 Hakem ${player.ad}'a sarı uzattı — taktiksel faul.`
-                ],
-                red: [
-                    `🟥 KIRMIZI KART! ${player.ad} ihraç edildi! Takım 10 kişi!`,
-                    `🟥 ${player.ad} ikinci sarıdan kırmızı gördü, oyundan atıldı!`
-                ],
-                injury: [
-                    `🩹 ${player.ad} yere yığıldı! Sağlık ekibi sahaya giriyor...`,
-                    `🩹 ${player.ad} bacağını tutuyor, formu düşüyor!`,
-                    `🩹 ${player.ad} kasık problemiyle sahadan çıkmak zorunda kalabilir.`
-                ],
-                corner: [
-                    `🚩 KORNER! ${player.ad} sol köşeden topu çekecek.`,
-                    `🚩 Korner kullanılıyor — ceza sahası kalabalık!`
-                ],
-                penalty: [
-                    `⚠️ PENALTI! Hakem noktayı gösterdi! ${player.ad} faul yapıldı!`,
-                    `⚠️ VAR penaltı dedi! ${player.ad} ceza alanında düşürüldü.`
-                ],
-                save: [
-                    `🧤 SÜPER KURTARIŞ! Kaleci ${player.ad}'ın bombasını çelmek için uzandı!`,
-                    `🧤 Kaleci tek elle çevirdi, ${player.ad}'ın golüne izin vermedi!`
-                ],
-                tackle: [
-                    `🛡️ Müthiş bir müdahale! ${player.ad}'tan topu kayarak söküp aldı!`,
-                    `🛡️ ${player.ad} omuz omuza mücadelede kazandı!`
-                ]
-            };
-            const list = scripts[type] || scripts.start;
-            return list[Math.floor(Math.random() * list.length)];
+            const set = SPIKER[gameLang] || SPIKER.tr;
+            const list = set[type] || SPIKER.tr[type] || set.start || SPIKER.tr.start;
+            const s = list[Math.floor(Math.random() * list.length)];
+            return s.replace(/\{P\}/g, (player && player.ad) ? player.ad : '');
         };
 
         /* =====================================================================
@@ -1153,7 +1394,7 @@
             } else if (evType < 0.40) {
                 // Foul (no card)
                 gameState.matchStats[sideKey].fouls++;
-                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: `Faul: ${player.ad} sert müdahale yaptı.`, color: 'text-slate-400' });
+                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: `${tx('Faul')}: ${player.ad} ${tx('sert müdahale yaptı.')}`, color: 'text-slate-400' });
             } else if (evType < 0.50 + tempoFactor * 0.15) {
                 // Injury — light, reduces energy & form
                 if (!gameState.injuredPlayers.has(player.ad)) {
@@ -1208,29 +1449,29 @@
                             <span class="font-black uppercase text-xs md:text-sm text-emerald-400 tracking-tight">${ev.ad.split(' ')[0]}</span>
                             <div class="flex flex-col items-center">
                                 <span id="m-score" class="text-2xl md:text-3xl font-black text-white tabular-nums leading-none">0 - 0</span>
-                                <span id="m-clock" class="mt-0.5 text-[10px] text-emerald-400 font-black">0' Dakika</span>
+                                <span id="m-clock" class="mt-0.5 text-[10px] text-emerald-400 font-black">0' ${tx('Dakika')}</span>
                             </div>
                             <span class="font-black uppercase text-xs md:text-sm text-rose-400 tracking-tight">${dep.ad.split(' ')[0]}</span>
                         </div>
                         <div class="flex flex-col gap-1.5 items-end pointer-events-auto">
                             <div class="bg-slate-950/85 backdrop-blur rounded-xl p-1 flex gap-1 border border-white/10 shadow-xl">
-                                <button onclick="stadium3dSetCamera('screen')" id="cam-screen" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">📺 Ekran</button>
-                                <button onclick="stadium3dSetCamera('pitchside')" id="cam-pitchside" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">📐 Kenar</button>
-                                <button onclick="stadium3dSetCamera('broadcast')" id="cam-broadcast" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">🎥 Geniş</button>
-                                <button onclick="stadium3dSetCamera('free')" id="cam-free" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">🕹️ Serbest</button>
+                                <button onclick="stadium3dSetCamera('screen')" id="cam-screen" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">📺 ${tx('Ekran')}</button>
+                                <button onclick="stadium3dSetCamera('pitchside')" id="cam-pitchside" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">📐 ${tx('Kenar')}</button>
+                                <button onclick="stadium3dSetCamera('broadcast')" id="cam-broadcast" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">🎥 ${tx('Geniş')}</button>
+                                <button onclick="stadium3dSetCamera('free')" id="cam-free" class="cam-btn px-2.5 py-1.5 rounded-lg text-[10px] font-black">🕹️ ${tx('Serbest')}</button>
                             </div>
-                            <button onclick="toggleMatchStats()" class="bg-slate-950/85 backdrop-blur rounded-xl px-3 py-1.5 text-[10px] font-black text-slate-200 border border-white/10 shadow-xl">📊 İstatistik</button>
+                            <button onclick="toggleMatchStats()" class="bg-slate-950/85 backdrop-blur rounded-xl px-3 py-1.5 text-[10px] font-black text-slate-200 border border-white/10 shadow-xl">📊 ${tx('İstatistik')}</button>
                         </div>
                     </div>
 
                     <!-- ===== İSTATİSTİK PANELİ (gizlenebilir) ===== -->
                     <div id="match-stats-panel" class="absolute top-16 left-3 w-72 bg-slate-950/90 backdrop-blur rounded-2xl border border-white/10 shadow-2xl p-3 pointer-events-auto" style="display:none;">
                         <div class="mb-2">
-                            <div class="flex justify-between text-[9px] text-slate-400 mb-0.5"><span>⬅ Baskı</span><span id="m-momentum-label" class="font-bold">DENGELİ</span><span>Baskı ➡</span></div>
+                            <div class="flex justify-between text-[9px] text-slate-400 mb-0.5"><span>⬅ ${tx('Baskı')}</span><span id="m-momentum-label" class="font-bold">${tx('DENGELİ')}</span><span>${tx('Baskı')} ➡</span></div>
                             <div class="h-2 rounded-full overflow-hidden bg-slate-800 relative"><div id="m-momentum" class="absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-300" style="left:0;width:50%"></div></div>
                         </div>
                         <div class="mb-2">
-                            <div class="flex justify-between text-[9px] text-slate-400 mb-0.5"><span id="m-poss-h" class="font-black text-emerald-400">50%</span><span>Topla Oynama</span><span id="m-poss-a" class="font-black text-rose-400">50%</span></div>
+                            <div class="flex justify-between text-[9px] text-slate-400 mb-0.5"><span id="m-poss-h" class="font-black text-emerald-400">50%</span><span>${tx('Topla Oynama')}</span><span id="m-poss-a" class="font-black text-rose-400">50%</span></div>
                             <div class="flex h-2 rounded-full overflow-hidden bg-slate-800"><div id="m-poss-bar-h" class="bg-emerald-500" style="width:50%"></div><div id="m-poss-bar-a" class="bg-rose-500" style="width:50%"></div></div>
                         </div>
                         <div id="m-statgrid" class="grid grid-cols-3 gap-1.5 text-center"></div>
@@ -1242,15 +1483,15 @@
                             <div class="flex items-center gap-2 mb-2">
                                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-lg shadow-lg">🧙</div>
                                 <div>
-                                    <p class="text-xs font-black text-amber-300 leading-none">Danışman Baldric</p>
-                                    <p class="text-[9px] text-slate-400">Saha kenarı analisti</p>
+                                    <p class="text-xs font-black text-amber-300 leading-none">${tx('Danışman Baldric')}</p>
+                                    <p class="text-[9px] text-slate-400">${tx('Saha kenarı analisti')}</p>
                                 </div>
                             </div>
                             <div id="baldric-content" class="space-y-2 text-[11px]"></div>
                         </div>
                         <div id="m-sub-banner" class="pointer-events-auto"></div>
                         <div class="bg-slate-950/90 backdrop-blur rounded-2xl border border-white/10 shadow-2xl p-3 flex flex-col flex-grow min-h-0 pointer-events-auto">
-                            <h4 class="font-black text-slate-400 text-[10px] uppercase mb-2 tracking-widest text-center">🔄 Değişiklik Kulübesi</h4>
+                            <h4 class="font-black text-slate-400 text-[10px] uppercase mb-2 tracking-widest text-center">🔄 ${tx('Değişiklik Kulübesi')}</h4>
                             <div id="m-bench" class="space-y-2 overflow-y-auto flex-grow min-h-0"></div>
                         </div>
                     </div>
@@ -1322,7 +1563,7 @@
             const sH = gameState.matchStats.home, sA = gameState.matchStats.away;
 
             document.getElementById('m-score').textContent = `${gameState.lastResult[0]} - ${gameState.lastResult[1]}`;
-            document.getElementById('m-clock').textContent = `${gameState.matchMinute}' Dakika`;
+            document.getElementById('m-clock').textContent = `${gameState.matchMinute}' ${tx('Dakika')}`;
 
             const possH = Math.round(sH.possession);
             document.getElementById('m-poss-h').textContent = possH + '%';
@@ -1337,9 +1578,9 @@
                 const pct = Math.max(8, Math.min(92, ballAdv));
                 mEl.style.width = pct + '%';
                 const lbl = document.getElementById('m-momentum-label');
-                if (pct > 60) { lbl.textContent = ev.ad.split(' ')[0].toUpperCase() + ' BASKILI'; mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-300'; }
-                else if (pct < 40) { lbl.textContent = dep.ad.split(' ')[0].toUpperCase() + ' BASKILI'; mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-rose-500 to-rose-300 transition-all duration-300'; }
-                else { lbl.textContent = 'DENGELİ'; mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-slate-500 to-slate-300 transition-all duration-300'; }
+                if (pct > 60) { lbl.textContent = ev.ad.split(' ')[0].toUpperCase() + ' ' + tx('BASKILI'); mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-300'; }
+                else if (pct < 40) { lbl.textContent = dep.ad.split(' ')[0].toUpperCase() + ' ' + tx('BASKILI'); mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-rose-500 to-rose-300 transition-all duration-300'; }
+                else { lbl.textContent = tx('DENGELİ'); mEl.className = 'absolute top-0 bottom-0 bg-gradient-to-r from-slate-500 to-slate-300 transition-all duration-300'; }
             }
 
             document.getElementById('m-statgrid').innerHTML = [
@@ -1351,7 +1592,7 @@
                 ['🟨/🟥', sH.yellows + '/' + sH.reds, sA.yellows + '/' + sA.reds]
             ].map(st => `
                 <div class="bg-slate-900/60 rounded-lg p-1.5 border border-white/5">
-                    <div class="text-[9px] text-slate-500 uppercase tracking-wide">${st[0]}</div>
+                    <div class="text-[9px] text-slate-500 uppercase tracking-wide">${tx(st[0])}</div>
                     <div class="flex justify-between text-xs font-bold mt-0.5">
                         <span class="text-emerald-400">${st[1]}</span>
                         <span class="text-rose-400">${st[2]}</span>
@@ -1359,7 +1600,7 @@
                 </div>`).join('');
 
             document.getElementById('m-sub-banner').innerHTML = gameState.selectedSubstitutionOut
-                ? `<div class="p-3 bg-indigo-950/90 border border-indigo-500/40 text-center rounded-xl text-xs font-bold animate-pulse text-indigo-300">🔄 ${gameState.selectedSubstitutionOut.ad} çıkıyor. Yerine girmesi için aşağıdaki yedeklerden birine tıklayın!</div>`
+                ? `<div class="p-3 bg-indigo-950/90 border border-indigo-500/40 text-center rounded-xl text-xs font-bold animate-pulse text-indigo-300">🔄 ${gameState.selectedSubstitutionOut.ad} ${tx('çıkıyor. Yerine girmesi için aşağıdaki yedeklerden birine tıklayın!')}</div>`
                 : '';
 
             document.getElementById('m-bench').innerHTML = gameState.myTeam.oyuncular
@@ -1368,10 +1609,10 @@
                     <div onclick="triggerMatchSubstitution('${p.ad}')" class="p-2.5 bg-slate-950/80 rounded-xl border border-white/5 hover:border-emerald-500/40 transition-all cursor-pointer">
                         <div class="flex justify-between items-center">
                             <p class="font-bold text-xs text-white">${p.ad.split(' ')[0]}</p>
-                            <span class="text-[9px] bg-slate-800 text-slate-300 font-black px-1.5 py-0.5 rounded">${p.mevkii}</span>
+                            <span class="text-[9px] bg-slate-800 text-slate-300 font-black px-1.5 py-0.5 rounded">${tx(p.mevkii)}</span>
                         </div>
                         <div class="flex justify-between items-center mt-1.5 text-[10px]">
-                            <span class="text-slate-500 font-semibold">Yetenek: ${p.yetenek}</span>
+                            <span class="text-slate-500 font-semibold">${tx('Yetenek')}: ${p.yetenek}</span>
                             <span class="${p.enerji < 50 ? 'text-rose-400' : 'text-emerald-400'} font-black">⚡ %${Math.round(p.enerji)}</span>
                         </div>
                     </div>`).join('');
@@ -1380,7 +1621,7 @@
                 .map(e => `<p class="text-xs mb-1.5 border-b border-white/5 pb-1 ${e.color}"><span class="text-slate-500 font-bold mr-3">${e.min}'</span> ${e.text}</p>`).join('');
 
             document.getElementById('m-endbtn').innerHTML = !gameState.isMatchLive
-                ? `<button onclick="changeView('main_menu')" class="w-full py-4 bg-white text-slate-950 hover:bg-slate-100 rounded-xl font-black uppercase tracking-widest shadow-xl transition-all">ANA MENÜYE DÖN</button>`
+                ? `<button onclick="changeView('main_menu')" class="w-full py-4 bg-white text-slate-950 hover:bg-slate-100 rounded-xl font-black uppercase tracking-widest shadow-xl transition-all">${tx('ANA MENÜYE DÖN')}</button>`
                 : '';
 
             refreshPlayerNodes();
@@ -1391,7 +1632,7 @@
                 const p = gameState.myTeam.ilk_11.find(x => x.ad === playerAd);
                 if(p) {
                     gameState.selectedSubstitutionOut = p;
-                    triggerToast("DEĞİŞİKLİK", `${p.ad} seçildi. Şimdi yedek kulübesinden bir oyuncu seçin.`);
+                    triggerToast(tx("DEĞİŞİKLİK"), `${p.ad} ${tx('seçildi. Şimdi yedek kulübesinden bir oyuncu seçin.')}`);
                     if (gameState.view === 'match' && gameState.sim) updateMatchHud(); else render();
                 }
             } else {
@@ -1402,7 +1643,7 @@
                     if(idx !== -1) {
                         gameState.myTeam.ilk_11[idx] = pIn;
                         gameState.matchEvents.unshift({ min: gameState.matchMinute, text: `🔄 OYUNCU DEĞİŞİKLİĞİ: Giren: ${pIn.ad} | Çıkan: ${pOut.ad}`, color: 'text-emerald-400 font-bold' });
-                        triggerToast("KULÜBE REAKSİYONU", `${pOut.ad} çıktı, ${pIn.ad} oyuna girdi!`);
+                        triggerToast(tx("KULÜBE REAKSİYONU"), `${pOut.ad} ${tx('çıktı,')} ${pIn.ad} ${tx('oyuna girdi!')}`);
                     }
                 }
                 gameState.selectedSubstitutionOut = null;
@@ -1783,21 +2024,21 @@
 
             // öneriler
             const tips = [];
-            if (tiredCount >= 2) tips.push(`⚡ ${tiredCount} oyuncu yorgun (<%45). Değişiklik düşün.`);
-            if (poss < 42) tips.push('🎯 Top bizde durmuyor — tempoyu düşür, kısa pasa geç.');
-            if (poss > 60 && gameState.matchMinute > 20 && lead <= 0) tips.push('🔓 Hakimiyet var ama gol yok — yaratıcılığı/ofansifliği artır.');
-            if (lead > 0 && gameState.matchMinute > 70) tips.push('🛡️ Öndesin, son bölüm: zaman oyunu + savunma hattını düşür.');
-            if (lead < 0 && gameState.matchMinute > 60) tips.push('🔥 Gerideyiz — pres ve ofansifliği yükselt, risk al.');
-            if (sH.xg > 1.2 && gameState.lastResult[0] === 0) tips.push('😬 xG yüksek ama gol yok — bitiricilik kötü, forvet değiştir.');
-            if (!tips.length) tips.push('👍 Plan tutuyor. Mevcut düzeni koru.');
+            if (tiredCount >= 2) tips.push(`⚡ ${tiredCount} ${tx('oyuncu yorgun (<%45). Değişiklik düşün.')}`);
+            if (poss < 42) tips.push(tx('🎯 Top bizde durmuyor — tempoyu düşür, kısa pasa geç.'));
+            if (poss > 60 && gameState.matchMinute > 20 && lead <= 0) tips.push(tx('🔓 Hakimiyet var ama gol yok — yaratıcılığı/ofansifliği artır.'));
+            if (lead > 0 && gameState.matchMinute > 70) tips.push(tx('🛡️ Öndesin, son bölüm: zaman oyunu + savunma hattını düşür.'));
+            if (lead < 0 && gameState.matchMinute > 60) tips.push(tx('🔥 Gerideyiz — pres ve ofansifliği yükselt, risk al.'));
+            if (sH.xg > 1.2 && gameState.lastResult[0] === 0) tips.push(tx('😬 xG yüksek ama gol yok — bitiricilik kötü, forvet değiştir.'));
+            if (!tips.length) tips.push(tx('👍 Plan tutuyor. Mevcut düzeni koru.'));
 
             const ratColor = rating >= 7.2 ? 'text-emerald-400' : rating >= 6.4 ? 'text-amber-400' : 'text-rose-400';
             el.innerHTML = `
                 <div class="grid grid-cols-2 gap-2">
-                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">Takım Reytingi</p><p class="text-base font-black ${ratColor}">${rating.toFixed(1)}</p></div>
-                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">Tempo</p><p class="text-base font-black ${tempoColor}">${tempoTxt}</p></div>
+                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">${tx('Takım Reytingi')}</p><p class="text-base font-black ${ratColor}">${rating.toFixed(1)}</p></div>
+                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">${tx('Tempo')}</p><p class="text-base font-black ${tempoColor}">${tx(tempoTxt)}</p></div>
                     <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">xG</p><p class="text-sm font-black text-sky-400">${(sH.xg||0).toFixed(2)}<span class="text-slate-500 text-[9px]"> vs ${(sA.xg||0).toFixed(2)}</span></p></div>
-                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">Hakimiyet</p><p class="text-sm font-black text-emerald-400">%${poss}</p></div>
+                    <div class="bg-slate-900/70 rounded-lg p-2 text-center"><p class="text-[8px] text-slate-500 uppercase">${tx('Hakimiyet')}</p><p class="text-sm font-black text-emerald-400">%${poss}</p></div>
                 </div>
                 <div class="mt-2 space-y-1.5">
                     ${tips.map(t => `<p class="text-[10px] text-slate-200 bg-indigo-900/30 border border-indigo-500/20 rounded-lg px-2 py-1.5 leading-snug">${t}</p>`).join('')}
@@ -1868,10 +2109,10 @@
                 // Devre arası
                 if (gameState.matchMinute === 45) {
                     gameState.phase = 'halftime';
-                    pushEvent('⏸️ İLK YARI SONA ERDİ. Devre arası.', 'text-amber-300 font-bold');
+                    pushEvent(tx('⏸️ İLK YARI SONA ERDİ. Devre arası.'), 'text-amber-300 font-bold');
                     soundEngine.playWhistle();
                     updateMatchHud();
-                    setTimeout(() => { if (gameState.isMatchLive) { gameState.phase = 'normal'; pushEvent('▶️ İkinci yarı başladı!', 'text-emerald-300 font-bold'); updateMatchHud(); } }, 1600);
+                    setTimeout(() => { if (gameState.isMatchLive) { gameState.phase = 'normal'; pushEvent(tx('▶️ İkinci yarı başladı!'), 'text-emerald-300 font-bold'); updateMatchHud(); } }, 1600);
                 }
 
                 if (gameState.matchMinute >= 90) {
@@ -1880,7 +2121,7 @@
                     gameState.isMatchLive = false;
                     soundEngine.playWhistle();
                     soundEngine.stopMatchAmbient();
-                    pushEvent('🏁 MAÇ SONA ERDİ!', 'text-white font-black');
+                    pushEvent(tx('🏁 MAÇ SONA ERDİ!'), 'text-white font-black');
                     finalizeMatch();
                 }
                 // Sadece HUD metinlerini güncelle (saha düğümleri animasyon döngüsünde)
@@ -1913,9 +2154,9 @@
                 const sorted = [...gameState.league.takimlar].sort((a,b) => b.puan - a.puan);
                 if(sorted[0].isUser) {
                     gameState.myTeam.butce += 30.0;
-                    triggerToast("KUPAYI KALDIRDIK!", "ŞAMPİYON OLDUNUZ! Kulübünüze 30M € Şampiyonluk ödülü eklendi!", "success");
+                    triggerToast(tx("KUPAYI KALDIRDIK!"), tx("ŞAMPİYON OLDUNUZ! Kulübünüze 30M € Şampiyonluk ödülü eklendi!"), "success");
                 } else {
-                    triggerToast("SEZON SONU", `Şampiyonluğu ${sorted[0].ad} takımına kaptırdınız.`, "error");
+                    triggerToast(tx("SEZON SONU"), `${tx('Şampiyonluğu')} ${sorted[0].ad} ${tx('takımına kaptırdınız.')}`, "error");
                 }
             }
             updateWeekIndicator();
@@ -1966,7 +2207,7 @@
 
         function executeTrainingRegime(regimeType) {
             if(gameState.trainingRights <= 0) {
-                triggerToast("HATA", "Bu hafta zaten antrenman yaptınız! Yeni antrenman hakkı kazanmak için sıradaki maçınızı oynamalısınız.", "error");
+                triggerToast(tx("HATA"), tx("Bu hafta zaten antrenman yaptınız! Yeni antrenman hakkı kazanmak için sıradaki maçınızı oynamalısınız."), "error");
                 return;
             }
 
@@ -2049,7 +2290,7 @@
             };
 
             gameState.trainingRights--;
-            triggerToast("ANTRENMAN TAMAMLANDI", "Haftalık antrenman hakkınız kullanıldı. Oyuncu değerleri güncellendi.");
+            triggerToast(tx("ANTRENMAN TAMAMLANDI"), tx("Haftalık antrenman hakkınız kullanıldı. Oyuncu değerleri güncellendi."));
             render();
         }
 
@@ -2059,11 +2300,11 @@
                 if(gameState.myTeam.butce >= scout.cost) {
                     gameState.myTeam.butce -= scout.cost;
                     scout.hired = true;
-                    triggerToast("YENİ GÖZLEMCİ", `${scout.name} scout ekibine katıldı! Altyapı havuzunuz genişletildi.`);
+                    triggerToast(tx("YENİ GÖZLEMCİ"), `${scout.name} ${tx('scout ekibine katıldı! Altyapı havuzunuz genişletildi.')}`);
                     generateAcademyPlayers();
                     render();
                 } else {
-                    triggerToast("BÜTÇE YETERSİZ", "Bu gözlemciyi kiralamak için paranız yetersiz!", "error");
+                    triggerToast(tx("BÜTÇE YETERSİZ"), tx("Bu gözlemciyi kiralamak için paranız yetersiz!"), "error");
                 }
             }
         }
@@ -2071,17 +2312,17 @@
         function upgradeAcademyFacilities() {
             const cost = gameState.academyLevel * 8.5;
             if (gameState.academyLevel >= 5) {
-                triggerToast("MAKSİMUM SEVİYE", "Altyapı tesisleriniz zaten son model dünya standartlarında!", "error");
+                triggerToast(tx("MAKSİMUM SEVİYE"), tx("Altyapı tesisleriniz zaten son model dünya standartlarında!"), "error");
                 return;
             }
             if(gameState.myTeam.butce >= cost) {
                 gameState.myTeam.butce -= cost;
                 gameState.academyLevel++;
                 generateAcademyPlayers();
-                triggerToast("TESİSLER YÜKSELTİLDİ", `Altyapı seviyeniz Seviye ${gameState.academyLevel} oldu!`);
+                triggerToast(tx("TESİSLER YÜKSELTİLDİ"), `${tx('Altyapı seviyeniz yükseldi! Yeni seviye: ')}${gameState.academyLevel}`);
                 render();
             } else {
-                triggerToast("BÜTÇE YETERSİZ", "Tesisleri yükseltmek için yeterli bütçe yok!", "error");
+                triggerToast(tx("BÜTÇE YETERSİZ"), tx("Tesisleri yükseltmek için yeterli bütçe yok!"), "error");
             }
         }
 
@@ -2095,10 +2336,10 @@
                     let boost = p.karakter === "Dahi" ? 4 : (p.karakter === "Hırslı" ? 3 : 2);
                     p.yetenek = Math.min(p.potansiyel, p.yetenek + boost);
                     p.form = Math.min(100, p.form + 15);
-                    triggerToast("ÖZEL EĞİTİM", `${p.ad} adlı gencin yeteneği +${boost} arttı!`);
+                    triggerToast(tx("ÖZEL EĞİTİM"), `${p.ad}: ${tx('Yetenek')} +${boost} ${tx('arttı!')}`);
                     render();
                 } else {
-                    triggerToast("BÜTÇE YETERSİZ", "Bu antrenman bütçesini karşılayacak nakit yok!", "error");
+                    triggerToast(tx("BÜTÇE YETERSİZ"), tx("Bu antrenman bütçesini karşılayacak nakit yok!"), "error");
                 }
             }
         }
@@ -2112,10 +2353,10 @@
                     gameState.myTeam.butce -= signFee;
                     gameState.myTeam.oyuncular.push(p);
                     gameState.academyPool.splice(idx, 1);
-                    triggerToast("A TAKIMA ÇIKTI", `${p.ad} profesyonel sözleşmeye imza attı! (Maliyet: ${signFee}M €)`);
+                    triggerToast(tx("A TAKIMA ÇIKTI"), `${p.ad} ${tx('profesyonel sözleşmeye imza attı! (Maliyet:')} ${signFee}M €)`);
                     render();
                 } else {
-                    triggerToast("İMZA ÜCRETİ", `Oyuncunun profesyonel imza ücreti olan ${signFee}M € bütçenizde yok!`, "error");
+                    triggerToast(tx("İMZA ÜCRETİ"), `${signFee}M € ${tx('imza ücreti bütçenizde yok!')}`, "error");
                 }
             }
         }
@@ -2143,10 +2384,10 @@
                 gameState.myTeam.butce -= p.fiyat;
                 gameState.myTeam.oyuncular.push(p);
                 gameState.transferPool.splice(gameState.transferPool.indexOf(p), 1);
-                triggerToast("YENİ YILDIZ KATILDI", `${p.ad} başarıyla transfer edildi!`);
+                triggerToast(tx("YENİ YILDIZ KATILDI"), `${p.ad} ${tx('başarıyla transfer edildi!')}`);
                 render();
             } else {
-                triggerToast("BÜTÇE YETERSİZ", "Transfer gerçekleştirmek için bütçeniz yetersiz!", "error");
+                triggerToast(tx("BÜTÇE YETERSİZ"), tx("Transfer gerçekleştirmek için bütçeniz yetersiz!"), "error");
             }
         }
 
@@ -2156,7 +2397,7 @@
             if(outIdx !== -1) {
                 const outPlayer = gameState.myTeam.ilk_11[outIdx];
                 gameState.myTeam.ilk_11[outIdx] = p;
-                triggerToast("KADRO PLANI", `${outPlayer.ad} yerine ${p.ad} ilk 11'e yerleşti.`);
+                triggerToast(tx("KADRO PLANI"), `${p.ad} ${tx('ilk 11\'e girdi, çıkan:')} ${outPlayer.ad}`);
             } else {
                 gameState.myTeam.ilk_11[0] = p;
             }
@@ -2175,22 +2416,22 @@
                 t.ofansiflik = 75; t.savunma_hatti = 45; t.tempo = 40; t.pres = 75; t.genislik = 50; t.yaraticilik = 85; t.riskli_paslar = 35;
                 t.pas_tarzi = 'Kısa Pas'; t.hucum_odagi = 'Merkez'; t.savunma_stili = 'Alan';
                 t.pres_tetikleyici = 'Agresif'; t.cikis_oyunu = 'Kaleciden Kur'; t.top_kazaninca = 'Topu Tut'; t.ofsayt_tuzagi = false; t.zaman_oyunu = false;
-                triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Tiki-Taka. Kısa paslaşma ve topa sahip olma ana odak!");
+                triggerToast(tx("TAKTİK DEĞİŞTİ"), tx("Sistem: Tiki-Taka. Kısa paslaşma ve topa sahip olma ana odak!"));
             } else if (template === 'gegenpress') {
                 t.ofansiflik = 85; t.savunma_hatti = 75; t.tempo = 80; t.pres = 95; t.genislik = 70; t.yaraticilik = 55; t.riskli_paslar = 55;
                 t.pas_tarzi = 'Direkt Oyun'; t.hucum_odagi = 'Dengeli'; t.savunma_stili = 'Adam Adama';
                 t.pres_tetikleyici = 'Ultra'; t.cikis_oyunu = 'Dengeli'; t.top_kazaninca = 'Hızlı Kontra'; t.ofsayt_tuzagi = true; t.zaman_oyunu = false;
-                triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Gegenpressing. Top kaybedildiği anda yoğun ön alan presi!");
+                triggerToast(tx("TAKTİK DEĞİŞTİ"), tx("Sistem: Gegenpressing. Top kaybedildiği anda yoğun ön alan presi!"));
             } else if (template === 'bus') {
                 t.ofansiflik = 18; t.savunma_hatti = 20; t.tempo = 30; t.pres = 35; t.genislik = 40; t.yaraticilik = 15; t.riskli_paslar = 20;
                 t.pas_tarzi = 'Uzun Top'; t.hucum_odagi = 'Dengeli'; t.savunma_stili = 'Alan';
                 t.pres_tetikleyici = 'Pasif'; t.cikis_oyunu = 'Uzun Açılım'; t.top_kazaninca = 'Dengeli'; t.ofsayt_tuzagi = false; t.zaman_oyunu = true;
-                triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Otobüsü Çek. Katı savunma, ultra defansif duruş!");
+                triggerToast(tx("TAKTİK DEĞİŞTİ"), tx("Sistem: Otobüsü Çek. Katı savunma, ultra defansif duruş!"));
             } else if (template === 'counter') {
                 t.ofansiflik = 55; t.savunma_hatti = 35; t.tempo = 88; t.pres = 50; t.genislik = 78; t.yaraticilik = 60; t.riskli_paslar = 65;
                 t.pas_tarzi = 'Direkt Oyun'; t.hucum_odagi = 'Kanatlar'; t.savunma_stili = 'Alan';
                 t.pres_tetikleyici = 'Orta'; t.cikis_oyunu = 'Dengeli'; t.top_kazaninca = 'Hızlı Kontra'; t.ofsayt_tuzagi = false; t.zaman_oyunu = false;
-                triggerToast("TAKTİK DEĞİŞTİ", "Sistem: Kontra Atak. Kendi sahasında kabul, hızlı geçiş!");
+                triggerToast(tx("TAKTİK DEĞİŞTİ"), tx("Sistem: Kontra Atak. Kendi sahasında kabul, hızlı geçiş!"));
             }
             render();
         }
@@ -2230,36 +2471,36 @@
                 container.innerHTML = `
                     <div class="max-w-4xl mx-auto py-8 space-y-6 text-center animate-fade-in">
                         <div class="mb-4">
-                            <h2 class="text-3xl md:text-5xl font-black italic uppercase text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 tracking-tight">KULÜP YÖNETİM OFİSİ</h2>
-                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-2">KULÜBÜNÜZÜ SÜPER LİG ZİRVESİNE TAŞIYIN</p>
+                            <h2 class="text-3xl md:text-5xl font-black italic uppercase text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 tracking-tight">${T('mm_title')}</h2>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-2">${T('mm_sub')}</p>
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-5">
                             <button onclick="changeView('lineup')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-emerald-500/10 hover:border-emerald-500/20 transition-all flex flex-col items-center gap-3">
                                 <span class="text-3xl group-hover:scale-110 transition-transform">📋</span>
-                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-emerald-400">KADRO PLANLAYICI</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-emerald-400">${T('mm_lineup')}</span>
                             </button>
                             <button onclick="changeView('tactics')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-indigo-500/10 hover:border-indigo-500/20 transition-all flex flex-col items-center gap-3">
                                 <span class="text-3xl group-hover:scale-110 transition-transform">⚙️</span>
-                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-indigo-400">TAKTIK TAHTASI</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-indigo-400">${T('mm_tactics')}</span>
                             </button>
                             <button onclick="changeView('transfer')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-amber-500/10 hover:border-amber-500/20 transition-all flex flex-col items-center gap-3">
                                 <span class="text-3xl group-hover:scale-110 transition-transform">💸</span>
-                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-amber-400">TRANSFER PAZARI</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-amber-400">${T('mm_transfer')}</span>
                             </button>
                             <button onclick="changeView('league')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-purple-500/10 hover:border-purple-500/20 transition-all flex flex-col items-center gap-3">
                                 <span class="text-3xl group-hover:scale-110 transition-transform">🏆</span>
-                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-purple-400">PUAN DURUMU</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-purple-400">${T('mm_league')}</span>
                             </button>
                             <button onclick="changeView('academy')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-teal-500/10 hover:border-teal-500/20 transition-all flex flex-col items-center gap-3">
                                 <span class="text-3xl group-hover:scale-110 transition-transform">🌱</span>
-                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-teal-400">ALTYAPI & AKADEMİ</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-teal-400">${T('mm_academy')}</span>
                             </button>
                             <button onclick="changeView('training')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-pink-500/10 hover:border-pink-500/20 transition-all flex flex-col items-center gap-3">
                                 <span class="text-3xl group-hover:scale-110 transition-transform">🏋️‍♂️</span>
-                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-pink-400">TAKIMSAL ANTRENMAN</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-pink-400">${T('mm_training')}</span>
                             </button>
                         </div>
-                        <button onclick="startNextMatch()" class="w-full py-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 rounded-2xl font-black text-xl shadow-lg shadow-emerald-500/10 mt-6 text-white uppercase italic tracking-widest transition-all transform hover:scale-[1.01]">⚽ HAFTANIN MAÇINI OYNA</button>
+                        <button onclick="startNextMatch()" class="w-full py-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 rounded-2xl font-black text-xl shadow-lg shadow-emerald-500/10 mt-6 text-white uppercase italic tracking-widest transition-all transform hover:scale-[1.01]">${T('mm_play')}</button>
                     </div>`;
             } else if (gameState.view === 'match') {
                 // Maç sahnesi yalnızca bir kez kurulur; sonrasında sadece HUD ve
@@ -2273,10 +2514,10 @@
                     <div class="max-w-full h-full flex flex-col space-y-4 animate-fade-in">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
-                                <h2 class="text-2xl font-black italic text-white uppercase tracking-tight">KADRO PLANLAYICI</h2>
-                                <p class="text-xs text-slate-400">Oyuncuların yerini değiştirmek için yedektekilere tıklayın. Roller için saha üzerindeki futbolculara basın.</p>
+                                <h2 class="text-2xl font-black italic text-white uppercase tracking-tight">${tx('KADRO PLANLAYICI')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Oyuncuların yerini değiştirmek için yedektekilere tıklayın. Roller için saha üzerindeki futbolculara basın.')}</p>
                             </div>
-                            <button onclick="changeView('main_menu')" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 px-8 py-3 rounded-xl font-black text-white text-sm shadow-md">KAYDET VE DÖN</button>
+                            <button onclick="changeView('main_menu')" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 px-8 py-3 rounded-xl font-black text-white text-sm shadow-md">${tx('KAYDET VE DÖN')}</button>
                         </div>
                         <div class="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-hidden">
                             <div class="lg:col-span-3 elite-pitch relative" id="lineup-pitch" style="position: relative;">
@@ -2284,19 +2525,19 @@
                                 <div class="goal-v6 goal-left" style="opacity: 0.1"></div><div class="goal-v6 goal-right" style="opacity: 0.1"></div>
                             </div>
                             <div class="bg-slate-900/60 p-4 rounded-2xl border border-white/5 flex flex-col h-full shadow-xl overflow-hidden min-h-[400px]">
-                                <h3 class="font-black text-slate-400 text-[10px] uppercase mb-3 tracking-widest text-center">Yedek Kulübesi</h3>
+                                <h3 class="font-black text-slate-400 text-[10px] uppercase mb-3 tracking-widest text-center">${tx('Yedek Kulübesi')}</h3>
                                 <div class="flex-grow space-y-2 overflow-y-auto pr-1">
                                     ${gameState.myTeam.oyuncular.filter(p => !gameState.myTeam.ilk_11.includes(p)).map(p => `
                                         <div onclick="swapPlayer('${p.ad}')" class="elite-bench-item">
                                             <div>
                                                 <p class="font-bold text-xs text-white">${p.ad}</p>
-                                                <p class="text-[9px] text-slate-500 uppercase font-black">${p.mevkii} • Yetenek: ${p.yetenek} • Gelişim: ${p.karakter}</p>
+                                                <p class="text-[9px] text-slate-500 uppercase font-black">${tx(p.mevkii)} • ${tx('Yetenek')}: ${p.yetenek} • ${tx('Gelişim')}: ${p.karakter}</p>
                                                 <div class="flex gap-2 mt-1">
                                                     <span class="text-[9px] text-emerald-400">⚡ %${Math.round(p.enerji)}</span>
-                                                    <span class="text-[9px] text-indigo-400">📈 Form: %${p.form}</span>
+                                                    <span class="text-[9px] text-indigo-400">📈 ${tx('Form')}: %${p.form}</span>
                                                 </div>
                                             </div>
-                                            <span class="text-emerald-400 font-extrabold text-xs bg-emerald-500/10 px-2 py-1 rounded-md">DEĞİŞTİR</span>
+                                            <span class="text-emerald-400 font-extrabold text-xs bg-emerald-500/10 px-2 py-1 rounded-md">${tx('DEĞİŞTİR')}</span>
                                         </div>`).join('')}
                                 </div>
                             </div>
@@ -2306,85 +2547,85 @@
             } else if (gameState.view === 'tactics') {
                 const tact = gameState.myTeam.taktik;
                 const an = tacticalAnalysis(gameState.myTeam);
-                const opt = (val, cur) => `<option value="${val}" ${cur === val ? 'selected' : ''}>${val}</option>`;
+                const opt = (val, cur) => `<option value="${val}" ${cur === val ? 'selected' : ''}>${tx(val)}</option>`;
                 const bar = (label, val, color) => `
                     <div>
-                        <div class="flex justify-between text-[10px] mb-1"><span class="text-slate-400 font-bold uppercase tracking-wider">${label}</span><span class="font-black ${color}">${val}</span></div>
+                        <div class="flex justify-between text-[10px] mb-1"><span class="text-slate-400 font-bold uppercase tracking-wider">${tx(label)}</span><span class="font-black ${color}">${val}</span></div>
                         <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full ${color.replace('text-','bg-')}" style="width:${val}%"></div></div>
                     </div>`;
                 container.innerHTML = `
                     <div class="max-w-6xl mx-auto py-4 space-y-5 animate-fade-in">
                         <div class="flex justify-between items-center">
                             <div>
-                                <h2 class="text-2xl font-black italic text-white uppercase">⚙️ TAKTİK MERKEZİ <span class="text-indigo-400">FM PRO</span></h2>
-                                <p class="text-xs text-slate-300">Her ayar maça <b class="text-emerald-400">canlı ve sayısal</b> olarak yansır. Sağdaki panelden öngörülen etkiyi izle.</p>
+                                <h2 class="text-2xl font-black italic text-white uppercase">⚙️ ${tx('TAKTİK MERKEZİ')} <span class="text-indigo-400">FM PRO</span></h2>
+                                <p class="text-xs text-slate-300">${tx('Her ayar maça canlı ve sayısal olarak yansır.')}</p>
                             </div>
-                            <button onclick="changeView('main_menu')" class="bg-emerald-500 hover:bg-emerald-400 px-6 py-2.5 rounded-xl text-xs font-black text-white">UYGULA VE DÖN</button>
+                            <button onclick="changeView('main_menu')" class="bg-emerald-500 hover:bg-emerald-400 px-6 py-2.5 rounded-xl text-xs font-black text-white">${tx('UYGULA VE DÖN')}</button>
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                           <!-- SOL: AYARLAR -->
                           <div class="lg:col-span-2 space-y-4">
                             <div class="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">HAZIR SİSTEM ŞABLONLARI</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">${tx('HAZIR SİSTEM ŞABLONLARI')}</p>
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     <button onclick="applyTacticalTemplate('tikitaka')" class="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-lg">Tiki-Taka</button>
                                     <button onclick="applyTacticalTemplate('gegenpress')" class="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-xs font-bold rounded-lg">Gegenpressing</button>
-                                    <button onclick="applyTacticalTemplate('bus')" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold rounded-lg">Otobüsü Çek</button>
-                                    <button onclick="applyTacticalTemplate('counter')" class="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-xs font-bold rounded-lg">Hızlı Kontra</button>
+                                    <button onclick="applyTacticalTemplate('bus')" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold rounded-lg">${tx('Otobüsü Çek')}</button>
+                                    <button onclick="applyTacticalTemplate('counter')" class="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-xs font-bold rounded-lg">${tx('Hızlı Kontra')}</button>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Dizilim</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Dizilim')}</label>
                                     <select onchange="gameState.myTeam.taktik.dizilim=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
                                         ${['4-4-2','4-3-3','4-2-3-1','3-5-2','5-3-2'].map(v=>opt(v,tact.dizilim)).join('')}
                                     </select>
                                 </div>
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Pas Tarzı</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Pas Tarzı')}</label>
                                     <select onchange="gameState.myTeam.taktik.pas_tarzi=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
                                         ${['Kısa Pas','Direkt Oyun','Uzun Top'].map(v=>opt(v,tact.pas_tarzi)).join('')}
                                     </select>
                                 </div>
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Hücum Odağı</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Hücum Odağı')}</label>
                                     <select onchange="gameState.myTeam.taktik.hucum_odagi=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
                                         ${['Dengeli','Kanatlar','Merkez'].map(v=>opt(v,tact.hucum_odagi)).join('')}
                                     </select>
                                 </div>
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Markaj</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Markaj')}</label>
                                     <select onchange="gameState.myTeam.taktik.savunma_stili=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
                                         ${['Alan','Adam Adama'].map(v=>opt(v,tact.savunma_stili)).join('')}
                                     </select>
                                 </div>
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Pres Tetikleyici</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Pres Tetikleyici')}</label>
                                     <select onchange="gameState.myTeam.taktik.pres_tetikleyici=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
                                         ${['Pasif','Orta','Agresif','Ultra'].map(v=>opt(v,tact.pres_tetikleyici)).join('')}
                                     </select>
                                 </div>
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Çıkış Oyunu</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Çıkış Oyunu')}</label>
                                     <select onchange="gameState.myTeam.taktik.cikis_oyunu=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
                                         ${['Kaleciden Kur','Dengeli','Uzun Açılım'].map(v=>opt(v,tact.cikis_oyunu)).join('')}
                                     </select>
                                 </div>
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Top Kazanınca</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Top Kazanınca')}</label>
                                     <select onchange="gameState.myTeam.taktik.top_kazaninca=this.value; render();" class="bg-slate-950 text-slate-100 text-xs rounded-lg w-full p-2 border border-white/10">
                                         ${['Hızlı Kontra','Dengeli','Topu Tut'].map(v=>opt(v,tact.top_kazaninca)).join('')}
                                     </select>
                                 </div>
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5 flex flex-col justify-between">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Ofsayt Tuzağı</label>
-                                    <button onclick="gameState.myTeam.taktik.ofsayt_tuzagi=!gameState.myTeam.taktik.ofsayt_tuzagi; render();" class="w-full p-2 rounded-lg text-xs font-black ${tact.ofsayt_tuzagi?'bg-emerald-500 text-white':'bg-slate-800 text-slate-400'}">${tact.ofsayt_tuzagi?'AÇIK ⚠️':'KAPALI'}</button>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Ofsayt Tuzağı')}</label>
+                                    <button onclick="gameState.myTeam.taktik.ofsayt_tuzagi=!gameState.myTeam.taktik.ofsayt_tuzagi; render();" class="w-full p-2 rounded-lg text-xs font-black ${tact.ofsayt_tuzagi?'bg-emerald-500 text-white':'bg-slate-800 text-slate-400'}">${tact.ofsayt_tuzagi?tx('AÇIK ⚠️'):tx('KAPALI')}</button>
                                 </div>
                                 <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5 flex flex-col justify-between">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Zaman Oyunu</label>
-                                    <button onclick="gameState.myTeam.taktik.zaman_oyunu=!gameState.myTeam.taktik.zaman_oyunu; render();" class="w-full p-2 rounded-lg text-xs font-black ${tact.zaman_oyunu?'bg-amber-500 text-white':'bg-slate-800 text-slate-400'}">${tact.zaman_oyunu?'AÇIK':'KAPALI'}</button>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">${tx('Zaman Oyunu')}</label>
+                                    <button onclick="gameState.myTeam.taktik.zaman_oyunu=!gameState.myTeam.taktik.zaman_oyunu; render();" class="w-full p-2 rounded-lg text-xs font-black ${tact.zaman_oyunu?'bg-amber-500 text-white':'bg-slate-800 text-slate-400'}">${tact.zaman_oyunu?tx('AÇIK'):tx('KAPALI')}</button>
                                 </div>
                             </div>
 
@@ -2392,7 +2633,7 @@
                                 ${[["ofansiflik","Ofansiflik"],["savunma_hatti","Savunma Hattı"],["tempo","Tempo"],["pres","Pres Şiddeti"],["genislik","Genişlik"],["yaraticilik","Yaratıcılık"],["riskli_paslar","Riskli Paslar"]].map(([key,lbl]) => `
                                     <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-white/5">
                                         <div class="flex justify-between mb-2">
-                                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">${lbl}</label>
+                                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">${tx(lbl)}</label>
                                             <span class="text-emerald-400 font-black tabular-nums bg-emerald-500/10 px-2.5 py-0.5 rounded-full text-xs">${gameState.myTeam.taktik[key]}</span>
                                         </div>
                                         <input type="range" min="0" max="100" value="${gameState.myTeam.taktik[key]}" oninput="gameState.myTeam.taktik['${key}']=parseInt(this.value); render();" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
@@ -2400,13 +2641,13 @@
                             </div>
 
                             <div class="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">OYUNCU GÖREVLERİ (İLK 11)</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">${tx('OYUNCU GÖREVLERİ (İLK 11)')}</p>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
                                     ${gameState.myTeam.ilk_11.map((p,i) => `
                                         <div class="flex items-center justify-between bg-slate-950/70 rounded-lg p-2 border border-white/5">
                                             <div class="min-w-0">
                                                 <p class="text-xs font-bold text-white truncate">${p.ad}</p>
-                                                <p class="text-[9px] text-slate-500 uppercase font-black">${p.mevkii} • ${p.role}</p>
+                                                <p class="text-[9px] text-slate-500 uppercase font-black">${tx(p.mevkii)} • ${p.role}</p>
                                             </div>
                                             <select onchange="setPlayerDuty(${i}, this.value)" class="bg-slate-900 text-slate-100 text-[10px] rounded-md p-1.5 border border-white/10 ml-2 shrink-0">
                                                 ${['Savunma','Destek','Hücum'].map(v=>opt(v,p.gorev)).join('')}
@@ -2419,12 +2660,12 @@
                           <!-- SAĞ: CANLI ÖNGÖRÜ PANELİ -->
                           <div class="space-y-4">
                             <div class="bg-gradient-to-br from-indigo-950/80 to-slate-950 p-5 rounded-2xl border border-indigo-500/30 shadow-xl sticky top-2">
-                                <h4 class="text-xs font-black text-indigo-300 uppercase mb-1 flex items-center gap-2">📊 ÖNGÖRÜLEN MAÇ ETKİSİ</h4>
-                                <p class="text-[9px] text-slate-500 mb-4">Bu rakamlar mevcut taktiğin maça yansımasıdır.</p>
+                                <h4 class="text-xs font-black text-indigo-300 uppercase mb-1 flex items-center gap-2">📊 ${tx('ÖNGÖRÜLEN MAÇ ETKİSİ')}</h4>
+                                <p class="text-[9px] text-slate-500 mb-4">${tx('Bu rakamlar mevcut taktiğin maça yansımasıdır.')}</p>
                                 <div class="grid grid-cols-3 gap-2 mb-4 text-center">
-                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">xG / Maç</p><p class="text-lg font-black text-emerald-400">${an.projXG}</p></div>
-                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">Şut</p><p class="text-lg font-black text-sky-400">${an.projShots}</p></div>
-                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">Hakimiyet</p><p class="text-lg font-black text-amber-400">%${an.projPoss}</p></div>
+                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">${tx('xG / Maç')}</p><p class="text-lg font-black text-emerald-400">${an.projXG}</p></div>
+                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">${tx('Şut')}</p><p class="text-lg font-black text-sky-400">${an.projShots}</p></div>
+                                    <div class="bg-slate-900/60 rounded-xl p-2 border border-white/5"><p class="text-[9px] text-slate-500 uppercase">${tx('Hakimiyet')}</p><p class="text-lg font-black text-amber-400">%${an.projPoss}</p></div>
                                 </div>
                                 <div class="space-y-2.5">
                                     ${bar('Hücum', an.attack, 'text-rose-400')}
@@ -2446,34 +2687,34 @@
                     <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
                         <div class="flex justify-between items-center">
                             <div>
-                                <h2 class="text-2xl font-black italic text-white uppercase">TRANSFER PAZARI</h2>
-                                <p class="text-xs text-slate-400">Yıldız oyuncuları bonservisiyle kadroya katın.</p>
+                                <h2 class="text-2xl font-black italic text-white uppercase">${tx('TRANSFER PAZARI')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Yıldız oyuncuları bonservisiyle kadroya katın.')}</p>
                             </div>
-                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">ANA MENÜ</button>
+                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">${tx('ANA MENÜ')}</button>
                         </div>
                         <div class="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left">
                                     <thead class="bg-slate-800/80 text-[10px] font-black uppercase text-slate-400">
                                         <tr>
-                                            <th class="p-4">Oyuncu Adı</th>
-                                            <th class="p-4">Mevki</th>
-                                            <th class="p-4">Yetenek</th>
-                                            <th class="p-4">Yaş</th>
-                                            <th class="p-4">Değer</th>
-                                            <th class="p-4 text-right">İşlem</th>
+                                            <th class="p-4">${tx('Oyuncu Adı')}</th>
+                                            <th class="p-4">${tx('Mevki')}</th>
+                                            <th class="p-4">${tx('Yetenek')}</th>
+                                            <th class="p-4">${tx('Yaş')}</th>
+                                            <th class="p-4">${tx('Değer')}</th>
+                                            <th class="p-4 text-right">${tx('İşlem')}</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-white/5">
                                         ${gameState.transferPool.map(p => `
                                             <tr class="hover:bg-white/[0.02] transition-all">
                                                 <td class="p-4 font-bold text-white text-sm">${p.ad}</td>
-                                                <td class="p-4"><span class="text-[10px] bg-slate-800 text-slate-300 font-black px-2 py-1 rounded-md uppercase">${p.mevkii}</span></td>
+                                                <td class="p-4"><span class="text-[10px] bg-slate-800 text-slate-300 font-black px-2 py-1 rounded-md uppercase">${tx(p.mevkii)}</span></td>
                                                 <td class="p-4 font-extrabold text-emerald-400 text-base">${p.yetenek}</td>
                                                 <td class="p-4 text-slate-300 font-medium text-sm">${p.yas}</td>
                                                 <td class="p-4 font-extrabold text-amber-500 text-sm tabular-nums">${p.fiyat.toFixed(1)}M €</td>
                                                 <td class="p-4 text-right">
-                                                    <button onclick="buyPlayer('${p.ad}')" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-[10px] font-black uppercase text-white shadow-md transition-all">SATIN AL</button>
+                                                    <button onclick="buyPlayer('${p.ad}')" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-[10px] font-black uppercase text-white shadow-md transition-all">${tx('SATIN AL')}</button>
                                                 </td>
                                             </tr>`).join('')}
                                     </tbody>
@@ -2487,24 +2728,24 @@
                     <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
                         <div class="flex justify-between items-center">
                             <div>
-                                <h2 class="text-2xl font-black italic text-white uppercase">LİG PUAN DURUMU</h2>
-                                <p class="text-xs text-slate-400">Şampiyonluk yarışında son durum.</p>
+                                <h2 class="text-2xl font-black italic text-white uppercase">${tx('LİG PUAN DURUMU')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Şampiyonluk yarışında son durum.')}</p>
                             </div>
-                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">ANA MENÜ</button>
+                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">${tx('ANA MENÜ')}</button>
                         </div>
                         <div class="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left">
                                     <thead class="bg-slate-800/80 text-[10px] font-black uppercase text-slate-400">
                                         <tr>
-                                            <th class="p-4 w-12 text-center">Sıra</th>
-                                            <th class="p-4">Takım</th>
+                                            <th class="p-4 w-12 text-center">${tx('Sıra')}</th>
+                                            <th class="p-4">${tx('Takım')}</th>
                                             <th class="p-4 text-center">O</th>
                                             <th class="p-4 text-center">G</th>
                                             <th class="p-4 text-center">B</th>
                                             <th class="p-4 text-center">M</th>
                                             <th class="p-4 text-center">A-Y</th>
-                                            <th class="p-4 text-right pr-6">Puan</th>
+                                            <th class="p-4 text-right pr-6">${tx('Puan')}</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-white/5">
@@ -2529,36 +2770,36 @@
                     <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
-                                <h2 class="text-2xl font-black italic text-white uppercase flex items-center gap-2">🌱 ALTYAPI & AKADEMİ</h2>
-                                <p class="text-xs text-slate-400">Yıldız adayı gençleri gözlemleyin, bireysel eğitip A takıma çıkarın.</p>
+                                <h2 class="text-2xl font-black italic text-white uppercase flex items-center gap-2">🌱 ${tx('ALTYAPI & AKADEMİ')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Yıldız adayı gençleri gözlemleyin, bireysel eğitip A takıma çıkarın.')}</p>
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="upgradeAcademyFacilities()" class="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 px-4 py-2.5 rounded-xl text-xs font-black text-white shadow-md">
-                                    Tesisleri Geliştir (${(gameState.academyLevel * 8.5).toFixed(1)}M €)
+                                    ${tx('Tesisleri Geliştir')} (${(gameState.academyLevel * 8.5).toFixed(1)}M €)
                                 </button>
-                                <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-4 py-2.5 rounded-xl text-xs font-black text-white">ANA MENÜ</button>
+                                <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-4 py-2.5 rounded-xl text-xs font-black text-white">${tx('ANA MENÜ')}</button>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="p-5 bg-slate-900/60 rounded-2xl border border-white/5 flex justify-between items-center">
                                 <div>
-                                    <p class="text-[10px] text-slate-500 font-black uppercase">Mevcut Tesis Seviyesi</p>
-                                    <p class="text-xl font-black text-teal-400">Derece: Seviye ${gameState.academyLevel} / 5</p>
+                                    <p class="text-[10px] text-slate-500 font-black uppercase">${tx('Mevcut Tesis Seviyesi')}</p>
+                                    <p class="text-xl font-black text-teal-400">${tx('Derece')}: ${tx('Seviye')} ${gameState.academyLevel} / 5</p>
                                 </div>
                                 <span class="text-3xl">🏗️</span>
                             </div>
                             <div class="p-5 bg-slate-900/60 rounded-2xl border border-white/5 flex justify-between items-center">
                                 <div>
-                                    <p class="text-[10px] text-slate-500 font-black uppercase">Yetenek Havuzu Gelişim Katsayısı</p>
-                                    <p class="text-xl font-black text-emerald-400">+${gameState.academyLevel * 2.5} Ekstra Taban Yetenek</p>
+                                    <p class="text-[10px] text-slate-500 font-black uppercase">${tx('Yetenek Havuzu Gelişim Katsayısı')}</p>
+                                    <p class="text-xl font-black text-emerald-400">+${gameState.academyLevel * 2.5} ${tx('Ekstra Taban Yetenek')}</p>
                                 </div>
                                 <span class="text-3xl">📈</span>
                             </div>
                         </div>
 
                         <div class="bg-slate-900/40 p-5 rounded-2xl border border-white/5">
-                            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Gözlemci (Scout) Bürosu</h3>
+                            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">${tx('Gözlemci (Scout) Bürosu')}</h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 ${gameState.academyScouts.map(s => `
                                     <div class="bg-slate-950/80 p-4 rounded-xl border border-white/5 flex flex-col justify-between gap-3">
@@ -2567,11 +2808,11 @@
                                                 <span class="text-xs font-bold text-slate-200">${s.name}</span>
                                                 <span class="text-[9px] bg-slate-800 text-amber-400 px-1.5 py-0.5 rounded font-black">${s.region}</span>
                                             </div>
-                                            <p class="text-[10px] text-slate-500 mt-1">Gözlem Kalitesi: Seviye ${s.level}</p>
+                                            <p class="text-[10px] text-slate-500 mt-1">${tx('Gözlem Kalitesi')}: ${tx('Seviye')} ${s.level}</p>
                                         </div>
                                         ${s.hired ?
-                                            `<span class="text-center text-emerald-400 font-bold text-xs bg-emerald-500/10 py-1 rounded">Aktif Görevde</span>` :
-                                            `<button onclick="hireAcademyScout(${s.id})" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-[10px] font-black uppercase transition-all">İşe Al (${s.cost}M €)</button>`
+                                            `<span class="text-center text-emerald-400 font-bold text-xs bg-emerald-500/10 py-1 rounded">${tx('Aktif Görevde')}</span>` :
+                                            `<button onclick="hireAcademyScout(${s.id})" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-[10px] font-black uppercase transition-all">${tx('İşe Al')} (${s.cost}M €)</button>`
                                         }
                                     </div>`).join('')}
                             </div>
@@ -2582,21 +2823,21 @@
                                 <div class="bg-slate-900/40 p-5 rounded-2xl border border-white/5 flex flex-col justify-between gap-4">
                                     <div>
                                         <div class="flex justify-between items-start mb-2">
-                                            <span class="text-[9px] bg-teal-500/20 text-teal-400 font-black px-2 py-0.5 rounded-full uppercase border border-teal-500/20">${p.mevkii}</span>
-                                            <span class="text-xs text-slate-400 font-bold">${p.yas} Yaş</span>
+                                            <span class="text-[9px] bg-teal-500/20 text-teal-400 font-black px-2 py-0.5 rounded-full uppercase border border-teal-500/20">${tx(p.mevkii)}</span>
+                                            <span class="text-xs text-slate-400 font-bold">${p.yas} ${tx('Yaş')}</span>
                                         </div>
                                         <h4 class="text-base font-bold text-white mt-1">${p.ad.replace(' (Altyapı)','')}</h4>
 
                                         <div class="mt-4 space-y-1 bg-slate-950/40 p-3 rounded-lg border border-white/5">
-                                            <div class="flex justify-between text-xs"><span class="text-slate-400">Karakter</span><span class="font-bold text-slate-200">${p.karakter}</span></div>
-                                            <div class="flex justify-between text-xs"><span class="text-slate-400">Yetenek</span><span class="font-bold text-teal-400">${p.yetenek}</span></div>
-                                            <div class="flex justify-between text-xs"><span class="text-slate-400">Potansiyel</span><span class="font-bold text-amber-400">${p.potansiyel}</span></div>
+                                            <div class="flex justify-between text-xs"><span class="text-slate-400">${tx('Karakter')}</span><span class="font-bold text-slate-200">${p.karakter}</span></div>
+                                            <div class="flex justify-between text-xs"><span class="text-slate-400">${tx('Yetenek')}</span><span class="font-bold text-teal-400">${p.yetenek}</span></div>
+                                            <div class="flex justify-between text-xs"><span class="text-slate-400">${tx('Potansiyel')}</span><span class="font-bold text-amber-400">${p.potansiyel}</span></div>
                                         </div>
                                     </div>
 
                                     <div class="space-y-2">
-                                        <button onclick="trainIndividualYouth('${p.ad}')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] uppercase rounded-lg transition-all">Özel Antrenman (0.8M €)</button>
-                                        <button onclick="promoteYouthToPro('${p.ad}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase rounded-lg transition-all shadow-md">A TAKIMA YÜKSELT (1.5M €)</button>
+                                        <button onclick="trainIndividualYouth('${p.ad}')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] uppercase rounded-lg transition-all">${tx('Özel Antrenman')} (0.8M €)</button>
+                                        <button onclick="promoteYouthToPro('${p.ad}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase rounded-lg transition-all shadow-md">${tx('A TAKIMA YÜKSELT')} (1.5M €)</button>
                                     </div>
                                 </div>`).join('')}
                         </div>
@@ -2608,67 +2849,67 @@
                     <div class="max-w-4xl mx-auto py-4 space-y-6 animate-fade-in">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
-                                <h2 class="text-2xl font-black italic text-white uppercase">🏋️‍♂️ TAKIMSAL ANTRENMAN MERKEZİ</h2>
-                                <p class="text-xs text-slate-400">Gelişim programları uygulayın, form ile enerji dengesini koruyun.</p>
+                                <h2 class="text-2xl font-black italic text-white uppercase">🏋️‍♂️ ${tx('TAKIMSAL ANTRENMAN MERKEZİ')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Gelişim programları uygulayın, form ile enerji dengesini koruyun.')}</p>
                             </div>
                             <div class="flex items-center gap-3">
                                 <div class="px-3 py-1.5 rounded-lg border text-xs font-black uppercase ${trRightStyle}">
-                                    Antrenman Hakkı: ${gameState.trainingRights}/1 ${gameState.trainingRights > 0 ? 'Mevcut' : 'Tükendi (Maç Oynanmalı)'}
+                                    ${tx('Antrenman Hakkı')}: ${gameState.trainingRights}/1 ${gameState.trainingRights > 0 ? tx('Mevcut') : tx('Tükendi (Maç Oynanmalı)')}
                                 </div>
-                                <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">GERİ DÖN</button>
+                                <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">${tx('GERİ DÖN')}</button>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <button onclick="executeTrainingRegime('hucum')" class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col items-center text-center hover:border-pink-500/40 transition-all gap-2">
                                 <span class="text-3xl">🏹</span>
-                                <h4 class="text-xs font-black text-white uppercase">Hücum & Şut</h4>
-                                <p class="text-[9px] text-slate-500">Forvetleri ve bitiriciliği geliştirir.</p>
-                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -22 Enerji</span>
+                                <h4 class="text-xs font-black text-white uppercase">${tx('Hücum & Şut')}</h4>
+                                <p class="text-[9px] text-slate-500">${tx('Forvetleri ve bitiriciliği geliştirir.')}</p>
+                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -22 ${tx('Enerji')}</span>
                             </button>
                             <button onclick="executeTrainingRegime('savunma')" class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col items-center text-center hover:border-rose-500/40 transition-all gap-2">
                                 <span class="text-3xl">🛡️</span>
-                                <h4 class="text-xs font-black text-white uppercase">Savunma & Pres</h4>
-                                <p class="text-[9px] text-slate-500">Defansların yeteneğini geliştirir.</p>
-                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -20 Enerji</span>
+                                <h4 class="text-xs font-black text-white uppercase">${tx('Savunma & Pres')}</h4>
+                                <p class="text-[9px] text-slate-500">${tx('Defansların yeteneğini geliştirir.')}</p>
+                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -20 ${tx('Enerji')}</span>
                             </button>
                             <button onclick="executeTrainingRegime('taktik')" class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col items-center text-center hover:border-indigo-500/40 transition-all gap-2">
                                 <span class="text-3xl">🧩</span>
-                                <h4 class="text-xs font-black text-white uppercase">Taktik & Pas</h4>
-                                <p class="text-[9px] text-slate-500">Orta sahaları ve pas kalitesini uçurur.</p>
-                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -15 Enerji</span>
+                                <h4 class="text-xs font-black text-white uppercase">${tx('Taktik & Pas')}</h4>
+                                <p class="text-[9px] text-slate-500">${tx('Orta sahaları ve pas kalitesini uçurur.')}</p>
+                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -15 ${tx('Enerji')}</span>
                             </button>
                             <button onclick="executeTrainingRegime('kondisyon')" class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col items-center text-center hover:border-amber-500/40 transition-all gap-2">
                                 <span class="text-3xl">🏃‍♂️</span>
-                                <h4 class="text-xs font-black text-white uppercase">Kondisyon</h4>
-                                <p class="text-[9px] text-slate-500">Tüm takımın form seviyesini yükseltir.</p>
-                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -18 Enerji</span>
+                                <h4 class="text-xs font-black text-white uppercase">${tx('Kondisyon')}</h4>
+                                <p class="text-[9px] text-slate-500">${tx('Tüm takımın form seviyesini yükseltir.')}</p>
+                                <span class="text-[8px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ -18 ${tx('Enerji')}</span>
                             </button>
                             <button onclick="executeTrainingRegime('dinlenme')" class="p-4 bg-emerald-950/35 rounded-2xl border border-emerald-500/20 flex flex-col items-center text-center hover:border-emerald-500/40 transition-all gap-2">
                                 <span class="text-3xl">💤</span>
-                                <h4 class="text-xs font-black text-emerald-400 uppercase">Dinlenme</h4>
-                                <p class="text-[9px] text-slate-500">Oyuncuların enerjisini yeniler.</p>
-                                <span class="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ +25 Enerji</span>
+                                <h4 class="text-xs font-black text-emerald-400 uppercase">${tx('Dinlenme')}</h4>
+                                <p class="text-[9px] text-slate-500">${tx('Oyuncuların enerjisini yeniler.')}</p>
+                                <span class="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded mt-2">⚡ +25 ${tx('Enerji')}</span>
                             </button>
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div class="lg:col-span-2 bg-slate-900/40 rounded-2xl p-5 border border-white/5">
-                                <h3 class="text-xs font-black text-slate-400 uppercase mb-4">Grup Kondisyon Takip Raporu</h3>
+                                <h3 class="text-xs font-black text-slate-400 uppercase mb-4">${tx('Grup Kondisyon Takip Raporu')}</h3>
                                 <div class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
                                     ${gameState.myTeam.oyuncular.map(p => `
                                         <div class="flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-white/5">
                                             <div>
                                                 <p class="text-xs font-bold text-slate-200">${p.ad}</p>
-                                                <p class="text-[9px] text-slate-500 uppercase font-black">${p.mevkii} • Yetenek: ${p.yetenek} • ${p.karakter}</p>
+                                                <p class="text-[9px] text-slate-500 uppercase font-black">${tx(p.mevkii)} • ${tx('Yetenek')}: ${p.yetenek} • ${p.karakter}</p>
                                             </div>
                                             <div class="flex gap-4 items-center">
                                                 <div class="text-right">
-                                                    <p class="text-[10px] text-slate-400">Enerji</p>
+                                                    <p class="text-[10px] text-slate-400">${tx('Enerji')}</p>
                                                     <span class="text-xs font-black ${p.enerji < 45 ? 'text-rose-400' : 'text-emerald-400'}">%${Math.round(p.enerji)}</span>
                                                 </div>
                                                 <div class="text-right">
-                                                    <p class="text-[10px] text-slate-400">Form</p>
+                                                    <p class="text-[10px] text-slate-400">${tx('Form')}</p>
                                                     <span class="text-xs font-black text-indigo-400">%${p.form}</span>
                                                 </div>
                                             </div>
@@ -2678,7 +2919,7 @@
 
                             <div class="bg-slate-900/40 rounded-2xl p-5 border border-white/5 flex flex-col justify-between">
                                 <div>
-                                    <h3 class="text-xs font-black text-slate-400 uppercase mb-4">Son Antrenman Raporu</h3>
+                                    <h3 class="text-xs font-black text-slate-400 uppercase mb-4">${tx('Son Antrenman Raporu')}</h3>
                                     ${gameState.lastTrainingSummary ? `
                                         <div class="space-y-2 bg-slate-950/60 p-4 rounded-xl border border-white/5 max-h-[250px] overflow-y-auto">
                                             <p class="text-[10px] text-emerald-400 font-black tracking-wider uppercase">${gameState.lastTrainingSummary.title}</p>
@@ -2687,11 +2928,11 @@
                                             </div>
                                         </div>
                                     ` : `
-                                        <div class="text-center py-10 text-slate-500 text-xs font-bold">Henüz antrenman uygulanmadı.</div>
+                                        <div class="text-center py-10 text-slate-500 text-xs font-bold">${tx('Henüz antrenman uygulanmadı.')}</div>
                                     `}
                                 </div>
                                 <div class="bg-indigo-950/25 p-3 rounded-xl border border-indigo-500/10 text-[10px] text-slate-400 mt-4">
-                                    💡 <b>Taktiksel Tavsiye:</b> Maç öncesinde takım enerjinizin en az %85 olduğundan emin olun!
+                                    💡 <b>${tx('Taktiksel Tavsiye:')}</b> ${tx('Maç öncesinde takım enerjinizin en az %85 olduğundan emin olun!')}
                                 </div>
                             </div>
                         </div>
@@ -2802,6 +3043,7 @@
 
             generateAcademyPlayers();
             render();
+            applyStaticLang();
         };
     </script>
     <!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->

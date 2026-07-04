@@ -121,8 +121,26 @@
         }
 
         canvas {
-            background-color: #14532d;
             image-rendering: auto;
+        }
+        /* 3D WebGL katmanı (arkada) */
+        #gl {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            display: block;
+            background: #0b1020;
+        }
+        /* 2D canvas artık şeffaf tıklama/dokunma katmanı (önde) */
+        #gameCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            background: transparent;
         }
 
         /* Joystick Styles */
@@ -235,6 +253,56 @@
             opacity: 0; transition: opacity 0.4s; pointer-events: none;
             z-index: 4000; box-shadow: 0 0 40px rgba(251, 191, 36, 0.6);
         }
+
+        /* Combo / kill-streak HUD */
+        #combo-hud {
+            position: fixed; top: 30%; right: 22px; transform: translateY(-50%);
+            display: none; z-index: 3800; pointer-events: none;
+            background: rgba(15, 23, 42, 0.9); border: 2px solid #f97316;
+            color: #fff; padding: 8px 14px 12px; border-radius: 12px;
+            font-size: 18px; font-weight: 800; text-align: center;
+            box-shadow: 0 0 26px rgba(249, 115, 22, 0.55); min-width: 120px;
+            animation: comboPop 0.25s ease;
+        }
+        #combo-hud b { color: #fb923c; font-size: 24px; }
+        #combo-hud::after {
+            content: ''; display: block; height: 4px; margin-top: 6px;
+            border-radius: 3px; width: var(--cf, 100%);
+            background: linear-gradient(90deg, #f97316, #fbbf24);
+            transition: width 0.1s linear;
+        }
+        @keyframes comboPop { from { transform: translateY(-50%) scale(1.25);} to { transform: translateY(-50%) scale(1);} }
+
+        /* Meta (persistent) upgrade shop */
+        #meta-overlay {
+            position: fixed; inset: 0; display: none;
+            background: rgba(2, 6, 23, 0.94); z-index: 9000;
+            align-items: center; justify-content: center;
+        }
+        #meta-overlay.show { display: flex; }
+        #meta-modal {
+            background: linear-gradient(160deg, #1e1b4b, #0f172a);
+            border: 2px solid #7c3aed; border-radius: 16px;
+            padding: 22px 24px; width: 380px; max-width: 92vw;
+            max-height: 88vh; overflow-y: auto; text-align: center;
+            box-shadow: 0 0 50px rgba(124, 58, 237, 0.5);
+        }
+        .meta-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(148,163,184,0.25); border-radius: 10px;
+            padding: 10px 12px; margin-bottom: 8px; text-align: left;
+        }
+        .meta-row .mi-name { font-weight: 700; font-size: 14px; color: #e2e8f0; }
+        .meta-row .mi-eff { font-size: 11px; opacity: 0.7; color: #cbd5e1; }
+        .meta-row .mi-lvl { font-size: 11px; color: #fbbf24; margin-top: 2px; }
+        .meta-buy {
+            border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer;
+            font-weight: 700; font-size: 12px; color: #fff; white-space: nowrap;
+            background: linear-gradient(135deg,#7c3aed,#4c1d95);
+        }
+        .meta-buy:disabled { opacity: 0.4; cursor: default; filter: grayscale(0.6); }
+        .meta-pips { letter-spacing: 2px; font-size: 12px; }
 
         /* Game over / leaderboard modal */
         #gameover-overlay {
@@ -656,14 +724,18 @@
             letter-spacing: 2px;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-<div id="lotg-nav" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);border-radius:8px;padding:7px 14px;font-family:sans-serif;font-size:13px;border:1px solid rgba(255,255,255,0.18);"><a href="index.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">&#8592;</span><span class="lotg-tr"> Ana Sayfa</span><span class="lotg-en" style="display:none"> Home</span></a></div><script>(function(){if(localStorage.getItem('lotg_lang')==='en'){var t=document.querySelector('#lotg-nav .lotg-tr'),e=document.querySelector('#lotg-nav .lotg-en');if(t)t.style.display='none';if(e)e.style.display='';}})();</script>
+<div id="lotg-nav" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);border-radius:8px;padding:7px 14px;font-family:sans-serif;font-size:13px;border:1px solid rgba(255,255,255,0.18);"><a href="index.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">&#8592;</span><span class="lotg-tr"> Ana Sayfa</span><span class="lotg-en" style="display:none"> Home</span></a></div><script>(function(){var L=localStorage.getItem('lotg_lang');if(L&&L!=='tr'){var t=document.querySelector('#lotg-nav .lotg-tr'),e=document.querySelector('#lotg-nav .lotg-en');if(t)t.style.display='none';if(e)e.style.display='';}})();</script>
 
     <div id="start-screen">
         <div id="lang-toggle">
             <button class="lang-btn active" id="lang-tr-btn" onclick="setLang('tr')">TR</button>
             <button class="lang-btn" id="lang-en-btn" onclick="setLang('en')">ENG</button>
+            <button class="lang-btn" id="lang-de-btn" onclick="setLang('de')">DE</button>
+            <button class="lang-btn" id="lang-fr-btn" onclick="setLang('fr')">FR</button>
+            <button class="lang-btn" id="lang-zh-btn" onclick="setLang('zh')">中文</button>
         </div>
         <h1 style="color: var(--gold); font-size: 36px; margin-bottom: 5px;" data-i18n="title">KRALLIK ÇAĞI</h1>
         <p style="opacity: 0.8; font-size: 14px;" data-i18n="subtitle">Lord of the games.net Sunar</p>
@@ -701,6 +773,38 @@
         </div>
 
         <button class="mode-btn" id="continue-btn" style="margin-top: 10px; width: 250px; background: var(--accent);" onclick="showGameModeSelect()" data-i18n="continue">DEVAM ET</button>
+
+        <button class="mode-btn" id="meta-shop-btn" style="margin-top: 10px; width: 250px; background: linear-gradient(135deg,#7c3aed,#4c1d95);" onclick="openMetaShop()">💎 <span data-i18n="meta_title">KALICI YÜKSELTMELER</span></button>
+    </div>
+
+    <!-- Kampanya bölüm seçim ekranı -->
+    <div id="campaign-screen" style="display:none;position:fixed;inset:0;z-index:150;background:linear-gradient(160deg,#0b1220,#020617);flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 12px;overflow-y:auto;font-family:sans-serif;">
+        <h2 id="cs-title" style="color:#fbbf24;margin:6px 0 2px;font-size:26px;">📜 SEFER</h2>
+        <p id="cs-sub" style="color:#94a3b8;font-size:13px;margin:0 0 16px;">Bölüm seç — biten bölümler sonrakini açar</p>
+        <div id="campaign-list" style="width:100%;max-width:460px;"></div>
+        <button id="cs-back" class="mode-btn" style="margin-top:8px;width:220px;background:#334155;" onclick="location.reload()">↩ Ana Menü</button>
+    </div>
+
+    <!-- Bölüm tamamlandı ekranı -->
+    <div id="chapter-complete" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(5,8,20,0.92);backdrop-filter:blur(6px);align-items:center;justify-content:center;font-family:sans-serif;">
+        <div style="background:linear-gradient(160deg,#14532d,#0f172a);border:1px solid #22c55e;border-radius:16px;padding:26px;max-width:400px;width:90%;text-align:center;color:#e2e8f0;box-shadow:0 0 40px rgba(34,197,94,0.35);">
+            <h2 id="cc-title" style="margin:0 0 6px;color:#86efac;">Bölüm Tamamlandı</h2>
+            <div id="cc-name" style="font-size:16px;font-weight:bold;margin-bottom:6px;"></div>
+            <div id="cc-stars" style="font-size:34px;color:#fbbf24;letter-spacing:4px;margin-bottom:6px;">★★★</div>
+            <div id="cc-score" style="font-size:14px;opacity:.8;margin-bottom:16px;"></div>
+            <div id="cc-buttons"></div>
+        </div>
+    </div>
+
+    <!-- Meta (persistent) upgrade shop -->
+    <div id="meta-overlay">
+        <div id="meta-modal">
+            <h2 style="color:#c4b5fd; margin:0 0 4px;">💎 <span data-i18n="meta_title">KALICI YÜKSELTMELER</span></h2>
+            <div id="meta-crystals" style="font-size:15px; margin-bottom:14px; color:#fbbf24;"></div>
+            <div id="meta-list"></div>
+            <p style="font-size:11px; opacity:0.6; margin-top:10px;" data-i18n="meta_hint">Kristaller oyun sonunda skor, dalga ve combo'ya göre kazanılır.</p>
+            <button class="modal-btn" style="margin-top:10px;" onclick="closeMetaShop()" data-i18n="meta_close">◀ KAPAT</button>
+        </div>
     </div>
 
     <!-- Palace intro scene -->
@@ -765,11 +869,15 @@
 
     <div id="levelup-toast">⭐ SEVİYE 1</div>
 
+    <div id="combo-hud"></div>
+    <div id="objective-hud" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:55;background:rgba(15,23,42,0.82);border:1px solid #38bdf8;color:#e0f2fe;font-family:sans-serif;font-size:14px;padding:5px 14px;border-radius:16px;pointer-events:none;box-shadow:0 0 14px rgba(56,189,248,0.4);"></div>
+
     <div id="gameover-overlay">
         <div id="gameover-modal">
             <h2 id="go-title">OYUN BİTTİ</h2>
             <div class="reason" id="go-reason">Kalen düştü</div>
             <div class="final-score">Skorun<b id="go-score">0</b></div>
+            <div id="go-crystals"></div>
             <div id="go-status"></div>
             <div id="leaderboard-list"></div>
             <div style="margin-top: 12px;">
@@ -780,6 +888,7 @@
     </div>
 
     <div id="game-container">
+        <canvas id="gl"></canvas>
         <canvas id="gameCanvas"></canvas>
         <div id="ui-hint">🖱️ Tıkla=Yönlendir · WASD=Hareket · Q=Rally E=Heal R=Meteor F=Buz T=Fırtına · <span id="hint-text">Sağ Tıkla sürükle</span></div>
 
@@ -900,6 +1009,100 @@
     let gameActive = false;
     let difficulty = 'mid';
     let currentMap = 'kingdom'; // 'kingdom' | 'ice' | 'desert' | 'lava'
+
+    // === COMBO / KILL-STREAK ===
+    let combo = 0;          // ardışık öldürme sayısı
+    let comboTimer = 0;     // kalan frame süresi
+    let comboBest = 0;      // bu oyundaki en yüksek combo
+    let COMBO_WINDOW = 150; // ~2.5 sn @60fps (meta ile uzar)
+    function comboMult() { return 1 + Math.min(combo * 0.1, 2); } // 1x -> 3x
+    function registerKill(n) {
+        n = n || 1;
+        combo += n;
+        if (combo > comboBest) comboBest = combo;
+        comboTimer = Math.round(COMBO_WINDOW * (1 + (META.combo || 0) * 0.2));
+        if (combo === 5 || combo === 10 || combo === 20 || combo === 35 || combo === 50) {
+            showSpellToast('🔥 ' + combo + ' COMBO! x' + comboMult().toFixed(1), '#f97316');
+        }
+    }
+    function updateComboHud() {
+        const el = document.getElementById('combo-hud');
+        if (!el) return;
+        if (combo >= 3 && comboTimer > 0) {
+            el.style.display = 'block';
+            el.innerHTML = '🔥 <b>' + combo + '</b> COMBO <span style="opacity:.85">x' + comboMult().toFixed(1) + '</span>';
+            const frac = Math.max(0, comboTimer / (COMBO_WINDOW * (1 + (META.combo || 0) * 0.2)));
+            el.style.setProperty('--cf', (frac * 100) + '%');
+        } else {
+            el.style.display = 'none';
+        }
+    }
+
+    // === META İLERLEME (Zafer Kristalleri) — oyunlar arası kalıcı ===
+    const META_KEY = 'lotg_ks_meta';
+    let META = { crystals: 0, gold: 0, wall: 0, lord: 0, combo: 0 };
+    function loadMeta() {
+        try {
+            const raw = localStorage.getItem(META_KEY);
+            if (raw) META = Object.assign(META, JSON.parse(raw));
+        } catch (e) {}
+    }
+    function saveMeta() {
+        try { localStorage.setItem(META_KEY, JSON.stringify(META)); } catch (e) {}
+    }
+    loadMeta();
+    // Yükseltme tanımları: seviye başına maliyet ve etki
+    const META_UPGRADES = {
+        gold:  { max: 10, cost: (l)=>3+l*2,  name:{tr:'💰 Hazine', en:'💰 Treasury', de:'💰 Schatzkammer', fr:'💰 Trésor', zh:'💰 宝库'},   effect:{tr:'+150 başlangıç altını', en:'+150 start gold', de:'+150 Startgold', fr:'+150 or de départ', zh:'+150 起始金币'} },
+        wall:  { max: 10, cost: (l)=>3+l*2,  name:{tr:'🏰 Sur', en:'🏰 Ramparts', de:'🏰 Wälle', fr:'🏰 Remparts', zh:'🏰 城墙'},       effect:{tr:'+25 kale canı', en:'+25 castle HP', de:'+25 Burg-Leben', fr:'+25 PV du château', zh:'+25 城堡生命'} },
+        lord:  { max: 8,  cost: (l)=>5+l*3,  name:{tr:'⚔️ Lord Gücü', en:'⚔️ Lord Might', de:'⚔️ Lord-Macht', fr:'⚔️ Puissance du Seigneur', zh:'⚔️ 领主之力'}, effect:{tr:'+%15 kahraman hasarı', en:'+15% hero damage', de:'+15% Heldenschaden', fr:'+15% dégâts du héros', zh:'+15% 英雄伤害'} },
+        combo: { max: 6,  cost: (l)=>5+l*3,  name:{tr:'🔥 Combo Ustası', en:'🔥 Combo Master', de:'🔥 Combo-Meister', fr:'🔥 Maître du combo', zh:'🔥 连击大师'}, effect:{tr:'+%20 combo süresi', en:'+20% combo duration', de:'+20% Combo-Dauer', fr:'+20% durée du combo', zh:'+20% 连击时长'} }
+    };
+    function openMetaShop() {
+        renderMetaShop();
+        document.getElementById('meta-overlay').classList.add('show');
+    }
+    function closeMetaShop() {
+        document.getElementById('meta-overlay').classList.remove('show');
+    }
+    function renderMetaShop() {
+        const L = (typeof lang !== 'undefined') ? lang : 'tr';
+        const cr = document.getElementById('meta-crystals');
+        cr.innerHTML = '💎 ' + META.crystals + ' ' + (L === 'tr' ? 'Zafer Kristali' : 'Victory Crystals');
+        const list = document.getElementById('meta-list');
+        list.innerHTML = '';
+        Object.keys(META_UPGRADES).forEach(id => {
+            const u = META_UPGRADES[id];
+            const lv = META[id] || 0;
+            const maxed = lv >= u.max;
+            const cost = u.cost(lv);
+            const afford = META.crystals >= cost;
+            const pips = '●'.repeat(lv) + '○'.repeat(u.max - lv);
+            const row = document.createElement('div');
+            row.className = 'meta-row';
+            row.innerHTML =
+                '<div style="flex:1;">' +
+                    '<div class="mi-name">' + LT(u.name) + '</div>' +
+                    '<div class="mi-eff">' + LT(u.effect) + '</div>' +
+                    '<div class="mi-lvl"><span class="meta-pips">' + pips + '</span> ' + lv + '/' + u.max + '</div>' +
+                '</div>' +
+                '<button class="meta-buy" ' + ((maxed || !afford) ? 'disabled' : '') + ' onclick="buyMetaUpgrade(\'' + id + '\')">' +
+                    (maxed ? (L === 'tr' ? 'MAKS' : 'MAX') : '💎 ' + cost) +
+                '</button>';
+            list.appendChild(row);
+        });
+    }
+    function buyMetaUpgrade(id) {
+        const u = META_UPGRADES[id];
+        const lv = META[id] || 0;
+        if (lv >= u.max) return;
+        const cost = u.cost(lv);
+        if (META.crystals < cost) return;
+        META.crystals -= cost;
+        META[id] = lv + 1;
+        saveMeta();
+        renderMetaShop();
+    }
 
     // Harita ayarları (renkler ve hafif modifikasyonlar)
     const mapSettings = {
@@ -1227,6 +1430,7 @@
         }
 
         draw() {
+            if (window.RENDER3D) return;
             ctx.save();
             ctx.translate(this.x + camera.x, this.y + camera.y);
             // Level glow (under building)
@@ -1993,6 +2197,7 @@
             if (this.attackFrame > 0) this.attackFrame--;
         }
         draw() {
+            if (window.RENDER3D) return;
             const sx = this.x + camera.x;
             const sy = this.y + camera.y;
             const knight = this.isKnight;
@@ -2162,6 +2367,7 @@
             this.hp -= dmg * (1 - this.armor);
         }
         draw() {
+            if (window.RENDER3D) return;
             const ex = this.x + camera.x;
             const ey = this.y + camera.y;
             const t = Date.now() * 0.012;
@@ -2448,6 +2654,7 @@
         }
         update() { this.x += this.vx; this.y += this.vy; }
         draw() {
+            if (window.RENDER3D) return;
             const px = this.x + camera.x;
             const py = this.y + camera.y;
             const r = this.isArrow ? 5 : 10;
@@ -2526,6 +2733,7 @@
             }
         }
         draw() {
+            if (window.RENDER3D) return;
             const ex = this.x + camera.x;
             const ey = this.y + camera.y;
             const t = this.bossType;
@@ -3060,8 +3268,24 @@
         return -1;
     }
 
+    function awardCrystals() {
+        const score = Math.floor(stats.score);
+        const waveBonus = (gameMode === 'story' ? Math.max(0, currentWave) : 0);
+        const earned = Math.floor(score / 500) + waveBonus * 2 + Math.floor(comboBest / 10);
+        if (earned > 0) { META.crystals += earned; saveMeta(); }
+        const el = document.getElementById('go-crystals');
+        if (el) {
+            el.innerHTML = '💎 <b>+' + earned + '</b> ' + (lang === 'tr' ? 'Zafer Kristali' : 'Victory Crystals') +
+                ' <span style="opacity:.7">(' + (lang === 'tr' ? 'toplam' : 'total') + ': ' + META.crystals + ')</span>';
+        }
+        return earned;
+    }
+
     async function showGameOver(reason) {
         gameActive = false;
+        // Kampanyada yenilince, "Tekrar Oyna" (sayfa yenileme) bölüm seçim ekranına dönsün
+        try { if (campaignActive) localStorage.setItem('ks_openselect', '1'); } catch(e) {}
+        awardCrystals();
         const score = Math.floor(stats.score);
         const overlay = document.getElementById('gameover-overlay');
         const status = document.getElementById('go-status');
@@ -3140,10 +3364,13 @@
             if (keys.d || keys.ArrowRight) kx += 1;
             if (kx !== 0 || ky !== 0) {
                 const L = Math.hypot(kx, ky) || 1;
-                this.x += (kx / L) * this.speed;
-                this.y += (ky / L) * this.speed;
+                let mx = kx / L, my = ky / L;
+                if (window.__camRel) { const r = window.__camRel(mx, my); mx = r.x; my = r.y; }
+                this.x += mx * this.speed;
+                this.y += my * this.speed;
                 this.dest.x = this.x; this.dest.y = this.y;
-                if (kx !== 0) this.facing = kx > 0 ? 1 : -1;
+                if (Math.abs(mx) > 0.01) this.facing = mx > 0 ? 1 : -1;
+                this.mvx = mx; this.mvy = my;
             } else {
                 // Move toward destination
                 const dx = this.dest.x - this.x, dy = this.dest.y - this.y;
@@ -3161,10 +3388,14 @@
             // Mobile joystick movement on hero (in addition)
             if (joystick.active && (joystick.dx !== 0 || joystick.dy !== 0)) {
                 const jl = Math.hypot(joystick.dx, joystick.dy) || 1;
-                this.x += (joystick.dx / jl) * this.speed * (Math.min(jl, joystick.radius) / joystick.radius);
-                this.y += (joystick.dy / jl) * this.speed * (Math.min(jl, joystick.radius) / joystick.radius);
+                const mag = this.speed * (Math.min(jl, joystick.radius) / joystick.radius);
+                let mx = joystick.dx / jl, my = joystick.dy / jl;
+                if (window.__camRel) { const r = window.__camRel(mx, my); mx = r.x; my = r.y; }
+                this.x += mx * mag;
+                this.y += my * mag;
                 this.dest.x = this.x; this.dest.y = this.y;
-                if (joystick.dx !== 0) this.facing = joystick.dx > 0 ? 1 : -1;
+                if (Math.abs(mx) > 0.01) this.facing = mx > 0 ? 1 : -1;
+                this.mvx = mx; this.mvy = my;
             }
 
             // Detect movement for animation
@@ -3229,6 +3460,7 @@
             if (hbtn) hbtn.classList.toggle('cd', this.healCd > 0);
         }
         draw() {
+            if (window.RENDER3D) return;
             const hx = this.x + camera.x;
             const hy = this.y + camera.y;
             const f = this.facing;
@@ -3495,6 +3727,7 @@
             const sx = fx.x + camera.x;
             const sy = fx.y + camera.y;
             const t = fx.life / fx.maxLife;
+            if (!window.RENDER3D) {
             if (fx.type === 'meteorFall') {
                 // Düşen ateş topu - yukarıdan gelir
                 const yOff = -600 * t;
@@ -3550,6 +3783,7 @@
                 ctx.fillStyle = 'rgba(168,85,247,' + (t * 0.5) + ')';
                 ctx.beginPath(); ctx.arc(sx, sy, 30 * t, 0, Math.PI*2); ctx.fill();
             }
+            } // end !RENDER3D fx drawing
             fx.life--;
             if (fx.life <= 0) visualEffects.splice(i, 1);
         }
@@ -3587,6 +3821,9 @@
             map_desert: '🏜️ Çöl',
             map_lava: '🌋 Lav Vadisi (+%30 zor)',
             continue: 'DEVAM ET',
+            meta_title: 'KALICI YÜKSELTMELER',
+            meta_hint: 'Kristaller oyun sonunda skor, dalga ve combo\'ya göre kazanılır.',
+            meta_close: '◀ KAPAT',
             skip: '⏭ ATLA',
             next: 'İLERİ ▶',
             space_hint: '[Space / Tıkla]',
@@ -3754,6 +3991,9 @@
             map_desert: '🏜️ Desert',
             map_lava: '🌋 Lava Valley (+30% hard)',
             continue: 'CONTINUE',
+            meta_title: 'PERMANENT UPGRADES',
+            meta_hint: 'Crystals are earned at game end from score, waves and combo.',
+            meta_close: '◀ CLOSE',
             skip: '⏭ SKIP',
             next: 'NEXT ▶',
             space_hint: '[Space / Click]',
@@ -3892,16 +4132,94 @@
         }
     };
 
+    // === DE / FR / ZH === İngilizce'yi taban al, üstüne UI çevirilerini koy.
+    // (Uzun hikaye diyalogları çevrilene kadar İngilizce görünür.)
+    I18N.de = Object.assign({}, I18N.en, {
+        title:'ZEITALTER DER KÖNIGREICHE', subtitle:'präsentiert von Lord of the games.net',
+        control_mode:'STEUERUNG:', pc_mode:'💻 PC (Maus)', mobile_mode:'📱 MOBIL (Joystick)',
+        select_mode:'SPIELMODUS:', story_mode:'📖 STORY', endless_mode:'♾️ ENDLOS',
+        story_desc:'Feinde kommen in Wellen; nach jeder Welle spricht der Berater mit dir.',
+        endless_desc:'Endlose Wellen, ständige Action. Der Berater warnt dich nur kurz.',
+        difficulty:'SCHWIERIGKEIT:', diff_easy:'LEICHT', diff_mid:'MITTEL', diff_hard:'SCHWER',
+        select_map:'KARTE WÄHLEN:', map_kingdom:'🏰 Königreich (Klassisch)', map_ice:'❄️ Eisland', map_desert:'🏜️ Wüste', map_lava:'🌋 Lavatal (+30% schwerer)',
+        continue:'WEITER', meta_title:'DAUERHAFTE UPGRADES', meta_hint:'Kristalle erhältst du am Spielende je nach Punkten, Wellen und Combo.', meta_close:'◀ SCHLIESSEN',
+        skip:'⏭ ÜBERSPRINGEN', next:'WEITER ▶', space_hint:'[Leertaste / Klick]', wave_label:'WELLE',
+        wave_banner_ready:'BEREIT', wave_banner_cleared:'GESCHAFFT',
+        stat_castle:'🏰 BURG', stat_gold:'💰 GOLD', stat_wood:'🪵 HOLZ', stat_stone:'🪨 STEIN',
+        go_title:'SPIEL VORBEI', go_reason_castle:'Deine Burg ist gefallen', score_label:'Punkte', replay:'🔄 Nochmal', home:'🏠 Startseite',
+        b_wood:'Holz', b_stone:'Stein', b_gold:'Gold', b_barracks:'Kaserne', b_temple:'Tempel', b_wall:'Mauer', b_archer:'Bogen', b_tower:'Turm', b_mage:'Magier', b_cannon:'Kanone', b_hospital:'Lazarett', b_lightning:'Blitz', b_catapult:'Katapult', b_frost:'Frost', b_poison:'Gift', b_laser:'Laser',
+        you_win_title:'KÖNIGREICH GERETTET',
+        you_win_reason:'Alle Wellen besiegt. Die Legende bist du, mein Lord.',
+        endless_intro:[
+            { n:'baldric', t:'Mein Lord, willkommen im Endlos-Modus. Hier gibt es keine Wellen. Nur... Feinde. Viele Feinde. Endlose Feinde.' },
+            { n:'roric', t:'Genau mein Geschmack! Ich kämpfe für meinen Ruhm! ...Sofern "Ruhm" keine Käsesorte ist.' },
+            { n:'elara', t:'Roric, Ruhm ist kein Käse. Das sage ich zum dritten Mal.' },
+            { n:'baldric', t:'Mein einziger Rat: Sammle Gold, baue Türme, schlaf bloß nicht ein. Los, mein Lord, das Reich wartet!' }
+        ]
+    });
+    I18N.fr = Object.assign({}, I18N.en, {
+        title:'L\'ÂGE DES ROYAUMES', subtitle:'présenté par Lord of the games.net',
+        control_mode:'CONTRÔLE :', pc_mode:'💻 PC (Souris)', mobile_mode:'📱 MOBILE (Joystick)',
+        select_mode:'MODE DE JEU :', story_mode:'📖 HISTOIRE', endless_mode:'♾️ INFINI',
+        story_desc:'Les ennemis arrivent par vagues ; le conseiller te parle après chaque vague.',
+        endless_desc:'Vagues infinies, action non-stop. Le conseiller te prévient brièvement.',
+        difficulty:'DIFFICULTÉ :', diff_easy:'FACILE', diff_mid:'MOYEN', diff_hard:'DIFFICILE',
+        select_map:'CHOISIR LA CARTE :', map_kingdom:'🏰 Royaume (Classique)', map_ice:'❄️ Terre de glace', map_desert:'🏜️ Désert', map_lava:'🌋 Vallée de lave (+30% difficile)',
+        continue:'CONTINUER', meta_title:'AMÉLIORATIONS PERMANENTES', meta_hint:'Les cristaux se gagnent en fin de partie selon le score, les vagues et le combo.', meta_close:'◀ FERMER',
+        skip:'⏭ PASSER', next:'SUIVANT ▶', space_hint:'[Espace / Clic]', wave_label:'VAGUE',
+        wave_banner_ready:'PRÊT', wave_banner_cleared:'TERMINÉ',
+        stat_castle:'🏰 CHÂTEAU', stat_gold:'💰 OR', stat_wood:'🪵 BOIS', stat_stone:'🪨 PIERRE',
+        go_title:'PARTIE TERMINÉE', go_reason_castle:'Ton château est tombé', score_label:'Score', replay:'🔄 Rejouer', home:'🏠 Accueil',
+        b_wood:'Bois', b_stone:'Pierre', b_gold:'Or', b_barracks:'Caserne', b_temple:'Temple', b_wall:'Mur', b_archer:'Archer', b_tower:'Tour', b_mage:'Mage', b_cannon:'Canon', b_hospital:'Hôpital', b_lightning:'Foudre', b_catapult:'Catapulte', b_frost:'Givre', b_poison:'Poison', b_laser:'Laser',
+        you_win_title:'ROYAUME SAUVÉ',
+        you_win_reason:'Toutes les vagues vaincues. La légende, c\'est toi, mon Seigneur.',
+        endless_intro:[
+            { n:'baldric', t:'Mon Seigneur, bienvenue en mode Infini. Ici, pas de vagues. Juste... des ennemis. Beaucoup. À l\'infini.' },
+            { n:'roric', t:'Ça me plaît ! Je combattrai pour ma gloire ! ...Si "gloire" n\'est pas une sorte de fromage.' },
+            { n:'elara', t:'Roric, la gloire n\'est pas un fromage. C\'est la troisième fois que je le dis.' },
+            { n:'baldric', t:'Mon seul conseil : amasse de l\'or, bâtis des tours, ne t\'endors surtout pas. Allez, mon Seigneur, le royaume t\'attend !' }
+        ]
+    });
+    I18N.zh = Object.assign({}, I18N.en, {
+        title:'王国时代', subtitle:'Lord of the games.net 呈现',
+        control_mode:'控制方式：', pc_mode:'💻 电脑（鼠标）', mobile_mode:'📱 手机（摇杆）',
+        select_mode:'游戏模式：', story_mode:'📖 剧情', endless_mode:'♾️ 无尽',
+        story_desc:'敌人成波来袭，每波结束后顾问会与你交谈。',
+        endless_desc:'无尽波次，持续激战。顾问只会简短提醒你。',
+        difficulty:'难度：', diff_easy:'简单', diff_mid:'中等', diff_hard:'困难',
+        select_map:'选择地图：', map_kingdom:'🏰 王国（经典）', map_ice:'❄️ 冰雪之地', map_desert:'🏜️ 沙漠', map_lava:'🌋 熔岩谷（+30% 难度）',
+        continue:'继续', meta_title:'永久升级', meta_hint:'结算时根据分数、波数和连击获得水晶。', meta_close:'◀ 关闭',
+        skip:'⏭ 跳过', next:'继续 ▶', space_hint:'[空格 / 点击]', wave_label:'波次',
+        wave_banner_ready:'准备', wave_banner_cleared:'已清除',
+        stat_castle:'🏰 城堡', stat_gold:'💰 金币', stat_wood:'🪵 木材', stat_stone:'🪨 石头',
+        go_title:'游戏结束', go_reason_castle:'你的城堡陷落了', score_label:'得分', replay:'🔄 再玩一次', home:'🏠 主页',
+        b_wood:'木材', b_stone:'石头', b_gold:'金币', b_barracks:'兵营', b_temple:'神庙', b_wall:'城墙', b_archer:'弓箭手', b_tower:'塔', b_mage:'法师', b_cannon:'炮', b_hospital:'医院', b_lightning:'闪电', b_catapult:'投石车', b_frost:'寒冰', b_poison:'毒', b_laser:'激光',
+        you_win_title:'王国得救',
+        you_win_reason:'所有波次已击败。传奇就是您，主公。',
+        endless_intro:[
+            { n:'baldric', t:'主公，欢迎来到无尽模式。这里没有波次。只有……敌人。很多敌人。无穷无尽。' },
+            { n:'roric', t:'正合我意！我要为荣耀而战！……只要"荣耀"不是某种奶酪。' },
+            { n:'elara', t:'罗瑞克，荣耀不是奶酪。这是我第三次说了。' },
+            { n:'baldric', t:'我唯一的建议：攒金币，造塔，千万别睡着。走吧主公，王国在等您！' }
+        ]
+    });
+
+    // Çok dilli metin seçici: {tr,en,de,fr,zh} objesinden aktif dili, yoksa en, yoksa tr döndürür
+    function LT(o){ if(!o) return ''; return (o[lang] !== undefined) ? o[lang] : (o.en !== undefined ? o.en : o.tr); }
+
     function t(key) {
         const dict = I18N[lang] || I18N.tr;
         return dict[key] !== undefined ? dict[key] : (I18N.tr[key] || key);
     }
 
     function setLang(L) {
-        lang = (L === 'en') ? 'en' : 'tr';
+        const SUPPORTED = ['tr','en','de','fr','zh'];
+        lang = (SUPPORTED.indexOf(L) !== -1) ? L : 'tr';
         try { localStorage.setItem('lotg_lang', lang); } catch(e){}
-        document.getElementById('lang-tr-btn').classList.toggle('active', lang === 'tr');
-        document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+        ['tr','en','de','fr','zh'].forEach(function(l){
+            const btn = document.getElementById('lang-' + l + '-btn');
+            if (btn) btn.classList.toggle('active', lang === l);
+        });
         // Update [data-i18n] elements (only those that have a key in dict)
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const k = el.getAttribute('data-i18n');
@@ -3949,7 +4267,7 @@
     let waveSpawnTimer = 0;
     let waveSpawnInterval = 80; // frames between spawns
     let storyPaused = false; // pauses spawn + game logic during dialog/intro
-    const TOTAL_WAVES = 10;
+    const TOTAL_WAVES = 15;
 
     function setGameMode(m) {
         gameMode = (m === 'endless') ? 'endless' : 'story';
@@ -3967,7 +4285,7 @@
         document.getElementById('game-mode-container').style.display = 'block';
         // Repurpose the continue button to advance to difficulty
         const btn = document.getElementById('continue-btn');
-        btn.setAttribute('onclick', 'showDifficulty()');
+        btn.setAttribute('onclick', 'advanceFromMode()');
         if (inputMode === 'mobile') {
             joystickContainer.style.display = 'block';
             document.getElementById('hint-text').innerText = I18N[lang].ui_hint_mobile;
@@ -4136,9 +4454,223 @@
         { count: 24, hpMult: 1.5, spd: 1.15, interval: 45 },
         { count: 26, hpMult: 1.7, spd: 1.2, interval: 42 },
         { count: 18, hpMult: 1.9, spd: 1.2, interval: 50, boss: true },
-        { count: 30, hpMult: 2.2, spd: 1.3, interval: 38, boss: true }
+        { count: 30, hpMult: 2.2, spd: 1.3, interval: 38, boss: true },
+        { count: 28, hpMult: 2.5, spd: 1.35, interval: 40 },
+        { count: 34, hpMult: 2.8, spd: 1.4, interval: 34 },
+        { count: 30, hpMult: 3.2, spd: 1.4, interval: 40, boss: true },
+        { count: 38, hpMult: 3.6, spd: 1.5, interval: 32 },
+        { count: 40, hpMult: 4.2, spd: 1.55, interval: 30, boss: true }
     ];
     let waveBossSpawned = false;
+
+    // === DALGA MODİFİKATÖRLERİ === (4. dalgadan itibaren rastgele)
+    const WAVE_MODIFIERS = [
+        { id:'storm',  name:{tr:'🌩️ FIRTINA', en:'🌩️ STORM', de:'🌩️ STURM', fr:'🌩️ TEMPÊTE', zh:'🌩️ 风暴'},      desc:{tr:'Düşmanlar %25 daha hızlı', en:'Enemies +25% speed', de:'Feinde +25% Tempo', fr:'Ennemis +25% vitesse', zh:'敌人速度 +25%'},  hp:1,    spd:1.25, count:1,    gold:1 },
+        { id:'horde',  name:{tr:'🐺 SÜRÜ', en:'🐺 HORDE', de:'🐺 HORDE', fr:'🐺 HORDE', zh:'🐺 兽群'},           desc:{tr:'%50 daha fazla düşman', en:'+50% more enemies', de:'+50% mehr Feinde', fr:'+50% d\'ennemis', zh:'敌人数量 +50%'},      hp:0.85, spd:1,    count:1.5,  gold:1 },
+        { id:'iron',   name:{tr:'🛡️ ZIRHLI', en:'🛡️ IRONCLAD', de:'🛡️ GEPANZERT', fr:'🛡️ BLINDÉ', zh:'🛡️ 铁甲'},     desc:{tr:'Düşmanlar %40 daha dayanıklı', en:'Enemies +40% HP', de:'Feinde +40% Leben', fr:'Ennemis +40% PV', zh:'敌人生命 +40%'},  hp:1.4,  spd:0.95, count:1,    gold:1.2 },
+        { id:'bounty', name:{tr:'💰 ALTIN YAĞMURU', en:'💰 GOLD RUSH', de:'💰 GOLDRAUSCH', fr:'💰 RUÉE VERS L\'OR', zh:'💰 黄金潮'}, desc:{tr:'%80 daha fazla altın', en:'+80% gold drops', de:'+80% Goldbeute', fr:'+80% d\'or', zh:'金币掉落 +80%'},        hp:1.1,  spd:1.05, count:1,    gold:1.8 }
+    ];
+    let currentModifier = null;
+
+    // ==================== KAMPANYA SİSTEMİ ====================
+    let activeWaves = WAVE_CONFIG;                 // aktif bölümün dalga listesi ([null, ...])
+    let campaignActive = false;                   // kampanya modunda mıyız
+    let currentChapterIdx = 0;                     // oynanan bölüm index
+    let chapterScale = 1;                          // bölüm ilerledikçe artan zorluk çarpanı
+    let objective = null;                          // aktif hedef
+    let surviveFrames = 0, surviveTotal = 0;       // "dayan" hedefi sayacı
+    let protectMin = 0;                            // "kaleyi koru" alt sınır
+    let chapterStartHp = 100;                       // bölüm başındaki kale canı (yıldız hesabı için)
+    let chapterConcluded = false;                  // bölüm bitti mi (çift tetik engeli)
+
+    const CAMPAIGN_KEY = 'ks_campaign_v1';
+    let campaignSave = { unlocked: 0, stars: {} };
+    function loadCampaign(){ try{ const r=localStorage.getItem(CAMPAIGN_KEY); if(r) campaignSave=Object.assign({unlocked:0,stars:{}}, JSON.parse(r)); }catch(e){} if(typeof campaignSave.unlocked!=='number') campaignSave.unlocked=0; if(!campaignSave.stars) campaignSave.stars={}; }
+    function saveCampaign(){ try{ localStorage.setItem(CAMPAIGN_KEY, JSON.stringify(campaignSave)); }catch(e){} }
+    loadCampaign();
+
+    // Her bölüm: harita, başlık, hedef, dalgalar, giriş/çıkış diyaloğu
+    const CAMPAIGN = [
+        { map:'kingdom', emoji:'🏰',
+          title:{tr:'Sınır Karakolu', en:'Border Outpost', de:'Grenzposten', fr:'Avant-poste frontalier', zh:'边境哨所'},
+          objText:{tr:'Tüm dalgaları savuştur', en:'Repel all waves', de:'Alle Wellen abwehren', fr:'Repousse toutes les vagues', zh:'击退所有波次'},
+          obj:{type:'waves'},
+          waves:[ {count:6,hpMult:0.8,spd:1.0,interval:70},{count:8,hpMult:0.9,spd:1.0,interval:62},{count:10,hpMult:1.0,spd:1.05,interval:56},{count:12,hpMult:1.1,spd:1.05,interval:52} ],
+          intro:{tr:[{n:'baldric',t:'Lordum, sınır karakolumuza goblinler saldırıyor. Kaleyi koru, halkımız sana güveniyor.'},{n:'roric',t:'Kılıcım hazır! İlk dalga geliyor.'}], en:[{n:'baldric',t:'My Lord, goblins strike our border outpost. Defend the keep — the people trust you.'},{n:'roric',t:'My blade is ready! First wave incoming.'}], de:[{n:'baldric',t:'Mein Lord, Goblins greifen unseren Grenzposten an. Verteidige die Burg — das Volk vertraut dir.'},{n:'roric',t:'Meine Klinge ist bereit! Die erste Welle kommt.'}], fr:[{n:'baldric',t:'Mon Seigneur, des gobelins attaquent notre avant-poste. Défends le donjon — le peuple compte sur toi.'},{n:'roric',t:'Ma lame est prête ! La première vague arrive.'}], zh:[{n:'baldric',t:'主公，哥布林正在袭击我们的边境哨所。守住城堡——人民信任您。'},{n:'roric',t:'我的剑已备好！第一波来了。'}]},
+          outro:{tr:[{n:'baldric',t:'Karakol güvende! Ama bu daha başlangıç, Lordum.'}], en:[{n:'baldric',t:'The outpost holds! But this is only the beginning, my Lord.'}], de:[{n:'baldric',t:'Der Posten hält! Aber das ist erst der Anfang, mein Lord.'}], fr:[{n:'baldric',t:'L\'avant-poste tient ! Mais ce n\'est que le début, mon Seigneur.'}], zh:[{n:'baldric',t:'哨所守住了！但这只是开始，主公。'}]} },
+
+        { map:'kingdom', emoji:'⚔️',
+          title:{tr:'Goblin Baskını', en:'Goblin Raid', de:'Goblin-Überfall', fr:'Raid des gobelins', zh:'哥布林突袭'},
+          objText:{tr:'Tüm dalgaları savuştur', en:'Repel all waves', de:'Alle Wellen abwehren', fr:'Repousse toutes les vagues', zh:'击退所有波次'},
+          obj:{type:'waves'},
+          waves:[ {count:10,hpMult:0.9,spd:1.05,interval:58},{count:12,hpMult:1.0,spd:1.05,interval:52},{count:14,hpMult:1.1,spd:1.1,interval:48},{count:14,hpMult:1.2,spd:1.1,interval:48},{count:12,hpMult:1.3,spd:1.1,interval:52,boss:true} ],
+          intro:{tr:[{n:'lyra',t:'Goblin şefi daha büyük bir orduyla döndü. Dikkatli ol Lordum, sonunda bir kaba güç var.'}], en:[{n:'lyra',t:'The goblin chief returns with a larger horde. Beware, my Lord — a brute leads them.'}], de:[{n:'lyra',t:'Der Goblin-Häuptling kehrt mit einer größeren Horde zurück. Vorsicht, mein Lord — ein Unhold führt sie an.'}], fr:[{n:'lyra',t:'Le chef gobelin revient avec une horde plus grande. Attention, mon Seigneur — une brute les mène.'}], zh:[{n:'lyra',t:'哥布林首领带着更大的部队回来了。小心，主公——有个蛮兵在带头。'}]},
+          outro:{tr:[{n:'roric',t:'Şefi devirdik! Krallık bir nefes aldı.'}], en:[{n:'roric',t:'The chief is down! The realm breathes again.'}], de:[{n:'roric',t:'Der Häuptling ist gefallen! Das Reich atmet wieder auf.'}], fr:[{n:'roric',t:'Le chef est tombé ! Le royaume respire à nouveau.'}], zh:[{n:'roric',t:'首领倒下了！王国又能喘口气了。'}]} },
+
+        { map:'ice', emoji:'❄️',
+          title:{tr:'Donmuş Geçit', en:'Frozen Pass', de:'Gefrorener Pass', fr:'Col gelé', zh:'冰封隘口'},
+          objText:{tr:'Tüm dalgaları savuştur', en:'Repel all waves', de:'Alle Wellen abwehren', fr:'Repousse toutes les vagues', zh:'击退所有波次'},
+          obj:{type:'waves'},
+          waves:[ {count:12,hpMult:1.0,spd:1.05,interval:54},{count:14,hpMult:1.1,spd:1.1,interval:50},{count:16,hpMult:1.2,spd:1.1,interval:46},{count:16,hpMult:1.3,spd:1.15,interval:46},{count:14,hpMult:1.4,spd:1.15,interval:50,boss:true} ],
+          intro:{tr:[{n:'baldric',t:'Kuzeyin buz diyarına vardık. Buz iblisleri geceyi bekliyor.'},{n:'elara',t:'Üşüdüm ama korkmuyorum. Göster onlara Lordum!'}], en:[{n:'baldric',t:'We reach the frozen north. Ice fiends wait for nightfall.'},{n:'elara',t:'I am cold, not afraid. Show them, my Lord!'}], de:[{n:'baldric',t:'Wir erreichen den eisigen Norden. Eisdämonen warten auf die Nacht.'},{n:'elara',t:'Mir ist kalt, aber ich fürchte mich nicht. Zeig es ihnen, mein Lord!'}], fr:[{n:'baldric',t:'Nous atteignons le nord glacé. Les démons de glace attendent la nuit.'},{n:'elara',t:'J\'ai froid, mais pas peur. Montre-leur, mon Seigneur !'}], zh:[{n:'baldric',t:'我们抵达了冰封的北境。冰魔正等待夜幕降临。'},{n:'elara',t:'我很冷，但并不害怕。让他们瞧瞧，主公！'}]},
+          outro:{tr:[{n:'baldric',t:'Geçit bizim. İleri!'}], en:[{n:'baldric',t:'The pass is ours. Onward!'}], de:[{n:'baldric',t:'Der Pass gehört uns. Vorwärts!'}], fr:[{n:'baldric',t:'Le col est à nous. En avant !'}], zh:[{n:'baldric',t:'隘口是我们的了。前进！'}]} },
+
+        { map:'ice', emoji:'🌨️',
+          title:{tr:'Kar Fırtınası', en:'Blizzard', de:'Schneesturm', fr:'Blizzard', zh:'暴风雪'},
+          objText:{tr:'85 saniye dayan', en:'Survive 85 seconds', de:'85 Sekunden überstehen', fr:'Résiste 85 secondes', zh:'坚持85秒'},
+          obj:{type:'survive', seconds:85},
+          waves:[ {count:14,hpMult:1.0,spd:1.1,interval:44},{count:16,hpMult:1.1,spd:1.1,interval:42},{count:18,hpMult:1.2,spd:1.15,interval:40},{count:20,hpMult:1.3,spd:1.15,interval:38} ],
+          intro:{tr:[{n:'lyra',t:'Kar fırtınası düşmanları gizliyor! Kazanamazsın, sadece dayanmalısın Lordum. Sayaç bitene kadar ayakta kal!'}], en:[{n:'lyra',t:'The blizzard hides the enemy! You cannot win — only endure. Hold until the timer runs out!'}], de:[{n:'lyra',t:'Der Schneesturm verbirgt die Feinde! Du kannst nicht siegen — nur durchhalten. Halte durch, bis die Zeit abläuft!'}], fr:[{n:'lyra',t:'Le blizzard cache les ennemis ! Tu ne peux pas gagner — seulement tenir. Résiste jusqu\'à la fin du chrono !'}], zh:[{n:'lyra',t:'暴风雪掩护了敌人！你无法取胜——只能坚持。撑到计时结束！'}]},
+          outro:{tr:[{n:'lyra',t:'Fırtına dindi. Dayandın Lordum!'}], en:[{n:'lyra',t:'The storm passes. You endured, my Lord!'}], de:[{n:'lyra',t:'Der Sturm zieht vorüber. Du hast durchgehalten, mein Lord!'}], fr:[{n:'lyra',t:'La tempête s\'apaise. Tu as tenu, mon Seigneur !'}], zh:[{n:'lyra',t:'风暴过去了。你撑住了，主公！'}]} },
+
+        { map:'desert', emoji:'🏜️',
+          title:{tr:'Kervan Yolu', en:'Caravan Road', de:'Karawanenweg', fr:'Route des caravanes', zh:'商队之路'},
+          objText:{tr:'Tüm dalgaları savuştur', en:'Repel all waves', de:'Alle Wellen abwehren', fr:'Repousse toutes les vagues', zh:'击退所有波次'},
+          obj:{type:'waves'},
+          waves:[ {count:14,hpMult:1.0,spd:1.1,interval:50},{count:16,hpMult:1.1,spd:1.1,interval:46},{count:18,hpMult:1.2,spd:1.15,interval:44},{count:18,hpMult:1.3,spd:1.15,interval:44},{count:20,hpMult:1.4,spd:1.2,interval:42},{count:16,hpMult:1.5,spd:1.2,interval:48,boss:true} ],
+          intro:{tr:[{n:'quill',t:'Çöl sıcak, düşman daha da sıcak! Kervan yolunu koru Lordum, yoksa yürürüz.'}], en:[{n:'quill',t:'The desert is hot, the enemy hotter! Guard the caravan road, my Lord, or we walk.'}], de:[{n:'quill',t:'Die Wüste ist heiß, der Feind noch heißer! Schütze den Karawanenweg, mein Lord, sonst laufen wir.'}], fr:[{n:'quill',t:'Le désert est chaud, l\'ennemi encore plus ! Protège la route des caravanes, mon Seigneur, ou on marche.'}], zh:[{n:'quill',t:'沙漠很热，敌人更热！守住商队之路，主公，不然我们就得步行了。'}]},
+          outro:{tr:[{n:'quill',t:'Yol açık! Deve sırtında zafer turu atalım mı?'}], en:[{n:'quill',t:'The road is clear! Shall we take a victory ride on a camel?'}], de:[{n:'quill',t:'Der Weg ist frei! Machen wir eine Siegesrunde auf einem Kamel?'}], fr:[{n:'quill',t:'La route est libre ! On fait un tour de victoire à dos de chameau ?'}], zh:[{n:'quill',t:'道路畅通了！要不要骑骆驼绕场庆祝一圈？'}]} },
+
+        { map:'desert', emoji:'🛡️',
+          title:{tr:'Kum Kuşatması', en:'Sand Siege', de:'Sandbelagerung', fr:'Siège des sables', zh:'黄沙围城'},
+          objText:{tr:'Kaleyi %50 canın üstünde tut', en:'Keep castle above 50% HP', de:'Halte die Burg über 50% Leben', fr:'Garde le château au-dessus de 50% PV', zh:'保持城堡生命值高于50%'},
+          obj:{type:'protect', pct:50},
+          waves:[ {count:16,hpMult:1.0,spd:1.1,interval:46},{count:18,hpMult:1.1,spd:1.15,interval:44},{count:20,hpMult:1.2,spd:1.15,interval:42},{count:20,hpMult:1.3,spd:1.2,interval:42},{count:22,hpMult:1.4,spd:1.2,interval:40},{count:18,hpMult:1.5,spd:1.25,interval:46,boss:true} ],
+          intro:{tr:[{n:'roric',t:'Bu sefer kale hedefte! Canı yarının altına düşerse her şey biter. Onları kapıda durdur Lordum!'}], en:[{n:'roric',t:'This time the keep is the target! If its HP drops below half, all is lost. Stop them at the gate!'}], de:[{n:'roric',t:'Diesmal ist die Burg das Ziel! Fällt ihr Leben unter die Hälfte, ist alles verloren. Halte sie am Tor auf, mein Lord!'}], fr:[{n:'roric',t:'Cette fois, le donjon est la cible ! Si ses PV tombent sous la moitié, tout est perdu. Arrête-les à la porte, mon Seigneur !'}], zh:[{n:'roric',t:'这次城堡是目标！若它的生命值跌破一半，一切就完了。在城门拦住他们，主公！'}]},
+          outro:{tr:[{n:'roric',t:'Kale ayakta! Onurunu korudun Lordum.'}], en:[{n:'roric',t:'The keep stands! You kept its honor, my Lord.'}], de:[{n:'roric',t:'Die Burg steht! Du hast ihre Ehre bewahrt, mein Lord.'}], fr:[{n:'roric',t:'Le donjon tient ! Tu as préservé son honneur, mon Seigneur.'}], zh:[{n:'roric',t:'城堡屹立不倒！你守住了它的荣耀，主公。'}]} },
+
+        { map:'lava', emoji:'🌋',
+          title:{tr:'Ateş Kapısı', en:'Gate of Fire', de:'Tor des Feuers', fr:'Porte de feu', zh:'烈火之门'},
+          objText:{tr:'Tüm dalgaları savuştur', en:'Repel all waves', de:'Alle Wellen abwehren', fr:'Repousse toutes les vagues', zh:'击退所有波次'},
+          obj:{type:'waves'},
+          waves:[ {count:16,hpMult:1.0,spd:1.15,interval:44},{count:18,hpMult:1.1,spd:1.15,interval:42},{count:20,hpMult:1.2,spd:1.2,interval:40},{count:22,hpMult:1.3,spd:1.2,interval:38},{count:22,hpMult:1.4,spd:1.25,interval:38},{count:24,hpMult:1.5,spd:1.25,interval:36},{count:20,hpMult:1.6,spd:1.3,interval:42,boss:true} ],
+          intro:{tr:[{n:'baldric',t:'Lav vadisine geldik. Buranın ardında karanlığın efendileri var. Ateş kapısını aş Lordum.'}], en:[{n:'baldric',t:'We reach the lava valley. Beyond it dwell the lords of darkness. Breach the gate of fire, my Lord.'}], de:[{n:'baldric',t:'Wir erreichen das Lavatal. Dahinter hausen die Herren der Finsternis. Durchbrich das Tor des Feuers, mein Lord.'}], fr:[{n:'baldric',t:'Nous atteignons la vallée de lave. Au-delà vivent les seigneurs des ténèbres. Franchis la porte de feu, mon Seigneur.'}], zh:[{n:'baldric',t:'我们来到了熔岩谷。其后潜藏着黑暗之主。突破烈火之门，主公。'}]},
+          outro:{tr:[{n:'baldric',t:'Kapı düştü. Son savaş yaklaşıyor.'}], en:[{n:'baldric',t:'The gate falls. The final battle nears.'}], de:[{n:'baldric',t:'Das Tor fällt. Die letzte Schlacht naht.'}], fr:[{n:'baldric',t:'La porte cède. La bataille finale approche.'}], zh:[{n:'baldric',t:'大门倒下了。最终决战将至。'}]} },
+
+        { map:'lava', emoji:'🔥',
+          title:{tr:'Alev Lordu', en:'The Flame Lord', de:'Der Flammenlord', fr:'Le Seigneur des Flammes', zh:'烈焰领主'},
+          objText:{tr:'Boss savaşı — devi yen', en:'Boss fight — slay the giant', de:'Bosskampf — besiege den Riesen', fr:'Combat de boss — vaincs le géant', zh:'boss战——击败巨人'},
+          obj:{type:'boss'},
+          waves:[ {count:10,hpMult:1.1,spd:1.15,interval:46},{count:8,hpMult:1.3,spd:1.2,interval:52,boss:true} ],
+          intro:{tr:[{n:'lyra',t:'Alev Lordu uyandı! Küçük düşmanları temizle, sonra deve odaklan. Combo çarpanını yüksek tut!'}], en:[{n:'lyra',t:'The Flame Lord awakens! Clear the lesser foes, then focus the giant. Keep your combo high!'}], de:[{n:'lyra',t:'Der Flammenlord erwacht! Räume die kleineren Feinde, dann konzentriere dich auf den Riesen. Halte deinen Combo hoch!'}], fr:[{n:'lyra',t:'Le Seigneur des Flammes s\'éveille ! Élimine les petits ennemis, puis concentre-toi sur le géant. Garde ton combo élevé !'}], zh:[{n:'lyra',t:'烈焰领主苏醒了！先清理小怪，再集火巨人。保持高连击！'}]},
+          outro:{tr:[{n:'roric',t:'Alev Lordu kül oldu! Ama en büyüğü hâlâ bekliyor...'}], en:[{n:'roric',t:'The Flame Lord is ash! Yet the greatest still waits...'}], de:[{n:'roric',t:'Der Flammenlord ist Asche! Doch der Größte wartet noch...'}], fr:[{n:'roric',t:'Le Seigneur des Flammes n\'est que cendres ! Mais le plus grand attend encore...'}], zh:[{n:'roric',t:'烈焰领主化为灰烬！但最强者仍在等待……'}]} },
+
+        { map:'kingdom', emoji:'🏰',
+          title:{tr:'Son Nöbet', en:'The Last Watch', de:'Die letzte Wache', fr:'La dernière garde', zh:'最后的守望'},
+          objText:{tr:'100 saniye dayan', en:'Survive 100 seconds', de:'100 Sekunden überstehen', fr:'Résiste 100 secondes', zh:'坚持100秒'},
+          obj:{type:'survive', seconds:100},
+          waves:[ {count:18,hpMult:1.1,spd:1.2,interval:38},{count:20,hpMult:1.2,spd:1.2,interval:36},{count:22,hpMult:1.3,spd:1.25,interval:34},{count:24,hpMult:1.4,spd:1.25,interval:32},{count:26,hpMult:1.5,spd:1.3,interval:32} ],
+          intro:{tr:[{n:'elara',t:'Kara ordu başkente yürüyor! Takviye gelene kadar dayanmalıyız. Lordum, sen bizim son umudumuzsun.'}], en:[{n:'elara',t:'The dark army marches on the capital! We must hold until reinforcements arrive. My Lord, you are our last hope.'}], de:[{n:'elara',t:'Das dunkle Heer marschiert auf die Hauptstadt! Wir müssen durchhalten, bis Verstärkung kommt. Mein Lord, du bist unsere letzte Hoffnung.'}], fr:[{n:'elara',t:'L\'armée noire marche sur la capitale ! Nous devons tenir jusqu\'à l\'arrivée des renforts. Mon Seigneur, tu es notre dernier espoir.'}], zh:[{n:'elara',t:'黑暗大军正向首都进军！我们必须坚持到援军到来。主公，您是我们最后的希望。'}]},
+          outro:{tr:[{n:'elara',t:'Takviye geldi! Dayandın Lordum, artık saldırı sırası bizde.'}], en:[{n:'elara',t:'Reinforcements arrive! You held, my Lord — now we strike back.'}], de:[{n:'elara',t:'Verstärkung trifft ein! Du hast standgehalten, mein Lord — nun schlagen wir zurück.'}], fr:[{n:'elara',t:'Les renforts arrivent ! Tu as tenu, mon Seigneur — à nous de contre-attaquer.'}], zh:[{n:'elara',t:'援军到了！你撑住了，主公——现在轮到我们反击了。'}]} },
+
+        { map:'lava', emoji:'🐉',
+          title:{tr:'Kara Ejderha', en:'The Black Dragon', de:'Der Schwarze Drache', fr:'Le Dragon Noir', zh:'黑龙'},
+          objText:{tr:'FİNAL — Ejderhayı yen', en:'FINALE — slay the Dragon', de:'FINALE — besiege den Drachen', fr:'FINALE — vaincs le dragon', zh:'终章——击败巨龙'},
+          obj:{type:'boss'},
+          waves:[ {count:12,hpMult:1.2,spd:1.2,interval:42},{count:10,hpMult:1.4,spd:1.25,interval:48,boss:true},{count:8,hpMult:1.6,spd:1.3,interval:54,boss:true} ],
+          intro:{tr:[{n:'baldric',t:'İşte o, Lordum. Kara Ejderha. Krallığın kaderi bu savaşta. Tüm gücünle savaş!'},{n:'roric',t:'Yanındayım, sonuna kadar!'}], en:[{n:'baldric',t:'There it is, my Lord. The Black Dragon. The realm\'s fate rests on this battle. Fight with all your might!'},{n:'roric',t:'I stand with you, to the end!'}], de:[{n:'baldric',t:'Da ist er, mein Lord. Der Schwarze Drache. Das Schicksal des Reiches ruht auf dieser Schlacht. Kämpfe mit all deiner Kraft!'},{n:'roric',t:'Ich stehe an deiner Seite, bis zum Ende!'}], fr:[{n:'baldric',t:'Le voilà, mon Seigneur. Le Dragon Noir. Le sort du royaume repose sur cette bataille. Bats-toi de toutes tes forces !'},{n:'roric',t:'Je suis à tes côtés, jusqu\'au bout !'}], zh:[{n:'baldric',t:'它就在那里，主公。黑龙。王国的命运系于此战。用尽全力战斗吧！'},{n:'roric',t:'我与你并肩，直到最后！'}]},
+          outro:{tr:[{n:'baldric',t:'Ejderha düştü! Krallık kurtuldu. Sen bir efsanesin Lordum!'}], en:[{n:'baldric',t:'The Dragon falls! The realm is saved. You are a legend, my Lord!'}], de:[{n:'baldric',t:'Der Drache fällt! Das Reich ist gerettet. Du bist eine Legende, mein Lord!'}], fr:[{n:'baldric',t:'Le dragon tombe ! Le royaume est sauvé. Tu es une légende, mon Seigneur !'}], zh:[{n:'baldric',t:'巨龙倒下了！王国得救了。您就是传奇，主公！'}]} }
+    ];
+
+    function chapterWaves(ch){ return [null].concat(ch.waves); }
+
+    function initObjective(ch){
+        objective = ch.obj || { type:'waves' };
+        chapterConcluded = false;
+        chapterStartHp = stats.hp || 100;
+        surviveFrames = 0; surviveTotal = 0; protectMin = 0;
+        if (objective.type === 'survive') { surviveTotal = (objective.seconds || 90) * 60; surviveFrames = surviveTotal; }
+        if (objective.type === 'protect') { protectMin = Math.max(1, Math.ceil((stats.hp || 100) * (objective.pct || 50) / 100)); }
+        updateObjectiveHud();
+    }
+    function updateObjectiveHud(){
+        const el = document.getElementById('objective-hud'); if (!el) return;
+        if (!campaignActive || !objective) { el.style.display = 'none'; return; }
+        const L = lang;
+        el.style.display = 'block';
+        if (objective.type === 'survive') { el.innerHTML = '🎯 ' + LT({tr:'Dayan',en:'Survive',de:'Überstehe',fr:'Résiste',zh:'坚持'}) + ': <b>' + Math.ceil(surviveFrames/60) + 's</b>'; }
+        else if (objective.type === 'protect') { el.innerHTML = '🎯 ' + LT({tr:'Kale ≥',en:'Castle ≥',de:'Burg ≥',fr:'Château ≥',zh:'城堡 ≥'}) + ' <b>' + protectMin + '</b>'; }
+        else if (objective.type === 'boss') { el.innerHTML = '🎯 ' + LT({tr:'Boss\'u yen!',en:'Slay the boss!',de:'Besiege den Boss!',fr:'Vaincs le boss !',zh:'击败首领！'}); }
+        else { el.innerHTML = '🎯 ' + LT({tr:'Tüm dalgaları temizle',en:'Clear all waves',de:'Alle Wellen räumen',fr:'Éliminer toutes les vagues',zh:'清除所有波次'}); }
+    }
+    function computeStars(){
+        const pct = stats.hp / (chapterStartHp || 100);
+        let s = 1; if (pct >= 0.5) s = 2; if (pct >= 0.85) s = 3;
+        return s;
+    }
+    function chapterWin(){
+        if (chapterConcluded) return; chapterConcluded = true;
+        waveActive = false; gameActive = false;
+        try { awardCrystals(); } catch(e) {}
+        const idx = currentChapterIdx; const ch = CAMPAIGN[idx]; const stars = computeStars();
+        if (!campaignSave.stars[idx] || campaignSave.stars[idx] < stars) campaignSave.stars[idx] = stars;
+        if (campaignSave.unlocked < idx + 1) campaignSave.unlocked = Math.min(CAMPAIGN.length - 1, idx + 1);
+        saveCampaign();
+        const dlg = LT(ch.outro) || [];
+        try { bgMusic.pause(); } catch(e) {}
+        showAdvisor(dlg, () => showChapterComplete(idx, stars));
+    }
+    function showChapterComplete(idx, stars){
+        const ov = document.getElementById('chapter-complete'); if (!ov) return;
+        const ch = CAMPAIGN[idx]; const isLast = idx >= CAMPAIGN.length - 1;
+        const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+        document.getElementById('cc-title').innerText = LT({tr:'Bölüm Tamamlandı',en:'Chapter Complete',de:'Kapitel abgeschlossen',fr:'Chapitre terminé',zh:'章节完成'});
+        document.getElementById('cc-name').innerText = (idx+1) + '. ' + LT(ch.title);
+        document.getElementById('cc-stars').innerText = starStr;
+        document.getElementById('cc-score').innerText = LT({tr:'Skor: ',en:'Score: ',de:'Punkte: ',fr:'Score : ',zh:'得分：'}) + Math.floor(stats.score);
+        const btns = document.getElementById('cc-buttons'); btns.innerHTML = '';
+        if (!isLast) {
+            const b = document.createElement('button'); b.className='modal-btn'; b.innerText=LT({tr:'▶ Sonraki Bölüm',en:'▶ Next Chapter',de:'▶ Nächstes Kapitel',fr:'▶ Chapitre suivant',zh:'▶ 下一章'}); b.onclick=function(){ ksNextChapter(idx); }; btns.appendChild(b);
+        } else {
+            const m = document.createElement('div'); m.style.cssText='color:#22c55e;font-weight:bold;margin-bottom:10px'; m.innerText=LT({tr:'🏆 Sefer bitti! Krallığın Efendisi sensin.',en:'🏆 Campaign complete! You are the Lord of the Realm.',de:'🏆 Feldzug abgeschlossen! Du bist der Herr des Reiches.',fr:'🏆 Campagne terminée ! Tu es le Seigneur du royaume.',zh:'🏆 战役完成！你就是王国之主。'}); btns.appendChild(m);
+        }
+        const b2 = document.createElement('button'); b2.className='modal-btn secondary'; b2.innerText=LT({tr:'📜 Bölümler',en:'📜 Chapters',de:'📜 Kapitel',fr:'📜 Chapitres',zh:'📜 章节'}); b2.onclick=ksToSelect; btns.appendChild(b2);
+        ov.style.display = 'flex';
+    }
+    function ksNextChapter(idx){ try{ localStorage.setItem('ks_autostart', String(idx+1)); }catch(e){} location.reload(); }
+    function ksToSelect(){ try{ localStorage.setItem('ks_openselect','1'); }catch(e){} location.reload(); }
+
+    function advanceFromMode(){ if (gameMode === 'story') showCampaignSelect(); else showDifficulty(); }
+    function showCampaignSelect(){
+        const gm = document.getElementById('game-mode-container'); if (gm) gm.style.display='none';
+        const cb = document.getElementById('continue-btn'); if (cb) cb.style.display='none';
+        const mb = document.getElementById('meta-shop-btn'); if (mb) mb.style.display='none';
+        const ss = document.getElementById('start-screen'); if (ss) ss.style.display='none';
+        renderCampaignSelect();
+        const cs = document.getElementById('campaign-screen'); if (cs) cs.style.display='flex';
+    }
+    function renderCampaignSelect(){
+        const list = document.getElementById('campaign-list'); if (!list) return;
+        const csT = document.getElementById('cs-title'); if (csT) csT.innerText = LT({tr:'📜 SEFER',en:'📜 CAMPAIGN',de:'📜 FELDZUG',fr:'📜 CAMPAGNE',zh:'📜 战役'});
+        const csS = document.getElementById('cs-sub'); if (csS) csS.innerText = LT({tr:'Bölüm seç — biten bölümler sonrakini açar',en:'Pick a chapter — clearing one unlocks the next',de:'Kapitel wählen — abgeschlossene schalten das nächste frei',fr:'Choisis un chapitre — le terminer débloque le suivant',zh:'选择章节——通关后解锁下一章'});
+        const csB = document.getElementById('cs-back'); if (csB) csB.innerText = LT({tr:'↩ Ana Menü',en:'↩ Main Menu',de:'↩ Hauptmenü',fr:'↩ Menu principal',zh:'↩ 主菜单'});
+        list.innerHTML = '';
+        CAMPAIGN.forEach(function(ch, idx){
+            const unlocked = idx <= campaignSave.unlocked;
+            const stars = campaignSave.stars[idx] || 0;
+            const card = document.createElement('button');
+            card.disabled = !unlocked;
+            card.style.cssText = 'display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:'+(unlocked?'linear-gradient(135deg,#1e293b,#0f172a)':'#0b1220')+';border:1px solid '+(unlocked?'#334155':'#1e293b')+';border-radius:12px;padding:11px 13px;margin-bottom:8px;color:'+(unlocked?'#e2e8f0':'#475569')+';cursor:'+(unlocked?'pointer':'not-allowed')+';font-family:inherit';
+            const starStr = unlocked ? ('★'.repeat(stars)+'☆'.repeat(3-stars)) : '🔒';
+            card.innerHTML = '<div style="font-size:26px">'+ch.emoji+'</div><div style="flex:1"><div style="font-weight:bold;font-size:15px">'+(idx+1)+'. '+LT(ch.title)+'</div><div style="font-size:12px;opacity:.75">'+(ch.objText?LT(ch.objText):'')+'</div></div><div style="color:#fbbf24;font-size:14px;letter-spacing:2px;white-space:nowrap">'+starStr+'</div>';
+            if (unlocked) card.onclick = function(){ startChapter(idx); };
+            list.appendChild(card);
+        });
+    }
+    function startChapter(idx){
+        if (idx > campaignSave.unlocked || !CAMPAIGN[idx]) return;
+        campaignActive = true; currentChapterIdx = idx;
+        const ch = CAMPAIGN[idx];
+        activeWaves = chapterWaves(ch);
+        chapterScale = 1 + idx * 0.11;
+        difficulty = 'mid';
+        gameMode = 'story';
+        const cs = document.getElementById('campaign-screen'); if (cs) cs.style.display='none';
+        startGame(ch.map);
+    }
+    window.startChapter = startChapter; window.showCampaignSelect = showCampaignSelect;
+    window.advanceFromMode = advanceFromMode; window.ksNextChapter = ksNextChapter; window.ksToSelect = ksToSelect;
+    // ==================== /KAMPANYA SİSTEMİ ====================
 
     function showWaveBanner(num, sub) {
         const b = document.getElementById('wave-banner');
@@ -4153,19 +4685,27 @@
         if (gameMode !== 'story') { hud.style.display = 'none'; return; }
         hud.style.display = 'flex';
         document.getElementById('wave-value').innerText = currentWave;
-        const cfg = WAVE_CONFIG[currentWave];
-        const total = cfg ? cfg.count + (cfg.boss?1:0) : 0;
+        const cfg = activeWaves[currentWave];
+        const modCount = currentModifier ? currentModifier.count : 1;
+        const total = cfg ? Math.round(cfg.count * modCount) + (cfg.boss?1:0) : 0;
         const alive = enemies.length;
         const left = waveEnemiesToSpawn + alive;
         document.getElementById('wave-remaining').innerText = Math.max(0, left) + ' / ' + total;
     }
 
     function startWave(num) {
-        if (num > TOTAL_WAVES) { storyWin(); return; }
+        if (campaignActive && (chapterConcluded || !gameActive)) return; // bölüm bittiyse yeni dalga başlatma
+        if (num > activeWaves.length - 1) { if (campaignActive) chapterWin(); else storyWin(); return; }
         currentWave = num;
-        const cfg = WAVE_CONFIG[num];
-        if (!cfg) { storyWin(); return; }
-        waveEnemiesToSpawn = cfg.count;
+        const cfg = activeWaves[num];
+        if (!cfg) { if (campaignActive) chapterWin(); else storyWin(); return; }
+        // Dalga modifikatörü: 4. dalgadan itibaren %55 ihtimalle (boss dalgaları hariç)
+        currentModifier = null;
+        if (num >= 4 && !cfg.boss && Math.random() < 0.55) {
+            currentModifier = WAVE_MODIFIERS[Math.floor(Math.random() * WAVE_MODIFIERS.length)];
+        }
+        const modCount = currentModifier ? currentModifier.count : 1;
+        waveEnemiesToSpawn = Math.round(cfg.count * modCount);
         waveSpawnInterval = cfg.interval || 50;
         waveSpawnTimer = 0;
         waveActive = true;
@@ -4175,24 +4715,39 @@
         showAdvisor(intro, () => {
             showWaveBanner(num, I18N[lang].wave_banner_ready);
             updateWaveHud();
+            if (currentModifier) {
+                const m = currentModifier;
+                setTimeout(() => {
+                    showSpellToast(LT(m.name) + ' — ' + LT(m.desc), '#f59e0b');
+                }, 1600);
+            }
         });
     }
 
     function checkWaveComplete() {
         if (gameMode !== 'story' || !waveActive || storyPaused) return;
-        if (waveEnemiesToSpawn <= 0 && enemies.length === 0 && (waveBossSpawned || !WAVE_CONFIG[currentWave].boss)) {
+        if (chapterConcluded) return;
+        if (waveEnemiesToSpawn <= 0 && enemies.length === 0 && (waveBossSpawned || !activeWaves[currentWave].boss)) {
             waveActive = false;
-            // Post-wave dialog
-            const outro = I18N[lang].wave_outro[currentWave];
+            const last = activeWaves.length - 1;
+            // Post-wave dialog (klasik hikaye modunda; kampanyada bölüm sonu diyaloğu ayrı)
+            const outro = (!campaignActive && I18N[lang].wave_outro) ? I18N[lang].wave_outro[currentWave] : null;
             const msgs = outro ? [{ c:'🧙‍♂️', t: outro }] : [];
             // Bonus gold between waves
             stats.gold += 50 + currentWave * 20;
             showWaveBanner(currentWave, I18N[lang].wave_banner_cleared);
             setTimeout(() => {
-                if (currentWave >= TOTAL_WAVES) {
-                    showAdvisor(msgs, () => storyWin());
+                if (currentWave >= last) {
+                    if (campaignActive && objective && objective.type === 'survive' && surviveFrames > 0 && !chapterConcluded) {
+                        // "Dayan" hedefi: süre bitene kadar dalgaları döngüye al
+                        startWave(Math.max(1, last - 2));
+                    } else if (campaignActive) {
+                        chapterWin();
+                    } else {
+                        storyWin();
+                    }
                 } else {
-                    showAdvisor(msgs, () => startWave(currentWave + 1));
+                    startWave(currentWave + 1);
                 }
             }, 1200);
         }
@@ -4200,6 +4755,7 @@
 
     function storyWin() {
         gameActive = false;
+        awardCrystals();
         const overlay = document.getElementById('gameover-overlay');
         const title = document.getElementById('go-title');
         const reason = document.getElementById('go-reason');
@@ -4257,8 +4813,12 @@
             ds.hpMult = ds._origHpMult * ms.hpMult;
             ds.goldMult = ds._origGoldMult * ms.goldMult;
         }
+        // === META bonusları uygula ===
+        stats.gold += (META.gold || 0) * 150;
+        stats.hp += (META.wall || 0) * 25;
         // Spawn the hero just below the castle
         hero = new Hero(700, 600);
+        hero.dmg = Math.round(hero.dmg * (1 + (META.lord || 0) * 0.15));
         refreshBuildButtons();
         initAudio();
         bgMusic.play().catch(e => console.log("Oynatma engellendi."));
@@ -4272,16 +4832,28 @@
         // After core game is running, show story-specific intro
         afterIntroStart = () => {
             if (gameMode === 'story') {
-                // Begin first wave
-                startWave(1);
+                if (campaignActive) {
+                    const ch = CAMPAIGN[currentChapterIdx];
+                    initObjective(ch);
+                    const dlg = LT(ch.intro) || [];
+                    showAdvisor(dlg, () => startWave(1));
+                } else {
+                    // Begin first wave
+                    startWave(1);
+                }
             } else {
                 // Endless: brief advisor intro, then game runs as before
                 showAdvisor(I18N[lang].endless_intro, () => {});
             }
         };
         if (gameMode === 'story') {
-            // Show palace + advisor tutorial first
-            showPalaceIntro(() => afterIntroStart());
+            if (campaignActive && currentChapterIdx > 0) {
+                // Sonraki bölümlerde saray tanıtımını atla, doğrudan bölüm diyaloğuna geç
+                afterIntroStart();
+            } else {
+                // Show palace + advisor tutorial first
+                showPalaceIntro(() => afterIntroStart());
+            }
         } else {
             afterIntroStart();
         }
@@ -4395,7 +4967,7 @@
         upgradePanel.style.left = Math.min(window.innerWidth - 200, Math.max(10, screenX - 90)) + 'px';
         upgradePanel.style.top = Math.max(10, screenY - 120) + 'px';
         document.getElementById('upgrade-building-name').innerText = b.type.toUpperCase();
-        document.getElementById('upgrade-building-level').innerText = (lang === 'en' ? 'Level ' : 'Seviye ') + b.level;
+        document.getElementById('upgrade-building-level').innerText = LT({tr:'Seviye ',en:'Level ',de:'Stufe ',fr:'Niveau ',zh:'等级 '}) + b.level;
         const actions = document.getElementById('upgrade-actions');
         actions.innerHTML = '';
 
@@ -4406,15 +4978,15 @@
                 const cost = 80 + 60 * b.level;
                 const header = document.createElement('div');
                 header.style.cssText = 'font-size:11px;margin-bottom:8px;font-weight:bold;color:#fbbf24;text-align:center;letter-spacing:1px;';
-                header.innerText = (lang === 'en' ? 'EVOLVE TO LVL ' : 'EVRİM LVL ') + (b.level + 1) + ' · 💰' + cost;
+                header.innerText = LT({tr:'EVRİM LVL ',en:'EVOLVE TO LVL ',de:'ENTWICKELN AUF STUFE ',fr:'ÉVOLUER AU NIV ',zh:'进化至等级 '}) + (b.level + 1) + ' · 💰' + cost;
                 actions.appendChild(header);
                 opts.forEach(opt => {
                     const div = document.createElement('div');
                     div.style.cssText = 'background:rgba(15,23,42,0.7);border:2px solid #475569;border-radius:8px;padding:10px;margin-bottom:6px;cursor:pointer;transition:0.18s;';
                     div.onmouseenter = () => { div.style.borderColor = '#fbbf24'; div.style.background = 'rgba(251,191,36,0.12)'; };
                     div.onmouseleave = () => { div.style.borderColor = '#475569'; div.style.background = 'rgba(15,23,42,0.7)'; };
-                    const tt = (opt.t && opt.t[lang]) || opt.t.tr || opt.t;
-                    const dd = (opt.d && opt.d[lang]) || opt.d.tr || opt.d;
+                    const tt = (typeof opt.t === 'object') ? LT(opt.t) : opt.t;
+                    const dd = (typeof opt.d === 'object') ? LT(opt.d) : opt.d;
                     div.innerHTML = `<div style="font-weight:bold;color:#fde68a;font-size:13px">${tt}</div><div style="font-size:10px;color:#cbd5e1;margin-top:3px">${dd}</div>`;
                     div.onclick = (e) => {
                         e.stopPropagation();
@@ -4576,6 +5148,7 @@
         }
     }
     function drawAtmosphere(){
+        if (window.RENDER3D) return;
         const vw=window.innerWidth, vh=window.innerHeight;
         // vignette — kenarlar koyu, derinlik hissi
         const vg=ctx.createRadialGradient(vw/2,vh*0.45, Math.min(vw,vh)*0.32, vw/2,vh*0.5, Math.max(vw,vh)*0.78);
@@ -4603,6 +5176,8 @@
 
         cycle = (cycle + 1) % 2200;
         isNight = cycle > 1000 && cycle < 1900;
+        if (window.RENDER3D) { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        if (!window.RENDER3D) {
         // Ground gradient (radial - simulates light from above) — harita türüne göre
         const ms = mapSettings[currentMap] || mapSettings.kingdom;
         const colors = isNight ? ms.groundNight : ms.groundDay;
@@ -4743,6 +5318,7 @@
         ctx.fillStyle = '#7c2d12'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center';
         ctx.fillText('K', 0, -10);
         ctx.restore();
+        } // end !RENDER3D scenery/castle block
 
         buildings.forEach((b, i) => { if(b.hp <= 0) buildings.splice(i, 1); else b.update(), b.draw(); });
         soldiers.forEach(s => { s.update(); s.draw(); });
@@ -4773,16 +5349,20 @@
                 waveSpawnTimer++;
                 if (waveSpawnTimer >= waveSpawnInterval) {
                     waveSpawnTimer = 0;
-                    const cfg = WAVE_CONFIG[currentWave] || { hpMult: 1, spd: 1 };
+                    const cfg = activeWaves[currentWave] || { hpMult: 1, spd: 1 };
+                    const cScale = campaignActive ? chapterScale : 1;
+                    const mHp = currentModifier ? currentModifier.hp : 1;
+                    const mSpd = currentModifier ? currentModifier.spd : 1;
                     const e = new Enemy();
-                    if (typeof e.maxHp === 'number') { e.maxHp *= cfg.hpMult; e.hp = e.maxHp; }
-                    else if (typeof e.hp === 'number') e.hp *= cfg.hpMult;
-                    if (typeof e.speed === 'number') e.speed *= cfg.spd;
+                    if (typeof e.maxHp === 'number') { e.maxHp *= cfg.hpMult * mHp * cScale; e.hp = e.maxHp; }
+                    else if (typeof e.hp === 'number') e.hp *= cfg.hpMult * mHp * cScale;
+                    if (typeof e.speed === 'number') e.speed *= cfg.spd * mSpd;
+                    if (currentModifier && currentModifier.gold !== 1) e.goldBonus = currentModifier.gold;
                     enemies.push(e);
                     waveEnemiesToSpawn--;
                 }
                 // Wave boss spawn (when most of wave is spawned)
-                const cfg = WAVE_CONFIG[currentWave];
+                const cfg = activeWaves[currentWave];
                 if (cfg && cfg.boss && !waveBossSpawned && waveEnemiesToSpawn <= Math.floor(cfg.count * 0.3)) {
                     waveBossSpawned = true;
                     spawnBoss();
@@ -4790,6 +5370,14 @@
             }
             updateWaveHud();
             checkWaveComplete();
+            // Kampanya hedefleri
+            if (campaignActive && objective && !chapterConcluded) {
+                if (objective.type === 'survive') {
+                    if (!storyPaused && surviveFrames > 0) surviveFrames--;
+                    if (surviveFrames <= 0) { chapterWin(); }
+                }
+                updateObjectiveHud();
+            }
         } else {
             // Endless / classic spawn behavior
             const spawnChance = isNight ? ds.spawnRate : ds.spawnRate * (ds.dayMult || 0);
@@ -4813,8 +5401,10 @@
             if(e.hp <= 0) {
                 enemies.splice(ei, 1);
                 if (e.isBoss) {
-                    stats.gold += Math.floor(400 * (ds.goldMult || 1));
-                    stats.score += 600;
+                    registerKill(5);
+                    const cm = comboMult();
+                    stats.gold += Math.floor(400 * (ds.goldMult || 1) * cm);
+                    stats.score += Math.floor(600 * cm);
                     addXP(180);
                     bossKillCount++;
                     sfx.explosion();
@@ -4827,9 +5417,11 @@
                         window._luTo = setTimeout(() => { tt2.style.opacity = '0'; }, 3000);
                     }
                 } else {
-                    const goldGain = Math.floor(35 * (ds.goldMult || 1));
+                    registerKill(1);
+                    const cm = comboMult();
+                    const goldGain = Math.floor(35 * (ds.goldMult || 1) * cm * (e.goldBonus || 1));
                     stats.gold += goldGain;
-                    stats.score += 60;
+                    stats.score += Math.floor(60 * cm);
                     addXP(15);
                 }
             }
@@ -4852,13 +5444,26 @@
         drawVisualEffects();
         updateSpellCooldowns();
 
+        // 3D sahneyi render et (varsa)
+        if (window.RENDER3D && window.__render3D) window.__render3D();
+
         // Atmosfer: vignette + ortam parçacıkları (en üst katman, UI'nin altında)
         drawAtmosphere();
+
+        // Combo çürümesi
+        if (comboTimer > 0) { comboTimer--; if (comboTimer === 0) combo = 0; }
+        updateComboHud();
 
         document.getElementById('ui-hp').innerText = stats.hp;
         document.getElementById('ui-gold').innerText = Math.floor(stats.gold);
         document.getElementById('ui-wood').innerText = stats.wood;
         document.getElementById('ui-stone').innerText = stats.stone;
+        // Kampanya "kaleyi koru" hedefi: alt sınırın altına düşersen kaybedersin
+        if (campaignActive && objective && objective.type === 'protect' && !chapterConcluded && stats.hp < protectMin) {
+            chapterConcluded = true;
+            showGameOver(LT({tr:'Kale güvenli sınırın altına düştü!',en:'The castle fell below the safe line!',de:'Die Burg fiel unter die sichere Grenze!',fr:'Le château est tombé sous la limite de sécurité !',zh:'城堡跌破安全线！'}));
+            return;
+        }
         if(stats.hp <= 0) { showGameOver('Kalen düştü — Krallık yıkıldı!'); return; }
     }
 
@@ -4885,9 +5490,8 @@
     // Handle Interactions
     function handleAction(clientX, clientY, isRight) {
         initAudio();
-        const rect = canvas.getBoundingClientRect();
-        const x = (clientX - rect.left) * (canvas.width / rect.width) - camera.x;
-        const y = (clientY - rect.top) * (canvas.height / rect.height) - camera.y;
+        const __w = s2w(clientX, clientY);
+        const x = __w.x, y = __w.y;
 
         if (!isRight) {
             isMouseDown = true;
@@ -4937,10 +5541,9 @@
         // Wall drag on mobile
         if (isMouseDown && buildMode === 'wall') {
             const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            const x = (touch.clientX - rect.left) * (canvas.width / rect.width) - camera.x;
-            const y = (touch.clientY - rect.top) * (canvas.height / rect.height) - camera.y;
-            if (Math.hypot(x - lastWallPos.x, y - lastWallPos.y) > 50) { 
+            const __w = s2w(touch.clientX, touch.clientY);
+            const x = __w.x, y = __w.y;
+            if (Math.hypot(x - lastWallPos.x, y - lastWallPos.y) > 50) {
                 if (placeBuilding(x, y, 'wall')) lastWallPos = { x, y }; 
             }
         }
@@ -4979,10 +5582,9 @@
         }
 
         if (isMouseDown && buildMode === 'wall') {
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) * (canvas.width / rect.width) - camera.x;
-            const y = (e.clientY - rect.top) * (canvas.height / rect.height) - camera.y;
-            if (Math.hypot(x - lastWallPos.x, y - lastWallPos.y) > 50) { 
+            const __w = s2w(e.clientX, e.clientY);
+            const x = __w.x, y = __w.y;
+            if (Math.hypot(x - lastWallPos.x, y - lastWallPos.y) > 50) {
                 if (placeBuilding(x, y, 'wall')) lastWallPos = { x, y }; 
             }
         }
@@ -5016,9 +5618,23 @@
     // Honor saved language preference from index.html navbar
     try {
         const savedLang = localStorage.getItem('lotg_lang');
-        if (savedLang === 'en' || savedLang === 'tr') setLang(savedLang);
+        if (['tr','en','de','fr','zh'].indexOf(savedLang) !== -1) setLang(savedLang);
         else setLang('tr');
     } catch(e) { setLang('tr'); }
+
+    // Kampanya: sayfa yenilendiğinde sonraki bölümü otomatik başlat veya bölüm seçimini aç
+    try {
+        const asRaw = localStorage.getItem('ks_autostart');
+        if (asRaw !== null) {
+            localStorage.removeItem('ks_autostart');
+            const ai = parseInt(asRaw, 10);
+            if (!isNaN(ai) && CAMPAIGN[ai]) { gameMode = 'story'; setTimeout(() => startChapter(ai), 80); }
+        } else if (localStorage.getItem('ks_openselect')) {
+            localStorage.removeItem('ks_openselect');
+            gameMode = 'story';
+            setTimeout(() => showCampaignSelect(), 80);
+        }
+    } catch(e) {}
 
     // Click on advisor overlay advances dialog (but not when choices are active)
     document.getElementById('advisor-overlay').addEventListener('click', (e) => {
@@ -5029,6 +5645,748 @@
         if (e.target.closest && e.target.closest('.choice-btn')) return;
         advisorNext();
     });
+
+    /* ============================================================
+       3D RENDER KATMANI (Three.js) — 2D oyun mantığını değiştirmez,
+       sadece dünyayı gerçekçi 3D olarak render eder.
+       Dünya koordinatı (x,y) -> sahne (x-700, yükseklik, y-500)
+       ============================================================ */
+    window.RENDER3D = true;
+    window.__camYaw = 0;
+    window.__camRel = function(x, y){
+        const a = window.__camYaw || 0, c = Math.cos(a), s = Math.sin(a);
+        return { x: x * c + y * s, y: -x * s + y * c };
+    };
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+    // Erken çağrılabilir olması için fonksiyon bildirimi (hoisted)
+    function s2w(cx, cy){
+        if (window.__screenToWorld) { const w = window.__screenToWorld(cx, cy); if (w) return w; }
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (cx - rect.left) * (canvas.width / rect.width) - camera.x,
+            y: (cy - rect.top) * (canvas.height / rect.height) - camera.y
+        };
+    }
+
+    let R3 = null;
+    function SX(wx){ return wx - 700; }
+    function SZ(wy){ return wy - 500; }
+
+    // Geometri/materyal önbelleği
+    const G = {}, M = {};
+    function initCaches(THREE){
+        // Materyaller
+        M.stone   = new THREE.MeshStandardMaterial({ color:0x8b93a1, roughness:0.95, metalness:0.05 });
+        M.stoneD  = new THREE.MeshStandardMaterial({ color:0x475569, roughness:0.95 });
+        M.wood    = new THREE.MeshStandardMaterial({ color:0x8a5a2b, roughness:0.9 });
+        M.woodD   = new THREE.MeshStandardMaterial({ color:0x5b3a1a, roughness:0.9 });
+        M.roof    = new THREE.MeshStandardMaterial({ color:0xb91c1c, roughness:0.7 });
+        M.gold    = new THREE.MeshStandardMaterial({ color:0xfbbf24, roughness:0.35, metalness:0.7, emissive:0x3a2a00, emissiveIntensity:0.4 });
+        M.iron    = new THREE.MeshStandardMaterial({ color:0xcbd5e1, roughness:0.4, metalness:0.85 });
+        M.dark    = new THREE.MeshStandardMaterial({ color:0x1e293b, roughness:0.8 });
+        M.flesh   = new THREE.MeshStandardMaterial({ color:0x7f1d1d, roughness:0.8 });
+        M.green   = new THREE.MeshStandardMaterial({ color:0x166534, roughness:0.8 });
+        M.crystal = new THREE.MeshStandardMaterial({ color:0xa855f7, roughness:0.2, metalness:0.3, emissive:0x6b21a8, emissiveIntensity:0.7 });
+        M.ice     = new THREE.MeshStandardMaterial({ color:0x7dd3fc, roughness:0.15, metalness:0.2, emissive:0x0ea5e9, emissiveIntensity:0.3 });
+        M.poison  = new THREE.MeshStandardMaterial({ color:0x65a30d, roughness:0.5, emissive:0x365314, emissiveIntensity:0.5 });
+        M.hero    = new THREE.MeshStandardMaterial({ color:0xe2e8f0, roughness:0.35, metalness:0.75 });
+        M.heroTr  = new THREE.MeshStandardMaterial({ color:0x3b82f6, roughness:0.5 });
+        M.cape    = new THREE.MeshStandardMaterial({ color:0xdc2626, roughness:0.7, side:THREE.DoubleSide });
+        M.glowY   = new THREE.MeshStandardMaterial({ color:0xfde047, emissive:0xfacc15, emissiveIntensity:1.2, roughness:0.3 });
+        M.glowR   = new THREE.MeshStandardMaterial({ color:0xef4444, emissive:0xef4444, emissiveIntensity:1.2, roughness:0.3 });
+        M.orc     = new THREE.MeshStandardMaterial({ color:0x4d7c2f, roughness:0.85 });
+        M.orcD    = new THREE.MeshStandardMaterial({ color:0x365314, roughness:0.85 });
+        M.boot    = new THREE.MeshStandardMaterial({ color:0x2a1c10, roughness:0.9 });
+        M.leather = new THREE.MeshStandardMaterial({ color:0x6b4423, roughness:0.85 });
+        M.bone    = new THREE.MeshStandardMaterial({ color:0xe7e5e4, roughness:0.7 });
+        M.tusk    = new THREE.MeshStandardMaterial({ color:0xfef3c7, roughness:0.6 });
+        M.skinR   = new THREE.MeshStandardMaterial({ color:0x9b2c2c, roughness:0.8 });
+        M.batBody = new THREE.MeshStandardMaterial({ color:0x3b0764, roughness:0.75 });
+        // Geometriler
+        G.box   = new THREE.BoxGeometry(1,1,1);
+        G.cyl   = new THREE.CylinderGeometry(0.5,0.5,1,14);
+        G.cone  = new THREE.ConeGeometry(0.5,1,16);
+        G.sph   = new THREE.SphereGeometry(0.5,16,14);
+    }
+    function mesh(geo, mat, sx, sy, sz, x, y, z){
+        const m = new THREE.Mesh(geo, mat);
+        m.scale.set(sx, sy, sz);
+        m.position.set(x||0, y||0, z||0);
+        m.castShadow = true; m.receiveShadow = false;
+        return m;
+    }
+    const THREE = window.THREE;
+
+    // ---- Sağlık barı (sprite = otomatik kameraya döner) ----
+    const barBgMat = () => new THREE.SpriteMaterial({ color:0x000000, opacity:0.55, transparent:true, depthTest:false });
+    function makeBar(width, height){
+        const grp = new THREE.Group();
+        const bg = new THREE.Sprite(barBgMat());
+        bg.scale.set(width, height, 1);
+        const fgMat = new THREE.SpriteMaterial({ color:0x22c55e, depthTest:false });
+        const fg = new THREE.Sprite(fgMat);
+        fg.scale.set(width*0.94, height*0.6, 1);
+        fg.position.z = 0.01;
+        grp.add(bg); grp.add(fg);
+        grp.position.y = height*8;
+        grp.userData = { fg, fgMat, w: width*0.94 };
+        return grp;
+    }
+    function updateBar(bar, ratio){
+        ratio = clamp(ratio, 0, 1);
+        const ud = bar.userData;
+        ud.fg.scale.x = ud.w * ratio;
+        ud.fg.position.x = -ud.w * (1 - ratio) / 2;
+        const col = ratio > 0.5 ? 0x22c55e : (ratio > 0.25 ? 0xf59e0b : 0xef4444);
+        ud.fgMat.color.setHex(col);
+    }
+
+    // ---- MODEL FABRİKALARI ----
+    function eyes(color, y, z, dx){
+        const g = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({ color, emissive:color, emissiveIntensity:1.4 });
+        [-dx, dx].forEach(x => g.add(mesh(G.sph, mat, 2.2,2.2,2.2, x, y, z)));
+        return g;
+    }
+    // ---- Uzuv yardımcıları (pivotlu -> yürüyüş animasyonu) ----
+    function makeLeg(mat, w, len, d){
+        const grp = new THREE.Group();
+        grp.add(mesh(G.box, mat, w, len*0.6, d, 0, -len*0.3, 0));                    // uyluk
+        grp.add(mesh(G.box, M.boot, w*1.1, len*0.42, d*1.25, 0, -len*0.74, d*0.22)); // bot
+        return grp;
+    }
+    function makeArm(mat, w, len, d){
+        const grp = new THREE.Group();
+        grp.add(mesh(G.box, mat, w, len, d, 0, -len/2, 0));
+        return grp;
+    }
+    function animGait(m, spd, moving){
+        const ud = m.userData; if (!ud.legL) return;
+        if (moving === false){
+            ud.legL.rotation.x *= 0.8; ud.legR.rotation.x *= 0.8;
+            if (ud.armL) ud.armL.rotation.x *= 0.8;
+            return;
+        }
+        ud.phase = (ud.phase || (m.id % 6) + 0.1) + spd;
+        const s = Math.sin(ud.phase) * 0.6;
+        ud.legL.rotation.x = s;  ud.legR.rotation.x = -s;
+        if (ud.armL) ud.armL.rotation.x = -s * 0.5;
+        if (ud.armR && !ud.holdWeapon) ud.armR.rotation.x = s * 0.5;
+    }
+    // Uçan düşman (yarasa) — kanat çırpar, süzülür
+    function makeBat(e, R, col){
+        const g = new THREE.Group();
+        const body = M.batBody;
+        g.add(mesh(G.sph, body, R*0.7, R*0.6, R*1.0, 0, 0, 0));               // gövde
+        g.add(mesh(G.sph, body, R*0.55, R*0.55, R*0.55, 0, R*0.45, R*0.4));   // kafa
+        g.add(mesh(G.cone, body, R*0.25, R*0.6, R*0.2, -R*0.25, R*0.85, R*0.4)); // kulak
+        g.add(mesh(G.cone, body, R*0.25, R*0.6, R*0.2,  R*0.25, R*0.85, R*0.4));
+        g.add(eyes(col, R*0.45, R*0.85, R*0.18));
+        const wingMat = new THREE.MeshStandardMaterial({ color:0x2e1065, roughness:0.85, side:THREE.DoubleSide });
+        const wl = new THREE.Group(); wl.add(mesh(G.box, wingMat, R*1.6, 0.5, R*1.1, -R*0.9, 0, 0));
+        const wr = new THREE.Group(); wr.add(mesh(G.box, wingMat, R*1.6, 0.5, R*1.1,  R*0.9, 0, 0));
+        wl.position.set(-R*0.5, R*0.1, 0); wr.position.set(R*0.5, R*0.1, 0);
+        g.add(wl); g.add(wr); g.userData.wings = [wl, wr];
+        g.userData.flying = true; g.userData.h = R*1.2;
+        const bar = makeBar(R*1.6, 3.2); bar.position.y = g.userData.h + 8; g.add(bar);
+        g.userData.bar = bar;
+        return g;
+    }
+    function makeEnemy(e){
+        const k = e.kind || 'normal';
+        const R = e.radius || 18;
+        if (k === 'flying') return makeBat(e, R, 0xa855f7);
+        const g = new THREE.Group();
+        let skin = M.orc, sc = 1, eyeC = 0xfde047;
+        if (k === 'fast')    { skin = M.skinR; sc = 0.82; eyeC = 0xfb923c; }
+        if (k === 'armored') { skin = M.orcD;  sc = 1.2;  eyeC = 0x93c5fd; }
+        const U = R / 18 * sc;                          // ölçek birimi
+        const hipY = 14 * U, legLen = 14 * U, aw = 6 * U;
+        const legL = makeLeg(skin, aw, legLen, aw*1.1); legL.position.set(-5*U, hipY, 0);
+        const legR = makeLeg(skin, aw, legLen, aw*1.1); legR.position.set( 5*U, hipY, 0);
+        g.add(legL); g.add(legR); g.userData.legL = legL; g.userData.legR = legR;
+        g.add(mesh(G.box, M.leather, 16*U, 7*U, 12*U, 0, hipY+2*U, 0));       // peştamal
+        const torso = mesh(G.box, skin, 20*U, 18*U, 13*U, 0, hipY+13*U, 1*U); // gövde
+        torso.rotation.x = 0.12; g.add(torso);
+        if (k === 'armored'){
+            g.add(mesh(G.box, M.iron, 22*U, 16*U, 3*U, 0, hipY+13*U, 8*U));
+            g.add(mesh(G.sph, M.iron, 8*U, 7*U, 8*U, -11*U, hipY+21*U, 0));
+            g.add(mesh(G.sph, M.iron, 8*U, 7*U, 8*U,  11*U, hipY+21*U, 0));
+        } else {
+            g.add(mesh(G.box, M.leather, 6*U, 20*U, 3*U, 0, hipY+12*U, 8*U));
+        }
+        const armLen = 17*U;
+        const armL = makeArm(skin, 5.5*U, armLen, 6*U); armL.position.set(-11*U, hipY+21*U, 0);
+        const armR = makeArm(skin, 5.5*U, armLen, 6*U); armR.position.set( 11*U, hipY+21*U, 0);
+        armR.rotation.x = -0.5; g.userData.holdWeapon = true;
+        g.add(armL); g.add(armR); g.userData.armL = armL; g.userData.armR = armR;
+        const club = new THREE.Group();                 // sopa
+        club.add(mesh(G.cyl, M.woodD, 3*U, 22*U, 3*U, 0, 8*U, 0));
+        club.add(mesh(G.sph, (k==='armored'?M.iron:M.stone), 7*U, 7*U, 7*U, 0, 20*U, 0));
+        club.position.set(-1*U, -armLen*0.9, 3*U); armR.add(club);
+        g.add(mesh(G.cyl, skin, 4*U, 4*U, 4*U, 0, hipY+22*U, 2*U));           // boyun
+        g.add(mesh(G.sph, skin, 8*U, 7.5*U, 8*U, 0, hipY+27*U, 2*U));         // baş
+        g.add(mesh(G.box, skin, 10*U, 4*U, 6*U, 0, hipY+24*U, 6*U));          // çene
+        g.add(mesh(G.cone, M.tusk, 1.6*U, 4*U, 1.6*U, -3*U, hipY+25*U, 8*U)); // diş
+        g.add(mesh(G.cone, M.tusk, 1.6*U, 4*U, 1.6*U,  3*U, hipY+25*U, 8*U));
+        const earL = mesh(G.cone, skin, 2*U, 6*U, 2*U, -8*U, hipY+28*U, 2*U); earL.rotation.z = 1.1;
+        const earR = mesh(G.cone, skin, 2*U, 6*U, 2*U,  8*U, hipY+28*U, 2*U); earR.rotation.z = -1.1;
+        g.add(earL); g.add(earR);
+        if (k === 'armored') g.add(mesh(G.sph, M.iron, 8.5*U, 5*U, 8.5*U, 0, hipY+30*U, 2*U)); // miğfer
+        g.add(eyes(eyeC, hipY+28*U, 8.2*U, 3*U));
+        g.userData.h = hipY + 34*U; g.userData.flying = false;
+        const bar = makeBar(R*1.7, 3.2); bar.position.y = g.userData.h + 6; g.add(bar);
+        g.userData.bar = bar;
+        return g;
+    }
+    function makeBoss(e){
+        const g = new THREE.Group();
+        const t = e.bossType || { id:'orc', color:'#166534', accent:'#22c55e', eyes:'#facc15' };
+        const bodyMat = new THREE.MeshStandardMaterial({ color:new THREE.Color(t.color), roughness:0.6, metalness:0.15 });
+        const accMat  = new THREE.MeshStandardMaterial({ color:new THREE.Color(t.accent), roughness:0.5, emissive:new THREE.Color(t.accent), emissiveIntensity:0.2 });
+        const R = e.radius || 42;
+        const U = R / 24;
+        const hipY = 20*U, legLen = 22*U;
+        const legL = makeLeg(bodyMat, 11*U, legLen, 12*U); legL.position.set(-8*U, hipY, 0);
+        const legR = makeLeg(bodyMat, 11*U, legLen, 12*U); legR.position.set( 8*U, hipY, 0);
+        g.add(legL); g.add(legR); g.userData.legL = legL; g.userData.legR = legR;
+        g.add(mesh(G.box, bodyMat, 34*U, 30*U, 22*U, 0, hipY+18*U, 0));       // gövde
+        g.add(mesh(G.box, accMat, 30*U, 10*U, 3*U, 0, hipY+14*U, 11*U));      // plaka
+        g.add(mesh(G.sph, accMat, 12*U, 11*U, 12*U, -18*U, hipY+30*U, 0));    // omuz
+        g.add(mesh(G.sph, accMat, 12*U, 11*U, 12*U,  18*U, hipY+30*U, 0));
+        const armLen = 26*U;
+        const armL = makeArm(bodyMat, 9*U, armLen, 10*U); armL.position.set(-18*U, hipY+30*U, 0);
+        const armR = makeArm(bodyMat, 9*U, armLen, 10*U); armR.position.set( 18*U, hipY+30*U, 0);
+        armR.rotation.x = -0.6; g.userData.holdWeapon = true;
+        g.add(armL); g.add(armR); g.userData.armL = armL; g.userData.armR = armR;
+        const axe = new THREE.Group();                   // dev balta
+        axe.add(mesh(G.cyl, M.woodD, 4*U, 40*U, 4*U, 0, 16*U, 0));
+        axe.add(mesh(G.box, M.iron, 20*U, 16*U, 3*U, 6*U, 30*U, 0));
+        axe.position.set(0, -armLen*0.9, 5*U); armR.add(axe);
+        g.add(mesh(G.sph, bodyMat, 14*U, 13*U, 14*U, 0, hipY+40*U, 2*U));     // baş
+        g.add(mesh(G.box, bodyMat, 16*U, 7*U, 9*U, 0, hipY+35*U, 8*U));       // çene
+        const hl = mesh(G.cone, M.bone, 4*U, 14*U, 4*U, -8*U, hipY+48*U, 0);  // boynuz
+        const hr = mesh(G.cone, M.bone, 4*U, 14*U, 4*U,  8*U, hipY+48*U, 0);
+        hl.rotation.z = 0.4; hr.rotation.z = -0.4; g.add(hl); g.add(hr);
+        g.add(mesh(G.cone, M.tusk, 2.5*U, 7*U, 2.5*U, -5*U, hipY+36*U, 10*U));
+        g.add(mesh(G.cone, M.tusk, 2.5*U, 7*U, 2.5*U,  5*U, hipY+36*U, 10*U));
+        g.add(eyes(new THREE.Color(t.eyes).getHex(), hipY+42*U, 14*U, 4*U));
+        if (t.id === 'dragon'){
+            const wingMat = new THREE.MeshStandardMaterial({ color:new THREE.Color(t.accent), roughness:0.7, side:THREE.DoubleSide });
+            const wl = new THREE.Group(); wl.add(mesh(G.box, wingMat, 50*U, 1.5*U, 34*U, -30*U, 0, 0));
+            const wr = new THREE.Group(); wr.add(mesh(G.box, wingMat, 50*U, 1.5*U, 34*U,  30*U, 0, 0));
+            wl.position.set(-16*U, hipY+34*U, -6*U); wr.position.set(16*U, hipY+34*U, -6*U);
+            g.add(wl); g.add(wr); g.userData.wings = [wl, wr];
+        }
+        g.userData.h = hipY + 56*U;
+        const bar = makeBar(R*1.8, 5); bar.position.y = g.userData.h + 8; g.add(bar);
+        g.userData.bar = bar; g.userData.boss = true;
+        return g;
+    }
+    function makeHero(){
+        const g = new THREE.Group();
+        const steel = M.hero, blue = M.heroTr, gold = M.gold;
+        const hipY = 20, legLen = 20;
+        const legL = makeLeg(steel, 8, legLen, 9); legL.position.set(-6, hipY, 0);
+        const legR = makeLeg(steel, 8, legLen, 9); legR.position.set( 6, hipY, 0);
+        g.add(legL); g.add(legR); g.userData.legL = legL; g.userData.legR = legR;
+        g.add(mesh(G.box, M.leather, 20, 8, 13, 0, hipY+2, 0));               // bel
+        g.add(mesh(G.box, steel, 24, 22, 15, 0, hipY+13, 0));                 // gövde zırhı
+        g.add(mesh(G.box, blue, 15, 15, 2, 0, hipY+14, 8));                   // mavi göğüs
+        g.add(mesh(G.box, gold, 3.5, 15, 1, 0, hipY+14, 9.2));                // haç dikey
+        g.add(mesh(G.box, gold, 11, 3.5, 1, 0, hipY+15, 9.2));                // haç yatay
+        g.add(mesh(G.sph, gold, 8, 7, 8, -14, hipY+23, 0));                   // pauldron
+        g.add(mesh(G.sph, gold, 8, 7, 8,  14, hipY+23, 0));
+        const armLen = 19;
+        const armL = makeArm(steel, 7, armLen, 8); armL.position.set(-14, hipY+22, 0);
+        const armR = makeArm(steel, 7, armLen, 8); armR.position.set( 14, hipY+22, 0);
+        armR.rotation.x = -0.35; g.userData.holdWeapon = true;
+        g.add(armL); g.add(armR); g.userData.armL = armL; g.userData.armR = armR;
+        g.add(mesh(G.cyl, steel, 5, 5, 5, 0, hipY+25, 0));                    // boyun
+        g.add(mesh(G.sph, steel, 8, 9, 8, 0, hipY+32, 0));                    // miğfer
+        g.add(mesh(G.box, M.dark, 12, 3, 2, 0, hipY+32, 7.5));                // vizör
+        g.add(mesh(G.cone, gold, 4.5, 10, 4.5, 0, hipY+41, 0));               // tüy tabanı
+        const plume = mesh(G.box, M.cape, 3, 16, 9, 0, hipY+44, -4); plume.rotation.x = 0.25; g.add(plume);
+        g.add(eyes(0x93c5fd, hipY+32, 8, 2.8));
+        const cape = mesh(G.box, M.cape, 26, 34, 2, 0, hipY+11, -9); cape.rotation.x = 0.12; g.add(cape);
+        const shield = mesh(G.cyl, blue, 20, 3, 20, -16, hipY+12, 6); shield.rotation.x = Math.PI/2; g.add(shield);
+        const srim = mesh(G.cyl, gold, 22, 1.6, 22, -16, hipY+12, 5.4); srim.rotation.x = Math.PI/2; g.add(srim);
+        g.add(mesh(G.sph, gold, 5, 5, 4, -16, hipY+12, 7.6));                 // kalkan göbeği
+        const sword = new THREE.Group();
+        sword.add(mesh(G.box, M.iron, 2.5, 30, 1.6, 0, 15, 0));
+        sword.add(mesh(G.box, gold, 11, 3, 3, 0, 0, 0));
+        sword.add(mesh(G.sph, gold, 3, 3, 3, 0, -3, 0));
+        sword.position.set(20, hipY+8, 5); sword.rotation.z = -0.15;
+        g.add(sword); g.userData.sword = sword;
+        g.userData.h = hipY + 48;
+        return g;
+    }
+    function makeSoldier(){
+        const g = new THREE.Group();
+        const mat = M.iron, blue = M.heroTr;
+        const hipY = 12, legLen = 12;
+        const legL = makeLeg(mat, 5, legLen, 6); legL.position.set(-4, hipY, 0);
+        const legR = makeLeg(mat, 5, legLen, 6); legR.position.set( 4, hipY, 0);
+        g.add(legL); g.add(legR); g.userData.legL = legL; g.userData.legR = legR;
+        g.add(mesh(G.box, mat, 15, 15, 9, 0, hipY+9, 0));                     // gövde
+        g.add(mesh(G.box, blue, 8, 8, 1.5, 0, hipY+10, 5));                   // arma
+        g.add(mesh(G.sph, mat, 6, 6, 6, -9, hipY+15, 0));                     // omuz
+        g.add(mesh(G.sph, mat, 6, 6, 6,  9, hipY+15, 0));
+        const armLen = 13;
+        const armL = makeArm(mat, 4.5, armLen, 5); armL.position.set(-9, hipY+15, 0);
+        const armR = makeArm(mat, 4.5, armLen, 5); armR.position.set( 9, hipY+15, 0);
+        armR.rotation.x = -0.4; g.userData.holdWeapon = true;
+        g.add(armL); g.add(armR); g.userData.armL = armL; g.userData.armR = armR;
+        g.add(mesh(G.sph, mat, 6, 6.5, 6, 0, hipY+21, 0));                    // baş
+        g.add(mesh(G.box, M.dark, 8, 2.5, 1.5, 0, hipY+21, 5.5));             // vizör
+        const spear = new THREE.Group();                                     // mızrak
+        spear.add(mesh(G.cyl, M.woodD, 1.6, 34, 1.6, 0, 0, 0));
+        spear.add(mesh(G.cone, mat, 3, 6, 3, 0, 18, 0));
+        spear.position.set(9, hipY+13, 3); g.add(spear);
+        g.add(mesh(G.box, blue, 2, 18, 12, -12, hipY+11, 2));                 // kalkan
+        g.add(mesh(G.box, M.gold, 2.2, 4, 4, -12.5, hipY+11, 2));
+        g.userData.h = hipY + 26;
+        return g;
+    }
+    function makeProjectile(color){
+        const c = new THREE.Color(color || '#facc15');
+        const mat = new THREE.MeshStandardMaterial({ color:c, emissive:c, emissiveIntensity:1.5, roughness:0.3 });
+        const m = new THREE.Mesh(G.sph, mat);
+        m.scale.set(6,6,6); m.castShadow = false;
+        return m;
+    }
+    function towerBase(color){
+        const g = new THREE.Group();
+        g.add(mesh(G.box, M.stone, 46, 14, 46, 0, 7, 0));
+        return g;
+    }
+    function makeBuilding(b){
+        const g = new THREE.Group();
+        const type = b.type;
+        const R = b.radius || 22;
+        switch(type){
+            case 'wall': {
+                g.add(mesh(G.box, M.stone, 46, 34, 46, 0, 17, 0));
+                for (let i=0;i<3;i++) for(let j=0;j<3;j++) if((i+j)%2===0)
+                    g.add(mesh(G.box, M.stoneD, 12, 10, 12, (i-1)*15, 39, (j-1)*15));
+                g.userData.h = 44; break;
+            }
+            case 'gold': case 'wood': case 'stone': {
+                const wallMat = type==='gold'? M.stone : (type==='wood'? M.wood : M.stoneD);
+                const roofMat = type==='gold'? M.gold : (type==='wood'? M.roof : M.stone);
+                g.add(mesh(G.box, wallMat, 44, 34, 44, 0, 17, 0));
+                g.add(mesh(G.cone, roofMat, 40, 30, 40, 0, 49, 0));
+                if (type==='gold') g.add(mesh(G.sph, M.gold, 8,8,8, 0, 66, 0));
+                g.userData.h = 62; break;
+            }
+            case 'archer': {
+                g.add(mesh(G.box, M.woodD, 40, 40, 40, 0, 20, 0));
+                g.add(mesh(G.box, M.wood, 50, 8, 50, 0, 44, 0));
+                for(const [x,z] of [[-22,-22],[22,-22],[-22,22],[22,22]])
+                    g.add(mesh(G.box, M.woodD, 5, 26, 5, x, 57, z));
+                g.add(mesh(G.cone, M.roof, 40, 22, 40, 0, 82, 0));
+                g.userData.h = 92; break;
+            }
+            case 'tower': {
+                g.add(mesh(G.cyl, M.stone, 40, 78, 40, 0, 39, 0));
+                for(let i=0;i<8;i++){ const a=i/8*Math.PI*2;
+                    g.add(mesh(G.box, M.stoneD, 8,12,8, Math.cos(a)*20, 84, Math.sin(a)*20)); }
+                g.userData.h = 92; break;
+            }
+            case 'cannon': {
+                g.add(mesh(G.box, M.stoneD, 46, 22, 46, 0, 11, 0));
+                const barrel = mesh(G.cyl, M.iron, 12, 44, 12, 0, 30, 8);
+                barrel.rotation.x = Math.PI/2.6; g.add(barrel);
+                g.userData.h = 46; break;
+            }
+            case 'mage': {
+                g.add(mesh(G.cyl, M.stoneD, 34, 50, 34, 0, 25, 0));
+                const orb = mesh(G.sph, M.crystal, 22,22,22, 0, 66, 0);
+                g.add(orb); g.userData.spin = orb;
+                g.userData.h = 78; break;
+            }
+            case 'lightning': {
+                g.add(mesh(G.cyl, M.iron, 20, 64, 20, 0, 32, 0));
+                const orb = mesh(G.sph, new THREE.MeshStandardMaterial({ color:0x93c5fd, emissive:0x3b82f6, emissiveIntensity:1.3 }), 16,16,16, 0, 74, 0);
+                g.add(orb); g.userData.h = 84; break;
+            }
+            case 'frost': {
+                g.add(mesh(G.cyl, M.stone, 32, 44, 32, 0, 22, 0));
+                const c = mesh(G.cone, M.ice, 26, 44, 26, 0, 66, 0); g.add(c); g.userData.spin = c;
+                g.userData.h = 84; break;
+            }
+            case 'poison': {
+                g.add(mesh(G.cyl, M.stoneD, 34, 40, 34, 0, 20, 0));
+                g.add(mesh(G.sph, M.poison, 26, 18, 26, 0, 48, 0));
+                g.userData.h = 62; break;
+            }
+            case 'laser': {
+                g.add(mesh(G.cyl, M.iron, 26, 60, 26, 0, 30, 0));
+                g.add(mesh(G.sph, M.glowR, 12,12,12, 0, 64, 0));
+                g.userData.h = 76; break;
+            }
+            case 'catapult': {
+                g.add(mesh(G.box, M.woodD, 50, 16, 50, 0, 8, 0));
+                const arm = mesh(G.box, M.wood, 6, 46, 6, 0, 32, -6); arm.rotation.x = -0.5; g.add(arm);
+                g.userData.h = 52; break;
+            }
+            case 'barracks': {
+                g.add(mesh(G.box, M.woodD, 56, 36, 44, 0, 18, 0));
+                g.add(mesh(G.box, M.roof, 60, 8, 48, 0, 40, 0));
+                g.add(mesh(G.box, M.wood, 3, 40, 3, 24, 40, -20));
+                g.add(mesh(G.box, M.heroTr, 18, 12, 1, 32, 52, -20));
+                g.userData.h = 60; break;
+            }
+            case 'temple': {
+                g.add(mesh(G.box, M.stone, 50, 30, 50, 0, 15, 0));
+                for(const [x,z] of [[-20,-20],[20,-20],[-20,20],[20,20]])
+                    g.add(mesh(G.cyl, M.stone, 6, 36, 6, x, 18, z));
+                g.add(mesh(G.sph, M.gold, 30, 20, 30, 0, 42, 0));
+                g.userData.h = 66; break;
+            }
+            case 'hospital': {
+                g.add(mesh(G.box, M.hero, 48, 34, 44, 0, 17, 0));
+                g.add(mesh(G.box, M.roof, 52, 8, 48, 0, 38, 0));
+                g.add(mesh(G.box, M.glowR, 6, 20, 1, 0, 52, 23));
+                g.add(mesh(G.box, M.glowR, 20, 6, 1, 0, 52, 23));
+                g.userData.h = 58; break;
+            }
+            default: {
+                g.add(mesh(G.box, M.stone, 40, 30, 40, 0, 15, 0));
+                g.userData.h = 34;
+            }
+        }
+        if (b.hp !== undefined) { b.__maxhp = b.__maxhp || b.hp; }
+        const bar = makeBar(40, 3); bar.position.y = g.userData.h + 8; bar.visible = false; g.add(bar);
+        g.userData.bar = bar;
+        return g;
+    }
+    function makeCastle(){
+        const g = new THREE.Group();
+        g.add(mesh(G.box, M.stone, 150, 120, 150, 0, 60, 0));
+        // taş çizgileri hissi: koyu bant
+        g.add(mesh(G.box, M.stoneD, 152, 8, 152, 0, 96, 0));
+        // köşe kuleleri
+        for(const [x,z] of [[-85,-85],[85,-85],[-85,85],[85,85]]){
+            g.add(mesh(G.cyl, M.stoneD, 30, 150, 30, x, 75, z));
+            g.add(mesh(G.cone, M.roof, 34, 40, 34, x, 168, z));
+        }
+        // büyük çatı
+        g.add(mesh(G.box, M.stoneD, 150, 20, 150, 0, 128, 0));
+        g.add(mesh(G.cone, M.roof, 120, 90, 120, 0, 182, 0));
+        // bayrak
+        g.add(mesh(G.box, M.woodD, 4, 60, 4, 0, 250, 0));
+        const flag = mesh(G.box, M.gold, 40, 24, 1, 22, 262, 0); g.add(flag);
+        // kapı
+        g.add(mesh(G.box, M.woodD, 40, 60, 4, 0, 30, 76));
+        g.userData.flag = flag;
+        g.receiveShadow = true;
+        return g;
+    }
+
+    // ---- Görsel efekt 3D ----
+    function makeFx(fx){
+        if (fx.type === 'meteorFall' || fx.type === 'meteorImpact'){
+            const m = new THREE.Mesh(G.sph, new THREE.MeshStandardMaterial({ color:0xfef3c7, emissive:0xf97316, emissiveIntensity:1.6 }));
+            m.scale.set(22,22,22); return m;
+        }
+        if (fx.type === 'freezeWave'){
+            const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 8, 40), new THREE.MeshStandardMaterial({ color:0x7dd3fc, emissive:0x38bdf8, emissiveIntensity:1.2 }));
+            m.rotation.x = Math.PI/2; return m;
+        }
+        if (fx.type === 'lightning'){
+            const m = new THREE.Mesh(G.cyl, new THREE.MeshStandardMaterial({ color:0xf5d0fe, emissive:0xa855f7, emissiveIntensity:1.8 }));
+            m.scale.set(6, 400, 6); m.position.y = 200; return m;
+        }
+        return new THREE.Mesh(G.sph, M.glowY);
+    }
+    function updateFx3D(rec, fx){
+        const t = fx.life / fx.maxLife;
+        const m = rec.m;
+        if (fx.type === 'meteorFall'){ m.position.y = 500 * t + 30; }
+        else if (fx.type === 'meteorImpact'){ const s = 220*(1-t); m.scale.set(s,20,s); m.position.y = 6; m.material.opacity = t; m.material.transparent = true; }
+        else if (fx.type === 'freezeWave'){ const s = 1000*(1-t); m.scale.set(s,s,s); m.material.opacity = t; m.material.transparent = true; }
+        else if (fx.type === 'lightning'){ m.material.opacity = t; m.material.transparent = true; }
+    }
+
+    // ---- Kayıt/senkron sistemi ----
+    const reg = new Map();
+    let frameId = 0;
+    function ensure(key, factory){
+        let rec = reg.get(key);
+        if (!rec){ const m = factory(key); R3.scene.add(m); rec = { m }; reg.set(key, rec); }
+        rec.f = frameId; return rec;
+    }
+    function place(m, e, y){
+        m.position.set(SX(e.x), y || 0, SZ(e.y));
+    }
+    function yawTo(m, vx, vy){
+        if ((vx||0) === 0 && (vy||0) === 0) return;
+        m.rotation.y = Math.atan2(vx, vy);
+    }
+
+    // ---- Kamera / orbit ----
+    const orbit = { az: -0.7, pol: 0.62, dist: 640, tx: 0, ty: 18, tz: 0, cin: 0 };
+    let bossActivePrev = false;
+
+    function triggerCinematic(){ orbit.cin = 4 * 60; orbit.pol = 0.85; orbit.dist = 820; }
+    window.__cinematic = triggerCinematic;
+
+    function updateCamera(){
+        const THREE = window.THREE;
+        // hedef: kahramanı takip et
+        if (hero && hero.hp > 0){
+            orbit.tx += (SX(hero.x) - orbit.tx) * 0.12;
+            orbit.tz += (SZ(hero.y) - orbit.tz) * 0.12;
+        }
+        if (orbit.cin > 0){ orbit.az += 0.006; orbit.cin--; if (orbit.cin === 0){ orbit.pol = 0.62; orbit.dist = 640; } }
+        orbit.pol = clamp(orbit.pol, 0.2, 1.35);
+        orbit.dist = clamp(orbit.dist, 240, 1500);
+        const hr = orbit.dist * Math.cos(orbit.pol);
+        const cx = orbit.tx + hr * Math.sin(orbit.az);
+        const cz = orbit.tz + hr * Math.cos(orbit.az);
+        const cy = orbit.ty + orbit.dist * Math.sin(orbit.pol);
+        R3.camera.position.lerp(new THREE.Vector3(cx, cy, cz), orbit.cin > 0 ? 0.06 : 0.14);
+        R3.camera.lookAt(orbit.tx, orbit.ty + 20, orbit.tz);
+        window.__camYaw = orbit.az;
+    }
+
+    // ---- Ana render ----
+    function render3D(){
+        if (!R3){ return; }
+        frameId++;
+        const THREE = window.THREE;
+
+        // Harita zemini & gökyüzü güncelle (gündüz/gece)
+        const ms = mapSettings[currentMap] || mapSettings.kingdom;
+        const night = !!(typeof isNight !== 'undefined' && isNight);
+        R3.sun.intensity = night ? 0.35 : 1.1;
+        R3.hemi.intensity = night ? 0.35 : 0.7;
+        const skyDay = R3.skyColors[currentMap] || 0x87b7e0;
+        const skyNight = 0x0b1533;
+        R3.scene.background.setHex(night ? skyNight : skyDay);
+        R3.scene.fog.color.copy(R3.scene.background);
+        if (R3.groundMat.color.getHex() !== (R3.groundColors[currentMap] || 0x2f7d32))
+            R3.groundMat.color.setHex(R3.groundColors[currentMap] || 0x2f7d32);
+
+        // Kale bayrağı dalgalansın
+        if (R3.castle.userData.flag) R3.castle.userData.flag.rotation.y = Math.sin(Date.now()*0.003)*0.3;
+
+        const bob = Math.sin(Date.now()*0.006);
+
+        // Kahraman
+        if (typeof hero !== 'undefined' && hero && hero.hp > 0){
+            const rec = ensure(hero, makeHero);
+            place(rec.m, hero, 0);
+            const yv = (hero.mvx||0), yz = (hero.mvy||0);
+            if (yv || yz) yawTo(rec.m, yv, yz);
+            else rec.m.rotation.y += (( (hero.facing>=0?1:-1) * 0.0) );
+            if (rec.m.userData.sword) rec.m.userData.sword.rotation.z = -0.15 - (hero.attackFrame||0) * 0.14;
+            animGait(rec.m, 0.3, !!hero.moving);
+        }
+
+        // Düşmanlar / boss
+        for (const e of enemies){
+            const rec = ensure(e, e.isBoss ? makeBoss : makeEnemy);
+            let y = 0;
+            if (rec.m.userData.flying) y = 42 + bob*4;
+            place(rec.m, e, y);
+            yawTo(rec.m, e.vx, e.vy);
+            if (rec.m.userData.wings){ const w = 0.4 + Math.sin(Date.now()*0.02)*0.5; rec.m.userData.wings[0].rotation.z = w; rec.m.userData.wings[1].rotation.z = -w; }
+            animGait(rec.m, rec.m.userData.boss ? 0.14 : 0.24, true);
+            if (rec.m.userData.bar){ updateBar(rec.m.userData.bar, e.hp / (e.maxHp||e.hp)); rec.m.userData.bar.visible = e.hp < (e.maxHp||e.hp); }
+        }
+
+        // Binalar
+        for (const b of buildings){
+            const rec = ensure(b, makeBuilding);
+            place(rec.m, b, 0);
+            if (rec.m.userData.spin) rec.m.userData.spin.rotation.y += 0.03;
+            if (rec.m.userData.bar && b.hp !== undefined){
+                const mx = b.__maxhp || b.hp; updateBar(rec.m.userData.bar, b.hp/mx);
+                rec.m.userData.bar.visible = b.hp < mx;
+            }
+        }
+
+        // Askerler
+        if (typeof soldiers !== 'undefined') for (const s of soldiers){
+            const rec = ensure(s, makeSoldier);
+            place(rec.m, s, 0);
+            yawTo(rec.m, s.vx || 0, s.vy || 0);
+            animGait(rec.m, 0.26, true);
+        }
+
+        // Mermiler
+        for (const p of projectiles){
+            const rec = ensure(p, () => makeProjectile(p.color));
+            place(rec.m, p, 26);
+        }
+
+        // Görsel efektler
+        if (typeof visualEffects !== 'undefined') for (const fx of visualEffects){
+            const rec = ensure(fx, () => makeFx(fx));
+            rec.m.position.set(SX(fx.x), 0, SZ(fx.y));
+            updateFx3D(rec, fx);
+        }
+
+        // Ölen/kaybolan varlıkların mesh'lerini temizle
+        for (const [key, rec] of reg){
+            if (rec.f !== frameId){ R3.scene.remove(rec.m); disposeObj(rec.m); reg.delete(key); }
+        }
+
+        // Boss geldiğinde sinematik
+        const bossNow = enemies.some(e => e.isBoss);
+        if (bossNow && !bossActivePrev) triggerCinematic();
+        bossActivePrev = bossNow;
+
+        updateCamera();
+        R3.renderer.render(R3.scene, R3.camera);
+    }
+    window.__render3D = render3D;
+
+    function disposeObj(o){
+        o.traverse && o.traverse(c => {
+            if (c.isSprite && c.material){ c.material.dispose(); }
+        });
+    }
+
+    // ---- Kurulum ----
+    function init3D(){
+        const THREE = window.THREE;
+        if (!THREE){ console.warn('THREE yüklenemedi, 2D moda dönülüyor'); window.RENDER3D = false; return; }
+        initCaches(THREE);
+        const glCanvas = document.getElementById('gl');
+        const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        if ('outputEncoding' in renderer) renderer.outputEncoding = THREE.sRGBEncoding;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87b7e0);
+        scene.fog = new THREE.Fog(0x87b7e0, 900, 2200);
+
+        const camera = new THREE.PerspectiveCamera(52, 1, 1, 6000);
+        camera.position.set(0, 500, 640);
+
+        // Işıklar
+        const hemi = new THREE.HemisphereLight(0xffffff, 0x40506a, 0.7);
+        scene.add(hemi);
+        const amb = new THREE.AmbientLight(0xffffff, 0.25); scene.add(amb);
+        const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+        sun.position.set(-500, 900, 400);
+        sun.castShadow = true;
+        sun.shadow.mapSize.set(2048, 2048);
+        const sc = sun.shadow.camera;
+        sc.near = 100; sc.far = 2600; sc.left = -1100; sc.right = 1100; sc.top = 1100; sc.bottom = -1100;
+        sc.updateProjectionMatrix();
+        sun.shadow.bias = -0.0005;
+        scene.add(sun);
+        scene.add(sun.target);
+
+        // Zemin
+        const groundColors = { kingdom:0x2f7d32, ice:0xcfe4f5, desert:0xd6a24a, lava:0x3a1512 };
+        const skyColors    = { kingdom:0x87b7e0, ice:0xbfe3f7, desert:0xe8c07a, lava:0x5a1a12 };
+        const groundMat = new THREE.MeshStandardMaterial({ color: groundColors[currentMap] || 0x2f7d32, roughness: 1 });
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), groundMat);
+        ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+
+        // Kale
+        const castle = makeCastle(); scene.add(castle);
+
+        // Dekoratif manzara (ağaç/kaya) — harita kenarlarına
+        const decoMat = new THREE.MeshStandardMaterial({ color:0x14532d, roughness:0.9 });
+        const trunkMat = new THREE.MeshStandardMaterial({ color:0x5b3a1a, roughness:0.9 });
+        const rockMat = new THREE.MeshStandardMaterial({ color:0x64748b, roughness:1 });
+        let seed = 12345; const rnd = () => { seed = (seed*1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+        for (let i=0;i<70;i++){
+            const ang = rnd()*Math.PI*2, dr = 620 + rnd()*520;
+            const x = Math.cos(ang)*dr, z = Math.sin(ang)*dr;
+            if (Math.abs(x) < 780 && Math.abs(z) < 560) continue;
+            if (rnd() < 0.6){
+                const tr = mesh(G.cyl, trunkMat, 8,40,8, x, 20, z);
+                const lv = mesh(G.cone, decoMat, 34,70,34, x, 70, z);
+                tr.castShadow = lv.castShadow = true; scene.add(tr); scene.add(lv);
+            } else {
+                const r = mesh(G.sph, rockMat, 20+rnd()*20, 16, 20+rnd()*20, x, 8, z);
+                scene.add(r);
+            }
+        }
+
+        R3 = { renderer, scene, camera, sun, hemi, groundMat, ground, castle, groundColors, skyColors };
+        onResize();
+        // Raycast: ekran -> dünya
+        const raycaster = new THREE.Raycaster();
+        window.__screenToWorld = function(cx, cy){
+            const rect = glCanvas.getBoundingClientRect();
+            const ndc = new THREE.Vector2(
+                ((cx - rect.left) / rect.width) * 2 - 1,
+                -((cy - rect.top) / rect.height) * 2 + 1
+            );
+            raycaster.setFromCamera(ndc, camera);
+            const pt = new THREE.Vector3();
+            const hit = raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0), 0), pt);
+            if (!hit) return null;
+            return { x: pt.x + 700, y: pt.z + 500 };
+        };
+        bindCameraControls(glCanvas);
+        triggerCinematic();
+    }
+
+    function onResize(){
+        if (!R3) return;
+        const cont = document.getElementById('game-container');
+        const w = cont.clientWidth || window.innerWidth;
+        const h = cont.clientHeight || window.innerHeight;
+        R3.renderer.setSize(w, h, false);
+        R3.camera.aspect = w / h;
+        R3.camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', onResize);
+
+    // ---- Kamera kontrolleri (PC sağ tık sürükle + tekerlek / mobil 2 parmak) ----
+    function bindCameraControls(el){
+        const cont = document.getElementById('game-container');
+        cont.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            orbit.dist *= (1 + Math.sign(e.deltaY) * 0.09);
+        }, { passive: false });
+        // PC: sağ tık sürükle -> döndür
+        window.addEventListener('mousemove', (e) => {
+            if (e.buttons & 2){
+                orbit.az -= e.movementX * 0.005;
+                orbit.pol += e.movementY * 0.004;
+            }
+        });
+        // Mobil: iki parmak -> döndür + pinch zoom
+        let lastMid = null, lastDist = null;
+        cont.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2){
+                e.preventDefault();
+                const a = e.touches[0], b = e.touches[1];
+                const midX = (a.clientX + b.clientX)/2, midY = (a.clientY + b.clientY)/2;
+                const dist = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+                if (lastMid){
+                    orbit.az -= (midX - lastMid.x) * 0.006;
+                    orbit.pol += (midY - lastMid.y) * 0.005;
+                }
+                if (lastDist){ orbit.dist *= (1 - (dist - lastDist) * 0.005); }
+                lastMid = { x: midX, y: midY }; lastDist = dist;
+            }
+        }, { passive: false });
+        cont.addEventListener('touchend', () => { lastMid = null; lastDist = null; });
+    }
+
+    // Kontrol ipucunu 3D için güncelle
+    try {
+        const hint = document.getElementById('ui-hint');
+        if (hint) hint.innerHTML = '🖱️ Tıkla=Yönlendir/İnşa · WASD=Hareket · Sağ tık sürükle=Kamera · Tekerlek=Zoom · Q/E/R/F/T=Yetenek';
+    } catch(e){}
+
+    // THREE hazırsa başlat
+    if (window.THREE) { try { init3D(); } catch(err){ console.error('3D init hatası:', err); window.RENDER3D = false; } }
+    else { window.RENDER3D = false; }
 </script>
 <!-- WhatsApp kanal yüzen butonu (tüm sayfalarda ortak) -->
 <script src="whatsapp-float.js"></script>
