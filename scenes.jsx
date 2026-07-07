@@ -19,7 +19,7 @@ const GAMES = [
   },
   {
     key: 'angry_birds',
-    title: 'BirdBlast',
+    title: 'Lord of the Birds',
     sub: 'Piksel Edisyon',
     subEn: 'Pixel Edition',
     cat: 'Aksiyon',
@@ -84,7 +84,7 @@ const GAMES = [
   },
   {
     key: 'minecraft',
-    title: 'Minecraft 2D Pro',
+    title: 'Lord of the Blocks',
     sub: 'Kaz · İnşa Et · Yaşa',
     subEn: 'Mine · Build · Survive',
     cat: 'Sandbox',
