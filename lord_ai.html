@@ -96,20 +96,32 @@
                         <i class="fa-solid fa-circle-info text-indigo-400"></i>
                         <h2 class="gaming-font font-bold text-xs sm:text-sm text-slate-200 tracking-wider">OYUN REHBERİ</h2>
                     </div>
-                    <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">11 Oyun Aktif</span>
+                    <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">15 Oyun Aktif</span>
                 </div>
 
                 <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-                    Sitemizin kurucusu <strong class="text-slate-200">Cem İlişik</strong> tarafından kodlanan 11 özgün HTML5 oyunu aşağıdadır. İlgilendiğin oyuna tıklayarak Lord AI'dan anında detaylı taktik isteyebilirsin!
+                    Sitemizin kurucusu <strong class="text-slate-200">Cem İlişik</strong> tarafından kodlanan 15 özgün oyun (HTML5 + Godot + Unity) aşağıdadır. İlgilendiğin oyuna tıklayarak Lord AI'dan anında detaylı taktik isteyebilirsin!
                 </p>
 
                 <!-- Interactive Games List (no platform badges — all 10 games are mobile + PC compatible) -->
                 <div class="space-y-2 overflow-y-auto pr-1 max-h-[450px] lg:max-h-[580px] flex-1">
 
                     <div class="text-[10px] font-bold text-indigo-400 tracking-wider uppercase mb-1 mt-2 flex items-center gap-1.5">
-                        <i class="fa-solid fa-gamepad"></i> 11 Oyun · Hepsi Mobil + PC
+                        <i class="fa-solid fa-gamepad"></i> 15 Oyun
                     </div>
 
+                    <button onclick="askAboutGame('Tower Defense 3D')" class="w-full bg-purple-950/30 hover:bg-purple-900/30 border border-purple-700/50 hover:border-purple-500/60 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-purple-200 group-hover:text-purple-100">🏰 Tower Defense 3D <span class="text-[9px] bg-purple-500 text-purple-950 px-1.5 py-0.5 rounded-full font-bold ml-1">YENİ · Unity</span></span>
+                    </button>
+                    <button onclick="askAboutGame('Ravenfield Web')" class="w-full bg-red-950/30 hover:bg-red-900/30 border border-red-700/50 hover:border-red-500/60 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-red-200 group-hover:text-red-100">🔫 Ravenfield Web <span class="text-[9px] bg-red-500 text-red-950 px-1.5 py-0.5 rounded-full font-bold ml-1">YENİ · Unity</span></span>
+                    </button>
+                    <button onclick="askAboutGame('Borsa Kralı')" class="w-full bg-emerald-950/30 hover:bg-emerald-900/30 border border-emerald-700/50 hover:border-emerald-500/60 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-emerald-200 group-hover:text-emerald-100">📈 Borsa Kralı <span class="text-[9px] bg-emerald-500 text-emerald-950 px-1.5 py-0.5 rounded-full font-bold ml-1">YENİ · Godot</span></span>
+                    </button>
+                    <button onclick="askAboutGame('Minik Çiftlik')" class="w-full bg-lime-950/30 hover:bg-lime-900/30 border border-lime-700/50 hover:border-lime-500/60 p-2.5 rounded-xl text-left transition-all duration-200 group">
+                        <span class="text-xs font-semibold text-lime-200 group-hover:text-lime-100">🌾 Minik Çiftlik <span class="text-[9px] bg-lime-500 text-lime-950 px-1.5 py-0.5 rounded-full font-bold ml-1">YENİ · Godot</span></span>
+                    </button>
                     <button onclick="askAboutGame('Lord of Nations — Ülke Yönetme')" class="w-full bg-amber-950/30 hover:bg-amber-900/30 border border-amber-700/50 hover:border-amber-500/60 p-2.5 rounded-xl text-left transition-all duration-200 group">
                         <span class="text-xs font-semibold text-amber-200 group-hover:text-amber-100">👑 Lord of Nations — Ülke Yönetme <span class="text-[9px] bg-amber-500 text-amber-950 px-1.5 py-0.5 rounded-full font-bold ml-1">YENİ</span></span>
                     </button>
@@ -179,7 +191,7 @@
                     <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-black shrink-0">LA</div>
                     <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl rounded-tl-none p-4 text-slate-200 text-sm leading-relaxed">
                         <p class="mb-2 font-bold text-indigo-300">🎮 Lord AI Pro Taktik Merkezine Hoş Geldin! 🎮</p>
-                        <p class="mb-2">Sitemizdeki 11 adet efsane HTML5 oyunu için en detaylı kazanma stratejileri, gizli formüller ve adım adım rehberlerle donatıldım.</p>
+                        <p class="mb-2">Sitemizdeki 15 efsane oyun (HTML5 + Godot + Unity) için en detaylı kazanma stratejileri, gizli formüller ve adım adım rehberlerle donatıldım.</p>
                         <div class="text-xs text-slate-400 border-l-2 border-indigo-500 pl-3 my-3 py-1 space-y-1">
                             <p>💡 <strong>Sol Panelden</strong> bir oyuna tıklayarak doğrudan gerçekçi rehberine ulaşabilirsin.</p>
                             <p>💬 Veya aşağıdaki alandan bana dilediğin soruyu detaylıca yazabilirsin!</p>
@@ -556,6 +568,92 @@ Her kanunun mutluluk, moral, altın gideri, sanayi, bilim, yolsuzluk ve itibar �
 **9) Sıra Sonu (End Turn) Ritmi:** Her turda sırayla: bütçeyi dengele → bir şehre yatır → eksik kaynağı ticaretle kapat → tech ilerlet → orduyu kademeli büyüt → diploması hamlesi yap → "Sırayı Bitir". 📰 **Olaylar** sekmesini her tur oku, çıkan kararlar ekonomi ve ilişkilerini değiştirir.
 
 🔑 **ALTIN STRATEJİ:** İlk 8-10 turda HİÇ savaşma. Ekonomi + sanayi + 2-3 anahtar teknolojiye yatır, kaynak ticaretiyle altın biriktir, güçlü bir komşuyla ittifak yap. Sonra en zayıf sınır komşunu casuslukla yıprat, ezici orduyla tek hamlede al, tazminatla ekonomini patlat — ve kartopu gibi büyüyerek haritaya hükmet! 👑`
+            },
+            borsa: {
+                title: "📈 Borsa Kralı v1.0 (Godot Engine)",
+                desc: "İlk Godot Engine oyunumuz! 14 hisse + Bitcoin, canlı mum grafikleri, gün döngüsü, temettü, kaldıraç (1x-10x), açığa satış, haber akışı ve piyasayı sallayan söylentiler. 10.000 TL ile başla, Çaylak'tan borsa kralına yüksel!",
+                tactic: `Hoş geldin yatırımcı! 📈 Borsa Kralı, sitenin ilk Godot Engine oyunu ve piyasa mekanikleri gerçeğine çok yakın. İşte seni krala dönüştürecek taktikler:
+
+**1) Hisseleri Tanı (Volatilite = Risk & Fırsat):** Her hissenin karakteri farklı. **Simit A.Ş., Banka Bank, Demir Çelik** düşük oynaklıkta, sakin ve güvenli. **Uzay Taksi, Çılgın Kripto ve Bitcoin** ise aşırı oynak — bir günde %20+ hareket görebilirsin. Başlangıçta paranın çoğunu sakin hisselerde tut, oynaklara küçük pozisyonlarla gir.
+
+**2) Temettü Hisseleri = Bedava Para:** 💰 **Simit A.Ş., Banka Bank ve Minik Çiftlik A.Ş.** düzenli temettü öder. Uzun vadeli çekirdek portföyünü bu üçlüden kur — sen hiçbir şey yapmasan bile para akar.
+
+**3) Haberleri Oku, Söylentilere Dikkat:** 📰 Haber akışı fiyatları GERÇEKTEN etkiler. "Rekor kâr", "dev yatırım" haberi gelen hisse yükselişe geçer; "skandal", "vergi cezası" düşürür. Ama dikkat: **SÖYLENTİ** etiketli haberler bazen YALANLANIR ve fiyat ters döner! Söylentiye tüm parayla atlama, haber kesinleşince pozisyon büyüt.
+
+**4) Komisyonu Unutma:** Her işlemde %0.2 komisyon ödersin. Saniyede bir al-sat yaparsan komisyon seni sessizce eritir. Az ama isabetli işlem yap.
+
+**5) Kaldıraç Kilitleri (25K → 50K → 100K):** ⚡ 2x kaldıraç 25.000, 5x 50.000, 10x 100.000 TL portföy değerinde açılır. Kaldıraç kârı da zararı da çarpar — 10x ile %10 düşüş tüm sermayeni siler! Kural: kaldıracı sadece güçlü habere binerken ve kısa süreli kullan.
+
+**6) Açığa Satış (Short):** 🔻 Belirli bir servete ulaşınca açılır. Kötü haber gelen aşırı şişmiş hisseyi short'la, düşüşten para kazan. Ama yükselen piyasada short tutmak intihardır — trend dostundur.
+
+**7) Bitcoin & Kripto Özel Haberleri:** ₿ Kripto varlıkların kendi haber setleri var: ETF onayı, balina alımı = roket 🚀; hack, regülasyon şoku = çakılma. Kriptoda gece-gündüz volatilite yüksek, portföyün en fazla %20'si kriptoda olsun.
+
+**8) Gün Döngüsü & Rütbeler:** Her gün ~80 saniye (hız ayarlanabilir ⏩). Gün sonunda net değerin kaydedilir. 25K'da **Yatırımcı**, ilerledikçe daha üst rütbeler seni bekliyor.
+
+🔑 **ALTIN STRATEJİ:** İlk günler %70 temettü hissesi + %30 nakit tut. Haber akışını izle: iyi haber gelen sakin hisseye gir, %8-12 kârda çık. 25K'ya ulaşıp 2x kaldıraç açılınca aynı stratejiyi kaldıraçla tekrarla. 50K+ sonrası oynak hisselerde (Uzay Taksi, Kripto) haber bazlı vur-kaç yap. Sabırlı bileşik büyüme > tek seferde köşeyi dönme hayali. 👑`
+            },
+            towerdefense3d: {
+                title: "🏰 Tower Defense 3D v1.0 (Unity Engine)",
+                desc: "Unity Engine ile yapılmış 3D kule savunması! 6 kule tipi (Ok, Top, Buz, Şimşek, Zehir, Nişancı), her kulede yükseltme yolları, 10 düşman tipi (Grunt'tan MegaBoss'a), 3 harita, 3 zorluk, hedef modu seçimi, görevler & başarımlar ve kalıcı yükseltmeler.",
+                tactic: `Komutan, kuleler hazır! 🏰 Tower Defense 3D'de her kulenin matematiği farklı — işte hattı asla düşürmeyeceğin rehber:
+
+**1) Kule Ekonomisi (Maliyet/Değer):** 🏹 **Ok Kulesi (55)** en verimli başlangıç — hızlı atış (1.6/sn), 13 hasar, geniş menzil. İlk dalgaları 2-3 Ok Kulesi ile rahat geçersin. 💣 **Top Kulesi (110)** alan hasarı (2.5 yarıçap) — kalabalık dalgalarda altın değerinde. ❄️ **Buz Kulesi (85)** düşmanları %50 yavaşlatır (2.2 sn) — hasarı düşük ama diğer kulelere ekstra vuruş süresi kazandırır.
+
+**2) İleri Seviye Kuleler:** ⚡ **Şimşek Kulesi (130)** 3 düşmana zincirleme vurur — Runner sürülerine ideal. ☠️ **Zehir Kulesi (95)** saniyede 10 zehir hasarı (3 sn) — yüksek canlı Tank/Armored'a karşı bas geç. 🎯 **Nişancı Kulesi (160)** 13 menzil + 55 hasar — Boss katili, haritanın ortasına koy, her yere ulaşır.
+
+**3) Kombo Sanatı:** En güçlü ikili: **Buz + herşey**. Yolun başına Buz koy, arkasına Top ve Ok diz — yavaşlamış düşman sürüsü alan hasarında pişer. Boss geldiğinde: Buz yavaşlatır + Zehir eritir + Nişancı bitirir.
+
+**4) Yükseltme Yolları:** Her kulenin dallı yükseltmesi var (ör. Ok'ta "Çoklu Atış": Uzak Görüş 40 → Çift Atış 130 → Ok Yağmuru 300). Kural: **az kule + çok yükseltme > çok kule + sıfır yükseltme.** Önce 2-3 anahtar kuleyi 2. seviyeye çıkar, sonra yeni kule dik.
+
+**5) Hedef Modu Seç:** Kuleye tıklayıp hedefleme değiştir — **First** (öndeki) genel kullanım, **Strong** (en güçlü) Nişancı için, **Close** (en yakın) çıkışa yakın son savunma kuleleri için. Healer görürsen hedefi ona çevir, yoksa sürüyü iyileştirip durur!
+
+**6) Düşman Tiplerini Ezberle:** **Runner** hızlı ama kağıt — Şimşek/Ok halleder. **Tank/Armored** yavaş ama etli — Zehir + Nişancı. **Splitter** ölünce bölünür — alan hasarıyla (Top) patlat. **Shielded** kalkanlı — sürekli hasarla kalkanı kır. **Boss/MegaBoss** — tüm yavaşlatma + tek hedef hasarını üstüne yığ.
+
+**7) Görevler & Kalıcı İlerleme:** Ana menüdeki Görevler & Başarımlar'ı takip et, elmas kazandırır. Elmasla kalıcı güçlenme alırsan sonraki oyunlara avantajlı başlarsın — zorlanıyorsan önce Kolay'da elmas biriktir.
+
+🔑 **ALTIN STRATEJİ:** İlk dalgalar: yol başına 2 Ok. ~5. dalga: dönemece 1 Buz + arkasına 1 Top. Sonra Ok'ları yükselt, 10. dalgaya Nişancı hazırla (Strong moduna al). Ekonomi kuralı: her dalga bitiminde en az 1 yükseltme. Zigzag haritada iç köşeler kule başına iki kez vuruş açısı verir — kuleleri dönemeçlerin İÇİNE dik! 🏆`
+            },
+            ravenfield: {
+                title: "🔫 Ravenfield Web v1.0 (Unity Engine)",
+                desc: "İlk Unity Engine oyunumuz! Mavi ve kırmızı ordular büyük savaş alanında karşı karşıya. Takım başına 24 asker (botlar + sen), 100 bilet (takviye havuzu), ele geçirilebilir kontrol noktaları, jip/tank/taret araçları ve 3 zorluk seviyesi. WebGL olduğu için PC + klavye/fare önerilir.",
+                tactic: `Asker, cepheye hoş geldin! 🔫 Ravenfield Web'de zafer bilek gücünden çok akıl işidir. İşte savaş alanına hükmetme rehberin:
+
+**1) Bilet Sistemini Anla (Kazanmanın Anahtarı):** Her takımın **100 bileti** var; her ölen asker 1 bilet yakar. Ayrıca çoğunluk kontrol noktası sende ise rakibin biletleri sürekli erir! Yani kazanmanın yolu kill toplamak değil, **nokta çoğunluğunu elde tutmak.**
+
+**2) Kontrol Noktaları (A, B, C...):** Noktanın ~7 birim yarıçapına girince ele geçirme başlar; bölgedeki NET asker farkı kadar hızlanır (asker başına saniyede 0.28 birim). Tek başına yavaşça, 3-4 botla birlikte çok hızlı düşer. Ana üsler kilitlidir, onlara saldırma — orta noktalara odaklan.
+
+**3) Botları Koyun Gibi Güt:** 🐑 Botlar senin gittiğin bölgeye akın etme eğilimindedir. En öndeki tartışmalı noktaya koş, botların peşinden gelsin. Sen nokta içinde dururken botların çevre güvenliğini almasına izin ver.
+
+**4) Araçlar Savaş Kazandırır:** 🚙 **Jip** hızlı flank (yandan dolanma) için ideal — uzak noktaya ilk sen var. 🛡️ **Tank** yavaş ama yürüyen kale; piyade dalgalarını biçer, nokta kuşatmasını kırar. 🔭 **Taret** sabit savunma — noktayı tuttuktan sonra tarete geç ve karşı saldırıyı ez. Tank görürsen piyade olarak açık alanda durma!
+
+**5) Silah Disiplini:** Tüfeğin saniyede ~9 mermi atar, şarjör 30. Uzak mesafede tek tek vuruş yap (recoil kontrolü), yakında full otomatik bas. Şarjörün 10'un altına düşünce çatışma aralarında **hemen doldur** — reload sırasında ölmek acemi işidir.
+
+**6) Zorluk Seviyeleri:** Kolay'da botlar kördür, Zor'da keskin nişancıdır. İlk maçları Normal'de oyna; Zor'a geçince köşelerden sek, açık alanda koşma, hep siper kullan.
+
+🔑 **ALTIN STRATEJİ:** Maç başında jipe atla, en uzak tarafsız noktayı kap (erken çoğunluk = bilet erimesi başlar). Sonra savunmaya geçme — iki nokta arasında mekik dokuyarak tartışmalı noktaya destek ver. Rakip biletleri 30'un altına düşünce topyekün saldırıya geç ve maçı kapat! 🎖️`
+            },
+            ciftlik: {
+                title: "🌾 Minik Çiftlik v1.0 (Godot Engine)",
+                desc: "Godot Engine ile yapılmış kocaman bir çiftlik dünyası: 6 ekin, sera, meyve bahçesi, hayvanlar (tavuk/koyun/inek), üretim istasyonları (peynir, reçel, turta), balıkçılık, traktör, korkuluk sistemi ve emlak genişletmeleri!",
+                tactic: `Merhaba çiftçi! 🌾 Minik Çiftlik göründüğünden çok daha derin — işte çiftliğini imparatorluğa çevirecek yol haritası:
+
+**1) Ekin Ekonomisi:** 🥕 Havuç en ucuz (5 altın) ve en hızlı (10 sn) — başlangıç motorun bu. Sırasıyla domates, çilek, ayçiçeği, balkabağı ve karpuz açılır; pahalı ekinler daha uzun sürer ama kâr marjı çok daha yüksek. Erken oyunda sürekli havuç döngüsü çevir, birikince üst ekinlere geç.
+
+**2) Sulama Kritik:** 💧 Ekinler susuz kalırsa büyümez, hatta kurur! Ektikten hemen sonra sula ve büyüme sırasında tekrar kontrol et. (İpucu: **Sera** aldığında içindeki 6 tarla sulama istemez ve asla kurumaz.)
+
+**3) Kargalara Dikkat — Korkuluk Şart:** 🐦 Kargalar olgun ekinlerini çalar! 4 korkuluk yuvası var, her biri ~240 birim yarıçapı korur. İlk korkuluğu ana tarlanın ortasına dik, genişledikçe yenilerini ekle.
+
+**4) Genişleme Sırası (Emlak Ofisi):** 🏡 En verimli satın alma sırası: **Tarla Genişletme I (600)** → **Tarla Genişletme II (1200)** → **Meyve Bahçesi (1500)** → **Sera (2500)**. Meyve bahçesindeki 4 elma ağacı kendiliğinden ürün verir — pasif gelir. Sera ise bakım istemeyen premium tarla demek.
+
+**5) Hayvanlar = Sürekli Gelir:** 🐔 Tavuk yumurta, 🐑 koyun yün, 🐄 inek süt üretir. Hayvan ürünleri ekinden farklı olarak senin emeğin olmadan birikir. Ağılı erkenden doldur.
+
+**6) Üretim İstasyonları (Katma Değer!):** 🧀 Ham ürünü satma, İŞLE: süt → **peynir**, çilek → **reçel**, balkabağı → **turta**. İşlenmiş ürün ham maddesinin çok daha fazlasını kazandırır. İstasyonları kurduktan sonra ham ürünleri hep işleyerek sat.
+
+**7) Balıkçılık:** 🎣 Göl kenarında balık tutabilirsin — normal balık iyi para, nadir **altın balık** ise küçük bir servet! Ekinler büyürken bekleme sürelerini gölde değerlendir.
+
+**8) Traktör & Tohum Makinesi:** 🚜 Traktörle geniş tarlaları hızlı sür; tohum makinesi ekim işini otomatikleştirir. Tarla sayın 16+ olunca bunlarsız yetişemezsin.
+
+🔑 **ALTIN STRATEJİ:** İlk 3 gün: havuç döngüsü + ilk korkuluk + birkaç tavuk. Sonra Tarla Genişletme I-II ve domates/çilek üretimine geç, reçel istasyonunu kur. 1500-2500 bandında Meyve Bahçesi ve Sera'yı al. Geç oyunda: sera + bahçe pasif gelir verirken sen karpuz/balkabağı işleyip turta satarsın — para musluğu kapanmaz! 🌟`
             }
         };
 
@@ -613,7 +711,11 @@ Her kanunun mutluluk, moral, altın gideri, sanayi, bilim, yolsuzluk ve itibar �
             war: ['war of countries', 'countries', 'ulkeler', 'gazete', 'mansetleri', 'manset', 'ulke savasi', 'wofc', 'wof'],
             turborush: ['turbo', 'rush', 'turborush', 'turbo rush', 'yaris', 'araba', 'pist', 'f1', 'formula', 'kariyer', 'pit', 'pit stop', 'drift', 'viraj', 'lastik'],
             minecraft: ['minecraft', 'mine', 'mnct', 'minecraf', 'mincraft', 'maynkraft', '2d', 'blok', 'kazma', 'mob', 'crafting', 'maden', 'zombie', 'iskelet', 'aclik'],
-            lordofnations: ['lord of nations', 'lordofnations', 'nations', 'ulke yonetme', 'ulke yonetimi', 'ulke yonet', 'ulke kur', 'ulke sec', 'grand strateji', 'grandstrateji', 'imparatorluk yonetme', 'butce', 'ekonomi yonetme', 'kabine', 'rejim', 'diplomasi', 'casusluk', 'operasyon', 'deniz savasi', 'amiral', 'sira tabanli', 'victoria', 'lon']
+            lordofnations: ['lord of nations', 'lordofnations', 'nations', 'ulke yonetme', 'ulke yonetimi', 'ulke yonet', 'ulke kur', 'ulke sec', 'grand strateji', 'grandstrateji', 'imparatorluk yonetme', 'butce', 'ekonomi yonetme', 'kabine', 'rejim', 'diplomasi', 'casusluk', 'operasyon', 'deniz savasi', 'amiral', 'sira tabanli', 'victoria', 'lon'],
+            towerdefense3d: ['tower defense 3d', 'towerdefense', 'td', '3d kule', 'kule savunma 3d', 'unity kule', 'ok kulesi', 'top kulesi', 'buz kulesi', 'simsek kulesi', 'zehir kulesi', 'nisanci kulesi', 'dalga', 'wave', 'megaboss', 'grunt', 'runner', 'splitter', 'shielded', 'healer', 'zigzag'],
+            ravenfield: ['ravenfield', 'raven', 'fps', 'silah', 'asker', 'ordu', 'cephe', 'bilet', 'kontrol noktasi', 'nokta', 'jip', 'tank', 'taret', 'bot', 'savas alani', 'battlefield', 'mavi', 'kirmizi', 'tufek', 'nisan', 'sniper', 'flank'],
+            borsa: ['borsa', 'borsa krali', 'hisse', 'hisse senedi', 'bitcoin', 'btc', 'kripto', 'kaldirac', 'temettu', 'portfoy', 'yatirim', 'al sat', 'alsat', 'trade', 'trading', 'mum grafik', 'grafik', 'short', 'aciga satis', 'piyasa', 'stock', 'market'],
+            ciftlik: ['ciftlik', 'minik ciftlik', 'ciftci', 'tarla', 'ekin', 'tohum', 'hasat', 'sulama', 'havuc', 'domates', 'cilek', 'karpuz', 'balkabagi', 'aycicegi', 'sera', 'tavuk', 'inek', 'koyun', 'yumurta', 'peynir', 'recel', 'turta', 'balik', 'traktor', 'korkuluk', 'karga', 'farm', 'farming']
         };
 
         // Hangi oyunun anahtar kelimeleri eşleşmiş — skoru döndür
