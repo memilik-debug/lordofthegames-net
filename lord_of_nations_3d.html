@@ -153,7 +153,7 @@
   <div id="sceneMap">
     <canvas id="mapCanvas"></canvas>
     <div id="mapTitle">LORD OF NATIONS 3D</div>
-    <div id="mapSub">⚔ Bir ülke seç — sonra başkanlık ofisine geç ⚔</div>
+    <div id="mapSub">🌍 Nova Europa kıtası — bir ülke seç, sonra başkanlık ofisine geç ⚔</div>
     <div id="countryPicker">
       <h3 id="pickTitle">Bu ülkeyi yönet</h3>
       <input id="countryNameInput" type="text" placeholder="Ülkene isim ver...">
@@ -249,19 +249,30 @@ function showModal(title,body,buttons){$('modalTitle').textContent=title;$('moda
 function bar(label,val,max=100){const cls=val<35?'low':val<60?'mid':'';return `<div class="bar-stat"><div class="lab"><span>${label}</span><span>${Math.round(val)}/${max}</span></div><div class="bar-bg"><div class="bar-fill2 ${cls}" style="width:${(val/max*100).toFixed(0)}%"></div></div></div>`;}
 
 // ============================ GAME DATA ============================
+// Nova Europa — Avrupa'nın hayali yansıması. Şekiller gerçek kıtayı andırır, adlar kurgusaldır.
 const COUNTRY_TEMPLATES=[
- {name:'Aurelia',color:'#c44',cap:'Auros',biome:'plains',polygon:[[120,150],[200,128],[260,135],[300,170],[290,230],[245,260],[170,255],[110,220],[95,180]]},
- {name:'Norsundra',color:'#3a78c4',cap:'Vintholm',biome:'arctic',polygon:[[310,75],[400,72],[470,88],[490,150],[450,195],[380,200],[320,170],[300,115]]},
- {name:'Volzaria',color:'#a73',cap:'Krasnograd',biome:'plains',polygon:[[490,118],[570,108],[660,115],[710,165],[700,230],[620,265],[510,240],[475,180]]},
- {name:'Hindara',color:'#d92',cap:'Indrapur',biome:'desert',polygon:[[660,220],[740,210],[800,235],[820,290],[790,355],[710,375],[650,335],[630,275]]},
- {name:'Kintaro',color:'#9b3',cap:'Tokari',biome:'forest',polygon:[[830,150],[890,160],[930,200],[935,260],[900,300],[835,295],[815,235]]},
- {name:'Saharan',color:'#dc6',cap:'Tamarq',biome:'desert',polygon:[[265,295],[360,285],[450,295],[505,355],[490,425],[395,470],[280,445],[225,395],[235,340]]},
- {name:'Zambezi',color:'#5a3',cap:'Lubanga',biome:'forest',polygon:[[440,430],[540,415],[620,425],[660,485],[620,545],[530,565],[440,540],[400,490]]},
- {name:'Andesia',color:'#a55',cap:'Cuzcania',biome:'mountain',polygon:[[85,335],[150,325],[200,355],[215,420],[185,490],[125,530],[65,495],[55,425],[70,375]]},
- {name:'Atlanis',color:'#37a',cap:'Mareth',biome:'coastal',polygon:[[58,255],[110,260],[130,285],[115,315],[55,308],[40,280]]},
- {name:'Borealis',color:'#bc5',cap:'Frosthelm',biome:'arctic',polygon:[[170,40],[260,35],[340,40],[365,80],[340,115],[265,118],[185,105],[155,75]]},
- {name:'Pacifica',color:'#3aa',cap:'Cordillon',biome:'coastal',polygon:[[770,420],[840,410],[895,425],[935,475],[920,535],[855,555],[780,540],[750,490]]},
- {name:'Mongolia',color:'#b95',cap:'Khaganbal',biome:'plains',polygon:[[630,90],[715,78],[790,88],[825,135],[790,175],[710,180],[640,160],[615,125]]},
+ {name:'Eirlanda',color:'#3a9a4a',cap:'Dunhal',biome:'coastal',polygon:[[95,215],[118,190],[152,185],[166,206],[160,240],[130,258],[100,246]]},
+ {name:'Albiona',color:'#b8536a',cap:'Lonvar',biome:'coastal',polygon:[[225,95],[255,88],[272,115],[258,150],[276,185],[296,225],[290,265],[250,292],[206,286],[196,250],[220,215],[206,175],[218,135]]},
+ {name:'Norvenna',color:'#4a90c8',cap:'Fjordheim',biome:'arctic',polygon:[[392,190],[402,150],[428,100],[468,60],[520,35],[566,30],[586,55],[560,92],[530,132],[506,175],[478,195],[436,200]]},
+ {name:'Suomia',color:'#a8c8dc',cap:'Talvik',biome:'arctic',polygon:[[592,52],[640,40],[680,62],[690,112],[670,158],[632,175],[600,158],[580,112],[574,78]]},
+ {name:'Volzaria',color:'#b05838',cap:'Krasnograd',biome:'plains',polygon:[[700,60],[790,45],[890,55],[958,92],[972,170],[958,258],[904,330],[830,346],[762,310],[724,250],[700,240],[694,150],[692,100]]},
+ {name:'Sarmatya',color:'#c8a03a',cap:'Vistagrad',biome:'plains',polygon:[[562,225],[628,215],[694,232],[698,278],[678,315],[616,326],[566,300],[550,262]]},
+ {name:'Prusen',color:'#6a7a88',cap:'Eisenburg',biome:'forest',polygon:[[440,240],[500,226],[544,236],[554,270],[544,310],[500,330],[456,326],[432,292],[426,262]]},
+ {name:'Aurelia',color:'#3a4ab8',cap:'Auros',biome:'plains',polygon:[[296,304],[350,290],[420,296],[430,300],[436,330],[426,375],[440,410],[400,446],[340,440],[300,412],[280,360],[276,325]]},
+ {name:'Iberya',color:'#d07830',cap:'Soldera',biome:'desert',polygon:[[165,430],[230,416],[300,426],[330,455],[315,505],[270,545],[200,556],[145,525],[130,476],[140,450]]},
+ {name:'Alpenya',color:'#8aa89a',cap:'Alpenhof',biome:'mountain',polygon:[[446,336],[506,340],[554,346],[560,376],[520,390],[466,386],[440,366]]},
+ {name:'Venedra',color:'#3aa89a',cap:'Romara',biome:'coastal',polygon:[[462,395],[500,388],[522,410],[535,445],[548,490],[558,530],[540,552],[518,538],[502,498],[485,458],[462,428],[448,408]]},
+ {name:'Karpatya',color:'#8a5ac8',cap:'Karvad',biome:'mountain',polygon:[[566,330],[626,336],[692,330],[722,360],[706,400],[650,415],[590,406],[560,370]]},
+ {name:'Balkarya',color:'#a03a80',cap:'Beogar',biome:'forest',polygon:[[590,418],[640,426],[692,420],[706,455],[680,490],[630,502],[596,478],[580,448]]},
+ {name:'Egeya',color:'#38a0d0',cap:'Athelos',biome:'coastal',polygon:[[614,506],[660,512],[694,506],[706,536],[686,568],[640,576],[610,546],[604,522]]},
+ {name:'Turan',color:'#d04040',cap:'Bozkent',biome:'mountain',polygon:[[720,432],[790,416],[870,420],[930,446],[940,490],[900,526],[820,536],[750,520],[714,482],[708,452]]},
+];
+const SEA_LABELS=[
+ {t:'ATLAS OKYANUSU',x:185,y:378},
+ {t:'KUZEY DENİZİ',x:340,y:142},
+ {t:'BALTIK DENİZİ',x:505,y:212},
+ {t:'ORTA DENİZ',x:388,y:522},
+ {t:'KARA DENİZ',x:822,y:385},
 ];
 const AI_TRAITS=['Saldırgan','Tüccar','Bilim','Diplomat','İzolasyonist','Militarist','Genişlemeci'];
 const TECHS=[
@@ -370,7 +381,7 @@ const BUILD_TYPES=[
 ];
 
 // ============================ STATE ============================
-const G={scene:'map',year:1,month:1,selectedCountryId:null,player:null,countries:[],events:[],hoveredCountry:null,research:null,ministers:[],war:null,naval:null,notif:0,dialog:null,activePanelTabs:null,currentTab:null,worldTick:0,pendingWarTargetId:null,driving:false,campaign:null};
+const G={scene:'map',year:1,month:1,selectedCountryId:null,player:null,countries:[],events:[],hoveredCountry:null,research:null,ministers:[],war:null,naval:null,notif:0,dialog:null,activePanelTabs:null,currentTab:null,worldTick:0,pendingWarTargetId:null,driving:false,campaign:null,warHistory:[],market:null};
 
 function makeCountry(tpl){
  return {id:tpl.name.toLowerCase(),name:tpl.name,customName:tpl.name,color:tpl.color,capital:tpl.cap,biome:tpl.biome,polygon:tpl.polygon,isPlayer:false,
@@ -381,10 +392,12 @@ function makeCountry(tpl){
   resources:{steel:irand(200,800),oil:irand(150,600),grain:irand(300,1000),gold_ore:irand(50,300)},
   aiTrait:pick(AI_TRAITS),atWarWith:[],alliedWith:[],relations:{},techs:{},laws:{},ideology:'republic',religion:'secular',tradePartners:{},doctrine:null,
   armyComp:{infantry:irand(15000,30000),cavalry:irand(2000,6000),artillery:irand(800,3000),special:irand(200,1500)},
-  inflation:2.5,gdp:12000,unemployment:8,nationalDebt:0,economicCycle:'normal',economicCycleTurns:0};
+  inflation:2.5,gdp:12000,unemployment:8,nationalDebt:0,economicCycle:'normal',economicCycleTurns:0,
+  interestRate:8,sectorDev:{agri:irand(20,45),industry:irand(20,50),services:irand(15,40)}};
 }
 function initWorld(){
  G.countries=COUNTRY_TEMPLATES.map(t=>makeCountry(t));
+ G.market={steel:{p:.9,base:.9,hist:[]},oil:{p:1.4,base:1.4,hist:[]},grain:{p:.5,base:.5,hist:[]},gold_ore:{p:3.4,base:3.4,hist:[]}};
  G.countries.forEach(a=>G.countries.forEach(b=>{if(a.id!==b.id)a.relations[b.id]=irand(35,65);}));
  computeNeighbors();
 }
@@ -432,6 +445,16 @@ function initMinisters(){
 function addEvent(type,text){G.events.unshift({turn:`Yıl ${G.year}, Ay ${G.month}`,type,text});if(G.events.length>200)G.events.pop();}
 
 // ============================ ECONOMY ============================
+function creditRating(c){const r=(c.nationalDebt||0)/Math.max(1,c.gdp);
+ if(r<.1)return{g:'AAA',pen:0,col:'#6fdc8c'};if(r<.25)return{g:'AA',pen:.5,col:'#8fd06b'};if(r<.5)return{g:'A',pen:1,col:'#c8d04a'};if(r<.8)return{g:'BBB',pen:2,col:'#ffd86b'};if(r<1.2)return{g:'BB',pen:3.5,col:'#ffae4a'};if(r<1.8)return{g:'B',pen:5,col:'#ff8050'};return{g:'CCC',pen:8,col:'#ff5050'};}
+function updateMarket(){
+ if(!G.market)return;
+ Object.values(G.market).forEach(m=>{
+  m.hist.push(m.p);if(m.hist.length>24)m.hist.shift();
+  const shock=Math.random()<.06?rand(-.25,.3):0; // nadir arz/talep şoku
+  m.p=Math.max(m.base*.35,Math.min(m.base*2.6,m.p*(1+rand(-.05,.05)+shock)+(m.base-m.p)*.04));
+ });
+}
 function getMinisterMods(){const s={};G.ministers.forEach(m=>m.trait.apply(s));return s;}
 function getLawMods(){const s={};Object.keys(G.player.laws||{}).forEach(id=>{if(!G.player.laws[id])return;const law=LAWS.find(l=>l.id===id);if(!law)return;Object.entries(law.mod).forEach(([k,v])=>{s[k]=(s[k]||0)+v;});});return s;}
 function calcIncomeExpenses(c){
@@ -450,16 +473,25 @@ function calcIncomeExpenses(c){
  const tradeRep=c.reputation*5;
  let tradePartnerIncome=0;
  Object.keys(c.tradePartners||{}).forEach(id=>{const o=G.countries.find(x=>x.id===id);if(o&&!c.atWarWith.includes(id))tradePartnerIncome+=380+o.industry*7;});
- let income=(incomeTax+corporateTax+salesTaxRevenue+tariffRevenue+factoryIncome+mineIncome+marketIncome+portIncome+refineryIncome+bankIncome+tradeRep+tradePartnerIncome)*(mod.incomeMul||1)*(ideo.mods.incomeMul||1);
+ // Sektör ekonomisi: tarım / sanayi / hizmet gelişmişliği doğrudan gelir üretir
+ const sd=c.sectorDev||{agri:30,industry:35,services:25};
+ const sectorIncome=popM*(sd.agri*.45+sd.industry*.85+sd.services*.7)*productivity*.35;
+ // Dış ticaret: ihracat sanayi+tarım+limana, ithalat nüfusun tüketimine bağlı
+ const exportIncome=(c.buildings.factory*55*(1+sd.industry/120)+c.buildings.farm*22*(1+sd.agri/120)+c.buildings.port*70+Object.keys(c.tradePartners||{}).length*160)*(1+c.reputation/250)*cycleMul;
+ let income=(incomeTax+corporateTax+salesTaxRevenue+tariffRevenue+factoryIncome+mineIncome+marketIncome+portIncome+refineryIncome+bankIncome+tradeRep+tradePartnerIncome+sectorIncome+exportIncome)*(mod.incomeMul||1)*(ideo.mods.incomeMul||1);
  income*=(1-clamp(c.inflation,0,30)/200);
  const militarycost=c.soldiers*.012+c.tanks*5+c.planes*8;
  const b=c.buildings;
  const buildingMaint=b.factory*40+b.farm*25+b.barracks*30+b.hospital*45+b.lab*60+b.mine*35+b.fortress*80+b.university*70+b.port*50+b.market*30+b.refinery*60+(b.bank||0)*55;
  const subsidies=popM*(c.foodSubsidy*.8+c.healthcare*1.1+c.techInvest*.6);
- const debtInterest=Math.max(0,c.nationalDebt||0)*.02;
- let expenses=militarycost+buildingMaint+subsidies+(lawMod.goldDrain||0)+debtInterest;
- c._ib={incomeTax,corporateTax,salesTaxRevenue,tariffRevenue,factoryIncome,mineIncome,marketIncome,portIncome,refineryIncome,bankIncome,tradeRep,tradePartnerIncome};
- c._eb={militarycost,buildingMaint,subsidies,lawDrain:lawMod.goldDrain||0,debtInterest};
+ const importCost=popM*26*(1+c.happiness/200)*(1-(c.taxTariffRate||10)/150);
+ // Borç faizi: politika faizi + kredi notu risk primi (yıllık → aylık)
+ const rt=creditRating(c);
+ const debtInterest=Math.max(0,c.nationalDebt||0)*((c.interestRate||8)+rt.pen)/1200;
+ let expenses=militarycost+buildingMaint+subsidies+importCost+(lawMod.goldDrain||0)+debtInterest;
+ c._ib={incomeTax,corporateTax,salesTaxRevenue,tariffRevenue,factoryIncome,mineIncome,marketIncome,portIncome,refineryIncome,bankIncome,tradeRep,tradePartnerIncome,sectorIncome,exportIncome};
+ c._eb={militarycost,buildingMaint,subsidies,importCost,lawDrain:lawMod.goldDrain||0,debtInterest};
+ c._trade={exports:Math.round(exportIncome),imports:Math.round(importCost)};
  return {income:Math.round(income),expenses:Math.round(expenses)};
 }
 const EVENTS_LIST=[
@@ -499,10 +531,18 @@ function endTurn(){
  if(G.research){const tech=TECHS.find(t=>t.id===G.research.id);G.research.progress+=(c.tech*.04+.5)*(mod.researchMul||1);
   if(G.research.progress>=tech.cost){c.techs[tech.id]=true;Object.entries(tech.effect).forEach(([k,v])=>{c[k]=clamp((c[k]||0)+v,0,100);});addEvent('good',`🎉 ${tech.name} keşfedildi!`);toast(`Teknoloji tamam: ${tech.name}`,'good');G.research=null;}}
  // Economic indicators
+ updateMarket();
  const inflPressure=(c.healthcare+c.foodSubsidy+c.techInvest)/30-(c.buildings.bank||0)*.3;
- c.inflation=clamp(c.inflation+inflPressure*.08+rand(-.15,.2),0,35);
- const gdpGrowth=(c.industry/100*1.2+c.tech/100*.8+c.education/100*.6-c.inflation/50)*(c.economicCycle==='boom'?1.5:c.economicCycle==='recession'?.3:c.economicCycle==='crisis'?-.3:1);
+ // yüksek faiz enflasyonu soğutur, düşük faiz körükler
+ c.inflation=clamp(c.inflation+inflPressure*.08-((c.interestRate||8)-8)*.055+rand(-.15,.2),0,35);
+ const sd=c.sectorDev||(c.sectorDev={agri:30,industry:35,services:25});
+ const gdpGrowth=(c.industry/100*1.2+c.tech/100*.8+c.education/100*.6+(sd.agri+sd.industry+sd.services)/300*.4-c.inflation/50-((c.interestRate||8)-8)*.05)*(c.economicCycle==='boom'?1.5:c.economicCycle==='recession'?.3:c.economicCycle==='crisis'?-.3:1);
  c.gdp=Math.max(1000,c.gdp*(1+gdpGrowth/100));
+ c._growth=gdpGrowth;
+ // sektörler yapılar ve politikalarla yavaşça gelişir
+ sd.agri=clamp(sd.agri+c.buildings.farm*.03+c.foodSubsidy*.004-.05,5,100);
+ sd.industry=clamp(sd.industry+c.buildings.factory*.03+c.buildings.refinery*.04-.05,5,100);
+ sd.services=clamp(sd.services+c.buildings.market*.03+(c.buildings.bank||0)*.05+c.education*.001-.04,5,100);
  const unempT=clamp(15-c.industry*.08-(c.buildings.factory+c.buildings.farm)*.3+(c.economicCycle==='recession'?6:c.economicCycle==='crisis'?12:0),2,30);
  c.unemployment+=(unempT-c.unemployment)*.15;
  if(c.gold<0){c.nationalDebt+=Math.abs(c.gold);c.gold=0;}
@@ -550,7 +590,7 @@ function renderHUD(){
 }
 
 // ============================ PANEL SYSTEM ============================
-const TAB_NAMES={overview:'📊 Genel Bakış',cabinet:'👔 Kabine',events:'📰 Olaylar',economy:'💼 Ekonomi',budget:'📈 Bütçe',resources:'📦 Kaynaklar',build:'🏗️ İnşa',tech:'🔬 Teknoloji',military:'⚔️ Ordu',armydetail:'🪖 Detaylı Ordu',laws:'⚖️ Kanunlar',ideology:'🏛️ Rejim',diplomacy:'🤝 Diplomasi',trade:'📜 Ticaret',ops:'🕵️ Operasyonlar',religion:'⛪ Din & Kültür'};
+const TAB_NAMES={overview:'📊 Genel Bakış',cabinet:'👔 Kabine',events:'📰 Olaylar',economy:'💼 Ekonomi',budget:'📈 Bütçe',resources:'📦 Kaynak Borsası',build:'🏗️ İnşa',tech:'🔬 Teknoloji',military:'⚔️ Ordu',armydetail:'🪖 Detaylı Ordu',laws:'⚖️ Kanunlar',ideology:'🏛️ Rejim',diplomacy:'🤝 Diplomasi',trade:'📜 Ticaret',ops:'🕵️ Operasyonlar',religion:'⛪ Din & Kültür'};
 function openPanel(title,tabs,defTab){
  G.activePanelTabs=tabs;G.currentTab=defTab||tabs[0];
  $('panelTitle').textContent=title;
@@ -588,7 +628,19 @@ function renderPanel(tab){
   p.innerHTML=`<h2>📰 Olay Günlüğü</h2>`+(G.events.length?G.events.map(e=>`<div class="event-item ${e.type}"><div class="turn">${e.turn}</div>${e.text}</div>`).join(''):'<div class="card"><div class="desc">Henüz olay yok.</div></div>');
  }
  else if(tab==='economy'){
-  p.innerHTML=`<h2>💼 Ekonomi Politikaları</h2><div class="card"><h3>⚖️ Vergiler & Harcamalar</h3>
+  const rt=creditRating(c),sd=c.sectorDev||{agri:30,industry:35,services:25};
+  const secBtn=(id,lbl)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><div style="flex:1;">${bar(lbl,sd[id])}</div><button class="btn primary" style="font-size:11px;padding:5px 10px;white-space:nowrap;" onclick="act_invest('${id}')">Yatırım (-2500)</button></div>`;
+  p.innerHTML=`<h2>💼 Ekonomi Politikaları</h2>
+  <div class="card"><h3>🏦 Merkez Bankası</h3><div class="desc">Faizi artırmak enflasyonu düşürür ama GSYH büyümesini yavaşlatır ve borç faizini artırır. Kredi notun düştükçe borçlanma pahalanır.</div>
+   <div class="slider-row"><label>💹 Politika Faizi</label><input type="range" min="0" max="25" value="${c.interestRate}" oninput="setPol('interestRate',this.value,this)"><div class="val">${c.interestRate}%</div></div>
+   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));">
+    <div class="kv"><span class="lbl">💳 Kredi Notu</span><span class="v" style="color:${rt.col}">${rt.g}</span></div>
+    <div class="kv"><span class="lbl">💹 Enflasyon</span><span class="v ${c.inflation>10?'neg':'pos'}">${c.inflation.toFixed(1)}%</span></div>
+    <div class="kv"><span class="lbl">🏦 Borç Faizi</span><span class="v">${((c.interestRate||8)+rt.pen).toFixed(1)}%/yıl</span></div>
+    <div class="kv"><span class="lbl">📈 Büyüme</span><span class="v ${(c._growth||0)>=0?'pos':'neg'}">${(c._growth||0).toFixed(2)}%/ay</span></div></div></div>
+  <div class="card"><h3>🏗️ Ekonomik Sektörler</h3><div class="desc">Gelişmiş sektörler her ay doğrudan gelir üretir ve GSYH'yi büyütür. Tarım çiftliklerle, sanayi fabrika/rafineriyle, hizmet pazar/banka/eğitimle kendiliğinden de gelişir.</div>
+   ${secBtn('agri','🌾 Tarım')}${secBtn('industry','🏭 Sanayi')}${secBtn('services','🏪 Hizmet')}</div>
+  <div class="card"><h3>⚖️ Vergiler & Harcamalar</h3>
    <div class="slider-row"><label>💼 Gelir Vergisi</label><input type="range" min="0" max="60" value="${c.taxIncomeRate}" oninput="setPol('taxIncomeRate',this.value,this)"><div class="val">${c.taxIncomeRate}%</div></div>
    <div class="slider-row"><label>🏭 Kurumlar V.</label><input type="range" min="0" max="50" value="${c.taxCorporateRate}" oninput="setPol('taxCorporateRate',this.value,this)"><div class="val">${c.taxCorporateRate}%</div></div>
    <div class="slider-row"><label>🛍️ Satış V.</label><input type="range" min="0" max="30" value="${c.taxSalesRate}" oninput="setPol('taxSalesRate',this.value,this)"><div class="val">${c.taxSalesRate}%</div></div>
@@ -606,16 +658,26 @@ function renderPanel(tab){
  else if(tab==='budget'){
   const {income,expenses}=calcIncomeExpenses(c);
   const cyc={normal:'📊 Normal',recession:'📉 Resesyon',boom:'📈 Patlama',crisis:'💥 Kriz'};
-  const ibL={incomeTax:'Gelir Vergisi',corporateTax:'Kurumlar V.',salesTaxRevenue:'Satış V.',tariffRevenue:'Gümrük V.',factoryIncome:'Fabrika',mineIncome:'Maden',marketIncome:'Pazar',portIncome:'Liman',refineryIncome:'Rafineri',bankIncome:'Banka',tradeRep:'İtibar/Ticaret',tradePartnerIncome:'Ticaret Anlaşmaları'};
-  const ebL={militarycost:'⚔️ Askeri',buildingMaint:'🏗️ Yapı Bakımı',subsidies:'🤝 Sosyal Yardım',lawDrain:'⚖️ Kanun',debtInterest:'🏦 Borç Faizi'};
+  const ibL={incomeTax:'Gelir Vergisi',corporateTax:'Kurumlar V.',salesTaxRevenue:'Satış V.',tariffRevenue:'Gümrük V.',factoryIncome:'Fabrika',mineIncome:'Maden',marketIncome:'Pazar',portIncome:'Liman',refineryIncome:'Rafineri',bankIncome:'Banka',tradeRep:'İtibar/Ticaret',tradePartnerIncome:'Ticaret Anlaşmaları',sectorIncome:'🏗️ Sektörler',exportIncome:'🚢 İhracat'};
+  const ebL={militarycost:'⚔️ Askeri',buildingMaint:'🏗️ Yapı Bakımı',subsidies:'🤝 Sosyal Yardım',importCost:'🚢 İthalat',lawDrain:'⚖️ Kanun',debtInterest:'🏦 Borç Faizi'};
+  const rt=creditRating(c);
+  const tb=(c._trade?c._trade.exports-c._trade.imports:0);
   p.innerHTML=`<h2>📈 Detaylı Bütçe</h2>
   <div class="card"><h3>📊 Makro Göstergeler</h3><div class="grid">
    <div class="kv"><span class="lbl">📈 GSYH</span><span class="v">${fmt(c.gdp)}</span></div>
+   <div class="kv"><span class="lbl">👤 GSYH / Kişi</span><span class="v">${fmt(c.gdp/Math.max(.5,c.population))}</span></div>
+   <div class="kv"><span class="lbl">🚀 Büyüme</span><span class="v ${(c._growth||0)>=0?'pos':'neg'}">${(c._growth||0).toFixed(2)}%/ay</span></div>
    <div class="kv"><span class="lbl">💹 Enflasyon</span><span class="v ${c.inflation>10?'neg':'pos'}">${c.inflation.toFixed(1)}%</span></div>
    <div class="kv"><span class="lbl">👷 İşsizlik</span><span class="v ${c.unemployment>15?'neg':'pos'}">${c.unemployment.toFixed(1)}%</span></div>
    <div class="kv"><span class="lbl">🏦 Borç</span><span class="v">${fmt(c.nationalDebt)}</span></div>
+   <div class="kv"><span class="lbl">💳 Kredi Notu</span><span class="v" style="color:${rt.col}">${rt.g}</span></div>
    <div class="kv"><span class="lbl">🔄 Döngü</span><span class="v">${cyc[c.economicCycle]}</span></div>
    <div class="kv"><span class="lbl">💰 Net</span><span class="v ${income-expenses>=0?'pos':'neg'}">${fmt(income-expenses)}</span></div></div></div>
+  <div class="card"><h3>🚢 Dış Ticaret Dengesi</h3>
+   <div class="kv"><span class="lbl">İhracat</span><span class="v pos">+${fmt(c._trade?c._trade.exports:0)}</span></div>
+   <div class="kv"><span class="lbl">İthalat</span><span class="v neg">-${fmt(c._trade?c._trade.imports:0)}</span></div>
+   <div class="kv"><span class="lbl"><b>Denge</b></span><span class="v ${tb>=0?'pos':'neg'}"><b>${tb>=0?'+':''}${fmt(tb)}</b></span></div>
+   <div class="desc" style="margin-top:6px;">İhracatı artırmak için: fabrika, çiftlik, liman inşa et; sanayi/tarım sektörünü geliştir; ticaret anlaşması yap. Gümrük vergisi ithalatı kısar ama gümrük gelirini de etkiler.</div></div>
   <div class="card"><h3>💰 Gelirler</h3>${Object.entries(c._ib||{}).map(([k,v])=>`<div class="kv"><span class="lbl">${ibL[k]||k}</span><span class="v pos">+${fmt(v)}</span></div>`).join('')}<div class="kv" style="border-top:2px solid #ffd86b;"><span class="lbl"><b>TOPLAM</b></span><span class="v pos"><b>+${fmt(income)}</b></span></div></div>
   <div class="card"><h3>💸 Giderler</h3>${Object.entries(c._eb||{}).map(([k,v])=>`<div class="kv"><span class="lbl">${ebL[k]||k}</span><span class="v neg">-${fmt(v)}</span></div>`).join('')}<div class="kv" style="border-top:2px solid #ff7878;"><span class="lbl"><b>TOPLAM</b></span><span class="v neg"><b>-${fmt(expenses)}</b></span></div></div>
   <div class="card"><h3>🏦 Borç Yönetimi</h3><div class="desc">Borç: ${fmt(c.nationalDebt)} · Aylık faiz: ${fmt(c.nationalDebt*.02)}</div><div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -623,17 +685,24 @@ function renderPanel(tab){
    <button class="btn good" onclick="act_repay(5000)">📤 5k Öde</button><button class="btn primary" onclick="act_print()">💴 Para Bas</button></div></div>`;
  }
  else if(tab==='resources'){
-  const r=c.resources;
-  p.innerHTML=`<h2>📦 Kaynaklar</h2><div class="card"><div class="grid">
-   <div class="kv"><span class="lbl">⚙️ Çelik</span><span class="v">${fmt(r.steel)}</span></div>
-   <div class="kv"><span class="lbl">🛢️ Petrol</span><span class="v">${fmt(r.oil)}</span></div>
-   <div class="kv"><span class="lbl">🌾 Tahıl</span><span class="v">${fmt(r.grain)}</span></div>
-   <div class="kv"><span class="lbl">🪙 Cevher</span><span class="v">${fmt(r.gold_ore)}</span></div></div></div>
-  <div class="card"><h3>💱 Satış</h3><div style="display:flex;gap:8px;flex-wrap:wrap;">
-   <button class="btn" onclick="act_sell('steel',100,80)">100 Çelik (+80)</button>
-   <button class="btn" onclick="act_sell('oil',100,120)">100 Petrol (+120)</button>
-   <button class="btn" onclick="act_sell('grain',100,40)">100 Tahıl (+40)</button>
-   <button class="btn" onclick="act_sell('gold_ore',50,150)">50 Cevher (+150)</button></div></div>`;
+  const RES={steel:'⚙️ Çelik',oil:'🛢️ Petrol',grain:'🌾 Tahıl',gold_ore:'🪙 Altın Cevheri'};
+  const spark=m=>{const h=m.hist.slice(-16).concat([m.p]);if(h.length<2)return'<span style="font-size:10px;color:#667;">(veri bekleniyor)</span>';
+   const mn=Math.min(...h),mx=Math.max(...h),rg=Math.max(1e-6,mx-mn);
+   const pts=h.map((v,i)=>`${(i/(h.length-1)*90+2).toFixed(1)},${(26-(v-mn)/rg*22).toFixed(1)}`).join(' ');
+   return `<svg width="94" height="28" style="vertical-align:middle;background:rgba(0,0,0,.25);border-radius:4px;"><polyline points="${pts}" fill="none" stroke="#6fb8dc" stroke-width="1.5"/></svg>`;};
+  p.innerHTML=`<h2>📦 Kaynak Borsası</h2><div class="card"><div class="desc">Fiyatlar her ay arz-talebe göre dalgalanır — 💎 ucuzken al, 🔥 pahalıyken sat! Alışta %8 komisyon, satışta %4 kesinti var. Madenler, çiftlikler ve rafineriler her ay stok üretir.</div></div>`+
+  Object.entries(G.market||{}).map(([k,m])=>{
+   const last=m.hist.length?m.hist[m.hist.length-1]:m.p,up=m.p>=last,rel=m.p/m.base;
+   const tag=rel>1.35?'<span style="color:#ff9860;font-size:11px;">🔥 pahalı</span>':rel<.7?'<span style="color:#6fdc8c;font-size:11px;">💎 ucuz</span>':'';
+   return `<div class="card"><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div style="min-width:140px;"><b>${RES[k]||k}</b><div style="font-size:11px;color:#99a6c0;">Stok: ${fmt(c.resources[k]||0)}</div></div>
+    <div style="min-width:120px;"><span style="font-size:17px;font-weight:700;color:${up?'#6fdc8c':'#ff8080'}">${m.p.toFixed(2)} ${up?'▲':'▼'}</span><div style="font-size:10px;color:#99a6c0;">altın/birim ${tag}</div></div>
+    ${spark(m)}
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+     <button class="btn good" onclick="act_market('${k}',100,false)">Sat 100 (+${fmt(m.p*.96*100)})</button>
+     <button class="btn good" onclick="act_market('${k}',500,false)">Sat 500 (+${fmt(m.p*.96*500)})</button>
+     <button class="btn" onclick="act_market('${k}',100,true)">Al 100 (-${fmt(m.p*1.08*100)})</button>
+    </div></div></div>`;}).join('');
  }
  else if(tab==='build'){
   p.innerHTML=`<h2>🏗️ İnşaat</h2><div class="card"><div class="desc">İnşa edilen her yapı 3D şehrinde görünür! Ofisten çıkıp şehre bak.</div></div><div class="grid">`+
@@ -713,7 +782,19 @@ function renderPanel(tab){
  }
  else if(tab==='diplomacy'){
   const others=G.countries.filter(o=>!o.isPlayer).slice().sort((a,b)=>(isNeighbor(b)?1:0)-(isNeighbor(a)?1:0)||(a._neighDist[c.id]||999)-(b._neighDist[c.id]||999));
-  p.innerHTML=`<h2>🤝 Diplomasi</h2><div class="card"><div class="desc">⚔️ Savaş yalnızca <b style="color:#ffd86b">kara veya deniz komşularına</b> ilan edilebilir. Savaş kararı için Dışişleri sizi <b>Genelkurmay</b>'a yönlendirir — arabanıza binip askeri üsse gidin.</div></div>`+others.map(o=>{
+  const wh=G.warHistory||[];
+  const whHtml=wh.length?`<div class="card"><h3>📜 Savaş Geçmişi</h3>${wh.slice().reverse().slice(0,10).map(w=>{const o=G.countries.find(x=>x.id===w.id);return `<div class="kv"><span class="lbl">${w.type} — <b>${o?o.customName:w.id}</b> <span style="color:#778">(Yıl ${w.y}, Ay ${w.m})</span></span><span class="v" style="color:${w.won?'#6fdc8c':'#ff7878'}">${w.won?'🏆 Zafer':'💀 Yenilgi'}</span></div>`;}).join('')}</div>`:'';
+  p.innerHTML=`<h2>🤝 Diplomasi</h2>
+  <div class="card"><h3>🗺️ Dünya Haritası <span style="font-size:11px;color:#99a6c0;font-weight:400;">— savaşların, ittifakların ve ticaretin canlı görünümü</span></h3>
+   <canvas id="diploMapCanvas" width="1000" height="600" style="width:100%;border-radius:8px;border:1px solid #2a3a55;display:block;"></canvas>
+   <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:#b8c8e0;margin-top:7px;">
+    <span><b style="color:#ffd86b">━</b> Sen</span>
+    <span><b style="color:#ff5050">╌╌</b> Savaş</span>
+    <span><b style="color:#6fdc8c">━</b> İttifak</span>
+    <span><b style="color:#ffd86b">┄┄</b> Ticaret</span>
+    <span>🏆/💀 geçmiş savaş sonuçları</span></div></div>
+  ${whHtml}
+  <div class="card"><div class="desc">⚔️ Savaş yalnızca <b style="color:#ffd86b">kara veya deniz komşularına</b> ilan edilebilir. Savaş kararı için Dışişleri sizi <b>Genelkurmay</b>'a yönlendirir — arabanıza binip askeri üsse gidin.</div></div>`+others.map(o=>{
    const rel=Math.round(c.relations[o.id]||50),atWar=c.atWarWith.includes(o.id),allied=c.alliedWith.includes(o.id);
    const nt=neighborType(o);const nbadge=nt==='land'?'<span style="color:#7ad07a">🗺️ Kara komşusu</span>':nt==='sea'?'<span style="color:#6fb8e8">⚓ Deniz komşusu</span>':'<span style="color:#778">🌐 Uzak</span>';
    const pending=G.pendingWarTargetId===o.id;
@@ -722,6 +803,7 @@ function renderPanel(tab){
    ${!allied&&!atWar?`<button class="btn" onclick="act_alliance('${o.id}')">İttifak (-500)</button>`:''}
    <button class="btn" onclick="act_gift('${o.id}')">Hediye (-300)</button>
    <button class="btn" onclick="act_spy('${o.id}')">🕵️ Casus (-800)</button></div></div>`;}).join('');
+  drawDiploMap();
  }
  else if(tab==='trade'){
   p.innerHTML=`<h2>📜 Ticaret <span style="font-size:12px;color:#99a6c0">Aktif: ${Object.keys(c.tradePartners||{}).length}/4</span></h2>`+
@@ -735,6 +817,56 @@ function renderPanel(tab){
 }
 function setPol(k,v,el){G.player[k]=parseInt(v);el.parentElement.querySelector('.val').textContent=v+'%';renderHUD();}
 
+// ---- Diplomasi sekmesindeki canlı dünya haritası (her savaşta güncellenir) ----
+function drawDiploMap(){
+ const cv=document.getElementById('diploMapCanvas');if(!cv||!G.player)return;
+ const ctx=cv.getContext('2d');const W=cv.width,H=cv.height;
+ const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#12304e');bg.addColorStop(1,'#050d1c');
+ ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ ctx.save();ctx.scale(W/WORLD_W,H/WORLD_H);
+ const p=G.player;
+ // deniz adları
+ ctx.font='italic 13px Georgia';ctx.textAlign='center';ctx.fillStyle='rgba(150,195,235,.3)';
+ SEA_LABELS.forEach(s=>ctx.fillText(s.t,s.x,s.y));
+ // ilişki çizgileri (başkentler arası)
+ const pc=polyCenter(p.polygon);
+ G.countries.forEach(o=>{
+  if(o.isPlayer)return;
+  const oc=polyCenter(o.polygon);let draw=false;
+  if(p.atWarWith.includes(o.id)){ctx.strokeStyle='rgba(255,80,80,.9)';ctx.lineWidth=3;ctx.setLineDash([10,6]);draw=true;}
+  else if(p.alliedWith.includes(o.id)){ctx.strokeStyle='rgba(111,220,140,.75)';ctx.lineWidth=2.5;ctx.setLineDash([]);draw=true;}
+  else if(p.tradePartners&&p.tradePartners[o.id]){ctx.strokeStyle='rgba(255,216,107,.55)';ctx.lineWidth=1.6;ctx.setLineDash([3,5]);draw=true;}
+  if(draw){ctx.beginPath();ctx.moveTo(pc.x,pc.y);ctx.lineTo(oc.x,oc.y);ctx.stroke();ctx.setLineDash([]);}
+ });
+ // ülkeler
+ G.countries.forEach(o=>{
+  const atWar=p.atWarWith.includes(o.id),ally=p.alliedWith.includes(o.id);
+  ctx.beginPath();o.polygon.forEach((pt,i)=>i===0?ctx.moveTo(pt[0],pt[1]):ctx.lineTo(pt[0],pt[1]));ctx.closePath();
+  ctx.fillStyle=o.color;ctx.globalAlpha=o.isPlayer?1:.85;ctx.fill();ctx.globalAlpha=1;
+  ctx.strokeStyle=o.isPlayer?'#ffd86b':atWar?'#ff5050':ally?'#6fdc8c':'rgba(10,18,30,.7)';
+  ctx.lineWidth=o.isPlayer?4:atWar?3.5:ally?2.5:1.2;ctx.stroke();
+  const ctr=polyCenter(o.polygon);
+  ctx.font='bold 15px Segoe UI';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.fillStyle='#fff';
+  const nm=(o.isPlayer?'★ ':'')+o.customName;
+  ctx.strokeText(nm,ctr.x,ctr.y);ctx.fillText(nm,ctr.x,ctr.y);
+  if(!o.isPlayer){
+   const rel=Math.round(p.relations[o.id]||50);
+   const badge=atWar?'⚔️ SAVAŞ':ally?'🤝 müttefik':(p.tradePartners&&p.tradePartners[o.id])?'📜 ticaret':'ilişki '+rel;
+   ctx.font='11px Segoe UI';ctx.lineWidth=2.5;
+   ctx.fillStyle=atWar?'#ff9090':ally?'#8fe8a8':'#cfd8e8';
+   ctx.strokeText(badge,ctr.x,ctr.y+16);ctx.fillText(badge,ctr.x,ctr.y+16);
+   // geçmiş savaş sonuçları
+   const wins=(G.warHistory||[]).filter(w=>w.id===o.id&&w.won).length;
+   const losses=(G.warHistory||[]).filter(w=>w.id===o.id&&!w.won).length;
+   if(wins||losses){
+    const s=(wins?'🏆'+wins:'')+(wins&&losses?' ':'')+(losses?'💀'+losses:'');
+    ctx.font='12px Segoe UI';ctx.strokeText(s,ctr.x,ctr.y+32);ctx.fillText(s,ctr.x,ctr.y+32);
+   }
+  }
+ });
+ ctx.restore();
+}
+
 // ============================ ACTIONS ============================
 function spend(cost){if(G.player.gold<cost){toast('Yetersiz altın!','bad');return false;}G.player.gold-=cost;return true;}
 function rrr(){renderHUD();if(G.activePanelTabs)renderPanel(G.currentTab);}
@@ -746,6 +878,14 @@ function act_takeLoan(a){G.player.gold+=a;G.player.nationalDebt+=a;G.player.infl
 function act_repay(a){a=Math.min(a,G.player.nationalDebt);if(!spend(a))return;G.player.nationalDebt-=a;G.player.reputation=clamp(G.player.reputation+2,0,100);toast('Borç ödendi','good');rrr();}
 function act_print(){G.player.gold+=8000;G.player.inflation=clamp(G.player.inflation+3,0,35);G.player.reputation=clamp(G.player.reputation-6,0,100);G.player.happiness=clamp(G.player.happiness-4,0,100);toast('+8000 ama enflasyon arttı!','bad');rrr();}
 function act_sell(k,amt,gold){if((G.player.resources[k]||0)<amt){toast('Yetersiz stok!','bad');return;}G.player.resources[k]-=amt;G.player.gold+=gold;toast(`${amt} satıldı +${gold}`,'good');rrr();}
+function act_market(k,amt,buy){
+ const m=G.market&&G.market[k];if(!m)return;
+ const total=Math.round((buy?m.p*1.08:m.p*.96)*amt);
+ if(buy){if(!spend(total))return;G.player.resources[k]=(G.player.resources[k]||0)+amt;toast(`${amt} birim alındı (-${fmt(total)})`,'good');}
+ else{if((G.player.resources[k]||0)<amt){toast('Yetersiz stok!','bad');return;}G.player.resources[k]-=amt;G.player.gold+=total;toast(`${amt} birim satıldı (+${fmt(total)})`,'good');}
+ rrr();
+}
+function act_invest(sec){if(!spend(2500))return;const sd=G.player.sectorDev;sd[sec]=clamp((sd[sec]||20)+4,0,100);const n={agri:'🌾 Tarım',industry:'🏭 Sanayi',services:'🏪 Hizmet'}[sec];addEvent('good',`${n} sektörüne yatırım yapıldı.`);toast(`${n} sektörü gelişti (+4)`,'good');rrr();}
 function act_build(k,cost){if(!spend(cost))return;G.player.buildings[k]=(G.player.buildings[k]||0)+1;addEvent('good','🏗️ Yeni yapı inşa edildi.');toast('Yapı tamam! Şehirde görünecek.','good');G.cityDirty=true;rrr();}
 function act_research(id){if(G.research){toast('Önce mevcut araştırmayı bitir','bad');return;}G.research={id,progress:0};toast('Araştırma başladı','good');rrr();}
 function act_cancelResearch(){G.research=null;rrr();}
@@ -840,21 +980,34 @@ function drawMap(){
  mapCtx.setLineDash([]);
  const hov=G.hoveredCountry;
  const hovNeigh=hov?new Set([...(hov.landNeighbors||[]),...(hov.seaNeighbors||[])]):null;
+ // deniz adları
+ mapCtx.font='italic 13px Georgia';mapCtx.textAlign='center';mapCtx.fillStyle='rgba(150,195,235,.4)';
+ SEA_LABELS.forEach(s=>{mapCtx.fillText(s.t,s.x,s.y);});
  G.countries.forEach(c=>{
   const hover=c===hov;
   const isHovNeigh=hovNeigh&&hovNeigh.has(c.id);
   mapCtx.beginPath();
   c.polygon.forEach((p,i)=>{i===0?mapCtx.moveTo(p[0],p[1]):mapCtx.lineTo(p[0],p[1]);});
   mapCtx.closePath();
-  mapCtx.fillStyle=c.color;mapCtx.globalAlpha=hover?1:isHovNeigh?.92:hov?.45:.8;mapCtx.fill();mapCtx.globalAlpha=1;
-  mapCtx.strokeStyle=hover?'#ffd86b':isHovNeigh?'#7ad0ff':'rgba(0,0,0,.6)';mapCtx.lineWidth=hover?3:isHovNeigh?2.4:1.5;mapCtx.stroke();
+  // kıyı gölgesi — kara parçası denizden yükselmiş dursun
+  mapCtx.save();
+  mapCtx.shadowColor='rgba(0,0,0,.55)';mapCtx.shadowBlur=10;mapCtx.shadowOffsetY=5;
+  mapCtx.fillStyle=c.color;mapCtx.globalAlpha=hover?1:isHovNeigh?.94:hov?.5:.86;mapCtx.fill();
+  mapCtx.restore();mapCtx.globalAlpha=1;
+  mapCtx.strokeStyle=hover?'#ffd86b':isHovNeigh?'#7ad0ff':'rgba(10,18,30,.75)';mapCtx.lineWidth=hover?3:isHovNeigh?2.4:1.5;mapCtx.stroke();
+  // iç ışık — hafif kabartma hissi
+  mapCtx.strokeStyle='rgba(255,255,255,.14)';mapCtx.lineWidth=.8;mapCtx.stroke();
   const ctr=ctrOf(c);
-  mapCtx.fillStyle='#ffd86b';mapCtx.beginPath();mapCtx.arc(ctr.x,ctr.y,4,0,Math.PI*2);mapCtx.fill();
   mapCtx.fillStyle='#fff';mapCtx.font='bold 13px Georgia';mapCtx.textAlign='center';
   mapCtx.strokeStyle='#000';mapCtx.lineWidth=3;
-  mapCtx.strokeText(c.customName.toUpperCase(),ctr.x,ctr.y-12);
-  mapCtx.fillText(c.customName.toUpperCase(),ctr.x,ctr.y-12);
-  if(isHovNeigh){const lt=(hov.landNeighbors||[]).includes(c.id)?'🗺️ kara komşusu':'⚓ deniz komşusu';mapCtx.font='bold 10px Segoe UI';mapCtx.fillStyle='#7ad0ff';mapCtx.strokeText(lt,ctr.x,ctr.y+16);mapCtx.fillText(lt,ctr.x,ctr.y+16);}
+  mapCtx.strokeText(c.customName.toUpperCase(),ctr.x,ctr.y-10);
+  mapCtx.fillText(c.customName.toUpperCase(),ctr.x,ctr.y-10);
+  // başkent
+  mapCtx.fillStyle='#ffd86b';mapCtx.beginPath();mapCtx.arc(ctr.x-((c.capital.length*5)/2+6),ctr.y+5,2.6,0,Math.PI*2);mapCtx.fill();
+  mapCtx.font='10px Segoe UI';mapCtx.lineWidth=2.5;
+  mapCtx.strokeText(c.capital,ctr.x+3,ctr.y+9);
+  mapCtx.fillText(c.capital,ctr.x+3,ctr.y+9);
+  if(isHovNeigh){const lt=(hov.landNeighbors||[]).includes(c.id)?'🗺️ kara komşusu':'⚓ deniz komşusu';mapCtx.font='bold 10px Segoe UI';mapCtx.fillStyle='#7ad0ff';mapCtx.strokeText(lt,ctr.x,ctr.y+22);mapCtx.fillText(lt,ctr.x,ctr.y+22);}
  });
  mapCtx.restore();
 }
@@ -884,6 +1037,7 @@ function startGame(){
  c.resources={steel:1200,oil:800,grain:1500,gold_ore:400};
  c.buildings={factory:4,farm:5,mine:2,barracks:2,hospital:2,lab:1,fortress:1,university:0,port:1,market:3,refinery:1,bank:1};
  c.armyComp={infantry:28000,cavalry:4000,artillery:2000,special:1000};
+ c.interestRate=8;c.sectorDev={agri:35,industry:40,services:30};
  G.player=c;
  initMinisters();
  $('countryPicker').style.display='none';
@@ -987,6 +1141,78 @@ function texCarpet(rep,base,edge){return _mkTex('carp'+base+rep,128,128,(c,w,h)=
 function texWall(rep){return _mkTex('wall'+rep,128,128,(c,w,h)=>{c.fillStyle='#9a8d76';c.fillRect(0,0,w,h);for(let i=0;i<300;i++){const g=irand(-14,14);c.fillStyle=`rgba(${130+g},${120+g},${100+g},.5)`;c.fillRect(rand(0,w),rand(0,h),3,3);}},rep);}
 function texWater(rep){return _mkTex('water'+rep,128,128,(c,w,h)=>{c.fillStyle='#1d5d96';c.fillRect(0,0,w,h);for(let i=0;i<300;i++){c.fillStyle=`rgba(140,200,240,${rand(.05,.18)})`;c.fillRect(rand(0,w),rand(0,h),rand(2,6),1);}},rep);}
 function texBuilding(col){return _mkTex('bld'+col,64,128,(c,w,h)=>{c.fillStyle=col;c.fillRect(0,0,w,h);for(let y=8;y<h-6;y+=16)for(let x=6;x<w-6;x+=14){c.fillStyle=Math.random()<.6?'#ffe9a8':'#2a3038';c.fillRect(x,y,8,9);c.fillStyle='rgba(0,0,0,.25)';c.strokeRect(x,y,8,9);}});}
+// ---- Oda dekor dokuları ----
+function texChart(){return _mkTex('chart',256,160,(c,w,h)=>{
+ c.fillStyle='#0e1826';c.fillRect(0,0,w,h);
+ c.strokeStyle='rgba(120,160,210,.25)';c.lineWidth=1;
+ for(let x=0;x<w;x+=32){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke();}
+ for(let y=0;y<h;y+=32){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();}
+ for(let i=0;i<8;i++){c.fillStyle='rgba(80,180,110,.5)';const bh=rand(20,70);c.fillRect(10+i*30,h-20-bh,18,bh);}
+ c.strokeStyle='#ffd86b';c.lineWidth=3;c.beginPath();c.moveTo(8,h-30);
+ let ty=h-30;for(let x=8;x<w;x+=24){ty=clamp(ty-rand(2,16),20,h-24);c.lineTo(x,ty);}c.stroke();
+ c.fillStyle='#ffd86b';c.font='bold 14px Segoe UI';c.fillText('GSYH',10,18);
+});}
+function texCork(){return _mkTex('cork',256,160,(c,w,h)=>{
+ c.fillStyle='#8a6a42';c.fillRect(0,0,w,h);
+ for(let i=0;i<400;i++){c.fillStyle=`rgba(60,40,20,${rand(.04,.12)})`;c.fillRect(rand(0,w),rand(0,h),2,2);}
+ c.strokeStyle='#4a3418';c.lineWidth=8;c.strokeRect(0,0,w,h);
+ const spots=[];
+ for(let i=0;i<6;i++){const x=rand(20,w-46),y=rand(18,h-40);spots.push([x+13,y+16]);
+  c.save();c.translate(x,y);c.rotate(rand(-.15,.15));c.fillStyle='#e8e2d2';c.fillRect(0,0,26,32);c.fillStyle='#9aa4b8';c.fillRect(3,4,20,18);c.restore();
+  c.fillStyle='#c03030';c.beginPath();c.arc(x+13,y+3,2.5,0,7);c.fill();}
+ c.strokeStyle='rgba(200,40,40,.8)';c.lineWidth=1.5;
+ for(let i=0;i<spots.length-1;i++){c.beginPath();c.moveTo(spots[i][0],spots[i][1]);c.lineTo(spots[i+1][0],spots[i+1][1]);c.stroke();}
+});}
+function texRadar(){return _mkTex('radar',128,128,(c,w,h)=>{
+ c.fillStyle='#04140a';c.fillRect(0,0,w,h);
+ c.strokeStyle='rgba(60,220,120,.5)';c.lineWidth=1.5;
+ for(let r2=15;r2<=60;r2+=15){c.beginPath();c.arc(64,64,r2,0,7);c.stroke();}
+ c.beginPath();c.moveTo(64,4);c.lineTo(64,124);c.moveTo(4,64);c.lineTo(124,64);c.stroke();
+ c.fillStyle='rgba(60,220,120,.18)';c.beginPath();c.moveTo(64,64);c.arc(64,64,60,-.5,.4);c.closePath();c.fill();
+ c.fillStyle='#5aff9a';for(let i=0;i<4;i++){c.beginPath();c.arc(rand(24,104),rand(24,104),2.4,0,7);c.fill();}
+});}
+function texStained(){return _mkTex('stained',128,192,(c,w,h)=>{
+ const cols=['#c04848','#4868c0','#c8a838','#48a860','#8848b0','#c07838'];
+ const cw=w/4,ch=h/6;
+ for(let i=0;i<4;i++)for(let j=0;j<6;j++){c.fillStyle=cols[(i*3+j*5)%cols.length];c.fillRect(i*cw,j*ch,cw,ch);
+  c.fillStyle='rgba(255,255,255,.22)';c.beginPath();c.arc(i*cw+cw*.35,j*ch+ch*.3,5,0,7);c.fill();}
+ c.strokeStyle='#2a2a30';c.lineWidth=4;
+ for(let i=0;i<=4;i++){c.beginPath();c.moveTo(i*cw,0);c.lineTo(i*cw,h);c.stroke();}
+ for(let j=0;j<=6;j++){c.beginPath();c.moveTo(0,j*ch);c.lineTo(w,j*ch);c.stroke();}
+ c.fillStyle='#ffd86b';c.beginPath();c.arc(w/2,h/2,14,0,7);c.fill();
+ c.strokeStyle='#c8a030';c.lineWidth=2;c.beginPath();c.arc(w/2,h/2,18,0,7);c.stroke();
+});}
+function texWorldMap(){return _mkTex('worldmap',256,160,(c,w,h)=>{
+ const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#16385c');g.addColorStop(1,'#0a1c34');
+ c.fillStyle=g;c.fillRect(0,0,w,h);
+ const sx=w/1000,sy=h/600;
+ COUNTRY_TEMPLATES.forEach(t=>{c.beginPath();t.polygon.forEach((p2,i)=>{i?c.lineTo(p2[0]*sx,p2[1]*sy):c.moveTo(p2[0]*sx,p2[1]*sy);});c.closePath();c.fillStyle=t.color;c.fill();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=1;c.stroke();});
+ c.strokeStyle='#c8a850';c.lineWidth=5;c.strokeRect(0,0,w,h);
+});}
+// ---- Oda mobilya yardımcıları ----
+function makeBookshelf(S,x,z){
+ const frame=new THREE.Mesh(new THREE.BoxGeometry(2.6,3,.45),new THREE.MeshLambertMaterial({color:0x4a3018}));
+ frame.position.set(x,1.5,z);S.add(frame);
+ addBoxCollider(x,z,2.6,.5);
+ const bookCols=[0x8a3030,0x2f5a8a,0x3f7a3a,0xb08a30,0x6a4a8a,0x8a6a4a,0x3a3a4a];
+ for(let row=0;row<4;row++)for(let i=0;i<9;i++){
+  if(Math.random()<.12)continue;
+  const bh=rand(.4,.52);
+  const b=new THREE.Mesh(new THREE.BoxGeometry(.2,bh,.3),new THREE.MeshLambertMaterial({color:pick(bookCols)}));
+  b.position.set(x-1.04+i*.26,.42+row*.66+bh/2,z+.1);S.add(b);
+ }
+}
+function makeWallClock(S,x,z,side){
+ const dx=side==='west'?-1:1; // odanın içine doğru
+ const rim=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.04,16),new THREE.MeshLambertMaterial({color:0x6a4a20}));
+ rim.rotation.z=Math.PI/2;rim.position.set(x,2.9,z);S.add(rim);
+ const face=new THREE.Mesh(new THREE.CylinderGeometry(.31,.31,.06,16),new THREE.MeshLambertMaterial({color:0xf2ead6}));
+ face.rotation.z=Math.PI/2;face.position.set(x+dx*.01,2.9,z);S.add(face);
+ const h1=new THREE.Mesh(new THREE.BoxGeometry(.02,.2,.02),new THREE.MeshLambertMaterial({color:0x222222}));
+ h1.position.set(x+dx*.05,2.98,z);S.add(h1);
+ const h2=new THREE.Mesh(new THREE.BoxGeometry(.02,.02,.14),new THREE.MeshLambertMaterial({color:0x222222}));
+ h2.position.set(x+dx*.05,2.9,z+.07);S.add(h2);
+}
 function makeTextSprite(text,opts={}){
  const cv=document.createElement('canvas');cv.width=512;cv.height=128;
  const ctx=cv.getContext('2d');
@@ -1045,22 +1271,22 @@ function addPlant(scene,x,z){
 
 // ============================ OFFICE ============================
 const ROOMS=[
- {id:'economy',name:'EKONOMİ ODASI',side:'west',cz:-12,color:0x2a4a3a,carpet:0x1d3a2a,
+ {id:'economy',name:'EKONOMİ ODASI',side:'west',cz:-12,color:0x2a4a3a,carpet:0x1d3a2a,acc:0x3fae6a,
   npc:{name:'Maliye Bakanı',emoji:'💼',suit:0x2a3a55,lines:['Başkanım, hoş geldiniz! Hazine raporları masamda.','Vergileri, bütçeyi ve inşaatları buradan yönetebiliriz.','Bilgisayarı açıyorum, buyrun...']},
   tabs:['economy','budget','resources','build']},
- {id:'army',name:'ORDU ODASI',side:'west',cz:0,color:0x3a3326,carpet:0x2c2618,
+ {id:'army',name:'ORDU ODASI',side:'west',cz:0,color:0x3a3326,carpet:0x2c2618,acc:0x8a9a4a,
   npc:{name:'Genelkurmay Başkanı',emoji:'⚔️',suit:0x33402a,lines:['Komutanım! Ordu emrinizde.','Asker alımı, doktrinler ve askeri reformlar için buradayım.','Harita masasına gelin, durumu gösereyim...']},
   tabs:['military','armydetail']},
- {id:'ops',name:'GİZLİ İŞLER ODASI',side:'west',cz:12,color:0x261c2c,carpet:0x1a1420,
+ {id:'ops',name:'GİZLİ İŞLER ODASI',side:'west',cz:12,color:0x261c2c,carpet:0x1a1420,acc:0x7a3040,
   npc:{name:'İstihbarat Şefi',emoji:'🕵️',suit:0x1a1a22,lines:['(fısıltıyla) Başkanım... kimse görmedi değil mi?','Casuslarımız her yerde. Operasyon emrinizi bekliyorum.','Hedef listesi şifreli dosyada...']},
   tabs:['ops']},
- {id:'diplomacy',name:'DİPLOMASİ ODASI',side:'east',cz:-12,color:0x1f3346,carpet:0x16283a,
+ {id:'diplomacy',name:'DİPLOMASİ ODASI',side:'east',cz:-12,color:0x1f3346,carpet:0x16283a,acc:0x4a90c8,
   npc:{name:'Dışişleri Bakanı',emoji:'🤝',suit:0x3a3050,lines:['Başkanım, dünya liderleri sizi bekliyor.','Ticaret anlaşmaları, ittifaklar... ve gerekirse savaş ilanı.','Diplomasi masasına buyrun...']},
   tabs:['diplomacy','trade']},
- {id:'law',name:'HUKUK ODASI',side:'east',cz:0,color:0x3c2f22,carpet:0x2e2418,
+ {id:'law',name:'HUKUK ODASI',side:'east',cz:0,color:0x3c2f22,carpet:0x2e2418,acc:0xc8963a,
   npc:{name:'Adalet Bakanı',emoji:'⚖️',suit:0x3a2a20,lines:['Sayın Başkan, adalet mülkün temelidir.','Yeni kanunlar koyabilir veya rejimi değiştirebiliriz.','Anayasa kitabını açıyorum...']},
   tabs:['laws','ideology']},
- {id:'religion',name:'DİN ODASI',side:'east',cz:12,color:0x3a2c3a,carpet:0x2c202c,
+ {id:'religion',name:'DİN ODASI',side:'east',cz:12,color:0x3a2c3a,carpet:0x2c202c,acc:0x9a6ac8,
   npc:{name:'İmam Yusuf',emoji:'☪️',suit:0x4a4038,lines:['Hoş geldiniz evladım.','Halkın inancı ve bayramlar benim emanetimde.','Ne yapmak istersiniz?']},
   tabs:['religion']},
 ];
@@ -1123,21 +1349,85 @@ function buildOffice(){
  // ===== Rooms =====
  ROOMS.forEach(r=>{
   const cx=r.side==='west'?-15.5:15.5;
-  // carpet
+  const accent=r.acc||0xc8a850;
+  const S=officeScene;
+  // carpet + işlemeli orta kilim
   const rc=new THREE.Mesh(new THREE.BoxGeometry(13,.04,10),new THREE.MeshLambertMaterial({color:r.carpet}));
-  rc.position.set(cx,.05,r.cz);officeScene.add(rc);
-  // oda tavan lambası (parlayan mesh — ışık hesabı yok)
+  rc.position.set(cx,.05,r.cz);S.add(rc);
+  const rugHex='#'+r.carpet.toString(16).padStart(6,'0');
+  const rug=new THREE.Mesh(new THREE.BoxGeometry(5.6,.05,4),new THREE.MeshLambertMaterial({map:texCarpet(1,rugHex,'#d8b048')}));
+  rug.position.set(cx,.08,r.cz+1.4);S.add(rug);
+  // avize: altın halka + sıcak ampul + tavan paneli
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.05,8,20),new THREE.MeshLambertMaterial({color:0xc8a850}));
+  ring.rotation.x=Math.PI/2;ring.position.set(cx,3.5,r.cz);S.add(ring);
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshBasicMaterial({color:0xfff0d0}));
+  bulb.position.set(cx,3.45,r.cz);S.add(bulb);
   const rlamp=new THREE.Mesh(new THREE.BoxGeometry(1.1,.1,1.1),new THREE.MeshBasicMaterial({color:0xfff0d0}));
-  rlamp.position.set(cx,3.9,r.cz);officeScene.add(rlamp);
-  // Desk
-  const desk=new THREE.Mesh(new THREE.BoxGeometry(2.6,.9,1.2),new THREE.MeshLambertMaterial({color:0x5a4630}));
-  desk.position.set(cx,0.45,r.cz);desk.castShadow=true;officeScene.add(desk);
-  addBoxCollider(cx,r.cz,2.6,1.2);
-  // Computer screen
+  rlamp.position.set(cx,3.92,r.cz);S.add(rlamp);
+  // Makam masası: gövde + cilalı geniş tabla + altın şerit
+  const desk=new THREE.Mesh(new THREE.BoxGeometry(2.8,.85,1.3),new THREE.MeshLambertMaterial({color:0x4a3524}));
+  desk.position.set(cx,0.43,r.cz);desk.castShadow=true;S.add(desk);
+  const deskTop=new THREE.Mesh(new THREE.BoxGeometry(3.05,.08,1.5),new THREE.MeshLambertMaterial({color:0x2e2216}));
+  deskTop.position.set(cx,.9,r.cz);S.add(deskTop);
+  const trim=new THREE.Mesh(new THREE.BoxGeometry(2.82,.07,.06),new THREE.MeshLambertMaterial({color:0xc8a850}));
+  trim.position.set(cx,.62,r.cz+.66);S.add(trim);
+  addBoxCollider(cx,r.cz,3,1.5);
+  // masa üstü: bilgisayar, klavye, evrak, masa lambası
   const scr=new THREE.Mesh(new THREE.BoxGeometry(.9,.6,.07),new THREE.MeshBasicMaterial({color:0x66ccff}));
-  scr.position.set(cx,1.35,r.cz-.2);officeScene.add(scr);
+  scr.position.set(cx,1.4,r.cz-.2);S.add(scr);
   const scrB=new THREE.Mesh(new THREE.BoxGeometry(1,.7,.05),new THREE.MeshLambertMaterial({color:0x111418}));
-  scrB.position.set(cx,1.35,r.cz-.24);officeScene.add(scrB);
+  scrB.position.set(cx,1.4,r.cz-.24);S.add(scrB);
+  const kb=new THREE.Mesh(new THREE.BoxGeometry(.7,.04,.26),new THREE.MeshLambertMaterial({color:0x22262e}));
+  kb.position.set(cx,.96,r.cz+.18);S.add(kb);
+  const paper=new THREE.Mesh(new THREE.BoxGeometry(.5,.03,.65),new THREE.MeshLambertMaterial({color:0xf2ead6}));
+  paper.position.set(cx-1,.96,r.cz+.1);S.add(paper);
+  const dl1=new THREE.Mesh(new THREE.CylinderGeometry(.04,.1,.3,8),new THREE.MeshLambertMaterial({color:0x2a2a2a}));
+  dl1.position.set(cx+1.15,1.09,r.cz-.15);S.add(dl1);
+  const dl2=new THREE.Mesh(new THREE.CylinderGeometry(.15,.19,.18,10),new THREE.MeshBasicMaterial({color:0x2e7d4a}));
+  dl2.position.set(cx+1.15,1.3,r.cz-.15);S.add(dl2);
+  // bakan koltuğu (yüksek sırtlı, altın başlıklı)
+  const chMat=new THREE.MeshLambertMaterial({color:0x4a2020});
+  const mseat=new THREE.Mesh(new THREE.BoxGeometry(.8,.16,.8),chMat);mseat.position.set(cx,.62,r.cz-1.05);S.add(mseat);
+  const mback=new THREE.Mesh(new THREE.BoxGeometry(.8,1.2,.16),chMat);mback.position.set(cx,1.2,r.cz-1.4);S.add(mback);
+  const mgold=new THREE.Mesh(new THREE.BoxGeometry(.86,.12,.2),new THREE.MeshLambertMaterial({color:0xc8a850}));mgold.position.set(cx,1.84,r.cz-1.4);S.add(mgold);
+  // misafir koltukları (masanın önünde, vurgu renginde)
+  [[-1.4,1.9],[1.4,1.9]].forEach(([ox,oz])=>{
+   const gl2=new THREE.Mesh(new THREE.BoxGeometry(.6,.5,.6),new THREE.MeshLambertMaterial({color:0x2a2018}));
+   gl2.position.set(cx+ox,.25,r.cz+oz);S.add(gl2);
+   const gs=new THREE.Mesh(new THREE.BoxGeometry(.7,.14,.7),new THREE.MeshLambertMaterial({color:accent}));
+   gs.position.set(cx+ox,.56,r.cz+oz);S.add(gs);
+   const gb=new THREE.Mesh(new THREE.BoxGeometry(.7,.8,.14),new THREE.MeshLambertMaterial({color:accent}));
+   gb.position.set(cx+ox,1,r.cz+oz+.32);S.add(gb);
+  });
+  // dış duvarda pencere (din odasında vitray) + çerçeve + perdeler
+  const wx=r.side==='west'?-22.6:22.6;
+  const winTex=r.id==='religion'?texStained():makeSkyTexture('#bcd6f2','#e6d8b8','#f3e6c2');
+  const win=new THREE.Mesh(new THREE.PlaneGeometry(3.6,2.2),new THREE.MeshBasicMaterial({map:winTex,side:THREE.DoubleSide}));
+  win.position.set(wx,2.2,r.cz);win.rotation.y=r.side==='west'?Math.PI/2:-Math.PI/2;S.add(win);
+  const fx=r.side==='west'?-22.5:22.5;
+  const wfMat=new THREE.MeshLambertMaterial({color:0x3a2c1e});
+  [[2.2,r.cz-1.85,.16,2.5,.16],[2.2,r.cz+1.85,.16,2.5,.16],[1.05,r.cz,.16,.16,3.9],[3.35,r.cz,.16,.16,3.9]].forEach(([y,z,w,h,d])=>{
+   const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),wfMat);f.position.set(fx,y,z);S.add(f);
+  });
+  if(r.id!=='religion'){
+   const curMat=new THREE.MeshLambertMaterial({color:accent});
+   [r.cz-2.15,r.cz+2.15].forEach(z=>{
+    const cm=new THREE.Mesh(new THREE.BoxGeometry(.22,2.6,.5),curMat);cm.position.set(fx+(r.side==='west'?.15:-.15),2.15,z);S.add(cm);
+   });
+   const pelmet=new THREE.Mesh(new THREE.BoxGeometry(.24,.3,4.6),curMat);pelmet.position.set(fx+(r.side==='west'?.15:-.15),3.55,r.cz);S.add(pelmet);
+  }
+  // duvar saati (koridor duvarında) + köşe bitkileri
+  makeWallClock(S,r.side==='west'?-8.35:8.35,r.cz-3,r.side);
+  addPlant(S,cx+(r.side==='west'?-5.6:5.6),r.cz-4.1);
+  addPlant(S,cx+(r.side==='west'?5.9:-5.9),r.cz+4.1);
+  // arka duvarda çerçeveli tablolar (vurgu rengi + bayrak rengi)
+  const backZ=r.cz===-12?-18.6:r.cz-5.68;
+  [[-3,'#'+accent.toString(16).padStart(6,'0')],[3,G.player.color]].forEach(([ox,col])=>{
+   const fr2=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.3,.1),new THREE.MeshLambertMaterial({color:0x6a4a20}));
+   fr2.position.set(cx+ox,2.5,backZ);S.add(fr2);
+   const cv2=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.0),new THREE.MeshLambertMaterial({color:new THREE.Color(col)}));
+   cv2.position.set(cx+ox,2.5,backZ+.06);S.add(cv2);
+  });
   // NPC behind desk
   const npc=makePerson(r.npc.suit);
   const npcZ=r.cz-2.2;
@@ -1245,34 +1535,108 @@ function updateReligionNPC(){
 }
 function addRoomProps(r,cx){
  const S=officeScene;
- if(r.id==='army'){ // map table
-  const t=new THREE.Mesh(new THREE.BoxGeometry(2.4,.7,1.6),new THREE.MeshLambertMaterial({color:0x3a4a2a}));
-  t.position.set(cx-4,0.35,r.cz+2.5);S.add(t);addBoxCollider(cx-4,r.cz+2.5,2.4,1.6);
-  const mapTop=new THREE.Mesh(new THREE.BoxGeometry(2.2,.04,1.4),new THREE.MeshBasicMaterial({color:0x7a9a5a}));
-  mapTop.position.set(cx-4,.73,r.cz+2.5);S.add(mapTop);
- } else if(r.id==='law'){ // bookshelf
-  const b=new THREE.Mesh(new THREE.BoxGeometry(.6,3,4),new THREE.MeshLambertMaterial({color:0x4a3018}));
-  b.position.set(cx+(r.side==='west'?-6:6),1.5,r.cz);S.add(b);
- } else if(r.id==='religion'){ // altar/rug
-  const rug=new THREE.Mesh(new THREE.BoxGeometry(1.4,.05,2.2),new THREE.MeshLambertMaterial({color:0x7a2030}));
-  rug.position.set(cx+3.5,.08,r.cz+2);S.add(rug);
-  const cnd=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,.8),new THREE.MeshLambertMaterial({color:0xd8c890}));
-  cnd.position.set(cx+3.5,.45,r.cz-1);S.add(cnd);
-  const fl=new THREE.PointLight(0xff9933,.5,4);fl.position.set(cx+3.5,1,r.cz-1);S.add(fl);
- } else if(r.id==='ops'){ // radio + red light
-  const radio=new THREE.Mesh(new THREE.BoxGeometry(1.4,.8,.7),new THREE.MeshLambertMaterial({color:0x1a1d24}));
-  radio.position.set(cx-4,1.1,r.cz+3);S.add(radio);
-  const red=new THREE.PointLight(0xff2222,.7,7);red.position.set(cx,2.5,r.cz);S.add(red);
- } else if(r.id==='economy'){ // gold safe
+ const backZ=r.cz===-12?-18.6:r.cz-5.68; // arka duvar önü
+ const wallZ=backZ+.08;
+ if(r.id==='economy'){ // kasa + altın piramidi + GSYH panosu + altın desteleri
   const safe=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.6,1),new THREE.MeshLambertMaterial({color:0x3a3f48}));
   safe.position.set(cx-5,0.8,r.cz+3);S.add(safe);addBoxCollider(cx-5,r.cz+3,1.2,1);
   const dial=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.06,12),new THREE.MeshLambertMaterial({color:0xc8b060}));
   dial.rotation.x=Math.PI/2;dial.position.set(cx-5,.9,r.cz+3.55);S.add(dial);
- } else if(r.id==='diplomacy'){ // world globe
+  const gmat=new THREE.MeshLambertMaterial({color:0xd8b048});
+  const ped=new THREE.Mesh(new THREE.BoxGeometry(1.3,.5,.9),new THREE.MeshLambertMaterial({color:0x2e3440}));
+  ped.position.set(cx+4.6,.25,r.cz-2.5);S.add(ped);addBoxCollider(cx+4.6,r.cz-2.5,1.3,.9);
+  for(let row=0;row<3;row++)for(let i=0;i<3-row;i++){
+   const bar2=new THREE.Mesh(new THREE.BoxGeometry(.3,.13,.5),gmat);
+   bar2.position.set(cx+4.6-(2-row)*.16+i*.32,.57+row*.14,r.cz-2.5);S.add(bar2);
+  }
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.6),new THREE.MeshBasicMaterial({map:texChart()}));
+  board.position.set(cx,2.55,wallZ);S.add(board);
+  [[.7,.14],[.95,.09]].forEach(([ox,h2])=>{const coin=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,h2,10),gmat);coin.position.set(cx+ox,.94+h2/2,r.cz+.35);S.add(coin);});
+ } else if(r.id==='army'){ // Nova Europa harita masası + bayraklar + radar + silah rafı + kum torbaları
+  const t=new THREE.Mesh(new THREE.BoxGeometry(2.6,.72,1.7),new THREE.MeshLambertMaterial({color:0x3a4a2a}));
+  t.position.set(cx-4,.36,r.cz+2.6);S.add(t);addBoxCollider(cx-4,r.cz+2.6,2.6,1.7);
+  const mapTop=new THREE.Mesh(new THREE.BoxGeometry(2.4,.05,1.5),new THREE.MeshBasicMaterial({map:texWorldMap()}));
+  mapTop.position.set(cx-4,.75,r.cz+2.6);S.add(mapTop);
+  [[-.7,G.player.color],[.7,'#d04040']].forEach(([ox,col])=>{
+   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.5,6),new THREE.MeshLambertMaterial({color:0x333333}));
+   pole.position.set(cx-4+ox,1,r.cz+2.6);S.add(pole);
+   const fl=new THREE.Mesh(new THREE.PlaneGeometry(.3,.2),new THREE.MeshBasicMaterial({color:new THREE.Color(col),side:THREE.DoubleSide}));
+   fl.position.set(cx-4+ox+.16,1.14,r.cz+2.6);S.add(fl);
+  });
+  const radar=new THREE.Mesh(new THREE.PlaneGeometry(1.2,1.2),new THREE.MeshBasicMaterial({map:texRadar()}));
+  radar.position.set(cx,2.55,wallZ);S.add(radar);
+  const rack=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.3,.08),new THREE.MeshLambertMaterial({color:0x2a2018}));
+  rack.position.set(cx+4.9,1.7,backZ+.05);S.add(rack);
+  for(let i=0;i<4;i++){
+   const rifle=new THREE.Mesh(new THREE.BoxGeometry(.07,1.05,.07),new THREE.MeshLambertMaterial({color:0x4a3420}));
+   rifle.rotation.z=.16;rifle.position.set(cx+4.45+i*.3,1.7,backZ+.12);S.add(rifle);
+  }
+  for(let i=0;i<3;i++){const sb=new THREE.Mesh(new THREE.BoxGeometry(.6,.28,.35),new THREE.MeshLambertMaterial({color:0x7a6a4a}));
+   sb.position.set(cx+5.2,.14+(i===2?.28:0),r.cz+3.6+(i===1?.4:i===2?.2:0));S.add(sb);}
+ } else if(r.id==='ops'){ // telsiz + kırmızı ışık + ipli pano + monitörler + dosya dolabı
+  const radio=new THREE.Mesh(new THREE.BoxGeometry(1.4,.8,.7),new THREE.MeshLambertMaterial({color:0x1a1d24}));
+  radio.position.set(cx-4,1.1,r.cz+3);S.add(radio);
+  const red=new THREE.PointLight(0xff2222,.7,7);red.position.set(cx,2.5,r.cz);S.add(red);
+  const cork=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.6),new THREE.MeshBasicMaterial({map:texCork()}));
+  cork.position.set(cx,2.55,wallZ);S.add(cork);
+  const mt=new THREE.Mesh(new THREE.BoxGeometry(2.4,.75,.7),new THREE.MeshLambertMaterial({color:0x22262e}));
+  mt.position.set(cx+4.6,.37,r.cz-2.8);S.add(mt);addBoxCollider(cx+4.6,r.cz-2.8,2.4,.7);
+  for(let i=0;i<3;i++){
+   const mon=new THREE.Mesh(new THREE.BoxGeometry(.62,.44,.06),new THREE.MeshBasicMaterial({color:0x1a3a26}));
+   mon.position.set(cx+3.9+i*.7,1.05,r.cz-2.8);mon.rotation.y=(1-i)*.18;S.add(mon);
+  }
+  const cab=new THREE.Mesh(new THREE.BoxGeometry(.8,1.4,.6),new THREE.MeshLambertMaterial({color:0x3a3f48}));
+  cab.position.set(cx-5.2,.7,r.cz-3.2);S.add(cab);addBoxCollider(cx-5.2,r.cz-3.2,.8,.6);
+  for(let i=0;i<3;i++){const dr=new THREE.Mesh(new THREE.BoxGeometry(.7,.03,.05),new THREE.MeshLambertMaterial({color:0x8a929e}));
+   dr.position.set(cx-5.2,.35+i*.4,r.cz-2.9);S.add(dr);}
+ } else if(r.id==='diplomacy'){ // küre + duvar haritası + tüm ülke bayraklı toplantı masası
   const gl=new THREE.Mesh(new THREE.SphereGeometry(.45,16,12),new THREE.MeshLambertMaterial({color:0x2a6aa8}));
   gl.position.set(cx+4,1.3,r.cz+2.5);S.add(gl);
+  const mer=new THREE.Mesh(new THREE.TorusGeometry(.5,.02,6,20),new THREE.MeshLambertMaterial({color:0xc8a850}));
+  mer.position.set(cx+4,1.3,r.cz+2.5);mer.rotation.x=.4;S.add(mer);
   const st=new THREE.Mesh(new THREE.CylinderGeometry(.05,.3,.9),new THREE.MeshLambertMaterial({color:0x4a3422}));
   st.position.set(cx+4,.45,r.cz+2.5);S.add(st);
+  const wm=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.6),new THREE.MeshBasicMaterial({map:texWorldMap()}));
+  wm.position.set(cx,2.55,wallZ);S.add(wm);
+  const mt=new THREE.Mesh(new THREE.BoxGeometry(4.6,.75,1.3),new THREE.MeshLambertMaterial({color:0x4a3422}));
+  mt.position.set(cx-.5,.37,r.cz+3.4);S.add(mt);addBoxCollider(cx-.5,r.cz+3.4,4.6,1.3);
+  G.countries.slice(0,15).forEach((o,i)=>{
+   const px=cx-.5-2.1+i*.3;
+   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.4,5),new THREE.MeshLambertMaterial({color:0x555555}));
+   pole.position.set(px,.95,r.cz+3.4);S.add(pole);
+   const fl=new THREE.Mesh(new THREE.PlaneGeometry(.22,.15),new THREE.MeshBasicMaterial({color:new THREE.Color(o.color),side:THREE.DoubleSide}));
+   fl.position.set(px+.11,1.08,r.cz+3.4);S.add(fl);
+  });
+ } else if(r.id==='law'){ // çifte kitaplık + adalet terazisi + tokmak
+  makeBookshelf(S,cx-5.2,backZ+.32);
+  makeBookshelf(S,cx+5.2,backZ+.32);
+  const pedestal=new THREE.Mesh(new THREE.CylinderGeometry(.35,.45,.9,10),new THREE.MeshLambertMaterial({color:0x5a4630}));
+  pedestal.position.set(cx-4.6,.45,r.cz+3);S.add(pedestal);addBoxCollider(cx-4.6,r.cz+3,.9,.9);
+  const gmat2=new THREE.MeshLambertMaterial({color:0xc8a850});
+  const pole2=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.8,6),gmat2);pole2.position.set(cx-4.6,1.3,r.cz+3);S.add(pole2);
+  const beam=new THREE.Mesh(new THREE.BoxGeometry(1,.05,.05),gmat2);beam.position.set(cx-4.6,1.66,r.cz+3);S.add(beam);
+  [-.45,.45].forEach(ox=>{
+   const wire=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.3,4),gmat2);wire.position.set(cx-4.6+ox,1.5,r.cz+3);S.add(wire);
+   const pan=new THREE.Mesh(new THREE.CylinderGeometry(.16,.13,.05,10),gmat2);pan.position.set(cx-4.6+ox,1.34,r.cz+3);S.add(pan);
+  });
+  const gav=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.24,8),new THREE.MeshLambertMaterial({color:0x6a4a20}));
+  gav.rotation.z=Math.PI/2;gav.position.set(cx-.85,.99,r.cz-.3);S.add(gav);
+ } else if(r.id==='religion'){ // mihrap + mum sırası + seccade + rahle
+  const altar=new THREE.Mesh(new THREE.BoxGeometry(2,.7,.6),new THREE.MeshLambertMaterial({color:0x4a3040}));
+  altar.position.set(cx,.35,backZ+.5);S.add(altar);addBoxCollider(cx,backZ+.5,2,.6);
+  [-0.6,0,0.6].forEach(ox=>{
+   const cnd=new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,.5,8),new THREE.MeshLambertMaterial({color:0xd8c890}));
+   cnd.position.set(cx+ox,.95,backZ+.5);S.add(cnd);
+   const flame=new THREE.Mesh(new THREE.ConeGeometry(.03,.09,6),new THREE.MeshBasicMaterial({color:0xffb050}));
+   flame.position.set(cx+ox,1.26,backZ+.5);S.add(flame);
+  });
+  const fl2=new THREE.PointLight(0xff9933,.55,6);fl2.position.set(cx,1.4,backZ+.6);S.add(fl2);
+  const rug2=new THREE.Mesh(new THREE.BoxGeometry(1.4,.05,2.2),new THREE.MeshLambertMaterial({map:texCarpet(1,'#7a2030','#d8b048')}));
+  rug2.position.set(cx+3.5,.09,r.cz+2);S.add(rug2);
+  const rahle=new THREE.Mesh(new THREE.BoxGeometry(.5,.35,.4),new THREE.MeshLambertMaterial({color:0x6a4a20}));
+  rahle.position.set(cx-3.5,.18,r.cz+2.5);S.add(rahle);
+  const book=new THREE.Mesh(new THREE.BoxGeometry(.4,.07,.3),new THREE.MeshLambertMaterial({color:0x2a5a3a}));
+  book.rotation.x=-.3;book.position.set(cx-3.5,.42,r.cz+2.5);S.add(book);
  }
 }
 
@@ -1294,6 +1658,8 @@ function baldrickTalk(){
  if(c.food<35)tips.push('Kıtlık kapıda! Çiftlik inşa edin efendim.');
  if(c.military<30)tips.push('Ordumuz zayıf. Komşular bunu fark etmeden asker alın.');
  if(c.inflation>10)tips.push('Enflasyon canavarı büyüyor. Banka inşa edin, para basmayın.');
+ if(c.inflation>8&&c.interestRate<10)tips.push('Enflasyon yükseliyor — Ekonomi odasındaki Merkez Bankası faizini artırın efendim.');
+ if(c.nationalDebt>c.gdp*.8)tips.push('Kredi notumuz düşüyor efendim! Borç faizi bizi yiyip bitirecek, borçları ödeyin.');
  if(!G.research)tips.push('Laboratuvar boş duruyor. Şehirdeki 🔬 Araştırma Merkezi\'ne gidip bir teknoloji başlatın.');
  if(tips.length===0)tips.push('Her şey yolunda görünüyor efendim. Şüpheli derecede yolunda...');
  G.dialog={lines:['Kurnaz bir planım var efendim!',pick(tips),'Eğitimi tekrar görmek isterseniz, aşağıdan başlatabilirsiniz.','Bir de... maaş zammı mümkün mü efendim? (değil mi... peki.)'],idx:0,name:'🥔 Danışman Baldrick',after:()=>{if(confirm('Baldrick eğitimini baştan görmek ister misin?'))startTutorial(true);}};
@@ -2461,6 +2827,7 @@ function endWar(won){
  }
  p.atWarWith=p.atWarWith.filter(x=>x!==e.id);
  e.atWarWith=(e.atWarWith||[]).filter(x=>x!==p.id);
+ (G.warHistory=G.warHistory||[]).push({id:e.id,won,y:G.year,m:G.month,type:'⚔️ Kara'});
  $('warEndTitle').textContent=won?'🏆 ZAFER!':'💀 MAĞLUBİYET';
  $('warEndTitle').className=won?'win':'lose';
  $('warEndBody').innerHTML=`💀 Öldürülen düşman puanı: <b>${w.enemyKilled}</b> · 🤝 Kayıp: <b>${w.ourLost}</b><br>Ülkeye etkisi:`;
@@ -2796,6 +3163,7 @@ function endNaval(won){
  }
  p.atWarWith=p.atWarWith.filter(x=>x!==e.id);
  e.atWarWith=(e.atWarWith||[]).filter(x=>x!==p.id);
+ (G.warHistory=G.warHistory||[]).push({id:e.id,won,y:G.year,m:G.month,type:'⚓ Deniz'});
  $('warEndTitle').textContent=won?'🏆 DENİZ ZAFERİ!':'💀 DENİZ MAĞLUBİYETİ';
  $('warEndTitle').className=won?'win':'lose';
  $('warEndBody').innerHTML=`⚓ İmha edilen hedef: <b>${n.killed}/${n.targetCount}</b> · ❤️ Gemi: <b>${Math.round(n.hp/n.maxHp*100)}%</b><br>Ülkeye etkisi:`;
@@ -3278,6 +3646,7 @@ function finishCampaign(){
   addEvent('bad',`💔 ${e.customName} harekâtı başarısız (${wins}/${total}).`);
  }
  p.atWarWith=p.atWarWith.filter(x=>x!==e.id);e.atWarWith=(e.atWarWith||[]).filter(x=>x!==p.id);
+ (G.warHistory=G.warHistory||[]).push({id:e.id,won:overall,y:G.year,m:G.month,type:'🗺️ Harekât'});
  if(G.pendingWarTargetId===e.id)G.pendingWarTargetId=null;
  if(G._warAnnounced)delete G._warAnnounced[e.id];
  G.campaign=null;
