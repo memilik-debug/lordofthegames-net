@@ -3,9 +3,16 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tower Defense 3D — lordofthegames.net</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
+    <style>
+      html, body { overscroll-behavior: none; }
+      #unity-canvas { touch-action: none; }
+      #rotate-hint{position:fixed;inset:0;background:#1a1a24;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:sans-serif;text-align:center;font-size:22px;gap:12px}
+      @media (orientation:portrait) and (pointer:coarse){#rotate-hint{display:flex}}
+    </style>
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
@@ -87,21 +94,26 @@
       // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
       // expected to change.
 
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                     (navigator.maxTouchPoints > 0 && matchMedia('(pointer:coarse)').matches);
+      if (isMobile) {
         // Mobile device style: fill the whole browser client area with the game canvas:
-
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
         document.querySelector("#unity-container").className = "unity-mobile";
         canvas.className = "unity-mobile";
 
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
+        // Yuksek DPI telefonlarda performans icin cozunurlugu sinirla:
+        config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
 
+        // Dikey modda "telefonu cevir" uyarisi:
+        var hint = document.createElement('div');
+        hint.id = 'rotate-hint';
+        hint.innerHTML = '<div style="font-size:64px">📱↻</div><div>Telefonu yatay çevirin<br><small>Bu oyun yatay modda oynanır</small></div>';
+        document.body.appendChild(hint);
 
+        // Oyun icinde kaydirma/yenileme jestlerini engelle:
+        document.addEventListener('touchmove', function(e) {
+          if (e.target === canvas) e.preventDefault();
+        }, { passive: false });
       } else {
         // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
         canvas.style.width = "960px";
