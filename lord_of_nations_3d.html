@@ -247,6 +247,12 @@ function $(id){return document.getElementById(id);}
 function toast(msg,type='info'){const el=document.createElement('div');el.className='toast-item '+type;el.textContent=msg;$('toast').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .4s';setTimeout(()=>el.remove(),400);},4200);}
 function showModal(title,body,buttons){$('modalTitle').textContent=title;$('modalBody').innerHTML=body;const bts=$('modalBtns');bts.innerHTML='';buttons.forEach(b=>{const btn=document.createElement('button');btn.className='btn '+(b.cls||'');btn.textContent=b.text;btn.onclick=()=>{$('modal').classList.remove('show');if(b.onClick)b.onClick();};bts.appendChild(btn);});$('modal').classList.add('show');}
 function bar(label,val,max=100){const cls=val<35?'low':val<60?'mid':'';return `<div class="bar-stat"><div class="lab"><span>${label}</span><span>${Math.round(val)}/${max}</span></div><div class="bar-bg"><div class="bar-fill2 ${cls}" style="width:${(val/max*100).toFixed(0)}%"></div></div></div>`;}
+function sparkSVG(arr,w=94,h=28,color='#6fb8dc'){
+ if(!arr||arr.length<2)return'<span style="font-size:10px;color:#667;">(veri bekleniyor)</span>';
+ const mn=Math.min(...arr),mx=Math.max(...arr),rg=Math.max(1e-6,mx-mn);
+ const pts=arr.map((v,i)=>`${(i/(arr.length-1)*(w-4)+2).toFixed(1)},${(h-2-(v-mn)/rg*(h-6)).toFixed(1)}`).join(' ');
+ return `<svg width="${w}" height="${h}" style="vertical-align:middle;background:rgba(0,0,0,.25);border-radius:4px;"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`;
+}
 
 // ============================ GAME DATA ============================
 // Nova Europa — Avrupa'nın hayali yansıması. Şekiller gerçek kıtayı andırır, adlar kurgusaldır.
@@ -313,6 +319,101 @@ const LAWS=[
  {id:'rndfund',cat:'⚖️ Adalet & Bilim',name:'🔬 AR-GE Fonu',desc:'+0.5 bilim, -500 altın/ay',mod:{techPerTurn:.5,goldDrain:500}},
 ];
 const LAW_MOD_LABELS={recruitBoost:'Asker',happinessPerTurn:'Mutluluk',industryPerTurn:'Sanayi',goldDrain:'Altın gideri',corruptionPerTurn:'Yolsuzluk',techPerTurn:'Bilim',moralePerTurn:'Moral',reputationPerTurn:'İtibar'};
+// ============================ 👥 ETNİK GRUPLAR & ÇIKAR GRUPLARI (v1.7) ============================
+// Her ülkede 4 çıkar grubu yaşar; kanunlar ve makro-ekonomi her grubun ruh halini (mood) etkiler.
+// Mutsuz gruplar tepki verir: sermaye kaçışı, genel grev, bölgesel ayaklanma, milliyetçi sokak hareketi, darbe.
+const ETHNIC_TYPES=[
+ {id:'dominant',icon:'🏛️',name:'Baskın Halk',desc:'Ülkenin kurucu çoğunluğu. Milliyetçi ve askeri kanunları sever; savaş yorgunluğu ve statü kaybı öfkelendirir.',threat:'Mutsuz olursa milliyetçi sokak hareketleri başlar: itibar ve mutluluk düşer.'},
+ {id:'merchants',icon:'💼',name:'Tüccar Azınlık',desc:'Sayıca az ama finans, ticaret ve bankacılığı elinde tutar. Serbest ticaret, liyakat ve düşük kurumlar vergisi ister.',threat:'Mutsuz olursa SERMAYE KAÇIŞI: hazineden altın yurt dışına çıkar, sanayi düşer. Mutluysa ihracat ve banka geliri artar.'},
+ {id:'autonomists',icon:'⛰️',name:'Otonomistler',desc:'Sınır bölgelerinde yoğun yerli azınlık. Merkeziyetçi/askeri baskıdan nefret eder; bölgesel teşvik (sübvansiyon) ister.',threat:'Mutsuz olursa bölgesel ayaklanma çıkar; az gelişmiş ülkede ordu moralı da düşükse ASKERİ DARBE riski doğar.'},
+ {id:'migrants',icon:'🔧',name:'Göçmen İşçiler',desc:'Fabrikaları ayakta tutan işçi sınıfı. Sosyal haklar, asgari ücret ve sağlık ister; işsizlik en çok onları vurur.',threat:'Mutsuz olursa GENEL GREV: fabrikalar 2 ay yarım kapasite çalışır. Mutluysa fabrika verimi artar.'},
+];
+// Kanun → etnik grup aylık ruh hali etkisi (çıkar matrisi)
+const LAW_ETHNIC={
+ conscript:{dominant:.3,autonomists:-.5,migrants:-.3},
+ profarmy:{dominant:.2,autonomists:.1},
+ reserves:{dominant:.1,autonomists:-.2},
+ veterans:{dominant:.3},
+ protect:{dominant:.3,merchants:-.5},
+ freetrade:{merchants:.6,migrants:-.2,dominant:-.1},
+ subsidy:{autonomists:.5,dominant:.1},
+ progtax:{merchants:-.5,migrants:.4,dominant:.1},
+ laborrights:{migrants:.6,merchants:-.3},
+ freepress:{merchants:.2,autonomists:.3,migrants:.2,dominant:-.1},
+ healthcare:{migrants:.4,autonomists:.2},
+ education:{migrants:.3,dominant:.1,autonomists:-.2},
+ welfare:{migrants:.5,autonomists:.2,merchants:-.2},
+ meritcracy:{merchants:.4,dominant:-.2},
+ anticorrupt:{merchants:.2,migrants:.1},
+ patriotism:{dominant:.5,autonomists:-.4,migrants:-.3,merchants:-.1},
+ rndfund:{merchants:.2},
+};
+function lawEthnicStr(id){const fx=LAW_ETHNIC[id];if(!fx)return'';return Object.entries(fx).map(([g,v])=>{const t=ETHNIC_TYPES.find(x=>x.id===g);return `<span style="color:${v>0?'#6fdc8c':'#e08a8a'};white-space:nowrap;">${t.icon}${v>0?'+':''}${v}</span>`;}).join(' ');}
+// Ülke gelişmişlik seviyesi: kişi başı GSYH + sanayiye göre (krizler seviyeye göre farklı vurur)
+function devTier(c){const pc=c.gdp/Math.max(.5,c.population);
+ if(pc>900&&c.industry>40)return{id:'developed',n:'🏙️ Gelişmiş Ülke',col:'#6fb8dc',desc:'Yüksek enflasyon sermaye kaçışını, işçi grevleri üretimi vurur.'};
+ if(pc>450)return{id:'mid',n:'🚜 Gelişmekte Olan Ülke',col:'#ffd86b',desc:'Hızlı sanayileşme köy-kent gerilimi yaratır; ihmal edilen bölgeler kaynar.'};
+ return{id:'poor',n:'⛰️ Az Gelişmiş Ülke',col:'#ff9860',desc:'Gelir ham madde ihracatına bağlı; kızgın otonomistler + düşük ordu morali = DARBE riski.'};}
+function mkEthnic(){
+ let d=rand(.45,.72),m=rand(.04,.12),a=rand(.08,.30),g=rand(.05,.18);
+ const s=d+m+a+g;d/=s;m/=s;a/=s;g/=s;
+ return{dominant:{share:d,mood:irand(52,70)},merchants:{share:m,mood:irand(45,65)},autonomists:{share:a,mood:irand(35,58)},migrants:{share:g,mood:irand(40,60)}};
+}
+// Aylık etnik güncelleme: kanunlar + makro göstergeler → mood; mood'lardan isyan riski hesaplanır
+function updateEthnics(c){
+ if(!c.ethnic)c.ethnic=mkEthnic();
+ const e=c.ethnic,laws=c.laws||{};
+ Object.keys(laws).forEach(id=>{if(!laws[id])return;const fx=LAW_ETHNIC[id];if(!fx)return;Object.entries(fx).forEach(([g,v])=>{if(e[g])e[g].mood=clamp(e[g].mood+v,0,100);});});
+ const infl=c.inflation||0,un=c.unemployment||8,mw=(c.minWage==null?10:c.minWage);
+ e.merchants.mood=clamp(e.merchants.mood+(infl>10?-(infl-10)*.07:.12)+((c.taxCorporateRate||18)>28?-.35:0)+(c.economicCycle==='boom'?.3:c.economicCycle==='crisis'?-.6:0)+((c.currency||1)>1.6?-.25:0),0,100);
+ e.migrants.mood=clamp(e.migrants.mood+(un>14?-(un-14)*.09:.15)+(mw>15?.2:mw<6?-.35:0)+(c.food<35?-.5:0)+((c.healthcare||12)>18?.1:0),0,100);
+ e.autonomists.mood=clamp(e.autonomists.mood+((c.foodSubsidy||12)>20?.18:0)-(c.atWarWith.length?.25:0)+(c.happiness>60?.1:-.12)-(c.corruption>50?.15:0),0,100);
+ e.dominant.mood=clamp(e.dominant.mood+(c.happiness-50)*.012+((c.warWeariness||0)>40?-.3:0)+(c.morale>60?.12:0),0,100);
+ Object.values(e).forEach(g=>{g.mood=clamp(g.mood+(c.happiness-g.mood)*.015+rand(-.35,.35),0,100);});
+ let rr=0;Object.values(e).forEach(g=>{rr+=g.share*Math.max(0,45-g.mood)*.55;});
+ if(un>20)rr+=6;if(infl>15)rr+=5;if(c.food<25)rr+=6;if(c.unemployment>25)rr+=4;
+ rr*=(1-(c.morale||50)/400);
+ c.revoltRisk=clamp(c.revoltRisk!=null?c.revoltRisk+(rr-c.revoltRisk)*.35:rr,0,100);
+}
+// Etnik kriz kontrolü: ülke seviyesine göre farklı felaketler tetiklenir (sadece oyuncu için, ayda en fazla 1)
+function ethnicCrisisCheck(c){
+ if(!c.ethnic)return;const e=c.ethnic,t=devTier(c).id;
+ if(e.merchants.mood<30&&c.inflation>10&&Math.random()<.22){
+  const loss=Math.round(Math.max(0,c.gold)*(t==='developed'?.12:.07))+1500;
+  c.gold-=loss;c.industry=clamp(c.industry-3,0,100);e.merchants.mood=clamp(e.merchants.mood+6,0,100);
+  addEvent('bad',`💼 SERMAYE KAÇIŞI! Tüccar azınlık ${fmt(loss)} altını yurt dışına kaçırdı. (Enflasyonu düşür, kurumlar vergisini indir)`);toast('💼 Sermaye kaçışı!','bad');return;}
+ if(e.migrants.mood<30&&!c._strike&&Math.random()<.25){
+  c._strike=2;c.industry=clamp(c.industry-4,0,100);e.migrants.mood=clamp(e.migrants.mood+8,0,100);
+  addEvent('bad','✊ GENEL GREV! Göçmen işçiler üretimi durdurdu — fabrikalar 2 ay yarım kapasite. (İşçi Hakları/Asgari ücret/Sosyal yardım ister)');toast('✊ Genel grev başladı!','bad');return;}
+ if(e.autonomists.mood<25&&Math.random()<.2){
+  const dmg=t==='mid'?8:5;
+  c.happiness=clamp(c.happiness-dmg,0,100);c.revoltRisk=clamp((c.revoltRisk||0)+12,0,100);c.gold-=1200;e.autonomists.mood=clamp(e.autonomists.mood+7,0,100);
+  addEvent('bad',`⛰️ BÖLGESEL AYAKLANMA! Otonomist eyaletlerde vergi toplanamıyor (-1200 altın, -${dmg} mutluluk). Sübvansiyon kanunu ve barış isterler.`);toast('⛰️ Bölgesel ayaklanma!','bad');return;}
+ if(e.dominant.mood<30&&Math.random()<.18){
+  c.reputation=clamp(c.reputation-4,0,100);c.happiness=clamp(c.happiness-4,0,100);e.dominant.mood=clamp(e.dominant.mood+6,0,100);
+  addEvent('bad','🏛️ MİLLİYETÇİ PROTESTOLAR! Baskın halk sokakta — askeri kanunlar ve güçlü ordu istiyorlar (-4 itibar, -4 mutluluk).');toast('🏛️ Milliyetçi protestolar!','bad');return;}
+ if(t==='poor'&&e.autonomists.mood<18&&c.morale<40&&Math.random()<.12){
+  const loss=Math.round(Math.max(0,c.gold)*.25);
+  c.gold-=loss;c.military=clamp(c.military-15,0,100);c.morale=50;c.happiness=clamp(c.happiness-10,0,100);c.soldiers=Math.round(c.soldiers*.8);
+  e.autonomists.mood=45;
+  addEvent('bad',`🪖 ASKERİ DARBE GİRİŞİMİ! Kabile liderleri ordudaki kendi etnik kökenli askerleri kışkırttı. Darbe bastırıldı ama bedeli ağır: -${fmt(loss)} altın, ordunun %20'si dağıldı.`);toast('🪖 DARBE GİRİŞİMİ!','bad');return;}
+}
+// Halklar sekmesi eylemleri: her gruba yönelik bir "gönül alma" hamlesi
+const ETHNIC_ACTS={
+ dominant:{n:'🏛️ Milli Miting',cost:1000,desc:'+6 baskın halk, +2 moral, diğer gruplar -1'},
+ merchants:{n:'💼 Yatırımcı Zirvesi',cost:1800,desc:'+7 tüccar, +1 sanayi'},
+ autonomists:{n:'🤝 Bölgesel Teşvik Paketi',cost:2200,desc:'+8 otonomist, -2 isyan riski'},
+ migrants:{n:'✊ Sendika Masası',cost:1500,desc:'+7 göçmen işçi, +1 mutluluk'},
+};
+function act_ethnic(gid){
+ const c=G.player,a=ETHNIC_ACTS[gid];if(!a||!c.ethnic)return;if(!spend(a.cost))return;
+ const e=c.ethnic;
+ if(gid==='dominant'){e.dominant.mood=clamp(e.dominant.mood+6,0,100);c.morale=clamp(c.morale+2,0,100);['merchants','autonomists','migrants'].forEach(g=>e[g].mood=clamp(e[g].mood-1,0,100));}
+ else if(gid==='merchants'){e.merchants.mood=clamp(e.merchants.mood+7,0,100);c.industry=clamp(c.industry+1,0,100);}
+ else if(gid==='autonomists'){e.autonomists.mood=clamp(e.autonomists.mood+8,0,100);c.revoltRisk=clamp((c.revoltRisk||0)-2,0,100);}
+ else{e.migrants.mood=clamp(e.migrants.mood+7,0,100);c.happiness=clamp(c.happiness+1,0,100);}
+ addEvent('good',`${a.n} düzenlendi.`);toast(`${a.n} ✓`,'good');rrr();
+}
 const IDEOLOGIES=[
  {id:'monarchy',name:'👑 Monarşi',desc:'Hızlı kararlar, +ordu, %10 vergi bonusu.',mods:{happiness:-3,military:5,taxBonus:1.1}},
  {id:'democracy',name:'🗳️ Demokrasi',desc:'+mutluluk +itibar, yavaş ordu.',mods:{happiness:5,reputation:5,recruitMul:.9}},
@@ -357,6 +458,26 @@ const SPY_OPS=[
  {id:'fake_news',name:'📰 Propaganda',cost:1800,desc:'Hedefin tüm ilişkileri -10',risk:25},
 ];
 const MINISTER_NAMES=['Aldric Veyne','Sera Morant','Vasil Kron','Lyra Sodran','Brennen Vox','Aenya Stral','Ivar Dalmoor','Kira Vansel'];
+// Generaller: orduya komuta eder, işe al/kov; her birinin maaşı ve uzmanlığı var (maks 3)
+const GENERAL_TRAITS=[
+ {t:'⚔️ Hücum Ustası',d:'+%12 saldırı gücü',atk:.12},
+ {t:'🛡️ Savunma Dehası',d:'+%12 savunma gücü',def:.12},
+ {t:'🚚 Lojistik Uzmanı',d:'-%15 asker bakım gideri',upkeep:.15},
+ {t:'📣 Motivatör',d:'+0.4 moral/ay',morale:.4},
+ {t:'🎯 Keskin Stratejist',d:'+%8 saldırı ve savunma',atk:.08,def:.08},
+ {t:'😤 Acımasız',d:'+%15 saldırı, -0.2 mutluluk/ay',atk:.15,hap:-.2},
+];
+const GENERAL_RANKS=['Tümgeneral','Korgeneral','Orgeneral'];
+function genGeneral(){const tr=pick(GENERAL_TRAITS);return{name:pick(MINISTER_NAMES),rank:pick(GENERAL_RANKS),trait:tr,wage:irand(280,520),cost:irand(2200,4200)};}
+// Teknoloji çağları: tamamlanan araştırma sayısı çağ atlatır, kalıcı gelir bonusu verir
+const ERAS=[
+ {name:'⚙️ Erken Dönem',min:0,inc:1,desc:'Başlangıç dönemi.'},
+ {name:'🏭 Sanayi Çağı',min:4,inc:1.04,desc:'+%4 tüm gelirler'},
+ {name:'💡 Modern Çağ',min:8,inc:1.08,desc:'+%8 tüm gelirler'},
+ {name:'☢️ Atom Çağı',min:12,inc:1.12,desc:'+%12 tüm gelirler'},
+];
+function eraOf(c){const n=Object.keys(c.techs||{}).filter(k=>c.techs[k]).length;let e=ERAS[0];ERAS.forEach(x=>{if(n>=x.min)e=x;});return e;}
+function TM(){return (G.year-1)*12+G.month;} // toplam ay sayacı (pakt süreleri, seçimler)
 const MINISTER_TRAITS=[
  {trait:'Ekonomi Uzmanı',emoji:'💼',bonus:'+15% vergi geliri',apply:s=>{s.incomeMul=(s.incomeMul||1)*1.15;}},
  {trait:'General',emoji:'⚔️',bonus:'+20% asker üretimi',apply:s=>{s.recruitMul=(s.recruitMul||1)*1.2;}},
@@ -364,6 +485,42 @@ const MINISTER_TRAITS=[
  {trait:'Diplomat',emoji:'🤝',bonus:'+itibar/ay',apply:s=>{s.reputationPerTurn=(s.reputationPerTurn||0)+.4;}},
  {trait:'Sanayici',emoji:'🏭',bonus:'+20% sanayi',apply:s=>{s.industryMul=(s.industryMul||1)*1.2;}},
  {trait:'Yolsuz',emoji:'💰',bonus:'-10% gelir',apply:s=>{s.incomeMul=(s.incomeMul||1)*.9;s.corruptionPerTurn=(s.corruptionPerTurn||0)+.3;}},
+];
+// Devlet Şirketleri (KİT): satın al, ilgili gösterge yükseldikçe aylık kâr artar; istersen özelleştir (sat)
+const COMPANIES=[
+ {id:'railway',n:'🚂 Devlet Demiryolları',cost:12000,base:350,dep:'industry',depN:'Sanayi',desc:'Yük taşımacılığı — sanayi geliştikçe kazandırır.'},
+ {id:'airline',n:'✈️ Ulusal Havayolu',cost:18000,base:450,dep:'reputation',depN:'İtibar',desc:'Bayrak taşıyıcı — itibar yükseldikçe yolcu artar.'},
+ {id:'telecom',n:'📡 Telekom A.Ş.',cost:15000,base:400,dep:'tech',depN:'Bilim',desc:'İletişim tekeli — bilim geliştikçe kazandırır.'},
+ {id:'power',n:'⚡ Elektrik Kurumu',cost:10000,base:300,dep:'industry',depN:'Sanayi',desc:'Enerji üretimi — fabrikalar müşterisidir.'},
+ {id:'oilco',n:'🛢️ Devlet Petrol Ofisi',cost:20000,base:500,dep:'industry',depN:'Sanayi',desc:'Akaryakıt dağıtımı — en kârlı KİT.'},
+ {id:'tourism',n:'🏖️ Turizm İşletmeleri',cost:8000,base:250,dep:'happiness',depN:'Mutluluk',desc:'Oteller ve plajlar — halk mutluysa turist gelir.'},
+];
+// Ekonomik karar olayları: ayda ~%7 ihtimalle bir ikilem çıkar, seçim senin
+const ECON_DILEMMAS=[
+ {t:'🏭 Yabancı Yatırımcı',d:'Büyük bir yabancı şirket ülkende fabrika kurmak istiyor ama 10 yıl vergi muafiyeti şart koşuyor.',
+  o:[{x:'Muafiyeti kabul et (+1 fabrika)',f:c=>{c.buildings.factory++;toast('🏭 Yeni fabrika kuruldu!','good');}},
+     {x:'Reddet (+3 itibar)',f:c=>{c.reputation=clamp(c.reputation+3,0,100);toast('Ulusal sanayi korundu','good');}}]},
+ {t:'✊ Genel Grev',d:'İşçi sendikaları asgari ücret ve haklar için genel greve gitti. Fabrikalar durdu!',
+  o:[{x:'Zam ver (-2500 altın, +4 mutluluk)',f:c=>{c.gold-=2500;c.happiness=clamp(c.happiness+4,0,100);toast('Grev bitti, işçiler memnun','good');}},
+     {x:'Grevi bastır (-6 mutluluk, -3 itibar)',f:c=>{c.happiness=clamp(c.happiness-6,0,100);c.reputation=clamp(c.reputation-3,0,100);toast('Grev bastırıldı ama halk öfkeli','bad');}}]},
+ {t:'⛏️ Maden İhalesi',d:'Yeni keşfedilen büyük maden yatağı için ihale açılıyor. Kim işletsin?',
+  o:[{x:'Yerli şirket (+500 çelik, +2 yolsuzluk)',f:c=>{c.resources.steel+=500;c.corruption=clamp(c.corruption+2,0,100);toast('+500 çelik stoklandı','good');}},
+     {x:'Yabancıya sat (+6000 altın, -3 itibar)',f:c=>{c.gold+=6000;c.reputation=clamp(c.reputation-3,0,100);toast('+6000 altın','good');}}]},
+ {t:'🌍 Dünya Ticaret Fuarı',d:'Ülken uluslararası ticaret fuarına davet edildi. Katılım pahalı ama vitrin büyük.',
+  o:[{x:'Katıl (-2000 altın, +5 itibar, +1500 ihracat)',f:c=>{c.gold-=2000;c.reputation=clamp(c.reputation+5,0,100);c.gold+=1500;toast('Fuar başarılı geçti!','good');}},
+     {x:'Katılma',f:c=>{toast('Fuar daveti reddedildi','info');}}]},
+ {t:'🧾 Vergi Affı Önerisi',d:'Maliye, birikmiş vergi borçları için af ilan etmeyi öneriyor: kasaya hızlı para girer ama dürüst mükellefler kızar.',
+  o:[{x:'Af ilan et (+5000 altın, -2 itibar, +1 yolsuzluk)',f:c=>{c.gold+=5000;c.reputation=clamp(c.reputation-2,0,100);c.corruption=clamp(c.corruption+1,0,100);toast('+5000 altın toplandı','good');}},
+     {x:'Reddet (+2 itibar)',f:c=>{c.reputation=clamp(c.reputation+2,0,100);toast('Vergi adaleti korundu','good');}}]},
+ {t:'🏦 Banka Krizi',d:'Ülkenin en büyük özel bankası batmak üzere. Mevduat sahipleri panikte!',
+  o:[{x:'Kurtar (-4000 altın)',f:c=>{c.gold-=4000;toast('Banka kurtarıldı, piyasa sakin','good');}},
+     {x:'Batmasına izin ver (-5 mutluluk, +1.5 enflasyon)',f:c=>{c.happiness=clamp(c.happiness-5,0,100);c.inflation=clamp(c.inflation+1.5,0,35);toast('Banka battı, panik yayıldı','bad');}}]},
+ {t:'💰 Kripto Çılgınlığı',d:'Halk kripto paraya akın ediyor. Ekonomistler bölünmüş durumda.',
+  o:[{x:'Yasakla (-1 enflasyon, -2 mutluluk)',f:c=>{c.inflation=clamp(c.inflation-1,0,35);c.happiness=clamp(c.happiness-2,0,100);toast('Kripto yasaklandı','info');}},
+     {x:'Serbest bırak (kumar!)',f:c=>{if(Math.random()<.5){c.gold+=4000;toast('Kripto patladı: +4000!','good');}else{c.gold=Math.max(0,c.gold-3000);toast('Kripto çöktü: -3000','bad');}}}]},
+ {t:'🚢 Liman Genişletme Teklifi',d:'Uluslararası konsorsiyum limanını genişletmek istiyor: işletme hakkının yarısı onların olacak.',
+  o:[{x:'Kabul et (+1 liman, -2 itibar)',f:c=>{c.buildings.port=(c.buildings.port||0)+1;c.reputation=clamp(c.reputation-2,0,100);toast('⚓ Liman genişledi','good');}},
+     {x:'Reddet, kendin yap (-3000 altın, +1 liman)',f:c=>{if(c.gold<3000){toast('Yeterli altın yok — teklif geri çevrildi','bad');return;}c.gold-=3000;c.buildings.port=(c.buildings.port||0)+1;toast('⚓ Milli liman genişledi','good');}}]},
 ];
 const BUILD_TYPES=[
  {k:'factory',n:'🏭 Fabrika',cost:1500,desc:'Sanayi geliri'},
@@ -393,11 +550,14 @@ function makeCountry(tpl){
   aiTrait:pick(AI_TRAITS),atWarWith:[],alliedWith:[],relations:{},techs:{},laws:{},ideology:'republic',religion:'secular',tradePartners:{},doctrine:null,
   armyComp:{infantry:irand(15000,30000),cavalry:irand(2000,6000),artillery:irand(800,3000),special:irand(200,1500)},
   inflation:2.5,gdp:12000,unemployment:8,nationalDebt:0,economicCycle:'normal',economicCycleTurns:0,
-  interestRate:8,sectorDev:{agri:irand(20,45),industry:irand(20,50),services:irand(15,40)}};
+  interestRate:8,sectorDev:{agri:irand(20,45),industry:irand(20,50),services:irand(15,40)},
+  currency:1,minWage:10,companies:{},ethnic:mkEthnic(),revoltRisk:irand(3,10),_strike:0,
+  armyXP:irand(10,40),warWeariness:0,agents:1,generals:[],pacts:{},embassies:{}};
 }
 function initWorld(){
  G.countries=COUNTRY_TEMPLATES.map(t=>makeCountry(t));
  G.market={steel:{p:.9,base:.9,hist:[]},oil:{p:1.4,base:1.4,hist:[]},grain:{p:.5,base:.5,hist:[]},gold_ore:{p:3.4,base:3.4,hist:[]}};
+ G.hist={gold:[],gdp:[],infl:[],cur:[]};
  G.countries.forEach(a=>G.countries.forEach(b=>{if(a.id!==b.id)a.relations[b.id]=irand(35,65);}));
  computeNeighbors();
 }
@@ -461,36 +621,59 @@ function calcIncomeExpenses(c){
  const popM=c.population,mod=getMinisterMods(),lawMod=getLawMods();
  const ideo=IDEOLOGIES.find(i=>i.id===c.ideology)||IDEOLOGIES[2];
  const cycleMul=c.economicCycle==='recession'?.7:c.economicCycle==='crisis'?.5:c.economicCycle==='boom'?1.35:1;
- const productivity=(c.happiness/100)*(1-c.corruption/200)*(1+c.industry/200)*cycleMul;
+ // üretkenlik tabanı .15: halk mutsuzken ekonomi zayıflar ama tamamen durmaz (ölüm sarmalını yumuşatır)
+ const productivity=Math.max(.15,c.happiness/100)*(1-c.corruption/200)*(1+c.industry/200)*cycleMul;
  const incomeTax=popM*65*productivity*((c.taxIncomeRate||22)/100)*(ideo.mods.taxBonus||1);
  const corporateTax=c.buildings.factory*80*(c.industry/100+.4)*((c.taxCorporateRate||18)/100);
- const salesTaxRevenue=popM*45*(c.happiness/100+.3)*((c.taxSalesRate||8)/100);
+ // Asgari ücret: tüketimi (satış vergisi) artırır ama fabrika kârını kısar
+ const mw=(c.minWage==null?10:c.minWage);
+ const salesTaxRevenue=popM*45*(c.happiness/100+.3)*((c.taxSalesRate||8)/100)*(1+mw/100);
  const tariffRevenue=(c.buildings.port*50+c.reputation*2)*((c.taxTariffRate||10)/100);
- const factoryIncome=c.buildings.factory*180*(c.industry/100+.6)*(mod.industryMul||1)*cycleMul;
- const mineIncome=c.buildings.mine*160, marketIncome=c.buildings.market*110*(c.reputation/100+.5);
+ // Hammadde zinciri: her fabrika ayda 4 çelik + 2 petrol tüketir; stok yetmezse üretim düşer
+ const needSteel=c.buildings.factory*4,needOil=c.buildings.factory*2;
+ const supplyRatio=c.buildings.factory?Math.min(1,(c.resources.steel||0)/Math.max(1,needSteel),(c.resources.oil||0)/Math.max(1,needOil)):1;
+ c._supply={needSteel,needOil,ratio:supplyRatio};
+ // 👥 Etnik çarpanlar: göçmen işçiler fabrika verimini, tüccar azınlık finans/ticaret gelirini etkiler
+ const eth=c.ethnic;
+ const workerMul=eth?1+(eth.migrants.mood-50)/300:1;
+ const merchMul=eth?1+(eth.merchants.mood-50)/250:1;
+ const strikeMul=(c._strike||0)>0?.5:1; // genel grev: fabrikalar yarım kapasite
+ const factoryIncome=c.buildings.factory*180*(c.industry/100+.6)*(mod.industryMul||1)*cycleMul*(.55+.45*supplyRatio)*(1-mw/250)*workerMul*strikeMul;
+ const mineIncome=c.buildings.mine*160, marketIncome=c.buildings.market*110*(c.reputation/100+.5)*merchMul;
  const portIncome=c.buildings.port*180, refineryIncome=c.buildings.refinery*140;
- const bankIncome=(c.buildings.bank||0)*250*(1-c.inflation/100);
+ const bankIncome=(c.buildings.bank||0)*250*(1-c.inflation/100)*merchMul;
  const tradeRep=c.reputation*5;
  let tradePartnerIncome=0;
  Object.keys(c.tradePartners||{}).forEach(id=>{const o=G.countries.find(x=>x.id===id);if(o&&!c.atWarWith.includes(id))tradePartnerIncome+=380+o.industry*7;});
  // Sektör ekonomisi: tarım / sanayi / hizmet gelişmişliği doğrudan gelir üretir
  const sd=c.sectorDev||{agri:30,industry:35,services:25};
  const sectorIncome=popM*(sd.agri*.45+sd.industry*.85+sd.services*.7)*productivity*.35;
+ // Döviz kuru: zayıf para ihracatı artırır, ithalatı pahalılaştırır
+ const cur=c.currency||1;
  // Dış ticaret: ihracat sanayi+tarım+limana, ithalat nüfusun tüketimine bağlı
- const exportIncome=(c.buildings.factory*55*(1+sd.industry/120)+c.buildings.farm*22*(1+sd.agri/120)+c.buildings.port*70+Object.keys(c.tradePartners||{}).length*160)*(1+c.reputation/250)*cycleMul;
- let income=(incomeTax+corporateTax+salesTaxRevenue+tariffRevenue+factoryIncome+mineIncome+marketIncome+portIncome+refineryIncome+bankIncome+tradeRep+tradePartnerIncome+sectorIncome+exportIncome)*(mod.incomeMul||1)*(ideo.mods.incomeMul||1);
+ const exportIncome=(c.buildings.factory*55*(1+sd.industry/120)+c.buildings.farm*22*(1+sd.agri/120)+c.buildings.port*70+Object.keys(c.tradePartners||{}).length*160)*(1+c.reputation/250)*cycleMul*(.5+.5*cur)*merchMul;
+ // KİT gelirleri: sahip olunan devlet şirketleri ilgili göstergeye göre kâr eder
+ let companiesIncome=0;
+ COMPANIES.forEach(k=>{if(c.companies&&c.companies[k.id])companiesIncome+=k.base*(.5+(c[k.dep]||50)/100)*cycleMul;});
+ let income=(incomeTax+corporateTax+salesTaxRevenue+tariffRevenue+factoryIncome+mineIncome+marketIncome+portIncome+refineryIncome+bankIncome+tradeRep+tradePartnerIncome+sectorIncome+exportIncome+companiesIncome)*(mod.incomeMul||1)*(ideo.mods.incomeMul||1);
+ income*=eraOf(c).inc; // teknoloji çağı bonusu
  income*=(1-clamp(c.inflation,0,30)/200);
- const militarycost=c.soldiers*.012+c.tanks*5+c.planes*8;
+ // Lojistik uzmanı general asker bakımını ucuzlatır
+ const upkeepCut=Math.min(.4,(c.generals||[]).reduce((s,g)=>s+(g.trait.upkeep||0),0));
+ // 💹 Enflasyon ordunun bakım giderini şişirir (para basmanın gizli maliyeti)
+ const militarycost=(c.soldiers*.012+c.tanks*5+c.planes*8)*(1-upkeepCut)*(1+clamp(c.inflation,0,35)/120);
+ const securityCost=(c.generals||[]).reduce((s,g)=>s+g.wage,0)+(c.agents||0)*150;
  const b=c.buildings;
  const buildingMaint=b.factory*40+b.farm*25+b.barracks*30+b.hospital*45+b.lab*60+b.mine*35+b.fortress*80+b.university*70+b.port*50+b.market*30+b.refinery*60+(b.bank||0)*55;
  const subsidies=popM*(c.foodSubsidy*.8+c.healthcare*1.1+c.techInvest*.6);
- const importCost=popM*26*(1+c.happiness/200)*(1-(c.taxTariffRate||10)/150);
+ // kriz dönemlerinde tüketim ve ithalat kendiliğinden daralır
+ const importCost=popM*26*(.6+.4*c.happiness/100)*(1-(c.taxTariffRate||10)/150)*(.5+.5*cur);
  // Borç faizi: politika faizi + kredi notu risk primi (yıllık → aylık)
  const rt=creditRating(c);
  const debtInterest=Math.max(0,c.nationalDebt||0)*((c.interestRate||8)+rt.pen)/1200;
- let expenses=militarycost+buildingMaint+subsidies+importCost+(lawMod.goldDrain||0)+debtInterest;
- c._ib={incomeTax,corporateTax,salesTaxRevenue,tariffRevenue,factoryIncome,mineIncome,marketIncome,portIncome,refineryIncome,bankIncome,tradeRep,tradePartnerIncome,sectorIncome,exportIncome};
- c._eb={militarycost,buildingMaint,subsidies,importCost,lawDrain:lawMod.goldDrain||0,debtInterest};
+ let expenses=militarycost+securityCost+buildingMaint+subsidies+importCost+(lawMod.goldDrain||0)+debtInterest;
+ c._ib={incomeTax,corporateTax,salesTaxRevenue,tariffRevenue,factoryIncome,mineIncome,marketIncome,portIncome,refineryIncome,bankIncome,tradeRep,tradePartnerIncome,sectorIncome,exportIncome,companiesIncome};
+ c._eb={militarycost,securityCost,buildingMaint,subsidies,importCost,lawDrain:lawMod.goldDrain||0,debtInterest};
  c._trade={exports:Math.round(exportIncome),imports:Math.round(importCost)};
  return {income:Math.round(income),expenses:Math.round(expenses)};
 }
@@ -522,10 +705,32 @@ function endTurn(){
  c.morale=clamp(c.morale+(lawMod.moralePerTurn||0)+(c.happiness>60?.2:-.2),0,100);
  if(c.food>30&&c.happiness>40)c.population+=rand(.04,.16);else c.population-=rand(.01,.06);
  c.population=Math.max(.5,c.population);
- c.resources.steel+=c.buildings.factory*15+c.buildings.mine*25;
+ c.resources.steel+=c.buildings.mine*25;
  c.resources.oil+=c.buildings.refinery*40+c.buildings.mine*10;
  c.resources.grain+=c.buildings.farm*50;
  c.resources.gold_ore+=c.buildings.mine*20;
+ // fabrikalar hammadde tüketir (madenler çelik, rafineriler petrol sağlar)
+ if(c._supply&&c.buildings.factory>0){
+  c.resources.steel=Math.max(0,c.resources.steel-Math.round(c._supply.needSteel*c._supply.ratio));
+  c.resources.oil=Math.max(0,c.resources.oil-Math.round(c._supply.needOil*c._supply.ratio));
+  if(c._supply.ratio<1){addEvent('bad',`⚠️ Hammadde eksikliği: fabrikalar %${Math.round(c._supply.ratio*100)} kapasiteyle çalıştı.`);toast('⚠️ Hammadde eksik — Kaynak Borsası\'ndan çelik/petrol al!','bad');}
+ }
+ // 🪖 Ordu çelik tüketir, 🌾 nüfus tahıl tüketir (v1.7 tedarik zinciri)
+ const armySteel=Math.round(c.tanks*.2+c.soldiers/6000+(c.atWarWith.length?12:0));
+ const popGrain=Math.round(c.population*2.2);
+ c._consume={armySteel,popGrain,steelOK:c.resources.steel>=armySteel,grainOK:c.resources.grain>=popGrain};
+ if(c._consume.steelOK)c.resources.steel-=armySteel;
+ else{c.resources.steel=0;c.morale=clamp(c.morale-1.5,0,100);c.military=clamp(c.military-.5,0,100);
+  if(Math.random()<.5){addEvent('bad',`🪖 Ordunun aylık ${armySteel} çelik ihtiyacı karşılanamıyor — teçhizat bakımsız, moral düşüyor!`);toast('🪖 Orduya çelik yetmiyor!','bad');}}
+ if(c._consume.grainOK)c.resources.grain-=popGrain;
+ else{c.resources.grain=0;c.food=clamp(c.food-3,0,100);
+  if(Math.random()<.4){addEvent('bad',`🌾 Tahıl stoğu ${popGrain} birimlik aylık tüketimi karşılamıyor — kıtlık riski! Çiftlik kur ya da borsadan tahıl al.`);}}
+ // ✊ grev sayacı
+ if(c._strike>0)c._strike--;
+ // 👥 etnik gruplar & isyan riski
+ updateEthnics(c);
+ ethnicCrisisCheck(c);
+ if(c.revoltRisk>70&&Math.random()<.35)addEvent('bad',`🔥 İsyan riski %${Math.round(c.revoltRisk)} — sokaklar kaynıyor! Halklar panelinden mutsuz grupları yatıştır.`);
  const recruitMul=(mod.recruitMul||1)*(1+(lawMod.recruitBoost||0))*(c.doctrine==='mass'?1.3:1);
  c.soldiers+=Math.round(c.militarySpend*90*recruitMul);
  if(G.research){const tech=TECHS.find(t=>t.id===G.research.id);G.research.progress+=(c.tech*.04+.5)*(mod.researchMul||1);
@@ -543,6 +748,36 @@ function endTurn(){
  sd.agri=clamp(sd.agri+c.buildings.farm*.03+c.foodSubsidy*.004-.05,5,100);
  sd.industry=clamp(sd.industry+c.buildings.factory*.03+c.buildings.refinery*.04-.05,5,100);
  sd.services=clamp(sd.services+c.buildings.market*.03+(c.buildings.bank||0)*.05+c.education*.001-.04,5,100);
+ // döviz kuru: enflasyon ve düşük faiz parayı zayıflatır, dış ticaret fazlası güçlendirir
+ const tb2=c._trade?(c._trade.exports-c._trade.imports):0;
+ const drift=(c.inflation-3)*.004+(8-(c.interestRate||8))*.003-tb2/60000+rand(-.012,.015);
+ c.currency=clamp((c.currency||1)*(1+drift),.5,5);
+ // asgari ücret halkı ve istihdamı etkiler
+ const mw2=(c.minWage==null?10:c.minWage);
+ c.happiness=clamp(c.happiness+(mw2-10)*.02,0,100);
+ c.unemployment=clamp(c.unemployment+(mw2-10)*.01,2,30);
+ // savaş yorgunluğu: uzayan savaşlar halkı ve orduyu yıpratır, barışta yavaşça geçer
+ if(c.atWarWith.length)c.warWeariness=clamp((c.warWeariness||0)+1.2,0,100);
+ else c.warWeariness=clamp((c.warWeariness||0)-2,0,100);
+ if(c.warWeariness>0){c.happiness=clamp(c.happiness-c.warWeariness*.04,0,100);c.morale=clamp(c.morale-c.warWeariness*.02,0,100);}
+ // generallerin aylık etkileri
+ (c.generals||[]).forEach(g=>{if(g.trait.morale)c.morale=clamp(c.morale+g.trait.morale,0,100);if(g.trait.hap)c.happiness=clamp(c.happiness+g.trait.hap,0,100);});
+ // elçilikler ilişkileri her ay ısıtır
+ Object.keys(c.embassies||{}).forEach(id=>{const o=G.countries.find(x=>x.id===id);if(!o||c.atWarWith.includes(id))return;c.relations[id]=clamp((c.relations[id]||50)+.5,0,100);o.relations[c.id]=clamp((o.relations[c.id]||50)+.5,0,100);});
+ // süresi dolan saldırmazlık paktları
+ Object.keys(c.pacts||{}).forEach(id=>{if(c.pacts[id]<=TM()){delete c.pacts[id];const o=G.countries.find(x=>x.id===id);addEvent('bad',`🕊️ ${o?o.customName:id} ile saldırmazlık paktı sona erdi.`);toast('Bir saldırmazlık paktı sona erdi!','bad');}});
+ // bakan sadakati: ihmal edilirse istifa ya da skandal çıkar
+ G.ministers.forEach((m,i)=>{
+  m.loyalty=clamp(m.loyalty+rand(-1.4,.9),0,100);
+  if(m.loyalty<25){
+   if(Math.random()<.5){addEvent('bad',`👔 ${m.name} (${m.role}) istifa etti!`);toast(`${m.name} istifa etti!`,'bad');G.ministers[i]={name:pick(MINISTER_NAMES),role:m.role,trait:pick(MINISTER_TRAITS),loyalty:irand(55,80)};}
+   else{addEvent('bad',`📰 ${m.name} skandala karıştı: -3 itibar.`);c.reputation=clamp(c.reputation-3,0,100);m.loyalty=45;}
+  }
+ });
+ // general adayları piyasası 6 ayda bir yenilenir
+ if(TM()%6===0)G.generalMarket=[genGeneral(),genGeneral()];
+ // zaman serileri (bütçedeki grafikler için)
+ if(G.hist){G.hist.gold.push(Math.round(c.gold));G.hist.gdp.push(Math.round(c.gdp));G.hist.infl.push(+c.inflation.toFixed(1));G.hist.cur.push(+(c.currency||1).toFixed(2));Object.values(G.hist).forEach(a=>{if(a.length>36)a.shift();});}
  const unempT=clamp(15-c.industry*.08-(c.buildings.factory+c.buildings.farm)*.3+(c.economicCycle==='recession'?6:c.economicCycle==='crisis'?12:0),2,30);
  c.unemployment+=(unempT-c.unemployment)*.15;
  if(c.gold<0){c.nationalDebt+=Math.abs(c.gold);c.gold=0;}
@@ -551,19 +786,27 @@ function endTurn(){
  if(c.economicCycleTurns>24&&Math.random()<.08){c.economicCycle=pick(['normal','normal','normal','recession','boom','crisis']);c.economicCycleTurns=0;
   if(c.economicCycle==='recession')addEvent('bad','📉 Ekonomik Resesyon!');else if(c.economicCycle==='boom')addEvent('good','📈 Ekonomik Patlama!');else if(c.economicCycle==='crisis')addEvent('bad','💥 EKONOMİK KRİZ!');else addEvent('good','📊 Ekonomi normale döndü.');}
  if(Math.random()<.2){const e=pick(EVENTS_LIST);e.apply(c);addEvent(e.type,e.text);toast(e.text,e.type);}
+ // demokrasilerde 4 yılda bir genel seçim
+ if((c.ideology==='democracy'||c.ideology==='republic')&&TM()%48===0&&!G.war&&!G.naval)runElection();
+ // ekonomik ikilem: başkanın kararını bekleyen bir dosya masaya gelir
+ if(Math.random()<.07&&!$('modal').classList.contains('show')&&!G.war&&!G.naval){
+  const dl=pick(ECON_DILEMMAS);
+  showModal(dl.t,dl.d+'<br><br><i>Kararınız ekonomiyi şekillendirecek, Başkanım.</i>',
+   dl.o.map((o,i)=>({text:o.x,cls:i===0?'primary':'',onClick:()=>{o.f(c);addEvent('good',`${dl.t} — karar verildi.`);rrr();}})));
+ }
  // AI countries
  G.countries.forEach(ai=>{
   if(ai.isPlayer)return;
   Object.keys(ai.relations).forEach(k=>{ai.relations[k]=clamp(ai.relations[k]+rand(-1.2,1.2),0,100);});
   ai.gold+=rand(-150,600);ai.military=clamp(ai.military+rand(-.4,.6),0,100);ai.soldiers+=irand(400,3000);
-  if((ai.aiTrait==='Saldırgan'||ai.aiTrait==='Genişlemeci')&&ai.relations[c.id]<25&&!ai.atWarWith.includes(c.id)&&Math.random()<.04){
+  if((ai.aiTrait==='Saldırgan'||ai.aiTrait==='Genişlemeci')&&ai.relations[c.id]<25&&!ai.atWarWith.includes(c.id)&&!(c.pacts&&c.pacts[ai.id]>TM())&&Math.random()<.04){
    ai.atWarWith.push(c.id);c.atWarWith.push(ai.id);ai.relations[c.id]=0;c.relations[ai.id]=0;
    addEvent('war',`🚨 ${ai.customName} bize savaş ilan etti!`);toast(`${ai.customName} SAVAŞ İLAN ETTİ!`,'bad');
    setTimeout(()=>startWar(c,ai,true),600);
   }});
  G.month++;if(G.month>12){G.month=1;G.year++;}
- if(c.gold<-15000||c.happiness<5){
-  showModal(c.gold<-15000?'💀 İFLAS!':'🔥 DEVRİM!',`<b>${c.customName}</b> yönetimi düştü. Oyun bitti.`,[{text:'Tekrar Oyna',cls:'primary',onClick:()=>location.reload()}]);return;}
+ if(c.gold<-15000||c.happiness<5||(c.revoltRisk||0)>=95){
+  showModal(c.gold<-15000?'💀 İFLAS!':(c.revoltRisk||0)>=95?'🔥 HALK AYAKLANMASI!':'🔥 DEVRİM!',`<b>${c.customName}</b> yönetimi düştü. Oyun bitti.`,[{text:'Tekrar Oyna',cls:'primary',onClick:()=>location.reload()}]);return;}
  renderHUD();
  if(G.activePanelTabs)renderPanel(G.currentTab);
 }
@@ -590,7 +833,7 @@ function renderHUD(){
 }
 
 // ============================ PANEL SYSTEM ============================
-const TAB_NAMES={overview:'📊 Genel Bakış',cabinet:'👔 Kabine',events:'📰 Olaylar',economy:'💼 Ekonomi',budget:'📈 Bütçe',resources:'📦 Kaynak Borsası',build:'🏗️ İnşa',tech:'🔬 Teknoloji',military:'⚔️ Ordu',armydetail:'🪖 Detaylı Ordu',laws:'⚖️ Kanunlar',ideology:'🏛️ Rejim',diplomacy:'🤝 Diplomasi',trade:'📜 Ticaret',ops:'🕵️ Operasyonlar',religion:'⛪ Din & Kültür'};
+const TAB_NAMES={overview:'📊 Genel Bakış',cabinet:'👔 Kabine',events:'📰 Olaylar',economy:'💼 Ekonomi',budget:'📈 Bütçe',resources:'📦 Kaynak Borsası',companies:'🏢 Devlet Şirketleri',society:'👥 Halklar',build:'🏗️ İnşa',tech:'🔬 Teknoloji',military:'⚔️ Ordu',armydetail:'🪖 Detaylı Ordu',laws:'⚖️ Kanunlar',ideology:'🏛️ Rejim',diplomacy:'🤝 Diplomasi',trade:'📜 Ticaret',ops:'🕵️ Operasyonlar',religion:'⛪ Din & Kültür'};
 function openPanel(title,tabs,defTab){
  G.activePanelTabs=tabs;G.currentTab=defTab||tabs[0];
  $('panelTitle').textContent=title;
@@ -616,13 +859,14 @@ function renderPanel(tab){
   const {income,expenses}=calcIncomeExpenses(c);
   p.innerHTML=`<h2>📊 ${c.customName}</h2><div class="grid">
    <div class="card"><h3>💰 Bütçe</h3><div class="kv"><span class="lbl">Gelir</span><span class="v pos">+${fmt(income)}</span></div><div class="kv"><span class="lbl">Gider</span><span class="v neg">-${fmt(expenses)}</span></div><div class="kv"><span class="lbl">Net</span><span class="v ${income-expenses>=0?'pos':'neg'}">${fmt(income-expenses)}</span></div><div class="kv"><span class="lbl">Hazine</span><span class="v" style="color:#ffd86b">${fmt(c.gold)}</span></div></div>
-   <div class="card"><h3>👥 Halk</h3><div class="kv"><span class="lbl">Nüfus</span><span class="v">${c.population.toFixed(2)}M</span></div>${bar('Mutluluk',c.happiness)}${bar('Yiyecek',c.food)}${bar('Eğitim',c.education)}</div>
+   <div class="card"><h3>👥 Halk</h3><div class="kv"><span class="lbl">Nüfus</span><span class="v">${c.population.toFixed(2)}M</span></div>${bar('Mutluluk',c.happiness)}${bar('Yiyecek',c.food)}${bar('Eğitim',c.education)}${bar('🔥 İsyan Riski',c.revoltRisk||0)}${c._strike>0?'<div class="desc" style="color:#ff9860;">✊ Genel grev sürüyor ('+c._strike+' ay kaldı)</div>':''}</div>
    <div class="card"><h3>⚔️ Ordu</h3><div class="kv"><span class="lbl">Asker</span><span class="v">${fmt(c.soldiers)}</span></div><div class="kv"><span class="lbl">Tank</span><span class="v">${c.tanks}</span></div><div class="kv"><span class="lbl">Uçak</span><span class="v">${c.planes}</span></div>${bar('Ordu',c.military)}${bar('Moral',c.morale)}</div>
    <div class="card"><h3>🏭 Ekonomi</h3>${bar('Sanayi',c.industry)}${bar('Bilim',c.tech)}${bar('İtibar',c.reputation)}${bar('Yolsuzluk',c.corruption)}</div></div>
    ${G.research?`<div class="card"><h3>🔬 Araştırılıyor</h3><div class="kv"><span class="lbl">${TECHS.find(t=>t.id===G.research.id).name}</span><span class="v">${Math.round(G.research.progress)}/${TECHS.find(t=>t.id===G.research.id).cost}</span></div></div>`:''}`;
  }
  else if(tab==='cabinet'){
-  p.innerHTML=`<h2>👔 Kabine</h2>`+G.ministers.map((m,i)=>`<div class="minister-item"><div class="minister-portrait">${m.trait.emoji}</div><div style="flex:1"><div style="font-weight:700">${m.name}</div><div style="font-size:11px;color:#ffd86b">${m.role}</div><div style="font-size:11px;color:#99a6c0">${m.trait.trait} · ${m.trait.bonus}</div>${bar('Sadakat',m.loyalty)}</div><button class="btn" onclick="fireMinister(${i})">Görevden Al</button></div>`).join('');
+  p.innerHTML=`<h2>👔 Kabine</h2><div class="card"><div class="desc">⚠️ Sadakat her ay değişir. <b style="color:#ff8080">25'in altına düşerse</b> bakan istifa edebilir ya da skandal patlatabilir! Zam vererek gönlünü al.</div></div>`+
+  G.ministers.map((m,i)=>`<div class="minister-item" style="${m.loyalty<35?'border-color:#ff8050;':''}"><div class="minister-portrait">${m.trait.emoji}</div><div style="flex:1"><div style="font-weight:700">${m.name} ${m.loyalty<35?'<span style="color:#ff8050;font-size:11px;">⚠️ küskün</span>':''}</div><div style="font-size:11px;color:#ffd86b">${m.role}</div><div style="font-size:11px;color:#99a6c0">${m.trait.trait} · ${m.trait.bonus}</div>${bar('Sadakat',m.loyalty)}</div><div style="display:flex;flex-direction:column;gap:5px;"><button class="btn good" onclick="act_payMinister(${i})">💰 Zam (-1200)</button><button class="btn" onclick="fireMinister(${i})">Görevden Al</button></div></div>`).join('');
  }
  else if(tab==='events'){
   p.innerHTML=`<h2>📰 Olay Günlüğü</h2>`+(G.events.length?G.events.map(e=>`<div class="event-item ${e.type}"><div class="turn">${e.turn}</div>${e.text}</div>`).join(''):'<div class="card"><div class="desc">Henüz olay yok.</div></div>');
@@ -637,7 +881,10 @@ function renderPanel(tab){
     <div class="kv"><span class="lbl">💳 Kredi Notu</span><span class="v" style="color:${rt.col}">${rt.g}</span></div>
     <div class="kv"><span class="lbl">💹 Enflasyon</span><span class="v ${c.inflation>10?'neg':'pos'}">${c.inflation.toFixed(1)}%</span></div>
     <div class="kv"><span class="lbl">🏦 Borç Faizi</span><span class="v">${((c.interestRate||8)+rt.pen).toFixed(1)}%/yıl</span></div>
-    <div class="kv"><span class="lbl">📈 Büyüme</span><span class="v ${(c._growth||0)>=0?'pos':'neg'}">${(c._growth||0).toFixed(2)}%/ay</span></div></div></div>
+    <div class="kv"><span class="lbl">📈 Büyüme</span><span class="v ${(c._growth||0)>=0?'pos':'neg'}">${(c._growth||0).toFixed(2)}%/ay</span></div>
+    <div class="kv"><span class="lbl">💱 Döviz Kuru</span><span class="v ${(c.currency||1)>1.4?'neg':'pos'}">${(c.currency||1).toFixed(2)}</span></div></div>
+   <div class="desc" style="margin-top:6px;">💱 Kur 1.00 = denge. Yükseldikçe paran zayıflar: ihracat kazancı artar ama ithalat pahalanır. Enflasyon ve düşük faiz kuru yükseltir, dış ticaret fazlası düşürür.</div>
+   <button class="btn" style="margin-top:6px;" onclick="act_fx()">💱 Kura Müdahale (-3000, kur %8 güçlenir)</button></div>
   <div class="card"><h3>🏗️ Ekonomik Sektörler</h3><div class="desc">Gelişmiş sektörler her ay doğrudan gelir üretir ve GSYH'yi büyütür. Tarım çiftliklerle, sanayi fabrika/rafineriyle, hizmet pazar/banka/eğitimle kendiliğinden de gelişir.</div>
    ${secBtn('agri','🌾 Tarım')}${secBtn('industry','🏭 Sanayi')}${secBtn('services','🏪 Hizmet')}</div>
   <div class="card"><h3>⚖️ Vergiler & Harcamalar</h3>
@@ -648,7 +895,9 @@ function renderPanel(tab){
    <div class="slider-row"><label>⚔️ Askeri Harcama</label><input type="range" min="0" max="60" value="${c.militarySpend}" oninput="setPol('militarySpend',this.value,this)"><div class="val">${c.militarySpend}%</div></div>
    <div class="slider-row"><label>🌾 Yiyecek Yardımı</label><input type="range" min="0" max="50" value="${c.foodSubsidy}" oninput="setPol('foodSubsidy',this.value,this)"><div class="val">${c.foodSubsidy}%</div></div>
    <div class="slider-row"><label>🔬 Bilim Yatırımı</label><input type="range" min="0" max="40" value="${c.techInvest}" oninput="setPol('techInvest',this.value,this)"><div class="val">${c.techInvest}%</div></div>
-   <div class="slider-row"><label>🏥 Sağlık</label><input type="range" min="0" max="40" value="${c.healthcare}" oninput="setPol('healthcare',this.value,this)"><div class="val">${c.healthcare}%</div></div></div>
+   <div class="slider-row"><label>🏥 Sağlık</label><input type="range" min="0" max="40" value="${c.healthcare}" oninput="setPol('healthcare',this.value,this)"><div class="val">${c.healthcare}%</div></div>
+   <div class="slider-row"><label>👷 Asgari Ücret</label><input type="range" min="0" max="40" value="${c.minWage==null?10:c.minWage}" oninput="setPol('minWage',this.value,this)"><div class="val">${c.minWage==null?10:c.minWage}%</div></div>
+   <div class="desc">👷 Asgari ücret yükselirse: halk mutlu olur ve tüketim (satış vergisi) artar; ama fabrika kârı düşer, işsizlik hafif artar.</div></div>
   <div class="card"><h3>⚡ Acil Eylemler</h3><div style="display:flex;gap:8px;flex-wrap:wrap;">
    <button class="btn" onclick="act_loan()">💸 Acil Kredi (+5000, -2 itibar)</button>
    <button class="btn" onclick="act_festival()">🎉 Festival (-1000, +5 mutluluk)</button>
@@ -658,8 +907,8 @@ function renderPanel(tab){
  else if(tab==='budget'){
   const {income,expenses}=calcIncomeExpenses(c);
   const cyc={normal:'📊 Normal',recession:'📉 Resesyon',boom:'📈 Patlama',crisis:'💥 Kriz'};
-  const ibL={incomeTax:'Gelir Vergisi',corporateTax:'Kurumlar V.',salesTaxRevenue:'Satış V.',tariffRevenue:'Gümrük V.',factoryIncome:'Fabrika',mineIncome:'Maden',marketIncome:'Pazar',portIncome:'Liman',refineryIncome:'Rafineri',bankIncome:'Banka',tradeRep:'İtibar/Ticaret',tradePartnerIncome:'Ticaret Anlaşmaları',sectorIncome:'🏗️ Sektörler',exportIncome:'🚢 İhracat'};
-  const ebL={militarycost:'⚔️ Askeri',buildingMaint:'🏗️ Yapı Bakımı',subsidies:'🤝 Sosyal Yardım',importCost:'🚢 İthalat',lawDrain:'⚖️ Kanun',debtInterest:'🏦 Borç Faizi'};
+  const ibL={incomeTax:'Gelir Vergisi',corporateTax:'Kurumlar V.',salesTaxRevenue:'Satış V.',tariffRevenue:'Gümrük V.',factoryIncome:'Fabrika',mineIncome:'Maden',marketIncome:'Pazar',portIncome:'Liman',refineryIncome:'Rafineri',bankIncome:'Banka',tradeRep:'İtibar/Ticaret',tradePartnerIncome:'Ticaret Anlaşmaları',sectorIncome:'🏗️ Sektörler',exportIncome:'🚢 İhracat',companiesIncome:'🏢 KİT Gelirleri'};
+  const ebL={militarycost:'⚔️ Askeri',securityCost:'🎖️ Generaller & Ajanlar',buildingMaint:'🏗️ Yapı Bakımı',subsidies:'🤝 Sosyal Yardım',importCost:'🚢 İthalat',lawDrain:'⚖️ Kanun',debtInterest:'🏦 Borç Faizi'};
   const rt=creditRating(c);
   const tb=(c._trade?c._trade.exports-c._trade.imports:0);
   p.innerHTML=`<h2>📈 Detaylı Bütçe</h2>
@@ -669,10 +918,20 @@ function renderPanel(tab){
    <div class="kv"><span class="lbl">🚀 Büyüme</span><span class="v ${(c._growth||0)>=0?'pos':'neg'}">${(c._growth||0).toFixed(2)}%/ay</span></div>
    <div class="kv"><span class="lbl">💹 Enflasyon</span><span class="v ${c.inflation>10?'neg':'pos'}">${c.inflation.toFixed(1)}%</span></div>
    <div class="kv"><span class="lbl">👷 İşsizlik</span><span class="v ${c.unemployment>15?'neg':'pos'}">${c.unemployment.toFixed(1)}%</span></div>
+   <div class="kv"><span class="lbl">🔥 İsyan Riski</span><span class="v ${(c.revoltRisk||0)>35?'neg':'pos'}">%${Math.round(c.revoltRisk||0)}</span></div>
+   <div class="kv"><span class="lbl">🌍 Seviye</span><span class="v" style="color:${devTier(c).col}">${devTier(c).n}</span></div>
    <div class="kv"><span class="lbl">🏦 Borç</span><span class="v">${fmt(c.nationalDebt)}</span></div>
    <div class="kv"><span class="lbl">💳 Kredi Notu</span><span class="v" style="color:${rt.col}">${rt.g}</span></div>
+   <div class="kv"><span class="lbl">💱 Döviz Kuru</span><span class="v ${(c.currency||1)>1.4?'neg':'pos'}">${(c.currency||1).toFixed(2)}</span></div>
    <div class="kv"><span class="lbl">🔄 Döngü</span><span class="v">${cyc[c.economicCycle]}</span></div>
    <div class="kv"><span class="lbl">💰 Net</span><span class="v ${income-expenses>=0?'pos':'neg'}">${fmt(income-expenses)}</span></div></div></div>
+  ${G.hist&&G.hist.gold.length>1?`<div class="card"><h3>📉 Zaman Serileri <span style="font-size:11px;color:#99a6c0;font-weight:400;">(son ${G.hist.gold.length} ay)</span></h3>
+   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));">
+    <div class="kv"><span class="lbl">💰 Hazine</span><span>${sparkSVG(G.hist.gold,110,30,'#ffd86b')}</span></div>
+    <div class="kv"><span class="lbl">📈 GSYH</span><span>${sparkSVG(G.hist.gdp,110,30,'#6fdc8c')}</span></div>
+    <div class="kv"><span class="lbl">💹 Enflasyon</span><span>${sparkSVG(G.hist.infl,110,30,'#ff8080')}</span></div>
+    <div class="kv"><span class="lbl">💱 Kur</span><span>${sparkSVG(G.hist.cur,110,30,'#6fb8dc')}</span></div></div></div>`:''}
+  ${c._supply&&c._supply.ratio<1?`<div class="card" style="border-left:4px solid #ff8050;"><h3>⚠️ Hammadde Krizi</h3><div class="desc">Fabrikaların aylık ${c._supply.needSteel} çelik + ${c._supply.needOil} petrol ihtiyacı karşılanamıyor — üretim %${Math.round(c._supply.ratio*100)} kapasitede! Kaynak Borsası'ndan çelik/petrol al veya maden/rafineri inşa et.</div></div>`:''}
   <div class="card"><h3>🚢 Dış Ticaret Dengesi</h3>
    <div class="kv"><span class="lbl">İhracat</span><span class="v pos">+${fmt(c._trade?c._trade.exports:0)}</span></div>
    <div class="kv"><span class="lbl">İthalat</span><span class="v neg">-${fmt(c._trade?c._trade.imports:0)}</span></div>
@@ -686,11 +945,11 @@ function renderPanel(tab){
  }
  else if(tab==='resources'){
   const RES={steel:'⚙️ Çelik',oil:'🛢️ Petrol',grain:'🌾 Tahıl',gold_ore:'🪙 Altın Cevheri'};
-  const spark=m=>{const h=m.hist.slice(-16).concat([m.p]);if(h.length<2)return'<span style="font-size:10px;color:#667;">(veri bekleniyor)</span>';
-   const mn=Math.min(...h),mx=Math.max(...h),rg=Math.max(1e-6,mx-mn);
-   const pts=h.map((v,i)=>`${(i/(h.length-1)*90+2).toFixed(1)},${(26-(v-mn)/rg*22).toFixed(1)}`).join(' ');
-   return `<svg width="94" height="28" style="vertical-align:middle;background:rgba(0,0,0,.25);border-radius:4px;"><polyline points="${pts}" fill="none" stroke="#6fb8dc" stroke-width="1.5"/></svg>`;};
-  p.innerHTML=`<h2>📦 Kaynak Borsası</h2><div class="card"><div class="desc">Fiyatlar her ay arz-talebe göre dalgalanır — 💎 ucuzken al, 🔥 pahalıyken sat! Alışta %8 komisyon, satışta %4 kesinti var. Madenler, çiftlikler ve rafineriler her ay stok üretir.</div></div>`+
+  const spark=m=>sparkSVG(m.hist.slice(-16).concat([m.p]));
+  const sup=c._supply||{needSteel:0,needOil:0,ratio:1};
+  p.innerHTML=`<h2>📦 Kaynak Borsası</h2><div class="card"><div class="desc">Fiyatlar her ay arz-talebe göre dalgalanır — 💎 ucuzken al, 🔥 pahalıyken sat! Alışta %8 komisyon, satışta %4 kesinti var. Madenler, çiftlikler ve rafineriler her ay stok üretir.</div></div>
+  <div class="card" style="${sup.ratio<1?'border-left:4px solid #ff8050;':''}"><h3>🏭 Sanayi Tüketimi</h3><div class="desc">Fabrikaların aylık ihtiyacı: <b style="color:#ffd86b">${sup.needSteel} çelik + ${sup.needOil} petrol</b> · Karşılanma: <b style="color:${sup.ratio<1?'#ff8050':'#6fdc8c'}">%${Math.round(sup.ratio*100)}</b>. Stok yetmezse fabrika geliri düşer! Aylık üretim: maden ${c.buildings.mine}×25 çelik, rafineri ${c.buildings.refinery}×40 petrol.</div></div>
+  <div class="card" style="${c._consume&&(!c._consume.steelOK||!c._consume.grainOK)?'border-left:4px solid #ff8050;':''}"><h3>🪖 Ordu & 🌾 Halk Tüketimi</h3><div class="desc">Ordu her ay <b style="color:#ffd86b">${c._consume?c._consume.armySteel:Math.round(c.tanks*.2+c.soldiers/6000)} çelik</b> tüketir (savaşta +12) — yetmezse moral ve ordu gücü erir. Nüfus her ay <b style="color:#ffd86b">${c._consume?c._consume.popGrain:Math.round(c.population*2.2)} tahıl</b> tüketir — yetmezse kıtlık başlar. ${c._consume&&!c._consume.steelOK?'<b style="color:#ff8050">⚠️ Çelik yetmiyor!</b>':''} ${c._consume&&!c._consume.grainOK?'<b style="color:#ff8050">⚠️ Tahıl yetmiyor!</b>':''} Kendi madenin/çiftliğin yoksa borsaya bağımlısın — fiyatlar yükselirse ekonomik felaket kapıda demektir.</div></div>`+
   Object.entries(G.market||{}).map(([k,m])=>{
    const last=m.hist.length?m.hist[m.hist.length-1]:m.p,up=m.p>=last,rel=m.p/m.base;
    const tag=rel>1.35?'<span style="color:#ff9860;font-size:11px;">🔥 pahalı</span>':rel<.7?'<span style="color:#6fdc8c;font-size:11px;">💎 ucuz</span>':'';
@@ -704,23 +963,48 @@ function renderPanel(tab){
      <button class="btn" onclick="act_market('${k}',100,true)">Al 100 (-${fmt(m.p*1.08*100)})</button>
     </div></div></div>`;}).join('');
  }
+ else if(tab==='companies'){
+  const owned=COMPANIES.filter(k=>c.companies&&c.companies[k.id]).length;
+  const totalProfit=(c._ib&&c._ib.companiesIncome)?Math.round(c._ib.companiesIncome):0;
+  p.innerHTML=`<h2>🏢 Devlet Şirketleri <span style="font-size:12px;color:#99a6c0">(${owned}/${COMPANIES.length} sahipsin · aylık kâr: +${fmt(totalProfit)})</span></h2>
+  <div class="card"><div class="desc">KİT'ler her ay hazineye kâr aktarır; kâr, bağlı olduğu göstergeyle büyür (ör. havayolu → itibar). Nakit sıkışırsan şirketi <b>özelleştirip</b> satabilirsin (bedelin %70'i) — ama aylık geliri kaybedersin.</div></div>
+  <div class="grid">`+COMPANIES.map(k=>{
+   const own=c.companies&&c.companies[k.id];
+   const profit=Math.round(k.base*(.5+(c[k.dep]||50)/100));
+   return `<div class="card" style="${own?'border-left:4px solid #6fdc8c;':''}"><h3>${own?'✓ ':''}${k.n}</h3><div class="desc">${k.desc}</div>
+    <div class="kv"><span class="lbl">Aylık kâr</span><span class="v pos">+${fmt(profit)}</span></div>
+    <div class="kv"><span class="lbl">Bağlı gösterge</span><span class="v">${k.depN} (${Math.round(c[k.dep]||0)})</span></div>
+    ${own?`<button class="btn danger" style="width:100%;margin-top:6px;" onclick="act_sellCompany('${k.id}')">Özelleştir / Sat (+${fmt(k.cost*.7)})</button>`
+        :`<button class="btn primary" style="width:100%;margin-top:6px;" onclick="act_buyCompany('${k.id}')">Kur / Satın Al (-${fmt(k.cost)})</button>`}</div>`;}).join('')+`</div>`;
+ }
  else if(tab==='build'){
-  p.innerHTML=`<h2>🏗️ İnşaat</h2><div class="card"><div class="desc">İnşa edilen her yapı 3D şehrinde görünür! Ofisten çıkıp şehre bak.</div></div><div class="grid">`+
-  BUILD_TYPES.map(b=>`<div class="card"><h3>${b.n}</h3><div class="desc">${b.desc}</div><div class="kv"><span class="lbl">Mevcut</span><span class="v" style="color:#ffd86b">${c.buildings[b.k]||0}</span></div><button class="btn primary" style="width:100%;margin-top:6px;" onclick="act_build('${b.k}',${b.cost})">İnşa Et (${b.cost})</button></div>`).join('')+`</div>`;
+  const infMul=1+clamp(c.inflation,0,35)/60;
+  p.innerHTML=`<h2>🏗️ İnşaat</h2><div class="card"><div class="desc">İnşa edilen her yapı 3D şehrinde görünür! Ofisten çıkıp şehre bak.${c.inflation>6?` <b style="color:#ff9860">💹 Enflasyon %${c.inflation.toFixed(1)} — inşaat maliyetleri %${Math.round((infMul-1)*100)} zamlı!</b>`:''}</div></div><div class="grid">`+
+  BUILD_TYPES.map(b=>{const rc=Math.round(b.cost*infMul);return `<div class="card"><h3>${b.n}</h3><div class="desc">${b.desc}</div><div class="kv"><span class="lbl">Mevcut</span><span class="v" style="color:#ffd86b">${c.buildings[b.k]||0}</span></div><button class="btn primary" style="width:100%;margin-top:6px;" onclick="act_build('${b.k}',${b.cost})">İnşa Et (${rc}${rc>b.cost?` <span style="font-size:10px;opacity:.7">💹</span>`:''})</button></div>`;}).join('')+`</div>`;
  }
  else if(tab==='tech'){
-  let html=`<h2>🔬 Teknoloji <span style="font-size:12px;color:#99a6c0">Bilim: ${Math.round(c.tech)}</span></h2>`;
+  const era=eraOf(c),done=Object.keys(c.techs||{}).filter(k=>c.techs[k]).length;
+  const next=ERAS.find(e=>e.min>done);
+  let html=`<h2>🔬 Teknoloji <span style="font-size:12px;color:#99a6c0">Bilim: ${Math.round(c.tech)}</span></h2>
+  <div class="card" style="border-left:4px solid #ffd86b;"><h3>Çağ: ${era.name}</h3><div class="desc">${era.desc} · Tamamlanan araştırma: <b style="color:#ffd86b">${done}</b>${next?` · Sıradaki çağ <b>${next.name}</b> için ${next.min-done} araştırma daha gerekli (${next.desc})`:' · En ileri çağdasın!'}</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">${ERAS.map(e=>`<span style="padding:3px 10px;border-radius:4px;font-size:11px;background:${e===era?'#2d4068':'#141d33'};border:1px solid ${e===era?'#ffd86b':'#283a5c'};color:${done>=e.min?'#ffd86b':'#667'}">${e.name}</span>`).join('')}</div></div>`;
   if(G.research){const t=TECHS.find(x=>x.id===G.research.id);html+=`<div class="card"><h3>⏳ ${t.name}</h3>${bar('İlerleme',G.research.progress,t.cost)}<button class="btn danger" onclick="act_cancelResearch()">İptal</button></div>`;}
   html+=`<div class="grid">`+TECHS.map(t=>{const done=c.techs[t.id],cur=G.research&&G.research.id===t.id;
    return `<div class="card" style="${done?'opacity:.6;border-left:4px solid #6fdc8c;':cur?'border-left:4px solid #ffd86b;':''}"><h3>${t.name}</h3><div class="desc">${t.desc} · ${t.cost} ay</div>${done?'<span style="color:#6fdc8c">✓ Hazır</span>':cur?'<span style="color:#ffd86b">Araştırılıyor</span>':`<button class="btn primary" onclick="act_research('${t.id}')">Başlat</button>`}</div>`;}).join('')+`</div>`;
   p.innerHTML=html;
  }
  else if(tab==='military'){
+  const gens=c.generals||[];
+  const genRows=gens.length?gens.map((g,i)=>`<div class="minister-item"><div class="minister-portrait">🎖️</div><div style="flex:1"><div style="font-weight:700">${g.rank} ${g.name}</div><div style="font-size:11px;color:#ffd86b">${g.trait.t}</div><div style="font-size:11px;color:#99a6c0">${g.trait.d} · maaş ${g.wage}/ay</div></div><button class="btn danger" onclick="act_fireGeneral(${i})">Emekli Et</button></div>`).join(''):'<div class="desc">Henüz generalin yok — ordunun tam gücü için komutan ata!</div>';
+  const market=(G.generalMarket||[]).map((g,i)=>`<div class="minister-item" style="border-style:dashed;"><div class="minister-portrait">🫡</div><div style="flex:1"><div style="font-weight:700">${g.rank} ${g.name}</div><div style="font-size:11px;color:#ffd86b">${g.trait.t}</div><div style="font-size:11px;color:#99a6c0">${g.trait.d} · maaş ${g.wage}/ay</div></div><button class="btn primary" onclick="act_hireGeneral(${i})">Ata (-${fmt(g.cost)})</button></div>`).join('')||'<div class="desc">Şu an aday yok — adaylar 6 ayda bir yenilenir.</div>';
   p.innerHTML=`<h2>⚔️ Ordu</h2><div class="grid">
   <div class="card"><h3>📋 Kuvvetler</h3><div class="kv"><span class="lbl">Asker</span><span class="v">${fmt(c.soldiers)}</span></div><div class="kv"><span class="lbl">Tank</span><span class="v">${c.tanks}</span></div><div class="kv"><span class="lbl">Uçak</span><span class="v">${c.planes}</span></div>${bar('Ordu',c.military)}${bar('Moral',c.morale)}</div>
+  <div class="card"><h3>🏋️ Hazırlık</h3>${bar('🎖️ Ordu Tecrübesi',c.armyXP||0)}<div class="desc">Tatbikat, geçit ve savaşlarla artar — muharebe gücünü %${Math.round((c.armyXP||0)/2.5)} artırıyor.</div>${bar('😮‍💨 Savaş Yorgunluğu',c.warWeariness||0)}<div class="desc">${(c.warWeariness||0)>30?'⚠️ Halk savaştan bıktı: mutluluk ve moral eriyor. Barış yap!':'Uzun savaşlar halkı yorar; barışta yavaşça geçer.'}</div></div>
   <div class="card"><h3>📥 Asker Topla</h3><button class="btn good" onclick="act_recruit(5000,1500)">+5,000 (1500)</button> <button class="btn good" onclick="act_recruit(20000,5500)">+20,000 (5500)</button> <button class="btn good" onclick="act_recruit(50000,12000)">+50,000 (12000)</button></div>
   <div class="card"><h3>🚜 Ekipman</h3><button class="btn good" onclick="act_equip('tanks',10,2000)">+10 Tank (2000)</button> <button class="btn good" onclick="act_equip('tanks',50,9000)">+50 Tank (9000)</button> <button class="btn good" onclick="act_equip('planes',5,3000)">+5 Uçak (3000)</button> <button class="btn good" onclick="act_equip('planes',25,13000)">+25 Uçak (13000)</button></div>
-  <div class="card"><h3>🎖️ Eğitim</h3><button class="btn" onclick="act_train()">🏋️ Tatbikat (-2000, +5 ordu/moral)</button> <button class="btn" onclick="act_parade()">🚩 Geçit (-1000, +8 moral)</button></div></div>`;
+  <div class="card"><h3>🎖️ Eğitim</h3><button class="btn" onclick="act_train()">🏋️ Tatbikat (-2000, +5 ordu/moral, +3 tecrübe)</button> <button class="btn" onclick="act_parade()">🚩 Geçit (-1000, +8 moral, +1 tecrübe)</button></div></div>
+  <div class="card"><h3>🎖️ Generaller <span style="font-size:11px;color:#99a6c0;">(${gens.length}/3)</span></h3>${genRows}</div>
+  <div class="card"><h3>🫡 Aday Komutanlar</h3>${market}</div>`;
  }
  else if(tab==='armydetail'){
   const comp=c.armyComp||{};
@@ -731,7 +1015,11 @@ function renderPanel(tab){
   let dAtk=1,dDef=1;
   if(c.doctrine==='blitz'){dAtk=1.2;dDef=.9;}else if(c.doctrine==='fortress'){dDef=1.25;}else if(c.doctrine==='elite'){dAtk=1.15;dDef=1.1;}else if(c.doctrine==='guerrilla'){dDef=1.1;}
   const techMul=1+(c.tech||0)/200,moraleMul=.7+(c.morale||0)/167;
-  const finalAtk=Math.round(atk*dAtk*techMul*moraleMul),finalDef=Math.round(def*dDef*techMul*moraleMul);
+  const gAtk=1+(c.generals||[]).reduce((s,g)=>s+(g.trait.atk||0),0);
+  const gDef=1+(c.generals||[]).reduce((s,g)=>s+(g.trait.def||0),0);
+  const expMul=1+(c.armyXP||0)/250;
+  const wearMul=1-(c.warWeariness||0)/400;
+  const finalAtk=Math.round(atk*dAtk*techMul*moraleMul*gAtk*expMul*wearMul),finalDef=Math.round(def*dDef*techMul*moraleMul*gDef*expMul*wearMul);
   const score=Math.round((finalAtk+finalDef)/1000);
   const tt=total||1;
   const compBars=ARMY_UNITS.map(u=>{const n=comp[u.id]||0,pct=Math.round(n/tt*100);
@@ -743,12 +1031,33 @@ function renderPanel(tab){
    <div class="kv"><span class="lbl">⚔️ Toplam Saldırı Gücü</span><span class="v" style="color:#e0a060;">${fmt(finalAtk)}</span></div>
    <div class="kv"><span class="lbl">🛡️ Toplam Savunma Gücü</span><span class="v" style="color:#6fb8dc;">${fmt(finalDef)}</span></div>
    <div class="kv"><span class="lbl">🎖️ Ordu Skoru</span><span class="v" style="color:#6fdc8c;">${score}</span></div>
-   <div class="desc" style="margin-top:6px;">Teknoloji ×${techMul.toFixed(2)} · Moral ×${moraleMul.toFixed(2)} · Doktrin ⚔×${dAtk} 🛡×${dDef}</div>
-   ${bar('Ordu Seviyesi',c.military)}${bar('Moral',c.morale)}</div>
+   <div class="desc" style="margin-top:6px;">Teknoloji ×${techMul.toFixed(2)} · Moral ×${moraleMul.toFixed(2)} · Doktrin ⚔×${dAtk} 🛡×${dDef} · 🎖️ General ⚔×${gAtk.toFixed(2)} 🛡×${gDef.toFixed(2)} · Tecrübe ×${expMul.toFixed(2)}${(c.warWeariness||0)>0?` · 😮‍💨 Yorgunluk ×${wearMul.toFixed(2)}`:''}</div>
+   ${bar('Ordu Seviyesi',c.military)}${bar('Moral',c.morale)}${bar('🎖️ Tecrübe',c.armyXP||0)}</div>
   <div class="card"><h3>Birlik Dağılımı (toplam ${fmt(total)})</h3>${compBars}</div>
   <div class="card"><h3>🚜 Ağır Ekipman</h3><div class="kv"><span class="lbl">🛡️ Tank</span><span class="v">${fmt(c.tanks||0)}</span></div><div class="kv"><span class="lbl">✈️ Uçak</span><span class="v">${fmt(c.planes||0)}</span></div></div>
   <div class="card"><h3>📖 Askeri Doktrin</h3><div class="desc">Aktif: <b style="color:#ffd86b">${c.doctrine?DOCTRINES.find(d=>d.id===c.doctrine).name:'Yok'}</b></div>`+
   DOCTRINES.map(d=>`<div class="kv"><span class="lbl">${d.name} — <span style="color:#99a6c0">${d.desc}</span></span><span>${c.doctrine===d.id?'<span style="color:#6fdc8c">✓</span>':`<button class="btn" style="font-size:11px;padding:4px 10px;" onclick="act_doctrine('${d.id}')">Seç (-1500)</button>`}</span></div>`).join('')+`</div>`;
+ }
+ else if(tab==='society'){
+  if(!c.ethnic)c.ethnic=mkEthnic();
+  const e=c.ethnic,t=devTier(c),rr=c.revoltRisk||0;
+  const rrCol=rr>60?'#ff5050':rr>35?'#ffae4a':'#6fdc8c';
+  const moodTag=m=>m<25?'<span style="color:#ff5050">🔥 öfkeli</span>':m<40?'<span style="color:#ffae4a">😠 huzursuz</span>':m<60?'<span style="color:#c8d04a">😐 kararsız</span>':m<75?'<span style="color:#8fd06b">🙂 memnun</span>':'<span style="color:#6fdc8c">😊 sadık</span>';
+  // her grubun istediği/nefret ettiği kanunlar
+  const wants=g=>{const likes=[],hates=[];Object.entries(LAW_ETHNIC).forEach(([id,fx])=>{if(fx[g]==null)return;const law=LAWS.find(l=>l.id===id);if(!law)return;const on=c.laws&&c.laws[id];if(fx[g]>0&&!on)likes.push(law.name);if(fx[g]<0&&on)hates.push(law.name);});
+   return `${likes.length?`<div style="font-size:11px;color:#8fd06b;">✚ İster: ${likes.slice(0,3).join(', ')}</div>`:''}${hates.length?`<div style="font-size:11px;color:#ff9860;">✖ Yürürlükte olup nefret ettiği: ${hates.slice(0,3).join(', ')}</div>`:''}`;};
+  p.innerHTML=`<h2>👥 Halklar & Çıkar Grupları</h2>
+  <div class="card" style="border-left:4px solid ${t.col};"><h3>${t.n}</h3><div class="desc">${t.desc} · Kişi başı GSYH: <b style="color:#ffd86b">${fmt(c.gdp/Math.max(.5,c.population))}</b></div></div>
+  <div class="card" style="border-left:4px solid ${rrCol};"><h3>🔥 İsyan Riski: <span style="color:${rrCol}">%${Math.round(rr)}</span></h3>${bar('İsyan Riski',rr)}<div class="desc">Mutsuz grupların nüfus payı büyüdükçe risk artar. %70 üstü tehlikeli, <b style="color:#ff5050">%95'te yönetim devrilir!</b> İşsizlik %20+, enflasyon %15+ ve kıtlık riski körükler; yüksek ordu morali bastırır.</div></div>
+  <div class="grid">`+ETHNIC_TYPES.map(tp=>{const g=e[tp.id],a=ETHNIC_ACTS[tp.id];
+   return `<div class="card" style="${g.mood<30?'border-left:4px solid #ff5050;':g.mood<45?'border-left:4px solid #ffae4a;':''}"><h3>${tp.icon} ${tp.name} <span style="font-size:12px;color:#99a6c0">%${Math.round(g.share*100)} nüfus</span></h3>
+   <div class="kv"><span class="lbl">Ruh hali</span><span class="v">${moodTag(g.mood)}</span></div>${bar('Memnuniyet',g.mood)}
+   <div class="desc">${tp.desc}</div>
+   <div class="desc" style="color:#e0b8a0;">⚠️ ${tp.threat}</div>
+   ${wants(tp.id)}
+   <button class="btn primary" style="width:100%;margin-top:6px;" onclick="act_ethnic('${tp.id}')">${a.n} (-${a.cost})</button>
+   <div class="desc" style="font-size:10px;">${a.desc}</div></div>`;}).join('')+`</div>
+  <div class="card"><h3>ℹ️ Nasıl çalışır?</h3><div class="desc">Her kanunun etnik gruplara aylık etkisi vardır (⚖️ Kanunlar panelinde ikonlarla görünür). Ayrıca: enflasyon 💼 tüccarları, işsizlik 🔧 işçileri, savaş ⛰️ otonomistleri, savaş yorgunluğu 🏛️ baskın halkı kızdırır. Memnun tüccarlar ihracat/banka gelirini, memnun işçiler fabrika verimini artırır.</div></div>`;
  }
  else if(tab==='laws'){
   const cats=[...new Set(LAWS.map(l=>l.cat))];
@@ -759,11 +1068,12 @@ function renderPanel(tab){
     const disp=(k==='goldDrain')?((v>0?'-'+v:'+'+(-v))+' altın/ay'):((v>0?'+':'')+(Math.round(v*100)/100));
     return `<span style="color:${good?'#6fdc8c':'#e08a8a'};margin-right:12px;white-space:nowrap;">${lbl}: ${disp}</span>`;}).join(''):'<span style="color:#99a6c0">Aktif kanun yok</span>';
   let html=`<h2>⚖️ Kanunlar <span style="color:#99a6c0;font-size:13px;">(${activeCount}/${LAWS.length} aktif)</span></h2>`;
-  html+=`<div class="card" style="border-left:4px solid #ffd86b;"><h3>📋 Yürürlükteki Net Etkiler (aylık)</h3><div style="line-height:2;">${netStr}</div></div>`;
+  html+=`<div class="card" style="border-left:4px solid #ffd86b;"><h3>📋 Yürürlükteki Net Etkiler (aylık)</h3><div style="line-height:2;">${netStr}</div><div class="desc" style="margin-top:4px;">👥 Kanunlar etnik grupları da etkiler: 🏛️ Baskın Halk · 💼 Tüccarlar · ⛰️ Otonomistler · 🔧 Göçmen İşçiler — detay için <b>Halklar</b> sekmesi.</div></div>`;
   cats.forEach(cat=>{
    html+=`<h3 style="margin:14px 0 6px;color:#ffd86b;border-bottom:1px solid #2a3a55;padding-bottom:4px;">${cat}</h3><div class="grid">`;
    html+=LAWS.filter(l=>l.cat===cat).map(law=>{const active=c.laws&&c.laws[law.id];
-     return `<div class="card" style="${active?'border-left:4px solid #6fdc8c;':''}"><h3 style="font-size:14px;">${active?'✓ ':''}${law.name}</h3><div class="desc">${law.desc}</div><button class="btn ${active?'danger':'primary'}" style="font-size:12px;padding:5px 10px;" onclick="act_law('${law.id}')">${active?'Kaldır':'Yürürlüğe Sok'}</button></div>`;}).join('');
+     const ethStr=lawEthnicStr(law.id);
+     return `<div class="card" style="${active?'border-left:4px solid #6fdc8c;':''}"><h3 style="font-size:14px;">${active?'✓ ':''}${law.name}</h3><div class="desc">${law.desc}</div>${ethStr?`<div style="font-size:11px;margin-bottom:5px;">👥 ${ethStr}</div>`:''}<button class="btn ${active?'danger':'primary'}" style="font-size:12px;padding:5px 10px;" onclick="act_law('${law.id}')">${active?'Kaldır':'Yürürlüğe Sok'}</button></div>`;}).join('');
    html+=`</div>`;
   });
   p.innerHTML=html;
@@ -775,7 +1085,10 @@ function renderPanel(tab){
  else if(tab==='religion'){
   const cur=RELIGIONS.find(r=>r.id===c.religion)||RELIGIONS[0];
   p.innerHTML=`<h2>⛪ Din & Kültür</h2>
-  <div class="card"><h3>Mevcut: ${cur.name}</h3><div class="desc">${cur.desc} · Din adamı: ${cur.cleric}</div></div>
+  <div class="card"><h3>Mevcut: ${cur.name}</h3><div class="desc">${cur.desc} · Din adamı: ${cur.cleric}</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+   <button class="btn" onclick="act_sermon()">📿 Büyük Vaaz (-500, +6 moral)</button>
+   <button class="btn" onclick="act_charity()">🤲 Hayır Kampanyası (-1500, +5 mutluluk, +2 itibar)</button></div></div>
   <div class="grid">`+RELIGIONS.map(r=>{const a=c.religion===r.id;
    return `<div class="card" style="${a?'border-color:#ffd86b;':''}"><h3>${r.name} ${a?'<span style="color:#6fdc8c">✓</span>':''}</h3><div class="desc">${r.desc}</div>${a?'':`<button class="btn primary" onclick="act_religion('${r.id}')">Din Değiştir (-2000, -8 mutluluk)</button>`}</div>`;}).join('')+`</div>
   <div class="card"><h3>🎭 Kültürel Bayramlar</h3><div class="grid">`+FESTIVALS.map(f=>`<div><div style="font-weight:700;margin-bottom:3px;">${f.name}</div><div class="desc">${f.desc}</div><button class="btn primary" onclick="act_fest('${f.id}')">Düzenle (-${f.cost})</button></div>`).join('')+`</div></div>`;
@@ -798,9 +1111,14 @@ function renderPanel(tab){
    const rel=Math.round(c.relations[o.id]||50),atWar=c.atWarWith.includes(o.id),allied=c.alliedWith.includes(o.id);
    const nt=neighborType(o);const nbadge=nt==='land'?'<span style="color:#7ad07a">🗺️ Kara komşusu</span>':nt==='sea'?'<span style="color:#6fb8e8">⚓ Deniz komşusu</span>':'<span style="color:#778">🌐 Uzak</span>';
    const pending=G.pendingWarTargetId===o.id;
-   return `<div class="country-row" style="border-color:${o.color};${nt?'':'opacity:.82;'}"><div style="flex:1;min-width:200px;"><div class="name">${o.customName} ${atWar?'<span style="color:#ff7878">⚔️ SAVAŞ</span>':''} ${allied?'<span style="color:#6fdc8c">🤝</span>':''} ${pending?'<span style="color:#ffb04a">⏳ Genelkurmaya gidin</span>':''}</div><div class="stats">${nbadge} · İlişki: ${rel} · Asker: ${fmt(o.soldiers)} · Ordu: ${Math.round(o.military)} · ${o.aiTrait}</div></div><div class="actions">
-   ${atWar?`<button class="btn" onclick="act_peace('${o.id}')">Barış</button>`:nt?(pending?`<button class="btn danger" onclick="requestWarPlanning('${o.id}')">⚔️ Yönergeyi gör</button>`:`<button class="btn danger" onclick="requestWarPlanning('${o.id}')">⚔️ Savaş Planla</button>`):`<span style="font-size:11px;color:#889;align-self:center;">komşu değil</span>`}
+   const pact=c.pacts&&c.pacts[o.id]>TM(),pactLeft=pact?c.pacts[o.id]-TM():0;
+   const emb=c.embassies&&c.embassies[o.id];
+   return `<div class="country-row" style="border-color:${o.color};${nt?'':'opacity:.82;'}"><div style="flex:1;min-width:200px;"><div class="name">${o.customName} ${atWar?'<span style="color:#ff7878">⚔️ SAVAŞ</span>':''} ${allied?'<span style="color:#6fdc8c">🤝</span>':''} ${pact?`<span style="color:#8fd0e8">🕊️ pakt (${pactLeft} ay)</span>`:''} ${emb?'<span style="color:#d0b8e8">🏛️</span>':''} ${pending?'<span style="color:#ffb04a">⏳ Genelkurmaya gidin</span>':''}</div><div class="stats">${nbadge} · İlişki: ${rel} · Asker: ${fmt(o.soldiers)} · Ordu: ${Math.round(o.military)} · ${o.aiTrait}</div></div><div class="actions">
+   ${atWar?`<button class="btn" onclick="act_peace('${o.id}')">Barış</button>`:nt?(pact?`<span style="font-size:11px;color:#8fd0e8;align-self:center;">🕊️ pakt korumada</span>`:pending?`<button class="btn danger" onclick="requestWarPlanning('${o.id}')">⚔️ Yönergeyi gör</button>`:`<button class="btn danger" onclick="requestWarPlanning('${o.id}')">⚔️ Savaş Planla</button>`):`<span style="font-size:11px;color:#889;align-self:center;">komşu değil</span>`}
    ${!allied&&!atWar?`<button class="btn" onclick="act_alliance('${o.id}')">İttifak (-500)</button>`:''}
+   ${!atWar?(pact?`<button class="btn danger" onclick="act_breakPact('${o.id}')">Paktı Boz</button>`:`<button class="btn" onclick="act_pact('${o.id}')">🕊️ Pakt (-800)</button>`):''}
+   ${!atWar&&!emb?`<button class="btn" onclick="act_embassy('${o.id}')">🏛️ Elçilik (-1500)</button>`:''}
+   ${!atWar&&!allied?`<button class="btn" onclick="act_tribute('${o.id}')">💰 Haraç İste</button>`:''}
    <button class="btn" onclick="act_gift('${o.id}')">Hediye (-300)</button>
    <button class="btn" onclick="act_spy('${o.id}')">🕵️ Casus (-800)</button></div></div>`;}).join('');
   drawDiploMap();
@@ -811,7 +1129,14 @@ function renderPanel(tab){
    return `<div class="country-row" style="border-color:${o.color}"><div style="flex:1"><div class="name">${o.customName} ${active?'<span style="color:#6fdc8c">📜</span>':''}</div><div class="stats">İlişki: ${Math.round(c.relations[o.id]||50)} · Sanayi: ${Math.round(o.industry)}</div></div><div class="actions">${atWar?'<span style="color:#ff7878">⚔️</span>':active?`<button class="btn danger" onclick="act_cancelTrade('${o.id}')">İptal</button>`:`<button class="btn primary" onclick="act_trade('${o.id}')">Anlaşma (-1000)</button>`}</div></div>`;}).join('');
  }
  else if(tab==='ops'){
-  p.innerHTML=`<h2>🕵️ Gizli Operasyonlar</h2><div class="card"><div class="desc">Yakalanırsan itibarın düşer. Riske dikkat!</div></div><div class="grid">`+
+  const ag=c.agents||1;
+  p.innerHTML=`<h2>🕵️ Gizli Operasyonlar</h2>
+  <div class="card"><h3>🕵️ Ajan Ağı <span style="font-size:11px;color:#99a6c0">(${ag}/5 ajan · maaş ${ag*150}/ay)</span></h3>
+   <div class="desc">Her ek ajan tüm operasyonların riskini <b style="color:#6fdc8c">%6 düşürür</b> (alt sınır %10). Ajanlar aylık maaş alır.</div>
+   <div style="display:flex;gap:8px;align-items:center;">${'🕵️'.repeat(ag)}${'▫️'.repeat(5-ag)}
+    <button class="btn primary" onclick="act_hireAgent()">Ajan Eğit (-1200)</button>
+    <button class="btn" onclick="act_fireAgent()">Emekli Et</button></div></div>
+  <div class="card"><div class="desc">Yakalanırsan itibarın düşer. Riske dikkat!</div></div><div class="grid">`+
   G.countries.filter(o=>!o.isPlayer).map(o=>`<div class="card"><h3 style="color:${o.color}">${o.customName}</h3><div class="desc">${o.aiTrait}</div><button class="btn" style="width:100%" onclick="showOpsMenu('${o.id}')">Operasyon Listesi</button></div>`).join('')+`</div>`;
  }
 }
@@ -886,13 +1211,85 @@ function act_market(k,amt,buy){
  rrr();
 }
 function act_invest(sec){if(!spend(2500))return;const sd=G.player.sectorDev;sd[sec]=clamp((sd[sec]||20)+4,0,100);const n={agri:'🌾 Tarım',industry:'🏭 Sanayi',services:'🏪 Hizmet'}[sec];addEvent('good',`${n} sektörüne yatırım yapıldı.`);toast(`${n} sektörü gelişti (+4)`,'good');rrr();}
-function act_build(k,cost){if(!spend(cost))return;G.player.buildings[k]=(G.player.buildings[k]||0)+1;addEvent('good','🏗️ Yeni yapı inşa edildi.');toast('Yapı tamam! Şehirde görünecek.','good');G.cityDirty=true;rrr();}
+function act_fx(){if(!spend(3000))return;G.player.currency=clamp((G.player.currency||1)*.92,.5,5);addEvent('good','💱 Merkez Bankası kura müdahale etti.');toast(`Kur güçlendi: ${G.player.currency.toFixed(2)}`,'good');rrr();}
+// ---- Seçimler (demokrasi/cumhuriyet, 4 yılda bir) ----
+function runElection(){
+ const c=G.player;
+ const approval=Math.round(clamp(c.happiness*.7+c.reputation*.2+((c.income-c.expenses)>0?8:0)+(c.unemployment<10?5:-5),0,100));
+ addEvent(approval>=50?'good':'bad',`🗳️ Genel seçim yapıldı — onay oranı %${approval}.`);
+ if(approval>=50){
+  c.morale=clamp(c.morale+5,0,100);c.reputation=clamp(c.reputation+3,0,100);c.happiness=clamp(c.happiness+2,0,100);
+  showModal('🗳️ SEÇİM ZAFERİ!',`Halk sana güvenmeye devam ediyor: <b style="color:#6fdc8c">%${approval} onay</b> ile yeniden seçildin!<br><br>+5 moral, +3 itibar, +2 mutluluk`,[{text:'Teşekkürler!',cls:'primary'}]);
+ } else {
+  showModal('🗳️ SEÇİM KAYBEDİLDİ',`Onay oranın yalnızca <b style="color:#ff7878">%${approval}</b>. Muhalefet zafer ilan etti. Ne yapacaksın Başkanım?`,[
+   {text:'Sonucu onurluca kabul et (oyun biter)',onClick:()=>{showModal('🏳️ DEVİR TESLİM',`<b>${G.player.customName}</b> yönetimini demokratik yollarla devrettin. Tarih seni dürüst bir lider olarak yazacak.`,[{text:'Tekrar Oyna',cls:'primary',onClick:()=>location.reload()}]);}},
+   {text:'Seçime hile karıştır (+15 yolsuzluk, -10 itibar)',cls:'danger',onClick:()=>{G.player.corruption=clamp(G.player.corruption+15,0,100);G.player.reputation=clamp(G.player.reputation-10,0,100);addEvent('bad','🗳️ Seçim sonuçlarına hile karıştırıldı!');toast('İktidarda kaldın... ama halk şüpheleniyor','bad');rrr();}},
+  ]);
+ }
+}
+// ---- Ordu: general ve tecrübe ----
+function act_hireGeneral(i){
+ const g=G.generalMarket&&G.generalMarket[i];if(!g)return;
+ if((G.player.generals||[]).length>=3){toast('En fazla 3 general olabilir!','bad');return;}
+ if(!spend(g.cost))return;
+ G.player.generals.push(g);G.generalMarket.splice(i,1);
+ addEvent('good',`🎖️ ${g.rank} ${g.name} orduya katıldı.`);toast(`${g.name} göreve başladı!`,'good');rrr();
+}
+function act_fireGeneral(i){const g=G.player.generals[i];if(!g)return;G.player.generals.splice(i,1);G.player.morale=clamp(G.player.morale-3,0,100);toast(`${g.name} emekliye ayrıldı (-3 moral)`,'bad');rrr();}
+function act_payMinister(i){const m=G.ministers[i];if(!m)return;if(!spend(1200))return;m.loyalty=clamp(m.loyalty+18,0,100);toast(`${m.name} maaş zammından memnun (+18 sadakat)`,'good');rrr();}
+// ---- Casusluk: ajan ağı ----
+function act_hireAgent(){if((G.player.agents||0)>=5){toast('En fazla 5 ajan!','bad');return;}if(!spend(1200))return;G.player.agents=(G.player.agents||0)+1;toast('🕵️ Yeni ajan eğitildi','good');rrr();}
+function act_fireAgent(){if((G.player.agents||0)<=1){toast('En az 1 ajan kalmalı!','bad');return;}G.player.agents--;toast('Ajan emekli edildi','bad');rrr();}
+function effRisk(op){return Math.max(10,op.risk-((G.player.agents||1)-1)*6);}
+// ---- Diplomasi: pakt, elçilik, haraç ----
+function act_pact(id){
+ const o=G.countries.find(x=>x.id===id);if(!o)return;
+ if((G.player.relations[id]||50)<55){toast(`${o.customName} paktı reddetti (ilişki 55+ gerekli)`,'bad');return;}
+ if(!spend(800))return;
+ G.player.pacts[id]=TM()+24;(o.pacts=o.pacts||{})[G.player.id]=TM()+24;
+ addEvent('good',`🕊️ ${o.customName} ile 24 aylık saldırmazlık paktı imzalandı.`);toast(`${o.customName} ile pakt imzalandı (24 ay)`,'good');rrr();
+}
+function act_breakPact(id){
+ const o=G.countries.find(x=>x.id===id);if(!o)return;
+ delete G.player.pacts[id];if(o.pacts)delete o.pacts[G.player.id];
+ G.player.reputation=clamp(G.player.reputation-10,0,100);
+ G.player.relations[id]=clamp((G.player.relations[id]||50)-20,0,100);o.relations[G.player.id]=clamp((o.relations[G.player.id]||50)-20,0,100);
+ addEvent('bad',`🕊️💔 ${o.customName} ile pakt tek taraflı bozuldu! Dünya bunu unutmayacak.`);toast('Pakt bozuldu: -10 itibar','bad');rrr();
+}
+function act_embassy(id){
+ const o=G.countries.find(x=>x.id===id);if(!o)return;
+ if(G.player.embassies[id]){toast('Elçilik zaten var!','bad');return;}
+ if(!spend(1500))return;
+ G.player.embassies[id]=true;addEvent('good',`🏛️ ${o.customName} başkentinde elçilik açıldı.`);toast(`${o.customName}'da elçilik açıldı (+0.5 ilişki/ay)`,'good');rrr();
+}
+function act_tribute(id){
+ const o=G.countries.find(x=>x.id===id);if(!o)return;
+ const myPow=G.player.soldiers+(G.player.tanks||0)*50+(G.player.planes||0)*80;
+ const oPow=o.soldiers+(o.tanks||0)*50+(o.planes||0)*80;
+ if(myPow<oPow*1.4){toast('Ordun yeterince caydırıcı değil (en az 1.4 kat güç gerekli)!','bad');return;}
+ if(Math.random()<.7){
+  const trib=Math.round(o.gold*.15+500);o.gold=Math.max(0,o.gold-trib);G.player.gold+=trib;
+  G.player.relations[id]=clamp((G.player.relations[id]||50)-12,0,100);o.relations[G.player.id]=clamp((o.relations[G.player.id]||50)-12,0,100);
+  addEvent('good',`💰 ${o.customName} gözdağına boyun eğdi: +${fmt(trib)} haraç.`);toast(`${o.customName} haraç ödedi: +${fmt(trib)}`,'good');
+ } else {
+  G.player.relations[id]=clamp((G.player.relations[id]||50)-25,0,100);o.relations[G.player.id]=0;
+  G.player.reputation=clamp(G.player.reputation-5,0,100);
+  addEvent('bad',`😡 ${o.customName} ültimatomu reddetti! İlişkiler çöktü.`);toast(`${o.customName} reddetti! -25 ilişki, -5 itibar`,'bad');
+ }
+ rrr();
+}
+// ---- Din: din adamı etkinlikleri ----
+function act_sermon(){if(!spend(500))return;G.player.morale=clamp(G.player.morale+6,0,100);toast('📿 Büyük vaaz verildi: +6 moral','good');rrr();}
+function act_charity(){if(!spend(1500))return;G.player.happiness=clamp(G.player.happiness+5,0,100);G.player.reputation=clamp(G.player.reputation+2,0,100);toast('🤲 Hayır kampanyası: +5 mutluluk, +2 itibar','good');rrr();}
+function act_buyCompany(id){const k=COMPANIES.find(x=>x.id===id);if(!k)return;if(G.player.companies&&G.player.companies[id]){toast('Zaten sahipsin!','bad');return;}if(!spend(k.cost))return;(G.player.companies=G.player.companies||{})[id]=true;addEvent('good',`🏢 ${k.n} devletleştirildi.`);toast(`${k.n} artık senin!`,'good');rrr();}
+function act_sellCompany(id){const k=COMPANIES.find(x=>x.id===id);if(!k||!G.player.companies||!G.player.companies[id])return;delete G.player.companies[id];G.player.gold+=Math.round(k.cost*.7);addEvent('bad',`🏢 ${k.n} özelleştirildi (+${fmt(k.cost*.7)}).`);toast(`${k.n} satıldı (+${fmt(k.cost*.7)})`,'good');rrr();}
+function act_build(k,cost){const rc=Math.round(cost*(1+clamp(G.player.inflation,0,35)/60));if(!spend(rc))return;G.player.buildings[k]=(G.player.buildings[k]||0)+1;addEvent('good','🏗️ Yeni yapı inşa edildi.');toast('Yapı tamam! Şehirde görünecek.','good');G.cityDirty=true;rrr();}
 function act_research(id){if(G.research){toast('Önce mevcut araştırmayı bitir','bad');return;}G.research={id,progress:0};toast('Araştırma başladı','good');rrr();}
 function act_cancelResearch(){G.research=null;rrr();}
 function act_recruit(n,cost){if(!spend(cost))return;G.player.soldiers+=n;toast(`+${fmt(n)} asker`,'good');if(typeof tut==='function')tut('recruit');rrr();}
 function act_equip(t,n,cost){if(!spend(cost))return;G.player[t]+=n;toast(`+${n} ${t==='tanks'?'tank':'uçak'}`,'good');rrr();}
-function act_train(){if(!spend(2000))return;G.player.military=clamp(G.player.military+5,0,100);G.player.morale=clamp(G.player.morale+5,0,100);toast('Ordu eğitildi','good');rrr();}
-function act_parade(){if(!spend(1000))return;G.player.morale=clamp(G.player.morale+8,0,100);toast('Moral arttı','good');rrr();}
+function act_train(){if(!spend(2000))return;G.player.military=clamp(G.player.military+5,0,100);G.player.morale=clamp(G.player.morale+5,0,100);G.player.armyXP=clamp((G.player.armyXP||0)+3,0,100);toast('Ordu eğitildi (+3 tecrübe)','good');rrr();}
+function act_parade(){if(!spend(1000))return;G.player.morale=clamp(G.player.morale+8,0,100);G.player.armyXP=clamp((G.player.armyXP||0)+1,0,100);toast('Moral arttı','good');rrr();}
 function act_unit(id,n,cost){if(!spend(cost))return;G.player.armyComp[id]=(G.player.armyComp[id]||0)+n;G.player.soldiers+=n;toast(`+${fmt(n)} ${ARMY_UNITS.find(u=>u.id===id).name}`,'good');if(typeof tut==='function')tut('recruit');rrr();}
 function act_doctrine(id){if(!spend(1500))return;G.player.doctrine=id;toast(`Doktrin: ${DOCTRINES.find(d=>d.id===id).name}`,'good');rrr();}
 function act_law(id){if(!G.player.laws)G.player.laws={};G.player.laws[id]=!G.player.laws[id];toast(G.player.laws[id]?'Kanun yürürlükte':'Kanun kaldırıldı',G.player.laws[id]?'good':'bad');if(G.player.laws[id]&&typeof tut==='function')tut('law');rrr();}
@@ -907,11 +1304,11 @@ function act_spy(id){if(!spend(800))return;const o=G.countries.find(x=>x.id===id
 function act_trade(id){const o=G.countries.find(x=>x.id===id);if(Object.keys(G.player.tradePartners||{}).length>=4){toast('Maks 4 anlaşma!','bad');return;}if((G.player.relations[id]||50)<40){toast(`${o.customName} reddetti`,'bad');return;}if(!spend(1000))return;G.player.tradePartners[id]=true;toast(`📜 ${o.customName} ile anlaşma!`,'good');rrr();}
 function act_cancelTrade(id){delete G.player.tradePartners[id];toast('Anlaşma iptal','bad');rrr();}
 function showOpsMenu(id){const o=G.countries.find(x=>x.id===id);
- showModal(`🕵️ ${o.customName}`,SPY_OPS.map(op=>`<div style="padding:8px;background:#0f1726;border-radius:4px;margin-bottom:6px;"><b>${op.name}</b> — ${op.desc}<br><span style="font-size:11px;color:#ff9999">Risk %${op.risk} · ${op.cost} altın</span><br><button class="btn primary" style="margin-top:4px;font-size:11px;" onclick="runOp('${id}','${op.id}');document.getElementById('modal').classList.remove('show');">Başlat</button></div>`).join(''),[{text:'Kapat'}]);}
+ showModal(`🕵️ ${o.customName} <span style="font-size:11px;color:#99a6c0">(${G.player.agents||1} ajan görevde)</span>`,SPY_OPS.map(op=>{const er=effRisk(op);return `<div style="padding:8px;background:#0f1726;border-radius:4px;margin-bottom:6px;"><b>${op.name}</b> — ${op.desc}<br><span style="font-size:11px;color:#ff9999">Risk %${er}${er<op.risk?` <span style="color:#6fdc8c">(ajanlar %${op.risk}'den düşürdü)</span>`:''} · ${op.cost} altın</span><br><button class="btn primary" style="margin-top:4px;font-size:11px;" onclick="runOp('${id}','${op.id}');document.getElementById('modal').classList.remove('show');">Başlat</button></div>`;}).join(''),[{text:'Kapat'}]);}
 function runOp(targetId,opId){
  const op=SPY_OPS.find(o=>o.id===opId),t=G.countries.find(c=>c.id===targetId);
  if(!spend(op.cost))return;
- if(Math.random()*100>op.risk){
+ if(Math.random()*100>effRisk(op)){
   if(opId==='steal_tech'){G.player.tech=clamp(G.player.tech+8,0,100);t.tech=clamp(t.tech-5,0,100);}
   else if(opId==='sabotage')t.industry=clamp(t.industry-10,0,100);
   else if(opId==='assassinate'){t.morale=clamp(t.morale-20,0,100);t.happiness=clamp(t.happiness-15,0,100);}
@@ -942,6 +1339,7 @@ function doDeclareWar(o){
 function requestWarPlanning(id){
  const o=G.countries.find(x=>x.id===id);
  if(!isNeighbor(o)){toast('Yalnızca komşulara savaş açılabilir!','bad');return;}
+ if(G.player.pacts&&G.player.pacts[id]>TM()){toast(`🕊️ ${o.customName} ile saldırmazlık paktın var (${G.player.pacts[id]-TM()} ay)! Önce paktı bozmalısın.`,'bad');return;}
  G.pendingWarTargetId=id;
  const nt=neighborType(o)==='sea'?'deniz aşırı bir cephe':'kara cephesi';
  showModal('🤝 Dışişleri Bakanı',
@@ -1038,6 +1436,9 @@ function startGame(){
  c.buildings={factory:4,farm:5,mine:2,barracks:2,hospital:2,lab:1,fortress:1,university:0,port:1,market:3,refinery:1,bank:1};
  c.armyComp={infantry:28000,cavalry:4000,artillery:2000,special:1000};
  c.interestRate=8;c.sectorDev={agri:35,industry:40,services:30};
+ c.currency=1;c.minWage=10;c.companies={};
+ c.armyXP=25;c.warWeariness=0;c.agents=1;c.generals=[];c.pacts={};c.embassies={};
+ G.generalMarket=[genGeneral(),genGeneral()];
  G.player=c;
  initMinisters();
  $('countryPicker').style.display='none';
@@ -1273,7 +1674,7 @@ function addPlant(scene,x,z){
 const ROOMS=[
  {id:'economy',name:'EKONOMİ ODASI',side:'west',cz:-12,color:0x2a4a3a,carpet:0x1d3a2a,acc:0x3fae6a,
   npc:{name:'Maliye Bakanı',emoji:'💼',suit:0x2a3a55,lines:['Başkanım, hoş geldiniz! Hazine raporları masamda.','Vergileri, bütçeyi ve inşaatları buradan yönetebiliriz.','Bilgisayarı açıyorum, buyrun...']},
-  tabs:['economy','budget','resources','build']},
+  tabs:['economy','budget','resources','companies','society','build']},
  {id:'army',name:'ORDU ODASI',side:'west',cz:0,color:0x3a3326,carpet:0x2c2618,acc:0x8a9a4a,
   npc:{name:'Genelkurmay Başkanı',emoji:'⚔️',suit:0x33402a,lines:['Komutanım! Ordu emrinizde.','Asker alımı, doktrinler ve askeri reformlar için buradayım.','Harita masasına gelin, durumu gösereyim...']},
   tabs:['military','armydetail']},
@@ -1285,7 +1686,7 @@ const ROOMS=[
   tabs:['diplomacy','trade']},
  {id:'law',name:'HUKUK ODASI',side:'east',cz:0,color:0x3c2f22,carpet:0x2e2418,acc:0xc8963a,
   npc:{name:'Adalet Bakanı',emoji:'⚖️',suit:0x3a2a20,lines:['Sayın Başkan, adalet mülkün temelidir.','Yeni kanunlar koyabilir veya rejimi değiştirebiliriz.','Anayasa kitabını açıyorum...']},
-  tabs:['laws','ideology']},
+  tabs:['laws','ideology','society']},
  {id:'religion',name:'DİN ODASI',side:'east',cz:12,color:0x3a2c3a,carpet:0x2c202c,acc:0x9a6ac8,
   npc:{name:'İmam Yusuf',emoji:'☪️',suit:0x4a4038,lines:['Hoş geldiniz evladım.','Halkın inancı ve bayramlar benim emanetimde.','Ne yapmak istersiniz?']},
   tabs:['religion']},
@@ -1660,7 +2061,21 @@ function baldrickTalk(){
  if(c.inflation>10)tips.push('Enflasyon canavarı büyüyor. Banka inşa edin, para basmayın.');
  if(c.inflation>8&&c.interestRate<10)tips.push('Enflasyon yükseliyor — Ekonomi odasındaki Merkez Bankası faizini artırın efendim.');
  if(c.nationalDebt>c.gdp*.8)tips.push('Kredi notumuz düşüyor efendim! Borç faizi bizi yiyip bitirecek, borçları ödeyin.');
+ if((c.currency||1)>1.6)tips.push('Paramız eriyor efendim! Kur '+(c.currency||1).toFixed(2)+' oldu — faizi artırın ya da kura müdahale edin.');
+ if(c._supply&&c._supply.ratio<1)tips.push('Fabrikalar hammadde bulamıyor! Kaynak Borsası\'ndan çelik ve petrol alın, ya da maden inşa edin.');
+ if(!Object.keys(c.companies||{}).length&&c.gold>15000)tips.push('Hazinede para birikiyor — bir Devlet Şirketi kurun, her ay kâr getirsin efendim.');
+ if((c.warWeariness||0)>30)tips.push(`Halk savaştan bıktı efendim (yorgunluk ${Math.round(c.warWeariness)}). Barış yapın yoksa mutluluk eriyecek.`);
+ if(!(c.generals||[]).length&&c.gold>5000)tips.push('Ordumuz başsız efendim! Ordu odasından bir general atayın, muharebe gücümüz artsın.');
+ if(c.ideology==='democracy'||c.ideology==='republic'){const kalan=48-(TM()%48);if(kalan<=6)tips.push(`Seçime yalnızca ${kalan} ay kaldı efendim! Halkı mutlu edin, yoksa koltuk elden gider.`);}
+ if(G.ministers.some(m=>m.loyalty<35))tips.push('Kabinede küskün bakanlar var. Zam verin, yoksa istifa ya da skandal kapıda.');
  if(!G.research)tips.push('Laboratuvar boş duruyor. Şehirdeki 🔬 Araştırma Merkezi\'ne gidip bir teknoloji başlatın.');
+ if((c.revoltRisk||0)>40)tips.push(`İsyan riski %${Math.round(c.revoltRisk)} efendim! Halklar panelini açın, hangi grup öfkeli görün ve gönlünü alın.`);
+ if(c.ethnic&&c.ethnic.merchants.mood<35)tips.push('Tüccar azınlık huzursuz efendim — sermayelerini kaçırmadan enflasyonu düşürün, Serbest Ticaret ya da Liyakat kanunu çıkarın.');
+ if(c.ethnic&&c.ethnic.migrants.mood<35)tips.push('Göçmen işçiler grev hazırlığında efendim! İşçi Hakları kanunu, asgari ücret zammı ya da Sendika Masası işe yarar.');
+ if(c.ethnic&&c.ethnic.autonomists.mood<30)tips.push('Otonomist eyaletler kaynıyor efendim. Sübvansiyon kanunu ve Bölgesel Teşvik Paketi ayaklanmayı önler — askeri kanunlar ateşe benzin döker!');
+ if(c._strike>0)tips.push('Genel grev sürüyor efendim — fabrikalar yarım kapasite! İşçilerin taleplerine kulak verin.');
+ if(c._consume&&!c._consume.steelOK)tips.push('Ordu çelik bulamıyor efendim! Borsadan çelik alın ya da maden inşa edin, yoksa moral eriyecek.');
+ if(c._consume&&!c._consume.grainOK)tips.push('Tahıl ambarları boş efendim! Halk aç kalmadan çiftlik kurun ya da borsadan tahıl alın.');
  if(tips.length===0)tips.push('Her şey yolunda görünüyor efendim. Şüpheli derecede yolunda...');
  G.dialog={lines:['Kurnaz bir planım var efendim!',pick(tips),'Eğitimi tekrar görmek isterseniz, aşağıdan başlatabilirsiniz.','Bir de... maaş zammı mümkün mü efendim? (değil mi... peki.)'],idx:0,name:'🥔 Danışman Baldrick',after:()=>{if(confirm('Baldrick eğitimini baştan görmek ister misin?'))startTutorial(true);}};
  showDialogLine();
@@ -2828,6 +3243,7 @@ function endWar(won){
  p.atWarWith=p.atWarWith.filter(x=>x!==e.id);
  e.atWarWith=(e.atWarWith||[]).filter(x=>x!==p.id);
  (G.warHistory=G.warHistory||[]).push({id:e.id,won,y:G.year,m:G.month,type:'⚔️ Kara'});
+ p.armyXP=clamp((p.armyXP||0)+(won?6:2),0,100);
  $('warEndTitle').textContent=won?'🏆 ZAFER!':'💀 MAĞLUBİYET';
  $('warEndTitle').className=won?'win':'lose';
  $('warEndBody').innerHTML=`💀 Öldürülen düşman puanı: <b>${w.enemyKilled}</b> · 🤝 Kayıp: <b>${w.ourLost}</b><br>Ülkeye etkisi:`;
@@ -3164,6 +3580,7 @@ function endNaval(won){
  p.atWarWith=p.atWarWith.filter(x=>x!==e.id);
  e.atWarWith=(e.atWarWith||[]).filter(x=>x!==p.id);
  (G.warHistory=G.warHistory||[]).push({id:e.id,won,y:G.year,m:G.month,type:'⚓ Deniz'});
+ p.armyXP=clamp((p.armyXP||0)+(won?5:2),0,100);
  $('warEndTitle').textContent=won?'🏆 DENİZ ZAFERİ!':'💀 DENİZ MAĞLUBİYETİ';
  $('warEndTitle').className=won?'win':'lose';
  $('warEndBody').innerHTML=`⚓ İmha edilen hedef: <b>${n.killed}/${n.targetCount}</b> · ❤️ Gemi: <b>${Math.round(n.hp/n.maxHp*100)}%</b><br>Ülkeye etkisi:`;
@@ -3647,6 +4064,7 @@ function finishCampaign(){
  }
  p.atWarWith=p.atWarWith.filter(x=>x!==e.id);e.atWarWith=(e.atWarWith||[]).filter(x=>x!==p.id);
  (G.warHistory=G.warHistory||[]).push({id:e.id,won:overall,y:G.year,m:G.month,type:'🗺️ Harekât'});
+ p.armyXP=clamp((p.armyXP||0)+(overall?8:3),0,100);
  if(G.pendingWarTargetId===e.id)G.pendingWarTargetId=null;
  if(G._warAnnounced)delete G._warAnnounced[e.id];
  G.campaign=null;
