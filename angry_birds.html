@@ -2044,13 +2044,13 @@ function drawMenu() {
 
   ctx.shadowColor='#FF3300'; ctx.shadowBlur=30;
 
-  ctx.fillStyle='#FF3300'; ctx.font='bold 46px "Press Start 2P"'; ctx.textAlign='center';
+  ctx.fillStyle='#FF3300'; ctx.font='bold 28px "Press Start 2P"'; ctx.textAlign='center';
 
-  ctx.fillText('BIRD',CW/2,110);
+  ctx.fillText('LORD OF THE',CW/2,96);
 
-  ctx.fillStyle='#FFD700'; ctx.font='bold 46px "Press Start 2P"';
+  ctx.fillStyle='#FFD700'; ctx.font='bold 54px "Press Start 2P"';
 
-  ctx.fillText('BLAST',CW/2,166);
+  ctx.fillText('BIRDS',CW/2,168);
 
   ctx.restore();
 
@@ -2586,10 +2586,12 @@ function loop() {
 (function initAB3D(){
   window.AB3D=false;
   function hideGL(){ var g=document.getElementById('gl'); if(g) g.style.display='none'; }
+  // 3D geçici olarak KAPALI (siyah ekran sorunu tarayıcıda doğrulanana dek). Açmak için: window.AB3D_ENABLE=true
+  if(!window.AB3D_ENABLE){ hideGL(); return; }
   const THREE=window.THREE;
   if(!THREE){ console.warn('THREE yok — 2D moda dönülüyor'); hideGL(); return; }
   let renderer,scene,cam,reg,frameId=0,slingModel,groundMesh,_uid=0;
-  let skyMesh,sunMesh,cloudGrp,starGrp,hillGrp,decorGrp,curMars=null;
+  let skyMesh,sunMesh,cloudGrp,starGrp,hillGrp,hillFarGrp,decorGrp,flowerGrp,treeGrp,rockGrp,bflyGrp,curMars=null;
   const idOf=o=>o.__id||(o.__id=++_uid);
   const GEO={}, MAT={}, TEX={};
   // --- doku üreticileri (canvas) ---
@@ -2601,6 +2603,8 @@ function loop() {
   function stoneTex(){ const cv=_cv(64,64),x=cv.getContext('2d'); x.fillStyle='#a3abb5'; x.fillRect(0,0,64,64); for(let i=0;i<260;i++){const g=(Math.random()*40-20)|0; x.fillStyle='rgba('+(150+g)+','+(158+g)+','+(168+g)+',.6)'; x.fillRect(Math.random()*64,Math.random()*64,3,3);} x.strokeStyle='rgba(70,76,86,.7)'; x.strokeRect(1,1,62,62); const t=new THREE.CanvasTexture(cv); return t; }
   function iceTex(){ const cv=_cv(64,64),x=cv.getContext('2d'); x.fillStyle='#bfeeff'; x.fillRect(0,0,64,64); x.strokeStyle='rgba(255,255,255,.7)'; x.lineWidth=1; for(let i=0;i<10;i++){x.beginPath();x.moveTo(Math.random()*64,Math.random()*64);x.lineTo(Math.random()*64,Math.random()*64);x.stroke();} const t=new THREE.CanvasTexture(cv); return t; }
   function radialTex(inner,outer){ const cv=_cv(64,64),x=cv.getContext('2d'); const g=x.createRadialGradient(32,32,2,32,32,32); g.addColorStop(0,inner); g.addColorStop(1,outer); x.fillStyle=g; x.beginPath(); x.arc(32,32,32,0,7); x.fill(); const t=new THREE.CanvasTexture(cv); return t; }
+  function planetTex(){ const cv=_cv(128,64),x=cv.getContext('2d'); x.fillStyle='#c8925e'; x.fillRect(0,0,128,64); const bands=['#b97e48','#d8a970','#a86a3c','#e0b880','#bd8850']; for(let i=0;i<9;i++){ x.fillStyle=bands[i%bands.length]; x.globalAlpha=.55; x.fillRect(0,i*7+((Math.random()*3)|0),128,4+Math.random()*4); } x.globalAlpha=1; const t=new THREE.CanvasTexture(cv); return t; }
+  function crackedTex(srcTex,level){ const cv=_cv(64,64),x=cv.getContext('2d'); x.drawImage(srcTex.image,0,0); x.strokeStyle='rgba(30,20,12,'+(0.45+level*0.15)+')'; x.lineWidth=1.6; const n=2+level*2; for(let i=0;i<n;i++){ let px=8+Math.random()*48, py=Math.random()*20; x.beginPath(); x.moveTo(px,py); for(let s=0;s<4;s++){ px+=Math.random()*20-10; py+=10+Math.random()*8; x.lineTo(px,py); } x.stroke(); } return new THREE.CanvasTexture(cv); }
   // dünya (x,y-aşağı) -> sahne (x, GROUND-y, 0)
   function X(x){ return x; }
   function Y(y){ return GROUND - y; }
@@ -2614,7 +2618,7 @@ function loop() {
     if('outputEncoding' in renderer) renderer.outputEncoding=THREE.sRGBEncoding;
     renderer.toneMapping=THREE.NoToneMapping; // canlı/doygun çizgi-film renkleri (ACES soluk gösteriyordu)
     scene=new THREE.Scene();
-    scene.fog=new THREE.Fog(0x9fd0f0, 1400, 3200);
+    scene.fog=new THREE.Fog(0x9fd0f0, 1750, 3500);
     // 2.5D ortografik kamera, hafif eğik (kutuların üst/yan yüzü görünsün)
     cam=new THREE.OrthographicCamera(-CW/2,CW/2,CH/2,-CH/2,-2000,6000);
     // ışıklar (beyaz ortam ışığını kıs -> renkler daha doygun)
@@ -2625,6 +2629,9 @@ function loop() {
     sun.shadow.mapSize.set(2048,2048); sun.shadow.bias=-0.0004;
     const sc=sun.shadow.camera; sc.left=-800;sc.right=1600;sc.top=900;sc.bottom=-300;sc.near=1;sc.far=2600; sc.updateProjectionMatrix();
     scene.add(sun); scene.add(sun.target); MAT._sun=sun;
+    // arkadan soğuk dolgu ışığı (siluetlere derinlik verir)
+    const rim=new THREE.DirectionalLight(0x9fc8ff,0.28);
+    rim.position.set(420,260,-500); scene.add(rim);
     // gökyüzü kubbesi (degrade)
     TEX.skyDay=skyTex('#3a86d8','#8fc4ee','#dff0fb');
     TEX.skyMars=skyTex('#160a12','#5a1a18','#a34a2a');
@@ -2633,21 +2640,49 @@ function loop() {
     // güneş
     sunMesh=new THREE.Mesh(new THREE.SphereGeometry(120,20,16), new THREE.MeshBasicMaterial({map:radialTex('#fffef0','#ffd45a'),fog:false}));
     sunMesh.position.set(-900,760,-1500); scene.add(sunMesh);
+    // güneş halesi (yumuşak parlama)
+    const halo=new THREE.Mesh(new THREE.PlaneGeometry(620,620), new THREE.MeshBasicMaterial({map:radialTex('rgba(255,246,205,.75)','rgba(255,220,120,0)'),transparent:true,depthWrite:false,fog:false}));
+    halo.position.set(0,0,130); sunMesh.add(halo);
     // bulutlar (gündüz)
     cloudGrp=new THREE.Group();
     for(let i=0;i<10;i++){ const c=new THREE.Mesh(new THREE.PlaneGeometry(300+Math.random()*260,120+Math.random()*90), new THREE.MeshBasicMaterial({map:radialTex('rgba(255,255,255,.95)','rgba(255,255,255,0)'),transparent:true,depthWrite:false,fog:false}));
-      c.position.set(-1600+Math.random()*3400, 380+Math.random()*260, -1400-Math.random()*400); cloudGrp.add(c); }
+      c.position.set(-1600+Math.random()*3400, 380+Math.random()*260, -1400-Math.random()*400); c.userData.spd=0.12+Math.random()*0.28; cloudGrp.add(c); }
     scene.add(cloudGrp);
     // yıldızlar (Mars/uzay)
     starGrp=new THREE.Group();
     for(let i=0;i<160;i++){ const s=new THREE.Mesh(new THREE.SphereGeometry(3+Math.random()*4,6,6), new THREE.MeshBasicMaterial({color:0xffffff,fog:false}));
-      s.position.set(-2400+Math.random()*4800, 120+Math.random()*900, -1800-Math.random()*600); starGrp.add(s); }
+      s.position.set(-2400+Math.random()*4800, 120+Math.random()*900, -1800-Math.random()*600); s.userData.tw=Math.random()*6.28; starGrp.add(s); }
+    // Mars göğü: halkalı gaz devi + parlayan ufuk yıldızı (starGrp ile birlikte görünür)
+    const planet=new THREE.Mesh(new THREE.SphereGeometry(150,24,18), new THREE.MeshStandardMaterial({map:planetTex(),roughness:.9,fog:false}));
+    planet.position.set(70,380,-950); starGrp.add(planet);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(235,26,2,48), new THREE.MeshBasicMaterial({color:0xd8b088,transparent:true,opacity:.55,fog:false}));
+    ring.position.copy(planet.position); ring.rotation.x=Math.PI/2.5; ring.rotation.y=0.35; starGrp.add(ring);
     starGrp.visible=false; scene.add(starGrp);
     // arka tepeler/dünler
     hillGrp=new THREE.Group();
     for(let i=0;i<9;i++){ const h=new THREE.Mesh(new THREE.SphereGeometry(160+Math.random()*180,16,10,0,Math.PI*2,0,Math.PI/2), new THREE.MeshStandardMaterial({color:0x3fae28,roughness:1,fog:true}));
       h.position.set(-1400+i*380, Y(GROUND)-10, -700-Math.random()*160); h.scale.y=0.5+Math.random()*0.4; h.userData.day=0x3fae28; h.userData.mars=0x8a2f18; hillGrp.add(h); }
     scene.add(hillGrp);
+    // daha uzak, soluk tepe katmanı (paralaks derinliği)
+    hillFarGrp=new THREE.Group();
+    for(let i=0;i<8;i++){ const h=new THREE.Mesh(new THREE.SphereGeometry(300+Math.random()*260,14,9,0,Math.PI*2,0,Math.PI/2), new THREE.MeshStandardMaterial({color:0x6fc44f,roughness:1,fog:true}));
+      h.position.set(-1700+i*520, Y(GROUND)-30, -1050-Math.random()*200); h.scale.y=0.45+Math.random()*0.35; h.userData.day=0x6fc44f; h.userData.mars=0xa04a28; hillFarGrp.add(h); }
+    scene.add(hillFarGrp);
+    // ağaçlar (gündüz teması)
+    treeGrp=new THREE.Group();
+    for(let i=0;i<8;i++){ const tx=-1100+i*420+Math.random()*160, tz=-260-Math.random()*100, th=90+Math.random()*70;
+      const trunk=new THREE.Mesh(new THREE.CylinderGeometry(7,10,th,10), new THREE.MeshStandardMaterial({color:0x6b4423,roughness:.95}));
+      trunk.position.set(tx,Y(GROUND)+th/2,tz); trunk.castShadow=true; treeGrp.add(trunk);
+      const fCol=[0x2e8b1e,0x3aa428,0x2f9a22][i%3]; const fMat=new THREE.MeshStandardMaterial({color:fCol,roughness:.9});
+      for(let k=0;k<3;k++){ const f=new THREE.Mesh(new THREE.SphereGeometry(34+Math.random()*22,12,10), fMat);
+        f.position.set(tx+(k-1)*26+Math.random()*10, Y(GROUND)+th+14+(k===1?26:0), tz+(Math.random()*16-8)); f.castShadow=true; treeGrp.add(f); } }
+    scene.add(treeGrp);
+    // Mars kaya kuleleri (kızıl tema)
+    rockGrp=new THREE.Group();
+    for(let i=0;i<10;i++){ const rx=-1000+i*360+Math.random()*140, rh=50+Math.random()*110;
+      const r=new THREE.Mesh(new THREE.ConeGeometry(18+Math.random()*16,rh,7), new THREE.MeshStandardMaterial({color:0x8a3a20,roughness:1}));
+      r.position.set(rx,Y(GROUND)+rh/2,-240-Math.random()*120); r.rotation.y=Math.random()*3; r.castShadow=true; rockGrp.add(r); }
+    rockGrp.visible=false; scene.add(rockGrp);
     // geometri/materyaller
     GEO.box=new THREE.BoxGeometry(1,1,1);
     GEO.sph=new THREE.SphereGeometry(0.5,22,18);
@@ -2669,6 +2704,11 @@ function loop() {
     MAT.belly=new THREE.MeshStandardMaterial({color:0xfff0d8,roughness:.6});
     MAT.ground=new THREE.MeshStandardMaterial({map:TEX.grass,color:0xffffff,roughness:1});
     MAT.dirt=new THREE.MeshStandardMaterial({color:0x7a5a34,roughness:1});
+    // hasar seviyeli (çatlaklı) blok malzemeleri: MATC[tip][crack-1]
+    MAT.C={};
+    MAT.C.wood =[1,2,3].map(l=>new THREE.MeshStandardMaterial({map:crackedTex(TEX.wood,l),roughness:.82}));
+    MAT.C.stone=[1,2,3].map(l=>new THREE.MeshStandardMaterial({map:crackedTex(TEX.stone,l),roughness:.95}));
+    MAT.C.ice  =[1,2,3].map(l=>new THREE.MeshStandardMaterial({map:crackedTex(TEX.ice,l),roughness:.12,metalness:.15,transparent:true,opacity:.66}));
     // zemin
     const gGrp=new THREE.Group();
     const grass=new THREE.Mesh(new THREE.BoxGeometry(6000,44,700),MAT.ground);
@@ -2677,8 +2717,32 @@ function loop() {
     dirt.position.set(0,Y(GROUND)-220,-40); gGrp.add(dirt);
     // ön çim öbekleri / kayalar
     decorGrp=new THREE.Group();
-    for(let i=0;i<60;i++){ const gx=-800+i*70+Math.random()*30; const tuft=new THREE.Mesh(GEO.cone,new THREE.MeshStandardMaterial({color:0x3fb31e,roughness:1})); tuft.scale.set(16,26,16); tuft.position.set(gx,Y(GROUND)+8,40+Math.random()*30); tuft.userData.day=0x3fb31e; tuft.userData.mars=0x9a3820; decorGrp.add(tuft); }
+    for(let i=0;i<60;i++){ const gx=-800+i*70+Math.random()*30; const tuft=new THREE.Mesh(GEO.cone,new THREE.MeshStandardMaterial({color:0x3fb31e,roughness:1})); tuft.scale.set(16,26,16); tuft.position.set(gx,Y(GROUND)+8,40+Math.random()*30); tuft.userData.day=0x3fb31e; tuft.userData.mars=0x9a3820; tuft.userData.ph=Math.random()*6.28; decorGrp.add(tuft); }
     gGrp.add(decorGrp); scene.add(gGrp);
+    // çiçekler (gündüz teması): ince sap + renkli baş
+    flowerGrp=new THREE.Group();
+    const petalCols=[0xff5f9e,0xffd23a,0xffffff,0xff7a3c,0xb970ff];
+    for(let i=0;i<22;i++){ const fx=-760+i*160+Math.random()*70, fz=46+Math.random()*26, fh=14+Math.random()*10;
+      const fg=new THREE.Group();
+      const stem=new THREE.Mesh(GEO.cyl,new THREE.MeshStandardMaterial({color:0x2f8f14,roughness:1})); stem.scale.set(2.2,fh,2.2); stem.position.y=fh/2; fg.add(stem);
+      const head=new THREE.Mesh(GEO.sph,new THREE.MeshStandardMaterial({color:petalCols[i%petalCols.length],roughness:.6})); head.scale.set(9,9,9); head.position.y=fh+3; fg.add(head);
+      const core=new THREE.Mesh(GEO.sph,new THREE.MeshStandardMaterial({color:0xffe873,roughness:.6})); core.scale.set(4.5,4.5,4.5); core.position.set(0,fh+3,4); fg.add(core);
+      fg.position.set(fx,Y(GROUND),fz); fg.userData.ph=Math.random()*6.28; flowerGrp.add(fg); }
+    gGrp.add(flowerGrp);
+    // kelebekler (gündüz teması, ön planda süzülür)
+    bflyGrp=new THREE.Group();
+    const wingCols=[0xff8ad0,0xffb347,0x8ad4ff];
+    for(let i=0;i<3;i++){ const bg=new THREE.Group();
+      const wMat=new THREE.MeshBasicMaterial({color:wingCols[i],side:THREE.DoubleSide});
+      const gwL=new THREE.CircleGeometry(7,10); gwL.scale(1,1.4,1); gwL.translate(-6,0,0);
+      const gwR=new THREE.CircleGeometry(7,10); gwR.scale(1,1.4,1); gwR.translate(6,0,0);
+      const wL=new THREE.Mesh(gwL,wMat); bg.add(wL);
+      const wR=new THREE.Mesh(gwR,wMat); bg.add(wR);
+      const body=new THREE.Mesh(GEO.sph,new THREE.MeshBasicMaterial({color:0x33261a}));
+      body.scale.set(3.2,11,3.2); bg.add(body);
+      bg.userData={wL,wR,ph:i*2.1,bx:180+i*260,by:Y(GROUND)+110+i*40};
+      bflyGrp.add(bg); }
+    scene.add(bflyGrp);
     // sapan (Y çatal)
     slingModel=new THREE.Group();
     const post=new THREE.Mesh(GEO.cyl,MAT.woodDark); post.scale.set(14,90,14); post.position.set(X(SLING_X),Y(SLING_Y)-20,0); slingModel.add(post);
@@ -2698,7 +2762,9 @@ function loop() {
       if(MAT._sun){ MAT._sun.color.setHex(0xffd9c0); MAT._sun.intensity=0.95; }
       MAT.ground.map=TEX.sand; MAT.ground.needsUpdate=true; MAT.dirt.color.setHex(0x5a2a1a);
       hillGrp.children.forEach(h=>h.material.color.setHex(h.userData.mars));
+      hillFarGrp.children.forEach(h=>h.material.color.setHex(h.userData.mars));
       decorGrp.children.forEach(d=>d.material.color.setHex(d.userData.mars));
+      treeGrp.visible=false; flowerGrp.visible=false; bflyGrp.visible=false; rockGrp.visible=true;
     } else {
       skyMesh.material.map=TEX.skyDay; skyMesh.material.needsUpdate=true;
       scene.fog.color.setHex(0x9fd0f0);
@@ -2706,7 +2772,9 @@ function loop() {
       if(MAT._sun){ MAT._sun.color.setHex(0xfff2d8); MAT._sun.intensity=1.15; }
       MAT.ground.map=TEX.grass; MAT.ground.needsUpdate=true; MAT.dirt.color.setHex(0x7a5a34);
       hillGrp.children.forEach(h=>h.material.color.setHex(h.userData.day));
+      hillFarGrp.children.forEach(h=>h.material.color.setHex(h.userData.day));
       decorGrp.children.forEach(d=>d.material.color.setHex(d.userData.day));
+      treeGrp.visible=true; flowerGrp.visible=true; bflyGrp.visible=true; rockGrp.visible=false;
     }
   }
   // --- model fabrikaları ---
@@ -2771,6 +2839,16 @@ function loop() {
     if(sunMesh) sunMesh.position.set(cx-820,760,-1500);
     if(cloudGrp) cloudGrp.position.x=cx*0.6;
     if(starGrp) starGrp.position.x=cx*0.5;
+    // ortam animasyonları
+    const t=performance.now()/1000;
+    if(cloudGrp&&cloudGrp.visible) cloudGrp.children.forEach(c=>{ c.position.x+=c.userData.spd; if(c.position.x>2100) c.position.x=-2100; });
+    if(starGrp&&starGrp.visible) starGrp.children.forEach(s=>{ if(s.userData.tw!==undefined){ const k=.72+.42*Math.sin(t*2.3+s.userData.tw); s.scale.set(k,k,k); } });
+    if(decorGrp) decorGrp.children.forEach(d=>{ d.rotation.z=Math.sin(t*1.7+d.userData.ph)*0.09; });
+    if(flowerGrp&&flowerGrp.visible) flowerGrp.children.forEach(f=>{ f.rotation.z=Math.sin(t*1.4+f.userData.ph)*0.07; });
+    if(bflyGrp&&bflyGrp.visible) bflyGrp.children.forEach(b=>{ const u=b.userData;
+      b.position.set(u.bx+Math.sin(t*.5+u.ph)*140, u.by+Math.sin(t*1.1+u.ph*2)*34, 120);
+      const f=0.25+Math.abs(Math.sin(t*9+u.ph))*1.0; u.wL.rotation.y=f; u.wR.rotation.y=-f;
+      b.rotation.z=Math.cos(t*.5+u.ph)*0.25; });
     // tema (Mars = düşük yerçekimi)
     try{ const lvl=(gs==='editor')?customLevel:(typeof getActiveLevel==='function'?getActiveLevel():null); applyTheme(!!(lvl&&(lvl.gravity||0.28)<0.2)); }catch(e){}
     // bloklar
@@ -2779,12 +2857,20 @@ function loop() {
       const rec=ensure('bl'+idOf(bl), ()=>makeBlock(bl));
       rec.m.position.set(X(bl.x+bl.w/2), Y(bl.y+bl.h/2), 0);
       rec.m.rotation.z = bl.angle? -bl.angle : 0;
+      // hasar çatlakları (crack 0-3)
+      const cr=bl.crack|0;
+      if(rec.cr!==cr){ rec.cr=cr; const ty=(bl.type==='stone'||bl.type==='ice')?bl.type:'wood';
+        rec.m.material = cr>0 ? MAT.C[ty][Math.min(3,cr)-1] : blockMat(bl.type); }
     });
     // domuzlar
     const usePigs=(gs==='editor')?customLevel.pigs:pigs;
     usePigs.forEach((p)=>{ if(p.dead)return;
       const rec=ensure('pig'+idOf(p), ()=>makePig(p.r,p.helmet));
-      rec.m.position.set(X(p.x), Y(p.y), 0);
+      // hafif nefes alma/sallanma (canlılık)
+      const id=idOf(p);
+      rec.m.position.set(X(p.x), Y(p.y)+Math.sin(t*2.1+id)*1.6, 0);
+      rec.m.rotation.z=Math.sin(t*1.6+id*1.7)*0.04;
+      const br=1+Math.sin(t*2.1+id)*0.02; rec.m.scale.set(br,2-br,br);
     });
     // uçan kuşlar
     flyingBirds.forEach((b)=>{ if(b.dead)return;

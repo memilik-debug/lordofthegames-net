@@ -5975,101 +5975,261 @@
         const R = b.radius || 22;
         switch(type){
             case 'wall': {
-                g.add(mesh(G.box, M.stone, 46, 34, 46, 0, 17, 0));
+                g.add(mesh(G.box, M.stoneD, 50, 6, 50, 0, 3, 0));                    // taban pervazı
+                g.add(mesh(G.box, M.stone, 46, 34, 46, 0, 20, 0));
                 for (let i=0;i<3;i++) for(let j=0;j<3;j++) if((i+j)%2===0)
-                    g.add(mesh(G.box, M.stoneD, 12, 10, 12, (i-1)*15, 39, (j-1)*15));
-                g.userData.h = 44; break;
+                    g.add(mesh(G.box, M.stoneD, 12, 10, 12, (i-1)*15, 42, (j-1)*15));
+                g.userData.h = 48; break;
             }
             case 'gold': case 'wood': case 'stone': {
                 const wallMat = type==='gold'? M.stone : (type==='wood'? M.wood : M.stoneD);
                 const roofMat = type==='gold'? M.gold : (type==='wood'? M.roof : M.stone);
-                g.add(mesh(G.box, wallMat, 44, 34, 44, 0, 17, 0));
-                g.add(mesh(G.cone, roofMat, 40, 30, 40, 0, 49, 0));
-                if (type==='gold') g.add(mesh(G.sph, M.gold, 8,8,8, 0, 66, 0));
-                g.userData.h = 62; break;
+                g.add(mesh(G.box, M.stoneD, 50, 8, 50, 0, 4, 0));                    // taş taban
+                g.add(mesh(G.box, wallMat, 44, 30, 44, 0, 23, 0));                   // duvar
+                g.add(mesh(G.box, M.dark, 12, 18, 2, 0, 17, 22.5));                  // kapı
+                g.add(mesh(G.box, M.dark, 8, 8, 1.6, -14, 28, 22.3));                // pencere
+                g.add(mesh(G.cone, roofMat, 42, 26, 42, 0, 51, 0));                  // çatı
+                if (type==='gold'){                                                   // altın: tepe topu + külçeler
+                    g.add(mesh(G.sph, M.gold, 8,8,8, 0, 68, 0));
+                    g.add(mesh(G.sph, M.gold, 7,5,7, 19, 10, 19));
+                    g.add(mesh(G.sph, M.gold, 5,4,5, -19, 9, 17));
+                } else if (type==='wood'){                                            // kereste: kütük yığını
+                    const log1 = mesh(G.cyl, M.woodD, 6, 26, 6, -19, 11, 14); log1.rotation.x = Math.PI/2; g.add(log1);
+                    const log2 = mesh(G.cyl, M.wood, 5, 22, 5, -19, 16, 14); log2.rotation.x = Math.PI/2; g.add(log2);
+                } else {                                                              // taş: kaya parçaları + koyu giriş
+                    g.add(mesh(G.sph, M.stone, 11, 8, 11, 19, 9, 17));
+                    g.add(mesh(G.sph, M.stoneD, 8, 6, 8, 14, 8, -19));
+                }
+                g.userData.h = 66; break;
             }
             case 'archer': {
-                g.add(mesh(G.box, M.woodD, 40, 40, 40, 0, 20, 0));
-                g.add(mesh(G.box, M.wood, 50, 8, 50, 0, 44, 0));
-                for(const [x,z] of [[-22,-22],[22,-22],[-22,22],[22,22]])
-                    g.add(mesh(G.box, M.woodD, 5, 26, 5, x, 57, z));
-                g.add(mesh(G.cone, M.roof, 40, 22, 40, 0, 82, 0));
-                g.userData.h = 92; break;
+                g.add(mesh(G.box, M.stoneD, 50, 6, 50, 0, 3, 0));                    // taş taban
+                for(const [x,z] of [[-18,-18],[18,-18],[-18,18],[18,18]])            // ayaklar
+                    g.add(mesh(G.box, M.woodD, 7, 42, 7, x, 27, z));
+                const brF = mesh(G.box, M.wood, 4, 46, 4, 0, 27, 18); brF.rotation.z = 0.72; g.add(brF);   // çapraz destekler
+                const brB = mesh(G.box, M.wood, 4, 46, 4, 0, 27, -18); brB.rotation.z = -0.72; g.add(brB);
+                const brL = mesh(G.box, M.wood, 4, 46, 4, -18, 27, 0); brL.rotation.x = 0.72; g.add(brL);
+                const brR = mesh(G.box, M.wood, 4, 46, 4, 18, 27, 0); brR.rotation.x = -0.72; g.add(brR);
+                g.add(mesh(G.box, M.wood, 52, 6, 52, 0, 51, 0));                     // platform
+                for(const [x,z] of [[-24,-24],[24,-24],[-24,24],[24,24]])            // korkuluk dikmeleri
+                    g.add(mesh(G.box, M.woodD, 4, 16, 4, x, 61, z));
+                g.add(mesh(G.box, M.wood, 50, 3, 3, 0, 67, 24));                     // korkuluk rayları
+                g.add(mesh(G.box, M.wood, 50, 3, 3, 0, 67, -24));
+                g.add(mesh(G.box, M.wood, 3, 3, 50, 24, 67, 0));
+                g.add(mesh(G.box, M.wood, 3, 3, 50, -24, 67, 0));
+                g.add(mesh(G.cyl, M.woodD, 4, 22, 4, 0, 65, 0));                     // orta direk
+                g.add(mesh(G.cone, M.roof, 38, 24, 38, 0, 86, 0));                   // çatı
+                g.add(mesh(G.box, M.heroTr, 12, 8, 1, 8, 92, 0));                    // flama
+                g.userData.h = 100; break;
             }
             case 'tower': {
-                g.add(mesh(G.cyl, M.stone, 40, 78, 40, 0, 39, 0));
-                for(let i=0;i<8;i++){ const a=i/8*Math.PI*2;
-                    g.add(mesh(G.box, M.stoneD, 8,12,8, Math.cos(a)*20, 84, Math.sin(a)*20)); }
-                g.userData.h = 92; break;
+                g.add(mesh(G.box, M.stoneD, 50, 6, 50, 0, 3, 0));                    // taban
+                g.add(mesh(G.cyl, M.stone, 46, 20, 46, 0, 16, 0));                   // geniş etek
+                g.add(mesh(G.cyl, M.stone, 40, 56, 40, 0, 54, 0));                   // gövde
+                g.add(mesh(G.cyl, M.stoneD, 44, 6, 44, 0, 60, 0));                   // bilezik
+                g.add(mesh(G.box, M.dark, 5, 12, 2, 0, 44, 20.5));                   // ok mazgalları
+                g.add(mesh(G.box, M.dark, 5, 10, 2, -11, 66, 17));
+                g.add(mesh(G.box, M.dark, 5, 10, 2, 11, 66, 17));
+                for(let i=0;i<8;i++){ const a=i/8*Math.PI*2;                          // tepe mazgalları
+                    g.add(mesh(G.box, M.stoneD, 8,12,8, Math.cos(a)*20, 88, Math.sin(a)*20)); }
+                g.add(mesh(G.cyl, M.woodD, 3, 20, 3, 0, 96, 0));                     // bayrak direği
+                g.add(mesh(G.box, M.roof, 14, 8, 1, 8, 102, 0));                     // bayrak
+                g.userData.h = 108; break;
             }
             case 'cannon': {
-                g.add(mesh(G.box, M.stoneD, 46, 22, 46, 0, 11, 0));
-                const barrel = mesh(G.cyl, M.iron, 12, 44, 12, 0, 30, 8);
+                g.add(mesh(G.box, M.stoneD, 46, 18, 46, 0, 9, 0));                   // taş kaide
+                g.add(mesh(G.box, M.stone, 50, 4, 50, 0, 20, 0));                    // kaide pervazı
+                g.add(mesh(G.box, M.woodD, 20, 8, 30, 0, 26, 0));                    // kundak
+                const whL = mesh(G.cyl, M.woodD, 13, 4, 13, -13, 26, 6); whL.rotation.z = Math.PI/2; g.add(whL); // tekerlekler
+                const whR = mesh(G.cyl, M.woodD, 13, 4, 13, 13, 26, 6); whR.rotation.z = Math.PI/2; g.add(whR);
+                const barrel = mesh(G.cyl, M.iron, 12, 44, 12, 0, 32, 8);            // namlu
                 barrel.rotation.x = Math.PI/2.6; g.add(barrel);
-                g.userData.h = 46; break;
+                const ring = mesh(G.cyl, M.dark, 14, 4, 14, 0, 41, 15); ring.rotation.x = Math.PI/2.6; g.add(ring); // namlu bileziği
+                const muzzle = mesh(G.cyl, M.dark, 13, 3, 13, 0, 48, 20); muzzle.rotation.x = Math.PI/2.6; g.add(muzzle);
+                g.add(mesh(G.sph, M.dark, 9, 9, 9, -16, 26, -14));                   // gülle yığını
+                g.add(mesh(G.sph, M.dark, 9, 9, 9, -22, 26, -7));
+                g.add(mesh(G.sph, M.dark, 9, 9, 9, -19, 33, -11));
+                g.userData.h = 60; break;
             }
             case 'mage': {
-                g.add(mesh(G.cyl, M.stoneD, 34, 50, 34, 0, 25, 0));
-                const orb = mesh(G.sph, M.crystal, 22,22,22, 0, 66, 0);
-                g.add(orb); g.userData.spin = orb;
-                g.userData.h = 78; break;
+                g.add(mesh(G.box, M.stone, 50, 6, 50, 0, 3, 0));                     // taban
+                g.add(mesh(G.cyl, M.stoneD, 38, 14, 38, 0, 13, 0));                  // etek
+                g.add(mesh(G.cyl, M.stoneD, 32, 46, 32, 0, 43, 0));                  // gövde
+                g.add(mesh(G.cyl, M.crystal, 36, 5, 36, 0, 52, 0));                  // mor bilezik
+                g.add(mesh(G.box, M.dark, 7, 12, 2, 0, 36, 16.5));                   // pencere
+                g.add(mesh(G.cone, M.crystal, 34, 28, 34, 0, 80, 0));                // kristal çatı
+                const orb = mesh(G.sph, M.crystal.clone(), 18, 18, 18, 0, 104, 0);   // süzülen küre
+                orb.userData.by = 104; g.add(orb);
+                g.userData.spin = orb; g.userData.float = orb; g.userData.pulse = orb;
+                g.add(mesh(G.cone, M.crystal, 7, 14, 7, 19, 13, 19));                // köşe kristalleri
+                g.add(mesh(G.cone, M.crystal, 6, 11, 6, -19, 11, -17));
+                g.userData.h = 118; break;
             }
             case 'lightning': {
-                g.add(mesh(G.cyl, M.iron, 20, 64, 20, 0, 32, 0));
-                const orb = mesh(G.sph, new THREE.MeshStandardMaterial({ color:0x93c5fd, emissive:0x3b82f6, emissiveIntensity:1.3 }), 16,16,16, 0, 74, 0);
-                g.add(orb); g.userData.h = 84; break;
+                g.add(mesh(G.box, M.stoneD, 48, 6, 48, 0, 3, 0));                    // taban
+                g.add(mesh(G.cyl, M.dark, 26, 10, 26, 0, 11, 0));                    // soket
+                g.add(mesh(G.cyl, M.iron, 16, 58, 16, 0, 45, 0));                    // bobin gövdesi
+                const r1 = new THREE.Mesh(new THREE.TorusGeometry(13, 2.5, 8, 20), M.iron);
+                r1.rotation.x = Math.PI/2; r1.position.y = 36; g.add(r1);            // bobin halkaları
+                const r2 = new THREE.Mesh(new THREE.TorusGeometry(13, 2.5, 8, 20), M.iron);
+                r2.rotation.x = Math.PI/2; r2.position.y = 52; g.add(r2);
+                const orb = mesh(G.sph, new THREE.MeshStandardMaterial({ color:0x93c5fd, emissive:0x3b82f6, emissiveIntensity:1.3 }), 16,16,16, 0, 84, 0);
+                g.add(orb); g.userData.pulse = orb;
+                g.add(mesh(G.cone, M.iron, 4, 14, 4, 0, 99, 0));                     // anten ucu
+                g.userData.h = 108; break;
             }
             case 'frost': {
-                g.add(mesh(G.cyl, M.stone, 32, 44, 32, 0, 22, 0));
-                const c = mesh(G.cone, M.ice, 26, 44, 26, 0, 66, 0); g.add(c); g.userData.spin = c;
-                g.userData.h = 84; break;
+                g.add(mesh(G.box, M.stone, 48, 6, 48, 0, 3, 0));                     // taban
+                g.add(mesh(G.cyl, M.stone, 32, 40, 32, 0, 26, 0));                   // gövde
+                g.add(mesh(G.cyl, M.ice, 36, 6, 36, 0, 48, 0));                      // buz saçağı
+                const c = mesh(G.cone, M.ice, 26, 40, 26, 0, 71, 0); g.add(c); g.userData.spin = c; // dönen buz kristali
+                g.add(mesh(G.cone, M.ice, 6, 16, 6, 19, 11, 19));                    // köşe buz dikitleri
+                g.add(mesh(G.cone, M.ice, 5, 12, 5, -19, 9, 18));
+                g.add(mesh(G.cone, M.ice, 5, 13, 5, 18, 9, -19));
+                g.userData.h = 96; break;
             }
             case 'poison': {
-                g.add(mesh(G.cyl, M.stoneD, 34, 40, 34, 0, 20, 0));
-                g.add(mesh(G.sph, M.poison, 26, 18, 26, 0, 48, 0));
+                g.add(mesh(G.box, M.stoneD, 48, 6, 48, 0, 3, 0));                    // taban
+                for(const [x,z] of [[-11,-11],[11,-11],[-11,11],[11,11]])            // kazan ayakları
+                    g.add(mesh(G.box, M.woodD, 5, 10, 5, x, 11, z));
+                g.add(mesh(G.cyl, M.dark, 34, 22, 34, 0, 27, 0));                    // kazan
+                g.add(mesh(G.cyl, M.dark, 38, 5, 38, 0, 39, 0));                     // kazan ağzı
+                g.add(mesh(G.sph, M.poison, 30, 8, 30, 0, 41, 0));                   // zehir yüzeyi
+                const bub = new THREE.Group();                                        // yükselen kabarcıklar
+                bub.add(mesh(G.sph, M.poison, 5, 5, 5, 7, 4, 3));
+                bub.add(mesh(G.sph, M.poison, 4, 4, 4, -6, 9, -4));
+                bub.add(mesh(G.sph, M.poison, 3, 3, 3, 2, 14, -7));
+                bub.position.y = 44; bub.userData.by = 44; g.add(bub);
+                g.userData.float = bub;
                 g.userData.h = 62; break;
             }
             case 'laser': {
-                g.add(mesh(G.cyl, M.iron, 26, 60, 26, 0, 30, 0));
-                g.add(mesh(G.sph, M.glowR, 12,12,12, 0, 64, 0));
-                g.userData.h = 76; break;
+                g.add(mesh(G.box, M.dark, 48, 6, 48, 0, 3, 0));                      // koyu taban
+                g.add(mesh(G.cyl, M.iron, 24, 46, 24, 0, 29, 0));                    // gövde
+                g.add(mesh(G.cyl, M.glowR, 26, 3, 26, 0, 18, 0));                    // kızıl enerji halkaları
+                g.add(mesh(G.cyl, M.glowR, 26, 3, 26, 0, 38, 0));
+                g.add(mesh(G.box, M.dark, 20, 12, 20, 0, 58, 0));                    // başlık
+                const lens = mesh(G.sph, M.glowR.clone(), 12, 12, 12, 0, 68, 0);     // mercek
+                g.add(lens); g.userData.pulse = lens;
+                g.userData.h = 80; break;
             }
             case 'catapult': {
-                g.add(mesh(G.box, M.woodD, 50, 16, 50, 0, 8, 0));
-                const arm = mesh(G.box, M.wood, 6, 46, 6, 0, 32, -6); arm.rotation.x = -0.5; g.add(arm);
-                g.userData.h = 52; break;
+                g.add(mesh(G.box, M.woodD, 50, 10, 38, 0, 5, 0));                    // şasi
+                for(const [x,z] of [[-20,-13],[20,-13],[-20,13],[20,13]]){           // tekerlekler
+                    const w = mesh(G.cyl, M.woodD, 9, 4, 9, x, 8, z); w.rotation.z = Math.PI/2; g.add(w);
+                }
+                const frL = mesh(G.box, M.wood, 5, 36, 5, -13, 24, 0); frL.rotation.x = 0.5; g.add(frL);  // yan çatkılar
+                const frL2 = mesh(G.box, M.wood, 5, 36, 5, -13, 24, 0); frL2.rotation.x = -0.5; g.add(frL2);
+                const frR = mesh(G.box, M.wood, 5, 36, 5, 13, 24, 0); frR.rotation.x = 0.5; g.add(frR);
+                const frR2 = mesh(G.box, M.wood, 5, 36, 5, 13, 24, 0); frR2.rotation.x = -0.5; g.add(frR2);
+                const axle = mesh(G.cyl, M.woodD, 4, 28, 4, 0, 38, 0); axle.rotation.z = Math.PI/2; g.add(axle); // mil
+                const arm = mesh(G.box, M.wood, 6, 44, 6, 0, 38, -4); arm.rotation.x = -0.55; g.add(arm); // fırlatma kolu
+                g.add(mesh(G.cyl, M.woodD, 13, 7, 13, 0, 51, -16));                  // sepet
+                g.add(mesh(G.sph, M.stoneD, 9, 9, 9, 0, 55, -16));                   // sepetteki kaya
+                g.add(mesh(G.box, M.stoneD, 13, 12, 13, 0, 20, 9));                  // karşı ağırlık
+                g.userData.h = 64; break;
             }
             case 'barracks': {
-                g.add(mesh(G.box, M.woodD, 56, 36, 44, 0, 18, 0));
-                g.add(mesh(G.box, M.roof, 60, 8, 48, 0, 40, 0));
-                g.add(mesh(G.box, M.wood, 3, 40, 3, 24, 40, -20));
-                g.add(mesh(G.box, M.heroTr, 18, 12, 1, 32, 52, -20));
-                g.userData.h = 60; break;
+                g.add(mesh(G.box, M.stoneD, 60, 6, 48, 0, 3, 0));                    // taban
+                g.add(mesh(G.box, M.woodD, 56, 34, 44, 0, 23, 0));
+                g.add(mesh(G.box, M.roof, 60, 8, 48, 0, 44, 0));
+                g.add(mesh(G.box, M.dark, 14, 20, 2, 0, 16, 22.5));                  // kapı
+                g.add(mesh(G.box, M.dark, 8, 8, 1.6, -18, 28, 22.3));                // pencereler
+                g.add(mesh(G.box, M.dark, 8, 8, 1.6, 18, 28, 22.3));
+                g.add(mesh(G.box, M.wood, 3, 40, 3, 24, 44, -20));                   // bayrak direği
+                g.add(mesh(G.box, M.heroTr, 18, 12, 1, 32, 56, -20));                // sancak
+                g.userData.h = 64; break;
             }
             case 'temple': {
-                g.add(mesh(G.box, M.stone, 50, 30, 50, 0, 15, 0));
-                for(const [x,z] of [[-20,-20],[20,-20],[-20,20],[20,20]])
-                    g.add(mesh(G.cyl, M.stone, 6, 36, 6, x, 18, z));
-                g.add(mesh(G.sph, M.gold, 30, 20, 30, 0, 42, 0));
-                g.userData.h = 66; break;
+                g.add(mesh(G.box, M.stone, 52, 6, 52, 0, 3, 0));                     // basamaklar
+                g.add(mesh(G.box, M.stone, 46, 6, 46, 0, 9, 0));
+                g.add(mesh(G.box, M.stone, 40, 24, 40, 0, 24, 0));                   // iç oda
+                for(const [x,z] of [[-19,-19],[19,-19],[-19,19],[19,19]])            // sütunlar
+                    g.add(mesh(G.cyl, M.stone, 7, 30, 7, x, 27, z));
+                g.add(mesh(G.box, M.stoneD, 48, 5, 48, 0, 44, 0));                   // saçak
+                g.add(mesh(G.sph, M.gold, 32, 22, 32, 0, 54, 0));                    // altın kubbe
+                g.add(mesh(G.sph, M.gold, 6, 6, 6, 0, 68, 0));                       // tepe topu
+                g.userData.h = 74; break;
             }
             case 'hospital': {
-                g.add(mesh(G.box, M.hero, 48, 34, 44, 0, 17, 0));
-                g.add(mesh(G.box, M.roof, 52, 8, 48, 0, 38, 0));
-                g.add(mesh(G.box, M.glowR, 6, 20, 1, 0, 52, 23));
-                g.add(mesh(G.box, M.glowR, 20, 6, 1, 0, 52, 23));
-                g.userData.h = 58; break;
+                g.add(mesh(G.box, M.stoneD, 52, 6, 48, 0, 3, 0));                    // taban
+                g.add(mesh(G.box, M.hero, 48, 32, 44, 0, 22, 0));
+                g.add(mesh(G.box, M.roof, 52, 8, 48, 0, 42, 0));
+                g.add(mesh(G.box, M.dark, 12, 18, 2, 0, 15, 22.5));                  // kapı
+                g.add(mesh(G.box, M.heroTr, 8, 8, 1.6, -16, 28, 22.3));              // pencereler
+                g.add(mesh(G.box, M.heroTr, 8, 8, 1.6, 16, 28, 22.3));
+                g.add(mesh(G.box, M.glowR, 6, 20, 1, 0, 56, 23));                    // kızıl haç
+                g.add(mesh(G.box, M.glowR, 20, 6, 1, 0, 56, 23));
+                g.userData.h = 62; break;
             }
             default: {
                 g.add(mesh(G.box, M.stone, 40, 30, 40, 0, 15, 0));
                 g.userData.h = 34;
             }
         }
+        // seviye yıldızları (yükseltmelerde görünür)
+        const pips = [];
+        for (let i=0;i<3;i++){
+            const p = mesh(G.sph, M.gold, 5, 5, 5, -12 + i*12, g.userData.h + 2, 0);
+            p.castShadow = false; p.visible = false; g.add(p); pips.push(p);
+        }
+        g.userData.pips = pips;
         if (b.hp !== undefined) { b.__maxhp = b.__maxhp || b.hp; }
         const bar = makeBar(40, 3); bar.position.y = g.userData.h + 8; bar.visible = false; g.add(bar);
         g.userData.bar = bar;
         return g;
     }
+    // ---- Prosedürel dokular & gökyüzü yardımcıları (canvas) ----
+    function _tcv(w,h){ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; }
+    function noiseTex(base, flecks, n, fs){
+        const cv=_tcv(128,128), x=cv.getContext('2d');
+        x.fillStyle=base; x.fillRect(0,0,128,128);
+        for(let i=0;i<n;i++){
+            x.fillStyle=flecks[(Math.random()*flecks.length)|0];
+            x.globalAlpha=0.14+Math.random()*0.24;
+            x.fillRect(Math.random()*128, Math.random()*128, fs, fs+Math.random()*fs);
+        }
+        x.globalAlpha=1;
+        const t=new THREE.CanvasTexture(cv);
+        if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+        t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(7,7);
+        return t;
+    }
+    function crackGroundTex(base, line, n){
+        const cv=_tcv(128,128), x=cv.getContext('2d');
+        x.fillStyle=base; x.fillRect(0,0,128,128);
+        x.strokeStyle=line; x.lineWidth=1.2; x.globalAlpha=0.5;
+        for(let i=0;i<n;i++){
+            let px=Math.random()*128, py=Math.random()*128;
+            x.beginPath(); x.moveTo(px,py);
+            for(let k=0;k<4;k++){ px+=Math.random()*22-11; py+=Math.random()*22-11; x.lineTo(px,py); }
+            x.stroke();
+        }
+        x.globalAlpha=1;
+        const t=new THREE.CanvasTexture(cv);
+        if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+        t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(9,9);
+        return t;
+    }
+    function skyDomeTex(top, mid, bot){
+        const cv=_tcv(16,256), x=cv.getContext('2d');
+        const g=x.createLinearGradient(0,0,0,256);
+        g.addColorStop(0,top); g.addColorStop(0.55,mid); g.addColorStop(1,bot);
+        x.fillStyle=g; x.fillRect(0,0,16,256);
+        const t=new THREE.CanvasTexture(cv);
+        if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+        return t;
+    }
+    function glowSprite(inner, outer, size){
+        const cv=_tcv(128,128), x=cv.getContext('2d');
+        const g=x.createRadialGradient(64,64,4,64,64,64);
+        g.addColorStop(0,inner); g.addColorStop(1,outer);
+        x.fillStyle=g; x.fillRect(0,0,128,128);
+        const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:new THREE.CanvasTexture(cv), transparent:true, depthWrite:false, fog:false }));
+        sp.scale.set(size,size,1);
+        return sp;
+    }
+
     function makeCastle(){
         const g = new THREE.Group();
         g.add(mesh(G.box, M.stone, 150, 120, 150, 0, 60, 0));
@@ -6088,6 +6248,27 @@
         const flag = mesh(G.box, M.gold, 40, 24, 1, 22, 262, 0); g.add(flag);
         // kapı
         g.add(mesh(G.box, M.woodD, 40, 60, 4, 0, 30, 76));
+        // mazgallar (çatı kenarı boyunca)
+        for(let i=-3;i<=3;i++){
+            g.add(mesh(G.box, M.stoneD, 14, 12, 8, i*22, 144,  72));
+            g.add(mesh(G.box, M.stoneD, 14, 12, 8, i*22, 144, -72));
+            g.add(mesh(G.box, M.stoneD, 8, 12, 14,  72, 144, i*22));
+            g.add(mesh(G.box, M.stoneD, 8, 12, 14, -72, 144, i*22));
+        }
+        // pencereler (kapının üstünde)
+        g.add(mesh(G.box, M.dark, 14, 22, 2, -32, 84, 76.5));
+        g.add(mesh(G.box, M.dark, 14, 22, 2,  32, 84, 76.5));
+        // meşaleler (kapının iki yanı) — alev + gece yanan ışık
+        const flames = [], torchLights = [];
+        [[-32, 76],[32, 76]].forEach(([tx, tz], i) => {
+            g.add(mesh(G.cyl, M.woodD, 3, 26, 3, tx, 52, tz+4));
+            const fl = mesh(G.cone, M.glowY, 8, 14, 8, tx, 70, tz+4);
+            fl.castShadow = false; g.add(fl); flames.push(fl);
+            const pl = new THREE.PointLight(0xffa63a, 0, 260);
+            pl.position.set(tx, 78, tz+14); g.add(pl); torchLights.push(pl);
+        });
+        g.userData.flames = flames;
+        g.userData.torchLights = torchLights;
         g.userData.flag = flag;
         g.receiveShadow = true;
         return g;
@@ -6175,8 +6356,30 @@
         const skyNight = 0x0b1533;
         R3.scene.background.setHex(night ? skyNight : skyDay);
         R3.scene.fog.color.copy(R3.scene.background);
-        if (R3.groundMat.color.getHex() !== (R3.groundColors[currentMap] || 0x2f7d32))
-            R3.groundMat.color.setHex(R3.groundColors[currentMap] || 0x2f7d32);
+        // Harita/gece değişimi: zemin dokusu + gökyüzü kubbesi + dekor renkleri
+        const mapKey = currentMap + (night ? '_n' : '_d');
+        if (R3.curMapKey !== mapKey){
+            R3.curMapKey = mapKey;
+            R3.groundMat.map = R3.groundTexes[currentMap] || R3.groundTexes.kingdom;
+            R3.groundMat.color.setHex(night ? 0xbfc8e0 : 0xffffff);
+            R3.groundMat.needsUpdate = true;
+            R3.skyDome.material.map = night ? R3.skyTexes.night : (R3.skyTexes[currentMap] || R3.skyTexes.kingdom);
+            R3.skyDome.material.needsUpdate = true;
+            R3.decoMat.color.setHex({ kingdom:0x14532d, ice:0xd8ecf7, desert:0x7a8f3a, lava:0x0e0a08 }[currentMap] || 0x14532d);
+            R3.rockMat.color.setHex({ kingdom:0x64748b, ice:0x9fc4dd, desert:0xb08948, lava:0x150c0a }[currentMap] || 0x64748b);
+        }
+        R3.sunSprite.visible = !night;
+        R3.moonGrp.visible = night;
+        R3.stars.visible = night;
+        R3.clouds.visible = !night && currentMap !== 'lava';
+
+        // Gök & meşale animasyonları
+        const tSec = Date.now()*0.001;
+        if (R3.clouds.visible) for (const c of R3.clouds.children){ c.position.x += c.userData.spd; if (c.position.x > 1700) c.position.x = -1700; }
+        if (R3.stars.visible) for (const s of R3.stars.children){ const k = 0.75 + 0.4*Math.sin(tSec*2.2 + s.userData.tw); s.scale.setScalar(s.userData.base * k); }
+        const fls = R3.castle.userData.flames, tls = R3.castle.userData.torchLights;
+        if (fls) fls.forEach((f,i) => { const k = 1 + Math.sin(tSec*13 + i*2.1)*0.18 + Math.sin(tSec*29 + i)*0.1; f.scale.set(8*k, 14*k, 8*k); });
+        if (tls) tls.forEach((l,i) => { l.intensity = night ? 1.15 + Math.sin(tSec*17 + i*2.4)*0.3 : 0; });
 
         // Kale bayrağı dalgalansın
         if (R3.castle.userData.flag) R3.castle.userData.flag.rotation.y = Math.sin(Date.now()*0.003)*0.3;
@@ -6210,10 +6413,14 @@
         for (const b of buildings){
             const rec = ensure(b, makeBuilding);
             place(rec.m, b, 0);
-            if (rec.m.userData.spin) rec.m.userData.spin.rotation.y += 0.03;
-            if (rec.m.userData.bar && b.hp !== undefined){
-                const mx = b.__maxhp || b.hp; updateBar(rec.m.userData.bar, b.hp/mx);
-                rec.m.userData.bar.visible = b.hp < mx;
+            const ud = rec.m.userData;
+            if (ud.spin) ud.spin.rotation.y += 0.03;
+            if (ud.float) ud.float.position.y = ud.float.userData.by + Math.sin(tSec*2 + rec.m.id*0.7)*4;   // süzülen parçalar
+            if (ud.pulse) ud.pulse.material.emissiveIntensity = 0.9 + Math.sin(tSec*3 + rec.m.id)*0.45;      // parlayan çekirdekler
+            if (ud.pips){ const lv = (b.level||1) - 1; for(let i=0;i<ud.pips.length;i++) ud.pips[i].visible = i < Math.min(lv, 3); } // seviye yıldızları
+            if (ud.bar && b.hp !== undefined){
+                const mx = b.__maxhp || b.hp; updateBar(ud.bar, b.hp/mx);
+                ud.bar.visible = b.hp < mx;
             }
         }
 
@@ -6293,12 +6500,56 @@
         scene.add(sun);
         scene.add(sun.target);
 
-        // Zemin
+        // Zemin — harita bazlı prosedürel dokular
         const groundColors = { kingdom:0x2f7d32, ice:0xcfe4f5, desert:0xd6a24a, lava:0x3a1512 };
         const skyColors    = { kingdom:0x87b7e0, ice:0xbfe3f7, desert:0xe8c07a, lava:0x5a1a12 };
-        const groundMat = new THREE.MeshStandardMaterial({ color: groundColors[currentMap] || 0x2f7d32, roughness: 1 });
+        const groundTexes = {
+            kingdom: noiseTex('#2f7d32', ['#256b28','#3f9b42','#1d5c20','#57b45a'], 520, 3),
+            ice:     crackGroundTex('#cfe4f5', 'rgba(255,255,255,0.9)', 18),
+            desert:  noiseTex('#d6a24a', ['#c08c38','#e6bc6a','#a87830'], 460, 3),
+            lava:    crackGroundTex('#2a0f0a', 'rgba(249,115,22,0.85)', 22)
+        };
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: groundTexes[currentMap] || groundTexes.kingdom, roughness: 1 });
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), groundMat);
         ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+
+        // Gökyüzü kubbesi (degrade) + gök cisimleri
+        const skyTexes = {
+            kingdom: skyDomeTex('#2f74c4','#87b7e0','#dcecf7'),
+            ice:     skyDomeTex('#5f9fd8','#bfe3f7','#eaf6fd'),
+            desert:  skyDomeTex('#b87a2e','#e8c07a','#f7e3b4'),
+            lava:    skyDomeTex('#1c0705','#5a1a12','#8a3a20'),
+            night:   skyDomeTex('#020617','#0b1533','#22304f')
+        };
+        const skyDome = new THREE.Mesh(new THREE.SphereGeometry(2600, 24, 14),
+            new THREE.MeshBasicMaterial({ map: skyTexes[currentMap] || skyTexes.kingdom, side: THREE.BackSide, fog: false, depthWrite: false }));
+        scene.add(skyDome);
+        const sunSprite = glowSprite('rgba(255,250,215,1)','rgba(255,215,120,0)', 460);
+        sunSprite.position.set(-1000, 900, -1300); scene.add(sunSprite);
+        const moonGrp = new THREE.Group();
+        const moon = new THREE.Mesh(G.sph, new THREE.MeshBasicMaterial({ color: 0xf3f6ff, fog: false }));
+        moon.scale.set(110, 110, 110); moonGrp.add(moon);
+        const moonHalo = glowSprite('rgba(205,220,255,0.7)','rgba(205,220,255,0)', 330); moonGrp.add(moonHalo);
+        moonGrp.position.set(850, 760, -1150); moonGrp.visible = false; scene.add(moonGrp);
+        const stars = new THREE.Group();
+        for (let i=0;i<160;i++){
+            const s = new THREE.Mesh(G.sph, new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }));
+            const a = Math.random()*Math.PI*2, dr2 = 1400 + Math.random()*800, yy = 240 + Math.random()*1300;
+            s.position.set(Math.cos(a)*dr2, yy, Math.sin(a)*dr2);
+            s.userData.base = 4 + Math.random()*5;
+            s.userData.tw = Math.random()*6.28;
+            s.scale.setScalar(s.userData.base);
+            stars.add(s);
+        }
+        stars.visible = false; scene.add(stars);
+        const clouds = new THREE.Group();
+        for (let i=0;i<9;i++){
+            const c = glowSprite('rgba(255,255,255,0.92)','rgba(255,255,255,0)', 260 + Math.random()*240);
+            c.position.set(-1500 + Math.random()*3000, 540 + Math.random()*280, -1500 + Math.random()*3000);
+            c.userData.spd = 0.2 + Math.random()*0.35;
+            clouds.add(c);
+        }
+        scene.add(clouds);
 
         // Kale
         const castle = makeCastle(); scene.add(castle);
@@ -6313,16 +6564,21 @@
             const x = Math.cos(ang)*dr, z = Math.sin(ang)*dr;
             if (Math.abs(x) < 780 && Math.abs(z) < 560) continue;
             if (rnd() < 0.6){
-                const tr = mesh(G.cyl, trunkMat, 8,40,8, x, 20, z);
-                const lv = mesh(G.cone, decoMat, 34,70,34, x, 70, z);
-                tr.castShadow = lv.castShadow = true; scene.add(tr); scene.add(lv);
+                // iki katlı köknar tarzı ağaç (boy çeşitliliğiyle)
+                const f = 0.8 + rnd()*0.55;
+                const tr  = mesh(G.cyl, trunkMat, 8, 40*f, 8, x, 20*f, z);
+                const lv  = mesh(G.cone, decoMat, 36, 60*f, 36, x, (52+30*f), z);
+                const lv2 = mesh(G.cone, decoMat, 25, 44*f, 25, x, (52+62*f), z);
+                tr.castShadow = lv.castShadow = lv2.castShadow = true;
+                scene.add(tr); scene.add(lv); scene.add(lv2);
             } else {
                 const r = mesh(G.sph, rockMat, 20+rnd()*20, 16, 20+rnd()*20, x, 8, z);
                 scene.add(r);
             }
         }
 
-        R3 = { renderer, scene, camera, sun, hemi, groundMat, ground, castle, groundColors, skyColors };
+        R3 = { renderer, scene, camera, sun, hemi, groundMat, ground, castle, groundColors, skyColors,
+               groundTexes, skyTexes, skyDome, sunSprite, moonGrp, stars, clouds, decoMat, rockMat, curMapKey: null };
         onResize();
         // Raycast: ekran -> dünya
         const raycaster = new THREE.Raycaster();
