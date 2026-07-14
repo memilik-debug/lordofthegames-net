@@ -11,7 +11,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python Football Manager - Elite Pro v2.7</title>
+    <title>Python Football Manager - FM Pro v4.0</title>
     <!-- Tailwind CSS for high fidelity responsive layouts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js r128 — 3D stadyum motoru -->
@@ -271,7 +271,7 @@
                 <div class="w-12 h-12 bg-gradient-to-tr from-emerald-600 to-teal-400 rounded-xl flex items-center justify-center font-black text-white italic text-2xl shadow-lg shadow-emerald-500/20">P</div>
                 <div>
                     <h1 class="text-xl font-black tracking-tight leading-none text-white flex items-center gap-2">
-                        PYTHON MANAGER <span class="text-xs bg-emerald-500/20 text-emerald-400 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30">ELITE PRO v2.7</span>
+                        PYTHON MANAGER <span class="text-xs bg-emerald-500/20 text-emerald-400 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30">FM PRO v4.0</span>
                     </h1>
                     <p id="week-indicator-ui" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">LİG SEZONU • HAFTA 1</p>
                 </div>
@@ -329,7 +329,11 @@
             mm_league:    {tr:'PUAN DURUMU', en:'STANDINGS', de:'TABELLE', fr:'CLASSEMENT', zh:'积分榜'},
             mm_academy:   {tr:'ALTYAPI & AKADEMİ', en:'YOUTH & ACADEMY', de:'JUGEND & AKADEMIE', fr:'CENTRE DE FORMATION', zh:'青训学院'},
             mm_training:  {tr:'TAKIMSAL ANTRENMAN', en:'TEAM TRAINING', de:'MANNSCHAFTSTRAINING', fr:'ENTRAÎNEMENT', zh:'球队训练'},
-            mm_play:      {tr:'⚽ HAFTANIN MAÇINI OYNA', en:'⚽ PLAY THE WEEK\'S MATCH', de:'⚽ SPIEL DER WOCHE', fr:'⚽ MATCH DE LA SEMAINE', zh:'⚽ 本周比赛'}
+            mm_play:      {tr:'⚽ HAFTANIN MAÇINI OYNA', en:'⚽ PLAY THE WEEK\'S MATCH', de:'⚽ SPIEL DER WOCHE', fr:'⚽ MATCH DE LA SEMAINE', zh:'⚽ 本周比赛'},
+            mm_finance:   {tr:'FİNANS OFİSİ', en:'FINANCE OFFICE', de:'FINANZBÜRO', fr:'BUREAU DES FINANCES', zh:'财务办公室'},
+            mm_contracts: {tr:'SÖZLEŞMELER & MORAL', en:'CONTRACTS & MORALE', de:'VERTRÄGE & MORAL', fr:'CONTRATS & MORAL', zh:'合同与士气'},
+            mm_board:     {tr:'YÖNETİM KURULU', en:'BOARD ROOM', de:'VORSTAND', fr:'CONSEIL D\'ADMINISTRATION', zh:'董事会'},
+            mm_club:      {tr:'PERSONEL & STADYUM', en:'STAFF & STADIUM', de:'PERSONAL & STADION', fr:'STAFF & STADE', zh:'员工与球场'}
         };
         function T(key){ const o = DICT[key]; if(!o) return key; return (o[gameLang] !== undefined) ? o[gameLang] : (o.en !== undefined ? o.en : o.tr); }
         // Kaynağı Türkçe metin olan çeviri tablosu — DEĞER Türkçe kalır, sadece görünen çevrilir.
@@ -528,7 +532,110 @@
             'Sistem: Tiki-Taka. Kısa paslaşma ve topa sahip olma ana odak!':{en:'System: Tiki-Taka. Short passing and possession are the focus!',de:'System: Tiki-Taka. Kurzpass und Ballbesitz im Fokus!',fr:'Système : Tiki-Taka. Passes courtes et possession !',zh:'体系：Tiki-Taka。短传控球为核心！'},
             'Sistem: Gegenpressing. Top kaybedildiği anda yoğun ön alan presi!':{en:'System: Gegenpressing. Intense high press the moment the ball is lost!',de:'System: Gegenpressing. Intensives Anlaufen sofort nach Ballverlust!',fr:'Système : Gegenpressing. Pressing haut intense dès la perte !',zh:'体系：Gegenpressing。丢球瞬间高位逼抢！'},
             'Sistem: Otobüsü Çek. Katı savunma, ultra defansif duruş!':{en:'System: Park the Bus. Solid defense, ultra-defensive stance!',de:'System: Bus parken. Solide Abwehr, ultradefensiv!',fr:'Système : Bloc bas. Défense solide, ultra-défensif !',zh:'体系：摆大巴。稳固防守，极度防守姿态！'},
-            'Sistem: Kontra Atak. Kendi sahasında kabul, hızlı geçiş!':{en:'System: Counter-Attack. Absorb in your half, fast transitions!',de:'System: Konter. Tief stehen, schnelle Umschaltmomente!',fr:'Système : Contre-attaque. Bloc bas et transitions rapides !',zh:'体系：防守反击。退守本方半场，快速转换！'}
+            'Sistem: Kontra Atak. Kendi sahasında kabul, hızlı geçiş!':{en:'System: Counter-Attack. Absorb in your half, fast transitions!',de:'System: Konter. Tief stehen, schnelle Umschaltmomente!',fr:'Système : Contre-attaque. Bloc bas et transitions rapides !',zh:'体系：防守反击。退守本方半场，快速转换！'},
+            // === FM v3.0: Finans / Sözleşme / Yönetim / Personel ===
+            'FİNANS OFİSİ':{en:'FINANCE OFFICE',de:'FINANZBÜRO',fr:'BUREAU DES FINANCES',zh:'财务办公室'},
+            'SÖZLEŞMELER & MORAL':{en:'CONTRACTS & MORALE',de:'VERTRÄGE & MORAL',fr:'CONTRATS & MORAL',zh:'合同与士气'},
+            'YÖNETİM KURULU':{en:'BOARD ROOM',de:'VORSTAND',fr:'CONSEIL',zh:'董事会'},
+            'PERSONEL & STADYUM':{en:'STAFF & STADIUM',de:'PERSONAL & STADION',fr:'STAFF & STADE',zh:'员工与球场'},
+            'Bilet geliri, sponsorlar, maaşlar — kulübün kasasını yönetin.':{en:'Ticket income, sponsors, wages — manage the club\'s coffers.',de:'Ticketeinnahmen, Sponsoren, Gehälter — verwalte die Vereinskasse.',fr:'Billetterie, sponsors, salaires — gère les caisses du club.',zh:'门票收入、赞助商、工资——管理俱乐部金库。'},
+            'Maaşlar, sözleşme süreleri ve oyuncu mutluluğu.':{en:'Wages, contract lengths and player happiness.',de:'Gehälter, Vertragslaufzeiten und Spielerzufriedenheit.',fr:'Salaires, durées de contrat et moral des joueurs.',zh:'工资、合同期限和球员幸福感。'},
+            'Sezon hedefi ve yönetimin güveni.':{en:'Season objective and board confidence.',de:'Saisonziel und Vertrauen des Vorstands.',fr:'Objectif de saison et confiance du conseil.',zh:'赛季目标与董事会信任。'},
+            'Teknik ekip kiralayın, stadyumu büyütün.':{en:'Hire technical staff, expand the stadium.',de:'Stelle Trainerstab ein, baue das Stadion aus.',fr:'Recrute du staff, agrandis le stade.',zh:'雇用教练组，扩建球场。'},
+            'Haftalık Gelir':{en:'Weekly Income',de:'Wocheneinnahmen',fr:'Revenus hebdo',zh:'每周收入'},
+            'Haftalık Gider':{en:'Weekly Expense',de:'Wochenausgaben',fr:'Dépenses hebdo',zh:'每周支出'},
+            'Net':{en:'Net',de:'Netto',fr:'Net',zh:'净额'},
+            'Bilet Geliri':{en:'Ticket Income',de:'Ticketeinnahmen',fr:'Billetterie',zh:'门票收入'},
+            'TV Yayın Geliri':{en:'TV Broadcast',de:'TV-Gelder',fr:'Droits TV',zh:'电视转播'},
+            'Sponsor Geliri':{en:'Sponsor Income',de:'Sponsorengelder',fr:'Sponsors',zh:'赞助收入'},
+            'Maç Ödülü':{en:'Match Prize',de:'Spielprämie',fr:'Prime de match',zh:'比赛奖金'},
+            'Oyuncu Maaşları':{en:'Player Wages',de:'Spielergehälter',fr:'Salaires joueurs',zh:'球员工资'},
+            'Personel Maaşları':{en:'Staff Wages',de:'Personalgehälter',fr:'Salaires du staff',zh:'员工工资'},
+            'Stadyum Bakımı':{en:'Stadium Upkeep',de:'Stadionunterhalt',fr:'Entretien du stade',zh:'球场维护'},
+            'Bilet Fiyatı':{en:'Ticket Price',de:'Ticketpreis',fr:'Prix du billet',zh:'票价'},
+            'Son Maç Seyircisi':{en:'Last Attendance',de:'Letzte Zuschauerzahl',fr:'Dernière affluence',zh:'上场观众'},
+            'Taraftar Desteği':{en:'Fan Support',de:'Fan-Unterstützung',fr:'Soutien des fans',zh:'球迷支持'},
+            'Kapasite':{en:'Capacity',de:'Kapazität',fr:'Capacité',zh:'容量'},
+            'Sponsor Anlaşması':{en:'Sponsor Deal',de:'Sponsorvertrag',fr:'Contrat de sponsoring',zh:'赞助合同'},
+            'Sponsor teklifi seçin — sezon boyunca haftalık gelir sağlar.':{en:'Pick a sponsor offer — pays weekly all season.',de:'Wähle ein Sponsorangebot — zahlt die ganze Saison wöchentlich.',fr:'Choisis une offre de sponsor — paie chaque semaine toute la saison.',zh:'选择赞助报价——整个赛季每周付款。'},
+            'SEÇ':{en:'PICK',de:'WÄHLEN',fr:'CHOISIR',zh:'选择'},
+            'hafta':{en:'week',de:'Woche',fr:'semaine',zh:'周'},
+            'Hafta':{en:'Week',de:'Woche',fr:'Semaine',zh:'周'},
+            'Sezon':{en:'Season',de:'Saison',fr:'Saison',zh:'赛季'},
+            'Bilanço Geçmişi':{en:'Balance History',de:'Bilanzverlauf',fr:'Historique du bilan',zh:'财务历史'},
+            'Henüz finans kaydı yok. İlk maçtan sonra oluşur.':{en:'No finance records yet. Created after your first match.',de:'Noch keine Finanzdaten. Entsteht nach dem ersten Spiel.',fr:'Pas encore de données financières. Après le premier match.',zh:'尚无财务记录。首场比赛后生成。'},
+            'Maaş':{en:'Wage',de:'Gehalt',fr:'Salaire',zh:'工资'},
+            'Moral':{en:'Morale',de:'Moral',fr:'Moral',zh:'士气'},
+            'Sözleşme':{en:'Contract',de:'Vertrag',fr:'Contrat',zh:'合同'},
+            'sezon':{en:'season(s)',de:'Saison(s)',fr:'saison(s)',zh:'个赛季'},
+            'SON SEZON!':{en:'FINAL SEASON!',de:'LETZTE SAISON!',fr:'DERNIÈRE SAISON !',zh:'最后赛季！'},
+            'UZAT':{en:'RENEW',de:'VERLÄNGERN',fr:'PROLONGER',zh:'续约'},
+            'SAT':{en:'SELL',de:'VERKAUFEN',fr:'VENDRE',zh:'出售'},
+            'SÖZLEŞME PAZARLIĞI':{en:'CONTRACT TALKS',de:'VERTRAGSVERHANDLUNG',fr:'NÉGOCIATION DE CONTRAT',zh:'合同谈判'},
+            'Menajer talebi':{en:'Agent demand',de:'Beraterforderung',fr:'Exigence de l\'agent',zh:'经纪人要价'},
+            'Teklifiniz':{en:'Your offer',de:'Dein Angebot',fr:'Ton offre',zh:'你的报价'},
+            'Süre':{en:'Length',de:'Laufzeit',fr:'Durée',zh:'期限'},
+            'TEKLİF VER':{en:'MAKE OFFER',de:'ANGEBOT MACHEN',fr:'FAIRE UNE OFFRE',zh:'报价'},
+            'VAZGEÇ':{en:'CANCEL',de:'ABBRECHEN',fr:'ANNULER',zh:'取消'},
+            'İMZALANDI':{en:'SIGNED',de:'UNTERSCHRIEBEN',fr:'SIGNÉ',zh:'已签约'},
+            'yeni sözleşmeye imza attı!':{en:'signed a new contract!',de:'hat einen neuen Vertrag unterschrieben!',fr:'a signé un nouveau contrat !',zh:'签下新合同！'},
+            'TEKLİF REDDEDİLDİ':{en:'OFFER REJECTED',de:'ANGEBOT ABGELEHNT',fr:'OFFRE REJETÉE',zh:'报价被拒'},
+            'teklifi az buldu. Talebe yaklaşın.':{en:'found the offer too low. Get closer to the demand.',de:'fand das Angebot zu niedrig. Nähere dich der Forderung.',fr:'a trouvé l\'offre trop basse. Rapproche-toi de la demande.',zh:'认为报价太低。请接近要价。'},
+            'masadan kalktı! Bu hafta tekrar görüşmez.':{en:'left the table! No more talks this week.',de:'hat den Tisch verlassen! Diese Woche keine Gespräche mehr.',fr:'a quitté la table ! Plus de discussion cette semaine.',zh:'离开了谈判桌！本周不再谈判。'},
+            'OYUNCU SATILDI':{en:'PLAYER SOLD',de:'SPIELER VERKAUFT',fr:'JOUEUR VENDU',zh:'球员已售'},
+            'bonservisiyle kulüpten ayrıldı.':{en:'left the club for a fee of',de:'verließ den Verein für',fr:'a quitté le club pour',zh:'转会离队，费用'},
+            'Kadro 16 oyuncunun altına düşemez!':{en:'Squad can\'t drop below 16 players!',de:'Der Kader darf nicht unter 16 Spieler fallen!',fr:'L\'effectif ne peut pas descendre sous 16 joueurs !',zh:'阵容不能少于16名球员！'},
+            'Sezon Hedefi':{en:'Season Objective',de:'Saisonziel',fr:'Objectif de saison',zh:'赛季目标'},
+            'Yönetim Güveni':{en:'Board Confidence',de:'Vorstandsvertrauen',fr:'Confiance du conseil',zh:'董事会信任'},
+            'Şampiyon Ol':{en:'Win the Title',de:'Meister werden',fr:'Être champion',zh:'夺冠'},
+            'İlk 3\'te Bitir':{en:'Finish Top 3',de:'Top 3 erreichen',fr:'Finir top 3',zh:'前三名'},
+            'İlk 5\'te Bitir':{en:'Finish Top 5',de:'Top 5 erreichen',fr:'Finir top 5',zh:'前五名'},
+            'Yönetim Mesajları':{en:'Board Messages',de:'Vorstandsmitteilungen',fr:'Messages du conseil',zh:'董事会消息'},
+            'EK BÜTÇE İSTE':{en:'REQUEST EXTRA BUDGET',de:'EXTRA-BUDGET ANFORDERN',fr:'DEMANDER UN BUDGET',zh:'申请额外预算'},
+            'Yönetim ek bütçe talebinizi onayladı: +10M €!':{en:'The board approved your request: +€10M!',de:'Der Vorstand hat deinen Antrag genehmigt: +10 Mio. €!',fr:'Le conseil a approuvé ta demande : +10M € !',zh:'董事会批准了你的请求：+1000万欧元！'},
+            'Yönetim talebi reddetti. Güven sarsıldı (-5).':{en:'The board rejected the request. Confidence shaken (-5).',de:'Der Vorstand lehnte ab. Vertrauen erschüttert (-5).',fr:'Le conseil a refusé. Confiance ébranlée (-5).',zh:'董事会拒绝了请求。信任受挫（-5）。'},
+            'Bu sezon zaten ek bütçe aldınız.':{en:'You already got extra budget this season.',de:'Du hast diese Saison bereits Extra-Budget erhalten.',fr:'Tu as déjà reçu un budget extra cette saison.',zh:'本赛季已获得额外预算。'},
+            'KOVULDUNUZ!':{en:'YOU\'RE FIRED!',de:'DU BIST ENTLASSEN!',fr:'TU ES VIRÉ !',zh:'你被解雇了！'},
+            'Yönetim kurulu güveni tükendi ve görevinize son verdi.':{en:'The board lost all confidence and terminated your contract.',de:'Der Vorstand verlor das Vertrauen und beendete deinen Vertrag.',fr:'Le conseil a perdu confiance et a mis fin à tes fonctions.',zh:'董事会失去信任，终止了你的职务。'},
+            'YENİDEN BAŞLA':{en:'RESTART',de:'NEU STARTEN',fr:'RECOMMENCER',zh:'重新开始'},
+            'Yardımcı Antrenör':{en:'Assistant Coach',de:'Co-Trainer',fr:'Entraîneur adjoint',zh:'助理教练'},
+            'Fizyoterapist':{en:'Physiotherapist',de:'Physiotherapeut',fr:'Kinésithérapeute',zh:'理疗师'},
+            'Kaleci Antrenörü':{en:'GK Coach',de:'Torwarttrainer',fr:'Entraîneur des gardiens',zh:'门将教练'},
+            'Antrenman gelişim şansını artırır.':{en:'Boosts training growth chance.',de:'Erhöht die Entwicklungschance im Training.',fr:'Augmente la progression à l\'entraînement.',zh:'提升训练成长几率。'},
+            'Enerji dönüşünü hızlandırır, sakatlığı azaltır.':{en:'Speeds up recovery, reduces injuries.',de:'Beschleunigt Erholung, reduziert Verletzungen.',fr:'Accélère la récupération, réduit les blessures.',zh:'加速恢复，减少伤病。'},
+            'Kalecinin kurtarış oranını yükseltir.':{en:'Raises the goalkeeper\'s save rate.',de:'Erhöht die Paradenquote des Torwarts.',fr:'Améliore le taux d\'arrêts du gardien.',zh:'提升门将扑救率。'},
+            'KOVULDU':{en:'DISMISSED',de:'ENTLASSEN',fr:'RENVOYÉ',zh:'解雇'},
+            'İşten Çıkar':{en:'Dismiss',de:'Entlassen',fr:'Renvoyer',zh:'解雇'},
+            'kadrodan ayrıldı.':{en:'left the staff.',de:'hat den Stab verlassen.',fr:'a quitté le staff.',zh:'离开了教练组。'},
+            'göreve başladı!':{en:'started the job!',de:'hat die Arbeit aufgenommen!',fr:'a pris ses fonctions !',zh:'走马上任！'},
+            'Stadyumu Büyüt':{en:'Expand Stadium',de:'Stadion ausbauen',fr:'Agrandir le stade',zh:'扩建球场'},
+            'Stadyum kapasiteniz arttı!':{en:'Your stadium capacity increased!',de:'Deine Stadionkapazität ist gestiegen!',fr:'La capacité de ton stade a augmenté !',zh:'球场容量增加！'},
+            'STADYUM MAKSİMUM':{en:'STADIUM MAXED',de:'STADION MAXIMAL',fr:'STADE AU MAX',zh:'球场已满级'},
+            'Stadyum zaten en büyük boyutunda!':{en:'The stadium is already at its largest!',de:'Das Stadion ist bereits maximal ausgebaut!',fr:'Le stade est déjà à sa taille maximale !',zh:'球场已是最大规模！'},
+            'Maaş İsteği':{en:'Wage Demand',de:'Gehaltsforderung',fr:'Salaire demandé',zh:'工资要求'},
+            'SEZON BİTTİ':{en:'SEASON OVER',de:'SAISON VORBEI',fr:'SAISON TERMINÉE',zh:'赛季结束'},
+            'Yeni sezon başladı! Sözleşmeler ve hedefler güncellendi.':{en:'A new season began! Contracts and objectives updated.',de:'Eine neue Saison hat begonnen! Verträge und Ziele aktualisiert.',fr:'Une nouvelle saison commence ! Contrats et objectifs mis à jour.',zh:'新赛季开始！合同与目标已更新。'},
+            'serbest kaldı (sözleşme bitti).':{en:'left on a free (contract expired).',de:'ging ablösefrei (Vertrag ausgelaufen).',fr:'est parti libre (contrat expiré).',zh:'合同到期自由离队。'},
+            'Ofsayt':{en:'Offside',de:'Abseits',fr:'Hors-jeu',zh:'越位'},
+            'Frikik':{en:'Free Kick',de:'Freistoß',fr:'Coup franc',zh:'任意球'},
+            'Toplam Maaş Yükü':{en:'Total Wage Bill',de:'Gesamtgehälter',fr:'Masse salariale',zh:'工资总额'},
+            'Mutsuz — satış istiyor!':{en:'Unhappy — wants out!',de:'Unzufrieden — will weg!',fr:'Mécontent — veut partir !',zh:'不满——想离队！'},
+            'Sözleşmesi bitiyor!':{en:'Contract expiring!',de:'Vertrag läuft aus!',fr:'Contrat expirant !',zh:'合同即将到期！'},
+            'Yönetim galibiyetten memnun.':{en:'The board is pleased with the win.',de:'Der Vorstand ist mit dem Sieg zufrieden.',fr:'Le conseil est satisfait de la victoire.',zh:'董事会对胜利感到满意。'},
+            'Yönetim mağlubiyetten rahatsız.':{en:'The board is unhappy about the defeat.',de:'Der Vorstand ist über die Niederlage verärgert.',fr:'Le conseil est mécontent de la défaite.',zh:'董事会对失利感到不满。'},
+            'Hedefin gerisindeyiz — mevcut sıra:':{en:'We are behind the objective — current position:',de:'Wir liegen hinter dem Ziel — aktuelle Platzierung:',fr:'On est en retard sur l\'objectif — position actuelle :',zh:'落后于目标——当前排名：'},
+            'Son uyarı: sonuçlar düzelmezse görevden alınacaksınız!':{en:'Final warning: improve results or you will be sacked!',de:'Letzte Warnung: Bessere Ergebnisse oder du wirst entlassen!',fr:'Dernier avertissement : améliore les résultats ou tu seras limogé !',zh:'最后警告：成绩不改善你将被解雇！'},
+            'Hedef tutturuldu! Yönetim transfer bütçesine +8M € ekledi.':{en:'Objective achieved! The board added +€8M to the transfer budget.',de:'Ziel erreicht! Der Vorstand legte +8 Mio. € aufs Transferbudget.',fr:'Objectif atteint ! Le conseil ajoute +8M € au budget transferts.',zh:'目标达成！董事会为转会预算追加800万欧元。'},
+            'Sezon hedefi tutmadı. Yönetim sabırsızlanıyor.':{en:'Season objective missed. The board is losing patience.',de:'Saisonziel verfehlt. Der Vorstand wird ungeduldig.',fr:'Objectif de saison manqué. Le conseil s\'impatiente.',zh:'赛季目标未达成。董事会失去耐心。'},
+            'Garantili sabit gelir':{en:'Guaranteed flat income',de:'Garantiertes Fixeinkommen',fr:'Revenu fixe garanti',zh:'保底固定收入'},
+            'Galibiyet başına yüksek prim':{en:'High bonus per win',de:'Hohe Prämie pro Sieg',fr:'Grosse prime par victoire',zh:'每胜高额奖金'},
+            'Dengeli paket':{en:'Balanced package',de:'Ausgewogenes Paket',fr:'Formule équilibrée',zh:'均衡方案'},
+            'Aktif sponsor':{en:'Active sponsor',de:'Aktiver Sponsor',fr:'Sponsor actif',zh:'现任赞助商'},
+            'galibiyet primi':{en:'win bonus',de:'Siegprämie',fr:'prime de victoire',zh:'获胜奖金'},
+            'Gelir kalemleri son maç haftasına aittir.':{en:'Income items are from the last match week.',de:'Einnahmen stammen aus der letzten Spielwoche.',fr:'Les revenus datent de la dernière semaine de match.',zh:'收入项来自最近一个比赛周。'},
+            'Ücretsiz oyuncular sezon sonunda ayrılır — erken uzatın!':{en:'Players on expiring deals leave at season end — renew early!',de:'Spieler mit auslaufendem Vertrag gehen am Saisonende — früh verlängern!',fr:'Les joueurs en fin de contrat partent en fin de saison — prolonge tôt !',zh:'合同到期的球员将在赛季末离队——尽早续约！'},
+            'Görevde':{en:'Employed',de:'Im Amt',fr:'En poste',zh:'在职'},
+            'Boş pozisyon':{en:'Vacant position',de:'Unbesetzt',fr:'Poste vacant',zh:'空缺'}
         };
         function tx(s){ if (gameLang === 'tr') return s; const o = TX[s]; if(!o) return s; return (o[gameLang] !== undefined) ? o[gameLang] : (o.en !== undefined ? o.en : s); }
         function applyStaticLang(){
@@ -759,6 +866,18 @@
                 this.enerji = enerji;
                 this.form = form;
                 this.karakter = karakter;
+                // === FM v3.0: sözleşme & moral ===
+                this.maas = Math.round(this.yetenek * 3) / 1000;        // M€/hafta (yetenek 60 → 0.18M)
+                this.sozlesme = 1 + Math.floor(Math.random() * 3);      // kalan sezon (1-3)
+                this.moral = 62 + Math.floor(Math.random() * 21);       // 62-82 arası başlar
+            }
+            // Menajerin yeni sözleşme talebi (M€/hafta)
+            wageDemand() {
+                let d = this.yetenek * 3.6;
+                if (this.yas <= 23) d *= 1.15;           // genç yıldız primi
+                if (this.yas >= 31) d *= 0.85;           // kariyer sonu indirimi
+                if (this.moral < 40) d *= 1.2;           // küskün oyuncu pahalı
+                return Math.round(d) / 1000;
             }
         }
 
@@ -816,6 +935,8 @@
                 let sum = 0;
                 this.ilk_11.forEach(p => {
                     let modifier = (p.enerji / 100) * 0.75 + (p.form / 100) * 0.25;
+                    // Moral etkisi: 0 moral %-12, 100 moral %+12
+                    modifier *= 0.88 + ((p.moral ?? 70) / 100) * 0.24;
                     let pSkill = p.yetenek * modifier;
                     if (this.taktik.hucum_odagi === 'Kanatlar' && p.mevkii === 'Defans' && p.role === 'Kanat Bek') {
                         pSkill += 4;
@@ -943,6 +1064,49 @@
             phase: 'normal',
             activePlayer: null,
             currentWeek: 1,
+            season: 1,
+            // === FM v3.0: FİNANS ===
+            finance: {
+                ticketPrice: 25,            // € / bilet
+                sponsor: null,              // {name, weekly, winBonus}
+                sponsorOffers: [],          // sezon başı teklifleri
+                history: [],                // haftalık bilanço kayıtları
+                lastAttendance: 0
+            },
+            fanSupport: 55,                 // 0-100, bilet satışını belirler
+            stadium: { level: 1, capacity: 15000 },
+            // === FM v3.0: YÖNETİM KURULU ===
+            board: {
+                confidence: 60,             // 0-100; 0 = kovulma
+                objective: 'top3',          // championship / top3 / top5
+                objectiveText: 'İlk 3\'te Bitir',
+                messages: [],
+                extraBudgetUsed: false
+            },
+            fired: false,
+            // === FM v3.0: TEKNİK PERSONEL ===
+            staff: {
+                antrenor: null, fizyo: null, kaleci: null   // kiralanmış aday veya null
+            },
+            staffCandidates: {
+                antrenor: [
+                    { id: 'a1', name: "Tarık Hoca", level: 1, wage: 0.08 },
+                    { id: 'a2', name: "Marco Bianchi", level: 3, wage: 0.22 },
+                    { id: 'a3', name: "Sir Reginald", level: 5, wage: 0.45 }
+                ],
+                fizyo: [
+                    { id: 'f1', name: "Dr. Ayşe Kaya", level: 1, wage: 0.06 },
+                    { id: 'f2', name: "Dr. Henrik Vogel", level: 3, wage: 0.18 },
+                    { id: 'f3', name: "Dr. Yuki Tanaka", level: 5, wage: 0.38 }
+                ],
+                kaleci: [
+                    { id: 'k1', name: "Volkan Usta", level: 1, wage: 0.07 },
+                    { id: 'k2', name: "Claudio Ferro", level: 3, wage: 0.20 },
+                    { id: 'k3', name: "Peter Kowalski", level: 5, wage: 0.40 }
+                ]
+            },
+            negotiation: null,              // aktif sözleşme pazarlığı {ad, demand, rounds}
+            negotiationBlocked: new Set(),  // bu hafta masadan kalkanlar
             academyPool: [],
             academyLevel: 1,
             trainingRights: 1,
@@ -956,8 +1120,8 @@
             selectedSubstitutionOut: null,
             // Live match stats
             matchStats: {
-                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0 },
-                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0 }
+                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0, offsides: 0, freekicks: 0 },
+                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0, offsides: 0, freekicks: 0 }
             },
             // Players banned this match for red cards
             redCardedPlayers: new Set(),
@@ -980,7 +1144,19 @@
                 corner: ["🚩 KORNER! {P} sol köşeden topu çekecek.","🚩 Korner kullanılıyor — ceza sahası kalabalık!"],
                 penalty: ["⚠️ PENALTI! Hakem noktayı gösterdi! {P} faul yapıldı!","⚠️ VAR penaltı dedi! {P} ceza alanında düşürüldü."],
                 save: ["🧤 SÜPER KURTARIŞ! Kaleci {P}'ın bombasını çelmek için uzandı!","🧤 Kaleci tek elle çevirdi, {P}'ın golüne izin vermedi!"],
-                tackle: ["🛡️ Müthiş bir müdahale! {P}'tan topu kayarak söküp aldı!","🛡️ {P} omuz omuza mücadelede kazandı!"]
+                tackle: ["🛡️ Müthiş bir müdahale! {P}'tan topu kayarak söküp aldı!","🛡️ {P} omuz omuza mücadelede kazandı!"],
+                freekick: ["🎯 Tehlikeli bölgede frikik! {P} topun başına geçti.","🎯 Baraj kuruluyor... {P} bu frikiği ağlarla buluşturabilir!","🎯 {P} frikik noktasında derin bir nefes aldı."],
+                cross: ["🌪️ {P} kanattan mükemmel bir orta yolladı, top ceza sahasında!","🌪️ {P} çizgiye indi ve yerden sert ortaladı!","🌪️ {P} arka direğe kavisli bir top gönderdi!"],
+                header: ["🗣️ {P} yükseldi, kafayı vuruyor!","🗣️ Hava topunda {P} herkesten üstte!","🗣️ {P} ön direkte topa kafayı koydu!"],
+                post: ["😱 DİREK! {P}'ın vuruşu direkten döndü, stadyum inledi!","😱 İNANILMAZ! Top üst direğe çarpıp oyun alanına düştü!","😱 {P} kalecinin solundan vurdu — direk kurtardı!"],
+                throwin: ["🤾 Taç atışı. {P} hızlıca oyuna soktu.","🤾 {P} uzun taç deniyor, ceza sahasına!"],
+                offside: ["🚫 OFSAYT! {P} bir adım önde yakalandı, bayrak havada.","🚫 Yan hakem bayrağı kaldırdı — {P} ofsaytta!","🚫 Ofsayt tuzağı çalıştı, {P} çizginin arkasında kaldı."],
+                pengoal: ["🎯 GOOOL! {P} penaltıyı köşeye çaktı, kaleci yanlış köşeye gitti!","🎯 PENALTI GOL! {P} soğukkanlılıkla ağlara bıraktı!"],
+                pensave: ["🧤 KURTARDI! Kaleci {P}'ın penaltısını okudu ve çeldi!","😖 {P} penaltıyı dışarı vurdu! Büyük şok, tribünler donakaldı!"],
+                clear: ["🛡️ Savunma tehlikeyi uzaklaştırdı, {P} topu taca gönderdi.","🛡️ {P} kafayla uzaklaştırdı, ceza sahası temizlendi."],
+                rebound: ["⚡ Top savunmadan sekti, {P} dönen topun başında!","⚡ Kaleci topu çıkardı ama {P} pozisyonu kovalıyor!"],
+                longshot: ["🚀 {P} 30 metreden gözünü karartıp şansını deniyor!","🚀 UZAKTAN GELİYOR! {P} sürpriz bir şut çıkardı!"],
+                counterattack: ["⚡ KONTRA! {P} topu kaptı ve müthiş bir hızla ileri çıkıyor!","⚡ Savunma boş yakalandı, {P} rüzgar gibi ilerliyor!"]
             },
             en: {
                 start: ["{P} wins the ball in midfield like a whirlwind!","{P} leaves the defender behind with a gorgeous body feint!","{P} beats opponents one by one and launches the attack!","{P} controls the throw-in and starts the move at once.","{P} snaps up the ball after the corner and drives forward.","{P} latches onto the keeper's long pass — what will he do?","{P} chips it over and races clear!"],
@@ -994,7 +1170,19 @@
                 corner: ["🚩 CORNER! {P} will take it from the left.","🚩 The corner is taken — a crowded box!"],
                 penalty: ["⚠️ PENALTY! The referee points to the spot! {P} was fouled!","⚠️ VAR says penalty! {P} was brought down in the area."],
                 save: ["🧤 SUPER SAVE! The keeper stretched to deny {P}'s screamer!","🧤 The keeper turned it away one-handed, denying {P} a goal!"],
-                tackle: ["🛡️ Brilliant tackle! Slid in and stripped the ball off {P}!","🛡️ {P} won the shoulder-to-shoulder battle!"]
+                tackle: ["🛡️ Brilliant tackle! Slid in and stripped the ball off {P}!","🛡️ {P} won the shoulder-to-shoulder battle!"],
+                freekick: ["🎯 Free kick in a dangerous spot! {P} stands over the ball.","🎯 The wall is forming... {P} could put this one in the net!","🎯 {P} takes a deep breath at the free-kick spot."],
+                cross: ["🌪️ {P} whips in a perfect cross from the wing, ball into the box!","🌪️ {P} gets to the byline and drills it in low!","🌪️ {P} floats a curling ball to the far post!"],
+                header: ["🗣️ {P} rises, heads it!","🗣️ {P} climbs highest in the aerial duel!","🗣️ {P} glances it on at the near post!"],
+                post: ["😱 POST! {P}'s strike comes back off the woodwork, the stadium groans!","😱 UNBELIEVABLE! It cannons off the bar and drops back in play!","😱 {P} beat the keeper — but the post said no!"],
+                throwin: ["🤾 Throw-in. {P} gets it moving quickly.","🤾 {P} tries a long throw, into the box!"],
+                offside: ["🚫 OFFSIDE! {P} caught a step ahead, the flag is up.","🚫 The linesman raises the flag — {P} is offside!","🚫 The offside trap works, {P} left behind the line."],
+                pengoal: ["🎯 GOAL! {P} buries the penalty in the corner, keeper went the wrong way!","🎯 PENALTY SCORED! {P} slots it home ice-cold!"],
+                pensave: ["🧤 SAVED! The keeper read {P}'s penalty and tipped it away!","😖 {P} blazes the penalty wide! Utter shock in the stands!"],
+                clear: ["🛡️ The defence clears the danger, {P} puts it into touch.","🛡️ {P} heads it clear, the box is emptied."],
+                rebound: ["⚡ It bounces loose, {P} is first to the rebound!","⚡ The keeper parries but {P} follows up!"],
+                longshot: ["🚀 {P} tries his luck from 30 metres!","🚀 FROM DISTANCE! {P} lets fly with a surprise effort!"],
+                counterattack: ["⚡ COUNTER! {P} wins it and races forward at pace!","⚡ The defence is caught out, {P} storms ahead like the wind!"]
             },
             de: {
                 start: ["{P} erobert den Ball im Mittelfeld wie ein Wirbelwind!","{P} lässt den Gegner mit einer herrlichen Körpertäuschung stehen!","{P} tanzt die Gegner einzeln aus und leitet den Angriff ein!","{P} nimmt den Einwurf an und startet sofort die Aktion.","{P} schnappt sich den Ball nach der Ecke und zieht nach vorn.","{P} nimmt den langen Pass des Torwarts an — was macht er?","{P} lupft ihn drüber und ist durch!"],
@@ -1008,7 +1196,19 @@
                 corner: ["🚩 ECKE! {P} tritt sie von links.","🚩 Die Ecke wird ausgeführt — der Strafraum ist voll!"],
                 penalty: ["⚠️ ELFMETER! Der Schiedsrichter zeigt auf den Punkt! {P} wurde gefoult!","⚠️ VAR sagt Elfmeter! {P} wurde im Strafraum zu Fall gebracht."],
                 save: ["🧤 SUPER-PARADE! Der Torwart streckte sich gegen {P}s Hammer!","🧤 Der Torwart lenkte ihn einhändig ab und verhinderte {P}s Tor!"],
-                tackle: ["🛡️ Starke Grätsche! Rutschte rein und nahm {P} den Ball ab!","🛡️ {P} gewann den Zweikampf Schulter an Schulter!"]
+                tackle: ["🛡️ Starke Grätsche! Rutschte rein und nahm {P} den Ball ab!","🛡️ {P} gewann den Zweikampf Schulter an Schulter!"],
+                freekick: ["🎯 Freistoß in gefährlicher Position! {P} steht über dem Ball.","🎯 Die Mauer stellt sich... {P} könnte diesen versenken!","🎯 {P} atmet am Freistoßpunkt tief durch."],
+                cross: ["🌪️ {P} schlägt eine perfekte Flanke vom Flügel in den Strafraum!","🌪️ {P} geht bis zur Grundlinie und bringt ihn flach rein!","🌪️ {P} zirkelt den Ball an den zweiten Pfosten!"],
+                header: ["🗣️ {P} steigt hoch, Kopfball!","🗣️ {P} gewinnt das Kopfballduell!","🗣️ {P} verlängert am kurzen Pfosten!"],
+                post: ["😱 PFOSTEN! {P}s Schuss springt vom Aluminium zurück, das Stadion stöhnt!","😱 UNGLAUBLICH! Von der Latte zurück ins Feld!","😱 {P} überwand den Torwart — doch der Pfosten rettete!"],
+                throwin: ["🤾 Einwurf. {P} macht schnell weiter.","🤾 {P} versucht den langen Einwurf in den Strafraum!"],
+                offside: ["🚫 ABSEITS! {P} stand einen Schritt zu weit, die Fahne ist oben.","🚫 Der Linienrichter hebt die Fahne — {P} im Abseits!","🚫 Die Abseitsfalle schnappt zu, {P} bleibt hinter der Linie."],
+                pengoal: ["🎯 TOR! {P} versenkt den Elfmeter im Eck, der Torwart war chancenlos!","🎯 ELFMETER VERWANDELT! {P} bleibt eiskalt!"],
+                pensave: ["🧤 GEHALTEN! Der Torwart ahnt {P}s Ecke und pariert!","😖 {P} schießt den Elfmeter vorbei! Schock auf den Rängen!"],
+                clear: ["🛡️ Die Abwehr klärt die Gefahr, {P} schlägt ihn ins Aus.","🛡️ {P} köpft frei, der Strafraum ist geräumt."],
+                rebound: ["⚡ Der Ball springt frei, {P} ist zuerst am Abpraller!","⚡ Der Torwart wehrt ab, doch {P} setzt nach!"],
+                longshot: ["🚀 {P} versucht es aus 30 Metern!","🚀 AUS DER DISTANZ! {P} zieht überraschend ab!"],
+                counterattack: ["⚡ KONTER! {P} erobert den Ball und sprintet nach vorn!","⚡ Die Abwehr ist entblößt, {P} stürmt wie der Wind!"]
             },
             fr: {
                 start: ["{P} récupère le ballon au milieu tel un tourbillon !","{P} laisse le défenseur sur place d'une superbe feinte de corps !","{P} élimine les adversaires un à un et lance l'attaque !","{P} contrôle la touche et lance l'action aussitôt.","{P} récupère le ballon après le corner et perce le milieu.","{P} reçoit le long ballon du gardien — que va-t-il faire ?","{P} le lobe et file au but !"],
@@ -1022,7 +1222,19 @@
                 corner: ["🚩 CORNER ! {P} va le tirer depuis la gauche.","🚩 Le corner est joué — la surface est bondée !"],
                 penalty: ["⚠️ PENALTY ! L'arbitre désigne le point ! {P} a été fauché !","⚠️ La VAR accorde le penalty ! {P} a été renversé dans la surface."],
                 save: ["🧤 SUPER ARRÊT ! Le gardien s'est détendu pour repousser la frappe de {P} !","🧤 Le gardien l'a détournée d'une main, privant {P} d'un but !"],
-                tackle: ["🛡️ Superbe tacle ! Il a glissé et pris le ballon à {P} !","🛡️ {P} a gagné le duel épaule contre épaule !"]
+                tackle: ["🛡️ Superbe tacle ! Il a glissé et pris le ballon à {P} !","🛡️ {P} a gagné le duel épaule contre épaule !"],
+                freekick: ["🎯 Coup franc dans une zone dangereuse ! {P} est derrière le ballon.","🎯 Le mur se forme... {P} peut le mettre au fond !","🎯 {P} respire profondément devant le coup franc."],
+                cross: ["🌪️ {P} centre parfaitement depuis l'aile, le ballon file dans la surface !","🌪️ {P} déborde jusqu'à la ligne et centre fort au ras du sol !","🌪️ {P} enroule un ballon au second poteau !"],
+                header: ["🗣️ {P} s'élève, tête !","🗣️ {P} domine le duel aérien !","🗣️ {P} dévie de la tête au premier poteau !"],
+                post: ["😱 POTEAU ! La frappe de {P} revient du montant, le stade gronde !","😱 INCROYABLE ! Ça claque la barre et retombe en jeu !","😱 {P} avait battu le gardien — mais le poteau a dit non !"],
+                throwin: ["🤾 Touche. {P} joue vite.","🤾 {P} tente une longue touche vers la surface !"],
+                offside: ["🚫 HORS-JEU ! {P} pris d'un pas, le drapeau est levé.","🚫 Le juge de touche lève le drapeau — {P} est hors-jeu !","🚫 Le piège du hors-jeu fonctionne, {P} reste derrière la ligne."],
+                pengoal: ["🎯 BUT ! {P} loge le penalty dans le coin, le gardien part du mauvais côté !","🎯 PENALTY TRANSFORMÉ ! {P} reste de glace !"],
+                pensave: ["🧤 ARRÊTÉ ! Le gardien a lu le penalty de {P} et le détourne !","😖 {P} envoie le penalty à côté ! Stupeur dans les tribunes !"],
+                clear: ["🛡️ La défense écarte le danger, {P} dégage en touche.","🛡️ {P} dégage de la tête, la surface est nettoyée."],
+                rebound: ["⚡ Le ballon traîne, {P} est le premier sur le rebond !","⚡ Le gardien repousse mais {P} suit !"],
+                longshot: ["🚀 {P} tente sa chance de 30 mètres !","🚀 DE LOIN ! {P} déclenche une frappe surprise !"],
+                counterattack: ["⚡ CONTRE ! {P} récupère et fonce à toute vitesse !","⚡ La défense est prise de court, {P} file comme le vent !"]
             },
             zh: {
                 start: ["{P}在中场如旋风般抢下皮球！","{P}一个漂亮的假动作过掉了防守球员！","{P}逐个晃过对手，发动了进攻！","{P}控住界外球，立刻发起进攻。","{P}在角球后抢到球，直插中场。","{P}接到门将的长传——他会怎么做？","{P}一记挑传，突入禁区！"],
@@ -1036,7 +1248,19 @@
                 corner: ["🚩 角球！{P}将从左侧开出。","🚩 角球开出——禁区里人满为患！"],
                 penalty: ["⚠️ 点球！裁判指向罚球点！{P}被侵犯！","⚠️ VAR判罚点球！{P}在禁区内被放倒。"],
                 save: ["🧤 神扑！门将奋力扑出{P}的劲射！","🧤 门将单手将球托出，拒绝了{P}的进球！"],
-                tackle: ["🛡️ 精彩抢断！滑铲把球从{P}脚下断下！","🛡️ {P}在肩并肩的对抗中获胜！"]
+                tackle: ["🛡️ 精彩抢断！滑铲把球从{P}脚下断下！","🛡️ {P}在肩并肩的对抗中获胜！"],
+                freekick: ["🎯 危险区域的任意球！{P}站在球前。","🎯 人墙排好了……{P}有机会直接破门！","🎯 {P}在任意球点深吸一口气。"],
+                cross: ["🌪️ {P}从边路送出完美传中，球飞入禁区！","🌪️ {P}下底低平球传中！","🌪️ {P}一记弧线球吊向后点！"],
+                header: ["🗣️ {P}高高跃起，头球攻门！","🗣️ 争顶中{P}力压众人！","🗣️ {P}在前点头球摆渡！"],
+                post: ["😱 中柱！{P}的射门被门柱挡出，全场惊呼！","😱 难以置信！球击中横梁弹回场内！","😱 {P}骗过了门将——但门柱拒绝了他！"],
+                throwin: ["🤾 界外球。{P}快速发出。","🤾 {P}尝试长界外球掷向禁区！"],
+                offside: ["🚫 越位！{P}快了一步，边裁举旗。","🚫 边裁举旗——{P}越位了！","🚫 越位陷阱奏效，{P}被留在线后。"],
+                pengoal: ["🎯 球进了！{P}点球打入死角，门将判断错了方向！","🎯 点球命中！{P}冷静推射入网！"],
+                pensave: ["🧤 扑出来了！门将判断对了{P}的点球并将其挡出！","😖 {P}把点球踢飞了！看台一片震惊！"],
+                clear: ["🛡️ 防线化解险情，{P}把球踢出边线。","🛡️ {P}头球解围，禁区安全了。"],
+                rebound: ["⚡ 球弹了出来，{P}第一个抢到补射机会！","⚡ 门将扑出，但{P}跟上补射！"],
+                longshot: ["🚀 {P}在30米外试一脚远射！","🚀 远射来了！{P}突施冷箭！"],
+                counterattack: ["⚡ 反击！{P}断球后高速推进！","⚡ 防线被打穿，{P}如风般突进！"]
             }
         };
         const getSpikerText = (type, player) => {
@@ -1171,6 +1395,14 @@
             // Top — momentumlu, hedefe doğru ağırlıklı süzülme
             s.ball.x += (s.ball.tx - s.ball.x) * 0.16;
             s.ball.y += (s.ball.ty - s.ball.y) * 0.16;
+            // Hava topu yayı (orta / degaj / uzak şut) — 3D motor s.ball.h okur
+            if (s.flight) {
+                const pr = (performance.now() - s.flight.start) / s.flight.dur;
+                if (pr >= 1) { s.flight = null; s.ball.h = 0; }
+                else s.ball.h = Math.sin(Math.PI * pr) * s.flight.peak;
+            } else {
+                s.ball.h = 0;
+            }
             if (s.nodes.ball) {
                 s.nodes.ball.style.left = s.ball.x + '%';
                 s.nodes.ball.style.top = s.ball.y + '%';
@@ -1206,7 +1438,10 @@
             s.raf = requestAnimationFrame(animateMatchFrame);
         }
 
-        // Topu ilerleten mantık adımı (pas / dribbling / şut / top kapma)
+        /* Topu ilerleten mantık adımı — SENARYO DAĞITICISI.
+           Her adımda gerçek maçtaki gibi çok çeşitli pozisyonlar doğar:
+           faul→frikik/penaltı, ofsayt, taç, kanat ortası, uzaktan şut,
+           top kapma→kontra, ceza sahasında bitirici şut. */
         function matchFlowStep() {
             const s = gameState.sim;
             if (!s || !gameState.isMatchLive || gameState.phase !== 'normal') return;
@@ -1227,17 +1462,53 @@
             const defMod = tacticalModifiers(defTeam);
             s._atkMod = atkMod; s._defMod = defMod;
 
-            // Top kapma (interception) — rakip pres yoğunluğu + bizim top kaybı riskimiz - yetenek
+            const ballXOwn0 = side === 'home' ? s.ball.tx : 100 - s.ball.tx;
+
+            // === 1. FAUL → frikik / penaltı (agresif pres faulü artırır) ===
+            const foulChance = 0.038 + defMod.pressIntensity * 0.030;
+            if (Math.random() < foulChance) {
+                if (ballXOwn0 > 86 && s.ball.ty > 28 && s.ball.ty < 72 && Math.random() < 0.28) {
+                    startPenalty(side);
+                } else {
+                    startFreekick(side);
+                }
+                return;
+            }
+
+            // === 2. TOP KAPMA (interception) → kontra fırsatı ===
             const carrierP = livePlayer(side, s.carrier.idx);
             const skill = carrierP ? (carrierP.yetenek ?? 70) : 70;
             const interceptChance = Math.max(0.04, Math.min(0.42,
                 0.07 + defMod.pressIntensity * 0.085 + (atkMod.lossRisk - 1) * 0.12 - (skill - 70) / 320));
             if (Math.random() < interceptChance) {
-                flipPossession();
+                if (Math.random() < 0.22) {
+                    // Mücadelede top taca çıktı — savunma uzaklaştırdı
+                    s.ball.ty = s.ball.ty < 50 ? 12 : 88;
+                    startThrowIn(side);
+                } else {
+                    flipPossession();
+                }
                 return;
             }
 
-            // Topu rakip kaleye doğru ilerlet — tempo/pas tarzı hızı belirler (kontra dahil)
+            // === 3. OFSAYT — yüksek hat + riskli ara paslar bayrağı kaldırtır ===
+            if (ballXOwn0 > 55 && Math.random() <
+                (defMod.offside ? 0.055 : 0.016) + Math.max(0, atkMod.lossRisk - 1) * 0.03) {
+                gameState.matchStats[side].offsides++;
+                pushEvent(getSpikerText('offside', carrierP), 'text-orange-300');
+                soundEngine.playWhistle();
+                flipPossession();
+                updateMatchHud();
+                return;
+            }
+
+            // === 4. TAÇ — top kenar çizgisine yakın süzülüyorsa ===
+            if ((s.ball.ty < 24 || s.ball.ty > 76) && Math.random() < 0.25) {
+                startThrowIn(side);
+                return;
+            }
+
+            // === 5. TOPU İLERLET — tempo/pas tarzı hızı belirler (kontra dahil) ===
             const advance = (6 + Math.random() * 13) * atkMod.advanceSpeed *
                             (s._counterBurst ? atkMod.counter : 1);
             s._counterBurst = false;
@@ -1259,17 +1530,33 @@
             computeMatchTargets();
             soundEngine.playKick();
             rateBump(side, receiver, 0.05);
-            if (Math.random() < 0.45) {
+            if (Math.random() < 0.40) {
                 const p = livePlayer(side, receiver) || carrierP;
                 pushEvent(getSpikerText(Math.random() < 0.5 ? 'start' : 'develop', p), 'text-sky-300');
             }
 
-            // Son bölgede şut ihtimali — ofansiflik/tempo/hücum odağı sıklığı belirler
             const ballXOwn = side === 'home' ? nbx : 100 - nbx;
+            const wide = nby < 26 || nby > 74;
+            const genislik = (atkTeam.taktik.genislik ?? 50) / 100;
+            const kanatOdak = atkTeam.taktik.hucum_odagi === 'Kanatlar' ? 0.18 : 0;
+
+            // === 6. KANAT ORTASI — son bölgede geniş alandan ceza sahasına ===
+            if (ballXOwn > 70 && wide && Math.random() < 0.30 + genislik * 0.25 + kanatOdak) {
+                startCross(side);
+                return;
+            }
+
+            // === 7. UZAKTAN ŞUT — orta mesafeden sürpriz deneme ===
+            if (ballXOwn > 58 && ballXOwn <= 75 && Math.random() < 0.05 + atkMod.shotFrequency * 0.10) {
+                resolveShot(atkTeam, defTeam, side, 'longshot');
+                return;
+            }
+
+            // === 8. CEZA SAHASI ŞUTU — ofansiflik/tempo sıklığı belirler ===
             const shotProb = Math.min(0.62, 0.15 + atkMod.shotFrequency * 0.85);
             if (ballXOwn > 75 && Math.random() < shotProb) {
-                resolveShot(atkTeam, defTeam, side);
-            } else if (Math.random() < 0.06) {
+                resolveShot(atkTeam, defTeam, side, 'normal');
+            } else if (Math.random() < 0.05) {
                 triggerMinorEvent(ev, dep);
             }
             updateMatchHud();
@@ -1293,18 +1580,144 @@
             const newTeam = newSide === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
             s._counterBurst = (newTeam.taktik && newTeam.taktik.top_kazaninca === 'Hızlı Kontra');
             const p = livePlayer(newSide, s.carrier.idx);
-            if (p) { pushEvent(getSpikerText('tackle', p), 'text-blue-300'); rateBump(newSide, s.carrier.idx, 0.12); }
+            if (p) {
+                pushEvent(getSpikerText(s._counterBurst ? 'counterattack' : 'tackle', p),
+                          s._counterBurst ? 'text-amber-300 font-bold' : 'text-blue-300');
+                rateBump(newSide, s.carrier.idx, 0.12);
+            }
             computeMatchTargets();
             updateMatchHud();
         }
 
-        // Şut çözümü: gol / kurtarış / ıska
-        function resolveShot(atkTeam, defTeam, side) {
+        /* =====================================================================
+           POZİSYON SAHNELEME YARDIMCILARI (FM v3.0)
+        ===================================================================== */
+        function otherSide(side) { return side === 'home' ? 'away' : 'home'; }
+
+        // Topu havaya kaldır — 3D sahnede parabolik uçuş yayı çizer
+        function launchBallFlight(ms, peak) {
+            const s = gameState.sim; if (!s) return;
+            s.flight = { start: performance.now(), dur: ms, peak };
+        }
+
+        // Ceza sahasına hücum yığılması (korner/orta öncesi diziliş)
+        function crowdBox(side, atkCount) {
+            const s = gameState.sim; if (!s) return;
+            const inX = side === 'home' ? 88 : 12;
+            for (let i = 11 - atkCount; i < 11; i++) {
+                s.tgt[side][i] = { x: inX + (Math.random() * 8 - 4), y: 32 + Math.random() * 36 };
+            }
+            const opp = otherSide(side);
+            for (let i = 1; i <= 4; i++) {
+                s.tgt[opp][i] = { x: side === 'home' ? 91 : 9, y: 28 + i * 11 };
+            }
+        }
+
+        function bestShooterIdx(side) {
+            const team = side === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
+            let best = 9;
+            [10, 8, 7].forEach(i => {
+                const p = team.ilk_11[i], b = team.ilk_11[best];
+                if (p && (!b || p.yetenek > b.yetenek)) best = i;
+            });
+            return best;
+        }
+
+        // Faul sonrası kart kontrolü — ikinci sarıda kırmızı
+        function maybeBookDefender(defSide, cardChance = 0.30) {
+            const team = defSide === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
+            const eligibles = team.ilk_11.filter(p => p && !gameState.redCardedPlayers.has(p.ad));
+            if (!eligibles.length) return;
+            const player = eligibles[Math.floor(Math.random() * eligibles.length)];
+            if (Math.random() < cardChance) {
+                gameState.matchStats[defSide].yellows++;
+                player.yellowCard = (player.yellowCard || 0) + 1;
+                pushEvent(getSpikerText('yellow', player), 'text-yellow-300 font-bold');
+                if (player.yellowCard >= 2) {
+                    gameState.matchStats[defSide].reds++;
+                    gameState.redCardedPlayers.add(player.ad);
+                    pushEvent(getSpikerText('red', player), 'text-rose-500 font-extrabold');
+                }
+            }
+        }
+
+        // Gol defteri: skor, form, moral, kutlama — tek noktadan işlenir
+        function scoreGoal(side, shooter, commentKey = 'goal') {
+            const s = gameState.sim;
+            gameState.lastResult[side === 'home' ? 0 : 1]++;
+            gameState.matchStats[side].shotsOnTarget++;
+            gameState.goalScored = true;
+            soundEngine.playCheer();
+            pushEvent(getSpikerText(commentKey, shooter), 'text-emerald-400 font-extrabold text-sm');
+            if (shooter) {
+                shooter.form = Math.min(100, (shooter.form ?? 75) + 4);
+                shooter.moral = Math.min(100, (shooter.moral ?? 70) + 5);
+                shooter._goals = (shooter._goals || 0) + 1;
+            }
+            if (s && s.carrier) rateBump(side, s.carrier.idx, 1.2);
+            if (s) s.celebrate = { side, until: performance.now() + 1500 };
+            showGoalBanner();
+        }
+
+        // Santradan yeniden başlat (gol sonrası)
+        function restartCenter(restartSide, delay = 1400) {
+            setTimeout(() => {
+                if (!gameState.isMatchLive) return;
+                const s = gameState.sim; if (!s) return;
+                gameState.goalScored = false;
+                s.ball.tx = 50; s.ball.ty = 50; s.flight = null;
+                s.possession = restartSide;
+                s.carrier = { side: restartSide, idx: 6 };
+                computeMatchTargets();
+                gameState.phase = 'normal';
+                updateMatchHud();
+            }, delay);
+        }
+
+        // Kale vuruşu / degaj — top kalecide, oyun devam eder
+        function restartFromGoal(side) {
+            const s = gameState.sim; if (!s) return;
+            s.ball.tx = side === 'home' ? 8 : 92;
+            s.ball.ty = 42 + Math.random() * 16;
+            s.flight = null;
+            s.possession = side;
+            s.carrier = { side, idx: 0 };
+            gameState.phase = 'normal';
+            computeMatchTargets();
+        }
+
+        // Savunma uzaklaştırdı — top orta alanda, hakimiyet el değiştirdi
+        function clearToMid(side) {
+            const s = gameState.sim; if (!s) return;
+            s.ball.tx = 40 + Math.random() * 20;
+            s.ball.ty = 25 + Math.random() * 50;
+            s.flight = null;
+            s.possession = side;
+            let best = 5, bestD = 1e9;
+            for (let i = 1; i < 11; i++) {
+                const t = s.tgt[side][i];
+                const d = (t.x - s.ball.tx) ** 2 + (t.y - s.ball.ty) ** 2;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            s.carrier = { side, idx: best };
+            gameState.phase = 'normal';
+            computeMatchTargets();
+        }
+
+        /* =====================================================================
+           ŞUT ÇÖZÜMÜ — gol / direk / kurtarış / blok / dışarı + devam pozisyonları
+           shotType: normal | longshot | header | freekick | rebound
+        ===================================================================== */
+        function resolveShot(atkTeam, defTeam, side, shotType = 'normal') {
             const s = gameState.sim;
             gameState.phase = 'shot';
+            const defSide = otherSide(side);
             const shooter = livePlayer(side, s.carrier.idx) || pickAttacker(atkTeam);
             gameState.matchStats[side].shots++;
-            pushEvent(getSpikerText('shot', shooter), 'text-amber-400 font-bold');
+            const commentKey = shotType === 'header' ? 'header'
+                             : shotType === 'longshot' ? 'longshot'
+                             : shotType === 'rebound' ? 'rebound' : 'shot';
+            pushEvent(getSpikerText(commentKey, shooter), 'text-amber-400 font-bold');
             rateBump(side, s.carrier.idx, 0.10);
             soundEngine.playKick();
 
@@ -1312,115 +1725,328 @@
             const goalX = side === 'home' ? 99 : 1;
             s.ball.tx = goalX;
             s.ball.ty = 42 + Math.random() * 16;
-            computeMatchTargets();
+            if (shotType === 'longshot' || shotType === 'freekick') launchBallFlight(700, 2.2);
+            // Sahnelenmiş pozisyonlarda (kafa/frikik) yığılmayı bozma
+            if (shotType === 'normal' || shotType === 'longshot') computeMatchTargets();
             updateMatchHud();
 
             const atkMod = tacticalModifiers(atkTeam);
             const dMod = tacticalModifiers(defTeam);
             // Şut isabeti taktikle çarpılır; rakip savunma sağlamlığı gol şansını böler
-            const acc = ((shooter.yetenek / 100) * 0.34 + ((shooter.form ?? 75) / 100) * 0.10 + ((atkTeam.taktik.yaraticilik ?? 50) / 400)) * atkMod.shotAccuracy;
-            const goalChance = Math.max(0.04, Math.min(0.50, acc / dMod.defSolidity));
+            let acc = ((shooter.yetenek / 100) * 0.34 + ((shooter.form ?? 75) / 100) * 0.10 + ((atkTeam.taktik.yaraticilik ?? 50) / 400)) * atkMod.shotAccuracy;
+            if (shotType === 'longshot') acc *= 0.52;
+            if (shotType === 'header')   acc *= 0.80;
+            if (shotType === 'freekick') acc *= 0.68;
+            if (shotType === 'rebound')  acc *= 1.15;   // karambol golü kolaydır
+            let goalChance = Math.max(0.03, Math.min(0.52, acc / dMod.defSolidity));
+            // Kaleci antrenörü: kullanıcı savunmadayken kurtarış oranını artırır
+            const gkStaff = gameState.staff.kaleci;
+            if (gkStaff && defTeam.isUser) goalChance *= (1 - gkStaff.level * 0.025);
             const isGoal = Math.random() < goalChance;
             // xG kaydı — atılan her şutun beklenen gol değeri (Baldric için)
             gameState.matchStats[side].xg = (gameState.matchStats[side].xg || 0) + Math.min(0.92, goalChance * 1.5);
-            const isOnTarget = isGoal || Math.random() < 0.5 + shooter.yetenek / 220;
 
             setTimeout(() => {
                 if (!gameState.isMatchLive) return;
                 if (isGoal) {
-                    gameState.lastResult[side === 'home' ? 0 : 1]++;
-                    gameState.matchStats[side].shotsOnTarget++;
-                    gameState.goalScored = true;
-                    soundEngine.playCheer();
-                    pushEvent(getSpikerText('goal', shooter), 'text-emerald-400 font-extrabold text-sm');
-                    shooter.form = Math.min(100, (shooter.form ?? 75) + 4);
-                    shooter._goals = (shooter._goals || 0) + 1;
-                    rateBump(side, s.carrier.idx, 1.2);
-                    showGoalBanner();
-                } else {
-                    if (isOnTarget) {
-                        gameState.matchStats[side].shotsOnTarget++;
-                        gameState.matchStats[side === 'home' ? 'away' : 'home'].saves++;
-                        pushEvent(getSpikerText('save', shooter), 'text-sky-300');
+                    // Kaleci yanlış köşeye dalar
+                    s.gkAction = { side: defSide, dir: Math.random() < 0.5 ? -1 : 1, until: performance.now() + 750 };
+                    scoreGoal(side, shooter, 'goal');
+                    updateMatchHud();
+                    restartCenter(defSide);
+                    return;
+                }
+                // Gol değil: direk / kurtarış / blok / dışarı dağılımı
+                const roll = Math.random();
+                if (roll < 0.10 && shotType !== 'rebound') {
+                    // === DİREK! ===
+                    pushEvent(getSpikerText('post', shooter), 'text-orange-300 font-bold');
+                    soundEngine.playKick();
+                    if (Math.random() < 0.38) {
+                        // Dönen topu bir başka hücumcu kovalıyor → ikinci şut
+                        s.ball.tx = side === 'home' ? 90 : 10;
+                        s.ball.ty = 38 + Math.random() * 24;
+                        const rIdx = s.carrier.idx === 9 ? 10 : 9;
+                        s.carrier = { side, idx: rIdx };
+                        setTimeout(() => {
+                            if (!gameState.isMatchLive) return;
+                            resolveShot(atkTeam, defTeam, side, 'rebound');
+                        }, 650);
                     } else {
-                        pushEvent(getSpikerText('miss', shooter), 'text-rose-400');
+                        clearToMid(defSide);
                     }
+                } else if (roll < 0.58) {
+                    // === KURTARIŞ ===
+                    gameState.matchStats[side].shotsOnTarget++;
+                    gameState.matchStats[defSide].saves++;
+                    s.gkAction = { side: defSide, dir: s.ball.ty < 50 ? -1 : 1, until: performance.now() + 750 };
+                    pushEvent(getSpikerText('save', shooter), 'text-sky-300');
+                    if (Math.random() < 0.38) {
+                        setTimeout(() => { if (gameState.isMatchLive) startCorner(side); }, 700);
+                    } else {
+                        restartFromGoal(defSide);
+                    }
+                } else if (roll < 0.70) {
+                    // === BLOK ===
+                    const blocker = livePlayer(defSide, 1 + Math.floor(Math.random() * 4));
+                    pushEvent(getSpikerText('clear', blocker), 'text-slate-300');
+                    if (Math.random() < 0.45) {
+                        setTimeout(() => { if (gameState.isMatchLive) startCorner(side); }, 700);
+                    } else {
+                        clearToMid(defSide);
+                    }
+                } else {
+                    // === DIŞARI ===
+                    pushEvent(getSpikerText('miss', shooter), 'text-rose-400');
+                    restartFromGoal(defSide);
                 }
                 updateMatchHud();
-
-                // Orta açma / kale vuruşu — topu merkeze al, hakimiyeti ver
-                setTimeout(() => {
-                    if (!gameState.isMatchLive) return;
-                    gameState.goalScored = false;
-                    const restartSide = isGoal ? (side === 'home' ? 'away' : 'home') : (Math.random() < 0.5 ? side : (side === 'home' ? 'away' : 'home'));
-                    s.ball.tx = 50; s.ball.ty = 50;
-                    s.possession = restartSide;
-                    s.carrier = { side: restartSide, idx: 6 };
-                    computeMatchTargets();
-                    gameState.phase = 'normal';
-                    updateMatchHud();
-                }, 1100);
             }, 750);
         }
 
+        /* =====================================================================
+           DURAN TOPLAR — 3D sahnede gerçekten dizilip oynanır
+        ===================================================================== */
+        // KORNER: oyuncular ceza sahasına yığılır, orta gelir, kafa şansı
+        function startCorner(side) {
+            const s = gameState.sim; if (!s || !gameState.isMatchLive) return;
+            gameState.phase = 'corner';
+            gameState.matchStats[side].corners++;
+            const taker = 5 + Math.floor(Math.random() * 4);
+            const cornerY = s.ball.ty < 50 ? 6 : 94;
+            const cornerX = side === 'home' ? 97 : 3;
+            s.ball.tx = cornerX; s.ball.ty = cornerY; s.flight = null;
+            s.carrier = { side, idx: taker };
+            s.tgt[side][taker] = { x: cornerX, y: cornerY };
+            crowdBox(side, 5);
+            pushEvent(getSpikerText('corner', livePlayer(side, taker)), 'text-cyan-300');
+            updateMatchHud();
+            setTimeout(() => {
+                if (!gameState.isMatchLive) return;
+                // Orta: kale ağzına havadan
+                s.ball.tx = side === 'home' ? 91 : 9;
+                s.ball.ty = 38 + Math.random() * 24;
+                launchBallFlight(900, 3.2);
+                soundEngine.playKick();
+                pushEvent(getSpikerText('cross', livePlayer(side, taker)), 'text-sky-300');
+                updateMatchHud();
+                setTimeout(() => {
+                    if (!gameState.isMatchLive) return;
+                    const r = Math.random();
+                    const atkTeam = side === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
+                    const defTeam = side === 'home' ? gameState.currentMatch[1] : gameState.currentMatch[0];
+                    if (r < 0.34) {
+                        s.carrier = { side, idx: Math.random() < 0.5 ? 9 : 10 };
+                        resolveShot(atkTeam, defTeam, side, 'header');
+                    } else if (r < 0.74) {
+                        const p = livePlayer(otherSide(side), 1 + Math.floor(Math.random() * 4));
+                        pushEvent(getSpikerText('clear', p), 'text-slate-300');
+                        clearToMid(otherSide(side));
+                    } else {
+                        pushEvent(getSpikerText('miss', livePlayer(side, 9)), 'text-rose-400');
+                        restartFromGoal(otherSide(side));
+                    }
+                    updateMatchHud();
+                }, 950);
+            }, 1200);
+        }
+
+        // FRİKİK: tehlikeli bölgedeyse baraj + direkt şut, değilse hızlı devam
+        function startFreekick(side) {
+            const s = gameState.sim; if (!s || !gameState.isMatchLive) return;
+            gameState.phase = 'freekick';
+            const defSide = otherSide(side);
+            gameState.matchStats[defSide].fouls++;
+            soundEngine.playWhistle();
+            const victim = livePlayer(side, s.carrier.idx);
+            pushEvent(`${tx('Faul')}! ${victim ? victim.ad + ' ' : ''}${tx('sert müdahale yaptı.')}`, 'text-slate-400');
+            maybeBookDefender(defSide, 0.30);
+            const ballXOwn = side === 'home' ? s.ball.tx : 100 - s.ball.tx;
+            updateMatchHud();
+            setTimeout(() => {
+                if (!gameState.isMatchLive) return;
+                const taker = bestShooterIdx(side);
+                s.carrier = { side, idx: taker };
+                if (ballXOwn > 62) {
+                    // Şut frikiği: hücum yığıl, duvar kur, vur
+                    gameState.matchStats[side].freekicks++;
+                    crowdBox(side, 3);
+                    s.tgt[side][taker] = { x: s.ball.tx - (side === 'home' ? 4 : -4), y: s.ball.ty };
+                    pushEvent(getSpikerText('freekick', livePlayer(side, taker)), 'text-amber-300 font-bold');
+                    updateMatchHud();
+                    setTimeout(() => {
+                        if (!gameState.isMatchLive) return;
+                        const atkTeam = side === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
+                        const defTeam = side === 'home' ? gameState.currentMatch[1] : gameState.currentMatch[0];
+                        resolveShot(atkTeam, defTeam, side, 'freekick');
+                    }, 1100);
+                } else {
+                    // Hızlı kullanım
+                    pushEvent(getSpikerText('start', livePlayer(side, taker)), 'text-sky-300');
+                    gameState.phase = 'normal';
+                    computeMatchTargets();
+                    updateMatchHud();
+                }
+            }, 900);
+        }
+
+        // PENALTI: herkes yay dışına, atıcı topun başında, kaleci çizgide
+        function startPenalty(side) {
+            const s = gameState.sim; if (!s || !gameState.isMatchLive) return;
+            gameState.phase = 'penalty';
+            const defSide = otherSide(side);
+            gameState.matchStats[defSide].fouls++;
+            soundEngine.playWhistle();
+            const victim = livePlayer(side, s.carrier.idx);
+            pushEvent(getSpikerText('penalty', victim), 'text-amber-400 font-black');
+            maybeBookDefender(defSide, 0.55);
+            const spotX = side === 'home' ? 88 : 12;
+            s.ball.tx = spotX; s.ball.ty = 50; s.flight = null;
+            const taker = bestShooterIdx(side);
+            s.carrier = { side, idx: taker };
+            // Diziliş: tüm oyuncular ceza yayı gerisine
+            ['home', 'away'].forEach(sd => {
+                for (let i = 1; i < 11; i++) {
+                    const arcX = side === 'home' ? 72 : 28;
+                    s.tgt[sd][i] = { x: arcX + (Math.random() * 6 - 3), y: 16 + i * 6.8 };
+                }
+            });
+            s.tgt[side][taker] = { x: spotX - (side === 'home' ? 4 : -4), y: 50 };
+            s.tgt[defSide][0] = { x: side === 'home' ? 96 : 4, y: 50 };
+            updateMatchHud();
+            setTimeout(() => {
+                if (!gameState.isMatchLive) return;
+                const shooter = livePlayer(side, taker);
+                soundEngine.playKick();
+                gameState.matchStats[side].shots++;
+                gameState.matchStats[side].xg += 0.78;
+                s.ball.tx = side === 'home' ? 99 : 1;
+                s.ball.ty = 44 + Math.random() * 12;
+                let scoreChance = 0.76 + ((shooter ? shooter.yetenek : 70) - 70) * 0.002;
+                const defTeam = defSide === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
+                const gkStaff = gameState.staff.kaleci;
+                if (gkStaff && defTeam.isUser) scoreChance -= gkStaff.level * 0.02;
+                s.gkAction = { side: defSide, dir: Math.random() < 0.5 ? -1 : 1, until: performance.now() + 800 };
+                setTimeout(() => {
+                    if (!gameState.isMatchLive) return;
+                    if (Math.random() < scoreChance) {
+                        scoreGoal(side, shooter, 'pengoal');
+                        updateMatchHud();
+                        restartCenter(defSide);
+                    } else {
+                        gameState.matchStats[defSide].saves++;
+                        pushEvent(getSpikerText('pensave', shooter), 'text-sky-300 font-bold');
+                        restartFromGoal(defSide);
+                        updateMatchHud();
+                    }
+                }, 800);
+            }, 1700);
+        }
+
+        // TAÇ ATIŞI: kısa bir kesinti, top çoğunlukla aynı takımda kalır
+        function startThrowIn(side) {
+            const s = gameState.sim; if (!s || !gameState.isMatchLive) return;
+            gameState.phase = 'throwin';
+            const keepSide = Math.random() < 0.7 ? side : otherSide(side);
+            s.ball.ty = s.ball.ty < 50 ? 9 : 91;
+            const p = livePlayer(keepSide, s.carrier.idx);
+            pushEvent(getSpikerText('throwin', p), 'text-slate-300');
+            updateMatchHud();
+            setTimeout(() => {
+                if (!gameState.isMatchLive) return;
+                s.possession = keepSide;
+                let best = 5, bestD = 1e9;
+                for (let i = 1; i < 11; i++) {
+                    const t = s.tgt[keepSide][i];
+                    const d = (t.x - s.ball.tx) ** 2 + (t.y - s.ball.ty) ** 2;
+                    if (d < bestD) { bestD = d; best = i; }
+                }
+                s.carrier = { side: keepSide, idx: best };
+                s.ball.ty += s.ball.ty < 50 ? 15 : -15;   // top oyun alanına iner (taç ping-pongunu önler)
+                gameState.phase = 'normal';
+                computeMatchTargets();
+                updateMatchHud();
+            }, 700);
+        }
+
+        // KANAT ORTASI: çizgiden ceza sahasına havadan top, kafa/karambol
+        function startCross(side) {
+            const s = gameState.sim; if (!s || !gameState.isMatchLive) return;
+            gameState.phase = 'cross';
+            const taker = s.carrier.idx;
+            pushEvent(getSpikerText('cross', livePlayer(side, taker)), 'text-sky-300');
+            soundEngine.playKick();
+            s.ball.tx = side === 'home' ? 91 : 9;
+            s.ball.ty = 38 + Math.random() * 24;
+            launchBallFlight(800, 2.8);
+            crowdBox(side, 3);
+            updateMatchHud();
+            setTimeout(() => {
+                if (!gameState.isMatchLive) return;
+                const r = Math.random();
+                const atkTeam = side === 'home' ? gameState.currentMatch[0] : gameState.currentMatch[1];
+                const defTeam = side === 'home' ? gameState.currentMatch[1] : gameState.currentMatch[0];
+                if (r < 0.42) {
+                    s.carrier = { side, idx: Math.random() < 0.5 ? 9 : 10 };
+                    resolveShot(atkTeam, defTeam, side, 'header');
+                } else if (r < 0.76) {
+                    const p = livePlayer(otherSide(side), 1 + Math.floor(Math.random() * 4));
+                    pushEvent(getSpikerText('clear', p), 'text-slate-300');
+                    if (Math.random() < 0.35) {
+                        setTimeout(() => { if (gameState.isMatchLive) startCorner(side); }, 600);
+                    } else {
+                        clearToMid(otherSide(side));
+                    }
+                } else {
+                    pushEvent(getSpikerText('miss', livePlayer(side, 9)), 'text-rose-400');
+                    restartFromGoal(otherSide(side));
+                }
+                updateMatchHud();
+            }, 850);
+        }
+
         function showGoalBanner() {
-            const pitch = document.getElementById('match-pitch');
-            if (!pitch) return;
+            // 3D stadyum görünümünün üzerine bindirilir (görünür katman)
+            const wrap = document.getElementById('stadium3d-wrap') || document.getElementById('match-pitch');
+            if (!wrap) return;
             const b = document.createElement('div');
             b.className = 'goal-banner';
             b.innerHTML = `<span class="text-5xl md:text-7xl font-black italic text-white drop-shadow-2xl">GOOOL!</span>`;
-            pitch.appendChild(b);
+            wrap.appendChild(b);
             setTimeout(() => b.remove(), 1300);
         }
 
+        /* Küçük renk olayları — kartlar/kornerler artık gerçek pozisyonlarda
+           işlendiği için burada sadece sakatlık ve atmosfer anları kaldı. */
         async function triggerMinorEvent(home, away) {
             gameState.phase = 'action';
             const evType = Math.random();
             const homeOrAway = Math.random() < 0.5;
             const team = homeOrAway ? home : away;
-            const sideKey = homeOrAway ? 'home' : 'away';
             const eligibles = team.ilk_11.filter(p => !gameState.redCardedPlayers.has(p.ad));
             if (!eligibles.length) { gameState.phase = 'normal'; return; }
             const player = eligibles[Math.floor(Math.random() * eligibles.length)];
 
-            // Press tactic raises card rate, attacking tempo raises injury rate
-            const pressFactor = team.taktik.pres / 100;
             const tempoFactor = team.taktik.tempo / 100;
+            // Fizyoterapist sakatlık riskini düşürür (kullanıcı takımı için)
+            let injuryChance = 0.30 + tempoFactor * 0.15;
+            if (team.isUser && gameState.staff.fizyo) injuryChance *= (1 - gameState.staff.fizyo.level * 0.08);
 
-            if (evType < 0.30 * pressFactor) {
-                // Yellow card
-                gameState.matchStats[sideKey].fouls++;
-                gameState.matchStats[sideKey].yellows++;
-                player.yellowCard = (player.yellowCard || 0) + 1;
-                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('yellow', player), color: 'text-yellow-300 font-bold' });
-                // Second yellow → red
-                if (player.yellowCard >= 2) {
-                    gameState.matchStats[sideKey].reds++;
-                    gameState.redCardedPlayers.add(player.ad);
-                    gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('red', player), color: 'text-rose-500 font-extrabold' });
-                }
-            } else if (evType < 0.40) {
-                // Foul (no card)
-                gameState.matchStats[sideKey].fouls++;
-                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: `${tx('Faul')}: ${player.ad} ${tx('sert müdahale yaptı.')}`, color: 'text-slate-400' });
-            } else if (evType < 0.50 + tempoFactor * 0.15) {
-                // Injury — light, reduces energy & form
+            if (evType < injuryChance) {
+                // Hafif sakatlık — enerji ve form düşer
                 if (!gameState.injuredPlayers.has(player.ad)) {
                     gameState.injuredPlayers.add(player.ad);
-                    player.enerji = Math.max(15, player.enerji - 30);
+                    const dmg = (team.isUser && gameState.staff.fizyo) ? 20 : 30;
+                    player.enerji = Math.max(15, player.enerji - dmg);
                     player.form = Math.max(20, (player.form||80) - 10);
                     gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('injury', player), color: 'text-orange-400 font-bold' });
                 }
-            } else if (evType < 0.75) {
-                // Corner
-                gameState.matchStats[sideKey].corners++;
-                gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('corner', player), color: 'text-cyan-300' });
-            } else if (evType < 0.85) {
-                // Defensive tackle
+            } else if (evType < 0.65) {
+                // Sert ikili mücadele
                 gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('tackle', player), color: 'text-blue-300' });
             } else {
-                // Save (highlight goalkeeper)
-                gameState.matchStats[sideKey === 'home' ? 'away' : 'home'].saves++;
+                // Kaleci şovu
+                gameState.matchStats[homeOrAway ? 'away' : 'home'].saves++;
                 gameState.matchEvents.unshift({ min: gameState.matchMinute, text: getSpikerText('save', player), color: 'text-sky-300' });
             }
             updateMatchHud();
@@ -1597,6 +2223,8 @@
                 ['xG', (sH.xg||0).toFixed(2), (sA.xg||0).toFixed(2)],
                 ['Kurtarış', sH.saves, sA.saves],
                 ['Korner', sH.corners, sA.corners],
+                ['Ofsayt', sH.offsides || 0, sA.offsides || 0],
+                ['Frikik', sH.freekicks || 0, sA.freekicks || 0],
                 ['🟨/🟥', sH.yellows + '/' + sH.reds, sA.yellows + '/' + sA.reds]
             ].map(st => `
                 <div class="bg-slate-900/60 rounded-lg p-1.5 border border-white/5">
@@ -1670,7 +2298,7 @@
         const Stadium3D = (function () {
             const PITCH_L = 64, PITCH_W = 42, HALF_L = PITCH_L / 2, HALF_W = PITCH_W / 2;
             let renderer, scene, camera, raf = null;
-            let players = { home: [], away: [] }, ball = null, ballShadow = null;
+            let players = { home: [], away: [] }, ball = null, ballShadow = null, referee = null;
             let jumboTex, jumboCtx, jumboCanvas;
             let camMode = 'screen';
             let orbit = { az: 0.6, el: 0.5, r: 70, drag: false, px: 0, py: 0 };
@@ -1856,6 +2484,22 @@
                     const hp = buildPlayer(0x10b981, 0x065f46); scene.add(hp); players.home.push(hp);
                     const ap = buildPlayer(0xef4444, 0x7f1d1d); scene.add(ap); players.away.push(ap);
                 }
+                // HAKEM — siyah formalı, topu uzaktan takip eder
+                referee = buildPlayer(0x111827, 0x111827);
+                referee.scale.setScalar(0.88);
+                referee.position.set(-4, 0, 3);
+                scene.add(referee);
+
+                // KORNER BAYRAKLARI
+                [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz]) => {
+                    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 6),
+                        new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+                    pole.position.set(sx * HALF_L, 0.8, sz * HALF_W); scene.add(pole);
+                    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.45),
+                        new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide }));
+                    flag.position.set(sx * (HALF_L - 0.4), 1.35, sz * HALF_W); scene.add(flag);
+                });
+
                 // TOP
                 ball = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16),
                     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
@@ -1968,14 +2612,69 @@
                         }
                     }
                 });
+                // KALECİ DALIŞI — şut/penaltı anında köşeye uzanır
+                if (s.gkAction) {
+                    const gk = players[s.gkAction.side] && players[s.gkAction.side][0];
+                    if (gk) {
+                        if (performance.now() < s.gkAction.until) {
+                            gk.rotation.z += (s.gkAction.dir * 1.15 - gk.rotation.z) * 0.25;
+                            gk.position.z += s.gkAction.dir * dt * 6;
+                            gk.position.y = Math.max(0.15, gk.position.y - dt * 1.2);
+                        } else {
+                            gk.rotation.z *= 0.75;
+                            gk.position.y *= 0.75;
+                            if (Math.abs(gk.rotation.z) < 0.03) { gk.rotation.z = 0; gk.position.y = 0; s.gkAction = null; }
+                        }
+                    } else { s.gkAction = null; }
+                }
+
+                // GOL KUTLAMASI — gol atan takım zıplayarak sevinir
+                if (s.celebrate) {
+                    const grp = players[s.celebrate.side] || [];
+                    if (performance.now() < s.celebrate.until) {
+                        grp.forEach((m, i) => {
+                            if (i === 0) return;
+                            m.position.y = Math.abs(Math.sin(performance.now() / 120 + i)) * 0.6;
+                        });
+                    } else {
+                        grp.forEach(m => { m.position.y = 0; });
+                        s.celebrate = null;
+                    }
+                }
+
+                // HAKEM — topu 4-5 metre geriden takip eder
+                if (referee) {
+                    const rw = toWorld(s.ball.x, s.ball.y);
+                    const tx2 = rw.x - 4, tz2 = rw.z + 3;
+                    const rdx = tx2 - referee.position.x, rdz = tz2 - referee.position.z;
+                    referee.position.x += rdx * 0.04;
+                    referee.position.z += rdz * 0.04;
+                    const rud = referee.userData;
+                    const rSpeed = Math.hypot(rdx, rdz);
+                    if (rSpeed > 0.5) {
+                        referee.rotation.y = Math.atan2(rdx, rdz);
+                        rud.phase += dt * 7;
+                        const sw = Math.sin(rud.phase) * 0.45;
+                        rud.legL.rotation.x = sw; rud.legR.rotation.x = -sw;
+                    } else {
+                        rud.legL.rotation.x *= 0.8; rud.legR.rotation.x *= 0.8;
+                    }
+                }
+
                 if (ball) {
                     const w = toWorld(s.ball.x, s.ball.y);
                     ball.position.x += (w.x - ball.position.x) * 0.18;
                     ball.position.z += (w.z - ball.position.z) * 0.18;
                     const moving = Math.hypot(w.x - ball.position.x, w.z - ball.position.z);
-                    ball.position.y = 0.45 + Math.abs(Math.sin(performance.now() / 130)) * Math.min(1.4, moving * 0.8);
+                    // Hava topu: sim uçuş yayı (s.ball.h) zıplama efektini bastırır
+                    const lift = s.ball.h || 0;
+                    const bounce = lift > 0.05 ? 0 : Math.abs(Math.sin(performance.now() / 130)) * Math.min(1.4, moving * 0.8);
+                    ball.position.y = 0.45 + lift + bounce;
                     ball.rotation.x += 0.2; ball.rotation.z += 0.15;
                     ballShadow.position.x = ball.position.x; ballShadow.position.z = ball.position.z;
+                    // Yükseldikçe gölge küçülür — yükseklik hissi
+                    const shScale = Math.max(0.35, 1 - lift * 0.18);
+                    ballShadow.scale.set(shScale, shScale, shScale);
                 }
             }
 
@@ -1994,7 +2693,7 @@
                 window.removeEventListener('resize', onResize);
                 if (renderer) { renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); }
                 renderer = null; scene = null; camera = null;
-                players = { home: [], away: [] }; ball = null;
+                players = { home: [], away: [] }; ball = null; referee = null;
             }
 
             return { init, dispose, setCamera, isReady: () => !!renderer };
@@ -2111,6 +2810,8 @@
                 gameState.myTeam.ilk_11.forEach(p => {
                     let rate = p.karakter === "Cam Adam" ? 0.38 : (p.karakter === "Hırslı" ? 0.28 : 0.20);
                     rate = rate * fatigueRate;
+                    // Fizyoterapist maç içi yorulmayı azaltır
+                    if (gameState.staff.fizyo) rate *= (1 - gameState.staff.fizyo.level * 0.02);
                     p.enerji = Math.max(10, p.enerji - rate);
                 });
 
@@ -2142,32 +2843,318 @@
             const [s1, s2] = gameState.lastResult;
             ev.atilan_gol += s1; ev.yenilen_gol += s2;
             dep.atilan_gol += s2; dep.yenilen_gol += s1;
-            if (s1 > s2) {
-                ev.puan += 3; ev.galibiyet++; dep.maglubiyet++;
-                if(ev.isUser) ev.butce += 9.5;
-            } else if (s2 > s1) {
-                dep.puan += 3; dep.galibiyet++; ev.maglubiyet++;
-                if(dep.isUser) dep.butce += 9.5;
-            } else {
-                ev.puan++; dep.puan++; ev.beraberlik++; dep.beraberlik++;
-                if(ev.isUser || dep.isUser) gameState.myTeam.butce += 4.5;
-            }
+            let result; // kullanıcı gözünden (kullanıcı hep ev sahibi)
+            if (s1 > s2)      { ev.puan += 3; ev.galibiyet++; dep.maglubiyet++; result = 'win'; }
+            else if (s2 > s1) { dep.puan += 3; dep.galibiyet++; ev.maglubiyet++; result = 'loss'; }
+            else              { ev.puan++; dep.puan++; ev.beraberlik++; dep.beraberlik++; result = 'draw'; }
 
             simulateOtherMatches();
             gameState.trainingRights = 1;
+            gameState.negotiationBlocked = new Set();
+
+            // === FM v3.0 HAFTALIK KULÜP DÖNGÜSÜ ===
+            updateFanSupport(result, s1, s2);
+            processWeeklyFinance(result);
+            updateMoraleWeekly(result);
+            updateBoardWeekly(result);
 
             if (gameState.currentWeek < 14) {
                 gameState.currentWeek++;
             } else {
-                const sorted = [...gameState.league.takimlar].sort((a,b) => b.puan - a.puan);
-                if(sorted[0].isUser) {
-                    gameState.myTeam.butce += 30.0;
-                    triggerToast(tx("KUPAYI KALDIRDIK!"), tx("ŞAMPİYON OLDUNUZ! Kulübünüze 30M € Şampiyonluk ödülü eklendi!"), "success");
-                } else {
-                    triggerToast(tx("SEZON SONU"), `${tx('Şampiyonluğu')} ${sorted[0].ad} ${tx('takımına kaptırdınız.')}`, "error");
-                }
+                endSeason();
             }
             updateWeekIndicator();
+            checkFired();
+        }
+
+        /* =====================================================================
+           FM v3.0 — HAFTALIK KULÜP EKONOMİSİ & YÖNETİM DÖNGÜSÜ
+        ===================================================================== */
+        function leagueTableSorted() {
+            return [...gameState.league.takimlar].sort((a, b) =>
+                b.puan - a.puan || (b.atilan_gol - b.yenilen_gol) - (a.atilan_gol - a.yenilen_gol));
+        }
+
+        function updateFanSupport(result, s1, s2) {
+            let d = result === 'win' ? 4 : result === 'draw' ? 0 : -4;
+            d += Math.min(3, s1);                              // atılan gol coşturur
+            if (s2 >= 3) d -= 2;                               // farklı yenilgi kırar
+            if (gameState.finance.ticketPrice > 40) d -= 1;    // fahiş bilet soğutur
+            gameState.fanSupport = Math.max(10, Math.min(100, gameState.fanSupport + d));
+        }
+
+        function processWeeklyFinance(result) {
+            const f = gameState.finance;
+            const team = gameState.myTeam;
+            const r2 = v => Math.round(v * 100) / 100;
+            // — GELİRLER —
+            const priceFactor = Math.max(0.30, Math.min(1.15, 1.55 - f.ticketPrice / 38));
+            f.lastAttendance = Math.min(gameState.stadium.capacity,
+                Math.round(gameState.stadium.capacity * (gameState.fanSupport / 100) * priceFactor));
+            const bilet = r2(f.lastAttendance * f.ticketPrice / 1e6);
+            const pos = leagueTableSorted().indexOf(team) + 1;
+            const tv = r2(1.5 + (8 - pos) * 0.15);
+            const sponsor = f.sponsor ? r2(f.sponsor.weekly + (result === 'win' ? (f.sponsor.winBonus || 0) : 0)) : 0;
+            const odul = result === 'win' ? 2.5 : result === 'draw' ? 1.0 : 0.3;
+            // — GİDERLER —
+            const oyuncuMaas = r2(team.oyuncular.reduce((a, p) => a + (p.maas || 0), 0));
+            const personel = r2(Object.values(gameState.staff).reduce((a, st) => a + (st ? st.wage : 0), 0));
+            const bakim = r2(gameState.stadium.level * 0.15);
+            const net = r2(bilet + tv + sponsor + odul - oyuncuMaas - personel - bakim);
+            team.butce = Math.round((team.butce + net) * 10) / 10;
+            f.history.unshift({ week: gameState.currentWeek, season: gameState.season,
+                bilet, tv, sponsor, odul, oyuncuMaas, personel, bakim, net });
+            if (f.history.length > 15) f.history.pop();
+            triggerToast('💰 ' + tx('FİNANS OFİSİ'),
+                `${tx('Net')}: ${net >= 0 ? '+' : ''}${net.toFixed(2)}M € • 🎟️ ${f.lastAttendance.toLocaleString('tr-TR')}`,
+                net >= 0 ? 'success' : 'error');
+        }
+
+        function updateMoraleWeekly(result) {
+            const team = gameState.myTeam;
+            const resD = result === 'win' ? 4 : result === 'draw' ? 0 : -4;
+            team.oyuncular.forEach(p => {
+                let d = resD;
+                d += team.ilk_11.includes(p) ? 2 : -3;                       // oynamak mutlu eder
+                if ((p.maas || 0) < p.wageDemand() * 0.8) d -= 1;            // düşük maaş huzursuzluğu
+                if ((p.sozlesme ?? 2) <= 1) d -= 1;                          // belirsiz gelecek
+                if (p.karakter === 'Hırslı' && !team.ilk_11.includes(p)) d -= 2;
+                p.moral = Math.max(5, Math.min(100, (p.moral ?? 70) + d));
+            });
+        }
+
+        function boardMsg(text, tone = 'info') {
+            gameState.board.messages.unshift({ week: gameState.currentWeek, season: gameState.season, text, tone });
+            if (gameState.board.messages.length > 14) gameState.board.messages.pop();
+        }
+
+        function updateBoardWeekly(result) {
+            const b = gameState.board;
+            let d = result === 'win' ? 5 : result === 'draw' ? 0 : -6;
+            const pos = leagueTableSorted().indexOf(gameState.myTeam) + 1;
+            const target = b.objective === 'championship' ? 1 : b.objective === 'top3' ? 3 : 5;
+            if (gameState.currentWeek > 7 && pos > target) d -= 2;   // sezon sonuna doğru hedef baskısı
+            if (gameState.myTeam.butce < 0) d -= 3;                  // kırmızı kasa affedilmez
+            b.confidence = Math.max(0, Math.min(100, b.confidence + d));
+            if (result === 'win') boardMsg(tx('Yönetim galibiyetten memnun.'), 'good');
+            else if (result === 'loss') boardMsg(tx('Yönetim mağlubiyetten rahatsız.'), 'bad');
+            if (gameState.currentWeek > 7 && pos > target)
+                boardMsg(`${tx('Hedefin gerisindeyiz — mevcut sıra:')} ${pos}.`, 'bad');
+        }
+
+        function checkFired() {
+            const b = gameState.board;
+            if (gameState.fired) return;
+            if (b.confidence <= 0 || gameState.myTeam.butce < -20) {
+                gameState.fired = true;
+                showFiredOverlay();
+            } else if (b.confidence <= 15) {
+                triggerToast(tx('YÖNETİM KURULU'), tx('Son uyarı: sonuçlar düzelmezse görevden alınacaksınız!'), 'error');
+            }
+        }
+
+        function showFiredOverlay() {
+            const o = document.createElement('div');
+            o.id = 'fired-overlay';
+            o.className = 'fixed inset-0 z-[20000] bg-slate-950/95 backdrop-blur flex items-center justify-center p-6';
+            o.innerHTML = `
+                <div class="max-w-md w-full bg-gradient-to-br from-rose-950 to-slate-950 border border-rose-500/40 rounded-3xl p-8 text-center shadow-2xl animate-fade-in">
+                    <div class="text-6xl mb-4">🪑🔥</div>
+                    <h2 class="text-3xl font-black italic text-rose-400 uppercase mb-3">${tx('KOVULDUNUZ!')}</h2>
+                    <p class="text-sm text-slate-300 mb-6">${tx('Yönetim kurulu güveni tükendi ve görevinize son verdi.')}</p>
+                    <button onclick="window.location.reload()" class="w-full py-4 bg-white text-slate-950 hover:bg-slate-100 rounded-xl font-black uppercase tracking-widest shadow-xl">${tx('YENİDEN BAŞLA')}</button>
+                </div>`;
+            document.body.appendChild(o);
+        }
+
+        function endSeason() {
+            const sorted = leagueTableSorted();
+            const pos = sorted.indexOf(gameState.myTeam) + 1;
+            const b = gameState.board;
+            if (sorted[0].isUser) {
+                gameState.myTeam.butce += 30.0;
+                triggerToast(tx("KUPAYI KALDIRDIK!"), tx("ŞAMPİYON OLDUNUZ! Kulübünüze 30M € Şampiyonluk ödülü eklendi!"), "success");
+            } else {
+                triggerToast(tx("SEZON SONU"), `${tx('Şampiyonluğu')} ${sorted[0].ad} ${tx('takımına kaptırdınız.')}`, "error");
+            }
+            // Hedef değerlendirmesi
+            const target = b.objective === 'championship' ? 1 : b.objective === 'top3' ? 3 : 5;
+            if (pos <= target) {
+                b.confidence = Math.min(100, b.confidence + 18);
+                gameState.myTeam.butce += 8;
+                boardMsg(tx('Hedef tutturuldu! Yönetim transfer bütçesine +8M € ekledi.'), 'good');
+            } else {
+                b.confidence = Math.max(0, b.confidence - 18);
+                boardMsg(tx('Sezon hedefi tutmadı. Yönetim sabırsızlanıyor.'), 'bad');
+            }
+            // Sözleşme yılları düşer; bitenler bedavaya gider
+            gameState.myTeam.oyuncular.forEach(p => { p.sozlesme = (p.sozlesme ?? 1) - 1; });
+            const leavers = gameState.myTeam.oyuncular.filter(p => (p.sozlesme ?? 0) <= 0);
+            gameState.myTeam.oyuncular = gameState.myTeam.oyuncular.filter(p => (p.sozlesme ?? 0) > 0);
+            leavers.forEach(p => boardMsg(`${p.ad} ${tx('serbest kaldı (sözleşme bitti).')}`, 'bad'));
+            // Kadro 16'nın altına inmesin — altyapıdan acil takviye
+            while (gameState.myTeam.oyuncular.length < 16) {
+                const yp = new Player(getRandomName(), ["Kaleci","Defans","Orta Saha","Forvet"][Math.floor(Math.random()*4)],
+                    50 + Math.random()*10, 0, 19 + Math.floor(Math.random()*4), 78);
+                yp.sozlesme = 2;
+                gameState.myTeam.oyuncular.push(yp);
+            }
+            // Yaşlanma & toparlanma
+            gameState.myTeam.oyuncular.forEach(p => {
+                p.yas++;
+                if (p.yas >= 31) p.yetenek = Math.max(45, p.yetenek - 1);
+                p.enerji = 100; p.form = 80;
+            });
+            gameState.myTeam.otoSecIlk11();
+            // Ligi sıfırla, yeni sezonu kur
+            gameState.league.takimlar.forEach(t => {
+                t.puan = 0; t.galibiyet = 0; t.beraberlik = 0; t.maglubiyet = 0;
+                t.atilan_gol = 0; t.yenilen_gol = 0;
+            });
+            gameState.season++;
+            gameState.currentWeek = 1;
+            b.extraBudgetUsed = false;
+            gameState.finance.sponsor = null;
+            setSeasonObjective();
+            generateSponsorOffers();
+            triggerToast(tx('SEZON BİTTİ'), tx('Yeni sezon başladı! Sözleşmeler ve hedefler güncellendi.'));
+        }
+
+        function setSeasonObjective() {
+            const rank = [...gameState.league.takimlar].sort((a, b) => b.getGuc() - a.getGuc())
+                .indexOf(gameState.myTeam) + 1;
+            const b = gameState.board;
+            if (rank <= 2)      { b.objective = 'championship'; b.objectiveText = 'Şampiyon Ol'; }
+            else if (rank <= 4) { b.objective = 'top3'; b.objectiveText = 'İlk 3\'te Bitir'; }
+            else                { b.objective = 'top5'; b.objectiveText = 'İlk 5\'te Bitir'; }
+            boardMsg(`${tx('Sezon Hedefi')}: ${tx(b.objectiveText)}`, 'info');
+        }
+
+        function generateSponsorOffers() {
+            const guc = gameState.myTeam.getGuc();
+            const base = 1.2 + Math.max(0, guc - 70) * 0.05;
+            const r2 = v => Math.round(v * 100) / 100;
+            gameState.finance.sponsorOffers = [
+                { name: 'ByteBank',       weekly: r2(base * 1.25), winBonus: 0,               desc: 'Garantili sabit gelir' },
+                { name: 'Kartal Enerji',  weekly: r2(base * 0.75), winBonus: r2(base * 0.90), desc: 'Galibiyet başına yüksek prim' },
+                { name: 'AnadoluJet Air', weekly: r2(base * 1.00), winBonus: r2(base * 0.35), desc: 'Dengeli paket' }
+            ];
+        }
+
+        function pickSponsor(i) {
+            const off = gameState.finance.sponsorOffers[i];
+            if (!off || gameState.finance.sponsor) return;
+            gameState.finance.sponsor = off;
+            triggerToast(tx('Sponsor Anlaşması'), `${off.name}: ${off.weekly}M €/${tx('hafta')}`);
+            render();
+        }
+
+        function setTicketPrice(v) {
+            gameState.finance.ticketPrice = Math.max(10, Math.min(60, parseInt(v) || 25));
+            render();
+        }
+
+        function requestExtraBudget() {
+            const b = gameState.board;
+            if (b.extraBudgetUsed) { triggerToast(tx('YÖNETİM KURULU'), tx('Bu sezon zaten ek bütçe aldınız.'), 'error'); return; }
+            b.extraBudgetUsed = true;
+            if (b.confidence >= 65) {
+                gameState.myTeam.butce = Math.round((gameState.myTeam.butce + 10) * 10) / 10;
+                b.confidence -= 5;
+                boardMsg(tx('Yönetim ek bütçe talebinizi onayladı: +10M €!'), 'good');
+                triggerToast(tx('YÖNETİM KURULU'), tx('Yönetim ek bütçe talebinizi onayladı: +10M €!'));
+            } else {
+                b.confidence = Math.max(0, b.confidence - 5);
+                boardMsg(tx('Yönetim talebi reddetti. Güven sarsıldı (-5).'), 'bad');
+                triggerToast(tx('YÖNETİM KURULU'), tx('Yönetim talebi reddetti. Güven sarsıldı (-5).'), 'error');
+            }
+            render();
+        }
+
+        function hireStaff(role, id) {
+            const cand = (gameState.staffCandidates[role] || []).find(c => c.id === id);
+            if (!cand) return;
+            gameState.staff[role] = cand;
+            triggerToast(tx('İşe Al'), `${cand.name} ${tx('göreve başladı!')}`);
+            render();
+        }
+
+        function fireStaff(role) {
+            const st = gameState.staff[role];
+            if (!st) return;
+            gameState.staff[role] = null;
+            triggerToast(tx('KOVULDU'), `${st.name} ${tx('kadrodan ayrıldı.')}`, 'error');
+            render();
+        }
+
+        function upgradeStadium() {
+            const st = gameState.stadium;
+            if (st.level >= 5) { triggerToast(tx('STADYUM MAKSİMUM'), tx('Stadyum zaten en büyük boyutunda!'), 'error'); return; }
+            const cost = st.level * 18;
+            if (gameState.myTeam.butce < cost) { triggerToast(tx('BÜTÇE YETERSİZ'), tx('Tesisleri yükseltmek için yeterli bütçe yok!'), 'error'); return; }
+            gameState.myTeam.butce -= cost;
+            st.level++;
+            st.capacity += 8000;
+            triggerToast(tx('TESİSLER YÜKSELTİLDİ'), tx('Stadyum kapasiteniz arttı!'));
+            render();
+        }
+
+        /* ===== SÖZLEŞME PAZARLIĞI (FM tarzı) ===== */
+        function openNegotiation(ad) {
+            if (gameState.negotiationBlocked.has(ad)) {
+                triggerToast(tx('SÖZLEŞME PAZARLIĞI'), `${ad} ${tx('masadan kalktı! Bu hafta tekrar görüşmez.')}`, 'error');
+                return;
+            }
+            const p = gameState.myTeam.oyuncular.find(x => x.ad === ad);
+            if (!p) return;
+            const demand = p.wageDemand();
+            gameState.negotiation = { ad, demand, offer: Math.round(demand * 0.9 * 1000) / 1000, years: 2, rounds: 0 };
+            render();
+        }
+
+        function setNegotiationYears(y) {
+            if (gameState.negotiation) { gameState.negotiation.years = y; render(); }
+        }
+
+        function submitOffer() {
+            const n = gameState.negotiation; if (!n) return;
+            const p = gameState.myTeam.oyuncular.find(x => x.ad === n.ad);
+            if (!p) { gameState.negotiation = null; render(); return; }
+            const ratio = n.offer / n.demand;
+            const yearsBonus = n.years >= 3 ? 0.03 : 0;   // uzun sözleşme güven verir
+            if (ratio + yearsBonus >= 0.97) {
+                p.maas = n.offer;
+                p.sozlesme = n.years;
+                p.moral = Math.min(100, (p.moral ?? 70) + 10);
+                triggerToast(tx('İMZALANDI'), `${p.ad} ${tx('yeni sözleşmeye imza attı!')}`);
+                gameState.negotiation = null;
+            } else if (ratio >= 0.80 && n.rounds < 2) {
+                n.rounds++;
+                n.demand = Math.round(n.demand * 0.97 * 1000) / 1000;   // menajer azıcık iner
+                triggerToast(tx('TEKLİF REDDEDİLDİ'), `${p.ad} ${tx('teklifi az buldu. Talebe yaklaşın.')}`, 'error');
+            } else {
+                p.moral = Math.max(5, (p.moral ?? 70) - 6);
+                gameState.negotiationBlocked.add(p.ad);
+                triggerToast(tx('TEKLİF REDDEDİLDİ'), `${p.ad} ${tx('masadan kalktı! Bu hafta tekrar görüşmez.')}`, 'error');
+                gameState.negotiation = null;
+            }
+            render();
+        }
+
+        function cancelNegotiation() { gameState.negotiation = null; render(); }
+
+        function sellPlayer(ad) {
+            const team = gameState.myTeam;
+            if (team.oyuncular.length <= 16) { triggerToast(tx('HATA'), tx('Kadro 16 oyuncunun altına düşemez!'), 'error'); return; }
+            const p = team.oyuncular.find(x => x.ad === ad);
+            if (!p) return;
+            let fee = p.fiyat || Math.round(p.yetenek * 0.2 * 10) / 10;
+            if ((p.moral ?? 70) < 30) fee = Math.round(fee * 0.7 * 10) / 10;   // mutsuz oyuncu değer kaybettirir
+            team.butce = Math.round((team.butce + fee) * 10) / 10;
+            team.oyuncular = team.oyuncular.filter(x => x !== p);
+            if (team.ilk_11.includes(p)) team.otoSecIlk11();
+            triggerToast(tx('OYUNCU SATILDI'), `${p.ad} ${fee.toFixed(1)}M € ${tx('bonservisiyle kulüpten ayrıldı.')}`);
+            render();
         }
 
         function simulateOtherMatches() {
@@ -2195,7 +3182,7 @@
         }
 
         function updateWeekIndicator() {
-            document.getElementById('week-indicator-ui').textContent = `LİG SEZONU • HAFTA ${gameState.currentWeek}`;
+            document.getElementById('week-indicator-ui').textContent = `${tx('Sezon').toUpperCase()} ${gameState.season} • LİG • ${tx('Hafta').toUpperCase()} ${gameState.currentWeek}`;
         }
 
         function changeView(v) {
@@ -2267,6 +3254,8 @@
             gameState.myTeam.oyuncular.forEach(p => {
                 if (regimeType === 'dinlenme') {
                     let recover = p.karakter === "Çalışkan" ? 30 : 25;
+                    // Fizyoterapist dinlenme verimini artırır
+                    if (gameState.staff.fizyo) recover += gameState.staff.fizyo.level * 2;
                     p.enerji = Math.min(100, p.enerji + recover);
                     p.form = Math.max(50, p.form - 2);
                     logs.push(`${p.ad}: Enerji +${recover}, Form -2`);
@@ -2279,6 +3268,8 @@
                         let baseGrowthChance = 0.35;
                         if (p.karakter === "Çalışkan") baseGrowthChance += 0.2;
                         if (p.karakter === "Disiplinsiz") baseGrowthChance -= 0.15;
+                        // Yardımcı antrenör gelişim şansını yükseltir
+                        if (gameState.staff.antrenor) baseGrowthChance += gameState.staff.antrenor.level * 0.03;
 
                         if (p.mevkii === targetMevkii || regimeType === 'kondisyon') {
                             baseGrowthChance += 0.25;
@@ -2390,6 +3381,10 @@
             const p = gameState.transferPool.find(x => x.ad === ad);
             if(gameState.myTeam.butce >= p.fiyat) {
                 gameState.myTeam.butce -= p.fiyat;
+                // Yeni transfer: menajer talebi kadar maaş, 3 sezonluk sözleşme
+                p.maas = p.wageDemand();
+                p.sozlesme = 3;
+                p.moral = 78;
                 gameState.myTeam.oyuncular.push(p);
                 gameState.transferPool.splice(gameState.transferPool.indexOf(p), 1);
                 triggerToast(tx("YENİ YILDIZ KATILDI"), `${p.ad} ${tx('başarıyla transfer edildi!')}`);
@@ -2458,8 +3453,8 @@
             gameState.selectedSubstitutionOut = null;
             // Reset match stats
             gameState.matchStats = {
-                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0 },
-                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0 }
+                home: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0, offsides: 0, freekicks: 0 },
+                away: { possession: 50, shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, yellows: 0, reds: 0, saves: 0, xg: 0, offsides: 0, freekicks: 0 }
             };
             gameState.redCardedPlayers = new Set();
             gameState.injuredPlayers = new Set();
@@ -2506,6 +3501,22 @@
                             <button onclick="changeView('training')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-pink-500/10 hover:border-pink-500/20 transition-all flex flex-col items-center gap-3">
                                 <span class="text-3xl group-hover:scale-110 transition-transform">🏋️‍♂️</span>
                                 <span class="text-sm tracking-wide text-slate-200 group-hover:text-pink-400">${T('mm_training')}</span>
+                            </button>
+                            <button onclick="changeView('finance')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-lime-500/10 hover:border-lime-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">💰</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-lime-400">${T('mm_finance')}</span>
+                            </button>
+                            <button onclick="changeView('contracts')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-sky-500/10 hover:border-sky-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">📝</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-sky-400">${T('mm_contracts')}</span>
+                            </button>
+                            <button onclick="changeView('board')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-rose-500/10 hover:border-rose-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">🏛️</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-rose-400">${T('mm_board')}</span>
+                            </button>
+                            <button onclick="changeView('club')" class="group p-6 bg-slate-900/50 rounded-2xl border border-white/5 font-black hover:bg-orange-500/10 hover:border-orange-500/20 transition-all flex flex-col items-center gap-3">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">🏟️</span>
+                                <span class="text-sm tracking-wide text-slate-200 group-hover:text-orange-400">${T('mm_club')}</span>
                             </button>
                         </div>
                         <button onclick="startNextMatch()" class="w-full py-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 rounded-2xl font-black text-xl shadow-lg shadow-emerald-500/10 mt-6 text-white uppercase italic tracking-widest transition-all transform hover:scale-[1.01]">${T('mm_play')}</button>
@@ -2710,6 +3721,7 @@
                                             <th class="p-4">${tx('Yetenek')}</th>
                                             <th class="p-4">${tx('Yaş')}</th>
                                             <th class="p-4">${tx('Değer')}</th>
+                                            <th class="p-4">${tx('Maaş İsteği')}</th>
                                             <th class="p-4 text-right">${tx('İşlem')}</th>
                                         </tr>
                                     </thead>
@@ -2721,6 +3733,7 @@
                                                 <td class="p-4 font-extrabold text-emerald-400 text-base">${p.yetenek}</td>
                                                 <td class="p-4 text-slate-300 font-medium text-sm">${p.yas}</td>
                                                 <td class="p-4 font-extrabold text-amber-500 text-sm tabular-nums">${p.fiyat.toFixed(1)}M €</td>
+                                                <td class="p-4 text-slate-300 text-xs font-bold tabular-nums">${Math.round(p.wageDemand() * 1000)}K €/${tx('hafta')}</td>
                                                 <td class="p-4 text-right">
                                                     <button onclick="buyPlayer('${p.ad}')" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-[10px] font-black uppercase text-white shadow-md transition-all">${tx('SATIN AL')}</button>
                                                 </td>
@@ -2945,6 +3958,306 @@
                             </div>
                         </div>
                     </div>`;
+            } else if (gameState.view === 'finance') {
+                const f = gameState.finance;
+                const wageBill = gameState.myTeam.oyuncular.reduce((a, p) => a + (p.maas || 0), 0);
+                const staffBill = Object.values(gameState.staff).reduce((a, st) => a + (st ? st.wage : 0), 0);
+                const statCard = (label, val, color, icon) => `
+                    <div class="p-4 bg-slate-900/60 rounded-2xl border border-white/5 flex items-center justify-between">
+                        <div><p class="text-[9px] text-slate-500 font-black uppercase">${label}</p><p class="text-lg font-black ${color}">${val}</p></div>
+                        <span class="text-2xl">${icon}</span>
+                    </div>`;
+                container.innerHTML = `
+                    <div class="max-w-6xl mx-auto py-4 space-y-5 animate-fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase">💰 ${tx('FİNANS OFİSİ')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Bilet geliri, sponsorlar, maaşlar — kulübün kasasını yönetin.')}</p>
+                            </div>
+                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">${tx('ANA MENÜ')}</button>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            ${statCard(tx('Toplam Maaş Yükü'), (wageBill + staffBill).toFixed(2) + 'M €/' + tx('hafta'), 'text-rose-400', '💸')}
+                            ${statCard(tx('Son Maç Seyircisi'), f.lastAttendance ? f.lastAttendance.toLocaleString('tr-TR') : '—', 'text-sky-400', '🎟️')}
+                            ${statCard(tx('Taraftar Desteği'), '%' + gameState.fanSupport, 'text-emerald-400', '📣')}
+                            ${statCard(tx('Kapasite'), gameState.stadium.capacity.toLocaleString('tr-TR'), 'text-amber-400', '🏟️')}
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                          <div class="space-y-4">
+                            <div class="bg-slate-900/60 p-5 rounded-2xl border border-white/5">
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">🎫 ${tx('Bilet Fiyatı')}</label>
+                                    <span class="text-emerald-400 font-black tabular-nums bg-emerald-500/10 px-2.5 py-0.5 rounded-full text-xs">${f.ticketPrice} €</span>
+                                </div>
+                                <input type="range" min="10" max="60" value="${f.ticketPrice}" onchange="setTicketPrice(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                                <p class="text-[10px] text-slate-500 mt-2">${f.ticketPrice > 40 ? '⚠️ ' : ''}${tx('Taraftar Desteği')} × ${tx('Bilet Fiyatı')} → ${tx('Bilet Geliri')}</p>
+                            </div>
+                            <div class="bg-slate-900/60 p-5 rounded-2xl border border-white/5">
+                                <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-3">🤝 ${tx('Sponsor Anlaşması')}</h3>
+                                ${f.sponsor ? `
+                                    <div class="bg-emerald-950/40 border border-emerald-500/25 rounded-xl p-4">
+                                        <p class="text-sm font-black text-emerald-400">${f.sponsor.name}</p>
+                                        <p class="text-xs text-slate-300 mt-1">${f.sponsor.weekly.toFixed(2)}M €/${tx('hafta')}${f.sponsor.winBonus ? ` + ${f.sponsor.winBonus.toFixed(2)}M ${tx('galibiyet primi')}` : ''}</p>
+                                        <p class="text-[9px] text-slate-500 uppercase font-black mt-2">✅ ${tx('Aktif sponsor')}</p>
+                                    </div>` : `
+                                    <p class="text-[10px] text-slate-500 mb-3">${tx('Sponsor teklifi seçin — sezon boyunca haftalık gelir sağlar.')}</p>
+                                    <div class="space-y-2">
+                                        ${f.sponsorOffers.map((o, i) => `
+                                            <div class="flex items-center justify-between bg-slate-950/70 rounded-xl p-3 border border-white/5">
+                                                <div>
+                                                    <p class="text-xs font-black text-white">${o.name}</p>
+                                                    <p class="text-[10px] text-slate-400">${o.weekly.toFixed(2)}M €/${tx('hafta')}${o.winBonus ? ` + ${o.winBonus.toFixed(2)}M 🏆` : ''} • ${tx(o.desc)}</p>
+                                                </div>
+                                                <button onclick="pickSponsor(${i})" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-[10px] font-black text-white">${tx('SEÇ')}</button>
+                                            </div>`).join('')}
+                                    </div>`}
+                            </div>
+                          </div>
+
+                          <div class="lg:col-span-2 bg-slate-900/40 rounded-2xl border border-white/5 overflow-hidden">
+                            <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">📒 ${tx('Bilanço Geçmişi')}</h3>
+                                <span class="text-[9px] text-slate-500">${tx('Gelir kalemleri son maç haftasına aittir.')}</span>
+                            </div>
+                            ${f.history.length ? `
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-800/80 text-[9px] font-black uppercase text-slate-400">
+                                        <tr>
+                                            <th class="p-3">${tx('Hafta')}</th>
+                                            <th class="p-3">🎟️ ${tx('Bilet Geliri')}</th>
+                                            <th class="p-3">📺 TV</th>
+                                            <th class="p-3">🤝 ${tx('Sponsor Geliri')}</th>
+                                            <th class="p-3">🏆 ${tx('Maç Ödülü')}</th>
+                                            <th class="p-3">💸 ${tx('Oyuncu Maaşları')}</th>
+                                            <th class="p-3">🧑‍💼</th>
+                                            <th class="p-3">🏟️</th>
+                                            <th class="p-3 text-right">${tx('Net')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-white/5">
+                                        ${f.history.map(h => `
+                                            <tr class="hover:bg-white/[0.02]">
+                                                <td class="p-3 font-mono text-slate-400">S${h.season} H${h.week}</td>
+                                                <td class="p-3 text-emerald-400 font-bold">+${h.bilet.toFixed(2)}</td>
+                                                <td class="p-3 text-emerald-400 font-bold">+${h.tv.toFixed(2)}</td>
+                                                <td class="p-3 text-emerald-400 font-bold">+${h.sponsor.toFixed(2)}</td>
+                                                <td class="p-3 text-emerald-400 font-bold">+${h.odul.toFixed(2)}</td>
+                                                <td class="p-3 text-rose-400 font-bold">-${h.oyuncuMaas.toFixed(2)}</td>
+                                                <td class="p-3 text-rose-400 font-bold">-${h.personel.toFixed(2)}</td>
+                                                <td class="p-3 text-rose-400 font-bold">-${h.bakim.toFixed(2)}</td>
+                                                <td class="p-3 text-right font-black ${h.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${h.net >= 0 ? '+' : ''}${h.net.toFixed(2)}M</td>
+                                            </tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>` : `<div class="p-10 text-center text-slate-500 text-xs font-bold">${tx('Henüz finans kaydı yok. İlk maçtan sonra oluşur.')}</div>`}
+                          </div>
+                        </div>
+                    </div>`;
+            } else if (gameState.view === 'contracts') {
+                const squad = [...gameState.myTeam.oyuncular].sort((a, b) => b.yetenek - a.yetenek);
+                const n = gameState.negotiation;
+                const negP = n ? gameState.myTeam.oyuncular.find(x => x.ad === n.ad) : null;
+                const moralColor = m => m >= 65 ? 'bg-emerald-500' : m >= 35 ? 'bg-amber-500' : 'bg-rose-500';
+                container.innerHTML = `
+                    <div class="max-w-6xl mx-auto py-4 space-y-5 animate-fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase">📝 ${tx('SÖZLEŞMELER & MORAL')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Ücretsiz oyuncular sezon sonunda ayrılır — erken uzatın!')}</p>
+                            </div>
+                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">${tx('ANA MENÜ')}</button>
+                        </div>
+                        <div class="bg-slate-900/40 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-slate-800/80 text-[10px] font-black uppercase text-slate-400">
+                                        <tr>
+                                            <th class="p-3">${tx('Oyuncu Adı')}</th>
+                                            <th class="p-3">${tx('Mevki')}</th>
+                                            <th class="p-3">${tx('Yaş')}</th>
+                                            <th class="p-3">${tx('Yetenek')}</th>
+                                            <th class="p-3">${tx('Maaş')}</th>
+                                            <th class="p-3">${tx('Sözleşme')}</th>
+                                            <th class="p-3 w-32">${tx('Moral')}</th>
+                                            <th class="p-3 text-right">${tx('İşlem')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-white/5">
+                                        ${squad.map(p => `
+                                            <tr class="hover:bg-white/[0.02] transition-all">
+                                                <td class="p-3">
+                                                    <p class="font-bold text-white text-xs">${p.ad}</p>
+                                                    ${(p.moral ?? 70) < 30 ? `<span class="text-[8px] bg-rose-500/15 text-rose-400 font-black px-1.5 py-0.5 rounded uppercase">😡 ${tx('Mutsuz — satış istiyor!')}</span>` : ''}
+                                                    ${(p.sozlesme ?? 2) <= 1 ? `<span class="text-[8px] bg-amber-500/15 text-amber-400 font-black px-1.5 py-0.5 rounded uppercase">⏳ ${tx('Sözleşmesi bitiyor!')}</span>` : ''}
+                                                </td>
+                                                <td class="p-3"><span class="text-[9px] bg-slate-800 text-slate-300 font-black px-2 py-0.5 rounded uppercase">${tx(p.mevkii)}</span></td>
+                                                <td class="p-3 text-slate-300 text-xs font-semibold">${p.yas}</td>
+                                                <td class="p-3 font-extrabold text-emerald-400 text-sm">${p.yetenek}</td>
+                                                <td class="p-3 text-amber-400 font-bold text-xs tabular-nums">${Math.round((p.maas || 0) * 1000)}K €</td>
+                                                <td class="p-3 text-xs font-bold ${(p.sozlesme ?? 2) <= 1 ? 'text-amber-400' : 'text-slate-300'}">${p.sozlesme ?? 1} ${tx('sezon')}</td>
+                                                <td class="p-3">
+                                                    <div class="flex items-center gap-2">
+                                                        <div class="flex-grow h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full ${moralColor(p.moral ?? 70)}" style="width:${p.moral ?? 70}%"></div></div>
+                                                        <span class="text-[10px] font-black text-slate-300 tabular-nums w-7">${p.moral ?? 70}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="p-3 text-right whitespace-nowrap">
+                                                    <button onclick="openNegotiation('${p.ad}')" class="bg-sky-600 hover:bg-sky-500 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-white mr-1">${tx('UZAT')}</button>
+                                                    <button onclick="sellPlayer('${p.ad}')" class="bg-rose-600/80 hover:bg-rose-500 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-white">${tx('SAT')}</button>
+                                                </td>
+                                            </tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    ${n && negP ? `
+                    <div class="fixed inset-0 z-[15000] bg-slate-950/80 backdrop-blur flex items-center justify-center p-4" onclick="cancelNegotiation()">
+                        <div class="max-w-md w-full bg-slate-900 border border-sky-500/30 rounded-3xl p-6 shadow-2xl animate-fade-in" onclick="event.stopPropagation()">
+                            <h3 class="text-lg font-black italic text-sky-400 uppercase mb-1">🤝 ${tx('SÖZLEŞME PAZARLIĞI')}</h3>
+                            <p class="text-sm font-bold text-white">${negP.ad} <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded uppercase ml-1">${tx(negP.mevkii)} • ${negP.yetenek}</span></p>
+                            <div class="grid grid-cols-2 gap-3 my-4">
+                                <div class="bg-slate-950/70 rounded-xl p-3 text-center border border-white/5">
+                                    <p class="text-[9px] text-slate-500 font-black uppercase">${tx('Menajer talebi')}</p>
+                                    <p class="text-base font-black text-rose-400">${Math.round(n.demand * 1000)}K €/${tx('hafta')}</p>
+                                </div>
+                                <div class="bg-slate-950/70 rounded-xl p-3 text-center border border-white/5">
+                                    <p class="text-[9px] text-slate-500 font-black uppercase">${tx('Teklifiniz')}</p>
+                                    <p id="neg-offer-label" class="text-base font-black text-emerald-400">${Math.round(n.offer * 1000)}K €/${tx('hafta')}</p>
+                                </div>
+                            </div>
+                            <input type="range" min="${(n.demand * 0.5).toFixed(3)}" max="${(n.demand * 1.6).toFixed(3)}" step="0.001" value="${n.offer}"
+                                oninput="gameState.negotiation.offer = parseFloat(this.value); document.getElementById('neg-offer-label').textContent = Math.round(gameState.negotiation.offer * 1000) + 'K €/${tx('hafta')}';"
+                                class="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer mb-4">
+                            <div class="mb-4">
+                                <p class="text-[9px] text-slate-500 font-black uppercase mb-1.5">${tx('Süre')}</p>
+                                <div class="grid grid-cols-4 gap-2">
+                                    ${[1, 2, 3, 4].map(y => `<button onclick="setNegotiationYears(${y})" class="py-2 rounded-lg text-xs font-black ${n.years === y ? 'bg-sky-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">${y} ${tx('sezon')}</button>`).join('')}
+                                </div>
+                            </div>
+                            <p class="text-[9px] text-slate-500 mb-3">🗣️ ${tx('Menajer talebi')}: ${n.rounds}/3</p>
+                            <div class="flex gap-2">
+                                <button onclick="submitOffer()" class="flex-grow py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-black uppercase text-white">${tx('TEKLİF VER')}</button>
+                                <button onclick="cancelNegotiation()" class="px-5 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-black uppercase text-slate-300">${tx('VAZGEÇ')}</button>
+                            </div>
+                        </div>
+                    </div>` : ''}`;
+            } else if (gameState.view === 'board') {
+                const b = gameState.board;
+                const pos = leagueTableSorted().indexOf(gameState.myTeam) + 1;
+                const confColor = b.confidence >= 60 ? 'text-emerald-400' : b.confidence >= 30 ? 'text-amber-400' : 'text-rose-400';
+                const confBar = b.confidence >= 60 ? 'bg-emerald-500' : b.confidence >= 30 ? 'bg-amber-500' : 'bg-rose-500';
+                const toneColor = { good: 'text-emerald-300 border-emerald-500/20 bg-emerald-950/30', bad: 'text-rose-300 border-rose-500/20 bg-rose-950/30', info: 'text-slate-300 border-white/10 bg-slate-900/40' };
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto py-4 space-y-5 animate-fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase">🏛️ ${tx('YÖNETİM KURULU')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Sezon hedefi ve yönetimin güveni.')}</p>
+                            </div>
+                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">${tx('ANA MENÜ')}</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-5 bg-slate-900/60 rounded-2xl border border-white/5 text-center">
+                                <p class="text-[10px] text-slate-500 font-black uppercase mb-1">🎯 ${tx('Sezon Hedefi')}</p>
+                                <p class="text-xl font-black text-indigo-400">${tx(b.objectiveText)}</p>
+                            </div>
+                            <div class="p-5 bg-slate-900/60 rounded-2xl border border-white/5 text-center">
+                                <p class="text-[10px] text-slate-500 font-black uppercase mb-1">📊 ${tx('Sıra')}</p>
+                                <p class="text-xl font-black text-amber-400">${pos}. <span class="text-xs text-slate-500">/ ${gameState.league.takimlar.length}</span></p>
+                            </div>
+                            <div class="p-5 bg-slate-900/60 rounded-2xl border border-white/5">
+                                <p class="text-[10px] text-slate-500 font-black uppercase mb-2 text-center">🤝 ${tx('Yönetim Güveni')}</p>
+                                <div class="h-3 rounded-full bg-slate-800 overflow-hidden mb-1"><div class="h-full rounded-full ${confBar} transition-all" style="width:${b.confidence}%"></div></div>
+                                <p class="text-center font-black ${confColor}">%${b.confidence}</p>
+                            </div>
+                        </div>
+
+                        <button onclick="requestExtraBudget()" class="w-full py-4 ${b.extraBudgetUsed ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white'} rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg transition-all">💶 ${tx('EK BÜTÇE İSTE')} ${b.extraBudgetUsed ? '(✓)' : '(+10M €)'}</button>
+
+                        <div class="bg-slate-900/40 rounded-2xl p-5 border border-white/5">
+                            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">📨 ${tx('Yönetim Mesajları')}</h3>
+                            <div class="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                                ${b.messages.length ? b.messages.map(m => `
+                                    <div class="flex items-start gap-3 p-3 rounded-xl border ${toneColor[m.tone] || toneColor.info}">
+                                        <span class="text-[9px] font-mono text-slate-500 shrink-0 mt-0.5">S${m.season} H${m.week}</span>
+                                        <p class="text-xs">${m.text}</p>
+                                    </div>`).join('') : `<div class="text-center py-8 text-slate-500 text-xs font-bold">—</div>`}
+                            </div>
+                        </div>
+                    </div>`;
+            } else if (gameState.view === 'club') {
+                const roleMeta = {
+                    antrenor: ['🧠', 'Yardımcı Antrenör', 'Antrenman gelişim şansını artırır.'],
+                    fizyo:    ['🩺', 'Fizyoterapist', 'Enerji dönüşünü hızlandırır, sakatlığı azaltır.'],
+                    kaleci:   ['🧤', 'Kaleci Antrenörü', 'Kalecinin kurtarış oranını yükseltir.']
+                };
+                const st = gameState.stadium;
+                container.innerHTML = `
+                    <div class="max-w-5xl mx-auto py-4 space-y-5 animate-fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-black italic text-white uppercase">🏟️ ${tx('PERSONEL & STADYUM')}</h2>
+                                <p class="text-xs text-slate-400">${tx('Teknik ekip kiralayın, stadyumu büyütün.')}</p>
+                            </div>
+                            <button onclick="changeView('main_menu')" class="bg-slate-800 hover:bg-slate-700 px-6 py-2.5 rounded-xl text-xs font-black text-white">${tx('ANA MENÜ')}</button>
+                        </div>
+
+                        <div class="p-5 bg-gradient-to-br from-orange-950/50 to-slate-900/60 rounded-2xl border border-orange-500/20 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div class="flex items-center gap-4">
+                                <span class="text-4xl">🏟️</span>
+                                <div>
+                                    <p class="text-[10px] text-slate-500 font-black uppercase">${tx('Kapasite')} • ${tx('Seviye')} ${st.level}/5</p>
+                                    <p class="text-2xl font-black text-orange-400">${st.capacity.toLocaleString('tr-TR')}</p>
+                                    <p class="text-[10px] text-slate-500">${tx('Stadyum Bakımı')}: ${(st.level * 0.15).toFixed(2)}M €/${tx('hafta')}</p>
+                                </div>
+                            </div>
+                            <button onclick="upgradeStadium()" class="${st.level >= 5 ? 'bg-slate-800 text-slate-500' : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white'} px-6 py-3 rounded-xl text-xs font-black uppercase shadow-md transition-all">
+                                ${st.level >= 5 ? tx('STADYUM MAKSİMUM') : `${tx('Stadyumu Büyüt')} +8.000 (${st.level * 18}M €)`}
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            ${Object.keys(roleMeta).map(role => {
+                                const [icon, title, desc] = roleMeta[role];
+                                const cur = gameState.staff[role];
+                                return `
+                                <div class="bg-slate-900/40 p-5 rounded-2xl border border-white/5 space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-3xl">${icon}</span>
+                                        <div>
+                                            <h3 class="text-sm font-black text-white">${tx(title)}</h3>
+                                            <p class="text-[9px] text-slate-500">${tx(desc)}</p>
+                                        </div>
+                                    </div>
+                                    ${cur ? `
+                                        <div class="bg-emerald-950/40 border border-emerald-500/25 rounded-xl p-3">
+                                            <div class="flex justify-between items-center">
+                                                <p class="text-xs font-black text-emerald-400">${cur.name}</p>
+                                                <span class="text-[9px] bg-slate-800 text-amber-400 px-1.5 py-0.5 rounded font-black">⭐ ${cur.level}</span>
+                                            </div>
+                                            <p class="text-[10px] text-slate-400 mt-1">${Math.round(cur.wage * 1000)}K €/${tx('hafta')} • ${tx('Görevde')}</p>
+                                            <button onclick="fireStaff('${role}')" class="w-full mt-2 py-1.5 bg-rose-600/70 hover:bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase">${tx('İşten Çıkar')}</button>
+                                        </div>` : `
+                                        <p class="text-[9px] text-slate-500 uppercase font-black">${tx('Boş pozisyon')}</p>
+                                        <div class="space-y-2">
+                                            ${gameState.staffCandidates[role].map(c => `
+                                                <div class="flex items-center justify-between bg-slate-950/70 rounded-xl p-2.5 border border-white/5">
+                                                    <div>
+                                                        <p class="text-[11px] font-bold text-white">${c.name} <span class="text-amber-400 text-[9px] font-black">⭐${c.level}</span></p>
+                                                        <p class="text-[9px] text-slate-500">${Math.round(c.wage * 1000)}K €/${tx('hafta')}</p>
+                                                    </div>
+                                                    <button onclick="hireStaff('${role}', '${c.id}')" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-[9px] font-black text-white uppercase">${tx('İşe Al')}</button>
+                                                </div>`).join('')}
+                                        </div>`}
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
             }
         }
 
@@ -3050,6 +4363,10 @@
             }
 
             generateAcademyPlayers();
+            // === FM v3.0: sezon hedefi + sponsor teklifleri ===
+            setSeasonObjective();
+            generateSponsorOffers();
+            updateWeekIndicator();
             render();
             applyStaticLang();
         };
