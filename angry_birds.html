@@ -2586,8 +2586,6 @@ function loop() {
 (function initAB3D(){
   window.AB3D=false;
   function hideGL(){ var g=document.getElementById('gl'); if(g) g.style.display='none'; }
-  // 3D geçici olarak KAPALI (siyah ekran sorunu tarayıcıda doğrulanana dek). Açmak için: window.AB3D_ENABLE=true
-  if(!window.AB3D_ENABLE){ hideGL(); return; }
   const THREE=window.THREE;
   if(!THREE){ console.warn('THREE yok — 2D moda dönülüyor'); hideGL(); return; }
   let renderer,scene,cam,reg,frameId=0,slingModel,groundMesh,_uid=0;
@@ -2610,6 +2608,12 @@ function loop() {
   function Y(y){ return GROUND - y; }
   function boot(){
     const gl=document.getElementById('gl');
+    // WebGL bağlamı kaybolursa (siyah ekran sebebi) otomatik 2D moda dön
+    gl.addEventListener('webglcontextlost', function(ev){
+      ev.preventDefault();
+      console.warn('WebGL bağlamı kayboldu — 2D moda dönülüyor');
+      window.AB3D=false; hideGL();
+    }, false);
     renderer=new THREE.WebGLRenderer({canvas:gl,antialias:true});
     renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
     renderer.setSize(CW,CH,false);
@@ -2619,8 +2623,9 @@ function loop() {
     renderer.toneMapping=THREE.NoToneMapping; // canlı/doygun çizgi-film renkleri (ACES soluk gösteriyordu)
     scene=new THREE.Scene();
     scene.fog=new THREE.Fog(0x9fd0f0, 1750, 3500);
-    // 2.5D ortografik kamera, hafif eğik (kutuların üst/yan yüzü görünsün)
-    cam=new THREE.OrthographicCamera(-CW/2,CW/2,CH/2,-CH/2,-2000,6000);
+    // Gerçek perspektif kamera — z=0 oyun düzlemi ortho ile aynı çerçevede kalır
+    // (fov = 2*atan((CH/2)/hedefe_uzaklık)), arka/ön plan gerçek derinlik kazanır
+    cam=new THREE.PerspectiveCamera(43.3, CW/CH, 1, 9000);
     // ışıklar (beyaz ortam ışığını kıs -> renkler daha doygun)
     scene.add(new THREE.AmbientLight(0xfff4e0,0.38));
     scene.add(new THREE.HemisphereLight(0xbfe0ff,0x6b5a3a,0.42));
@@ -2829,9 +2834,10 @@ function loop() {
     if(!renderer) boot();
     if(!renderer) return;
     frameId++;
-    // kamera: görünen dünya x aralığı [camX, camX+CW], hafif eğik 2.5D
+    // kamera: görünen dünya x aralığı [camX, camX+CW], hafif eğik perspektif
+    // (eğim azaltıldı — perspektifte keystone bozulması 2D nişan katmanını kaydırmasın)
     const cx=camX+CW/2, cy=(Y(0)+Y(CH))/2;
-    cam.position.set(cx-70, cy+120, 700);
+    cam.position.set(cx-40, cy+80, 700);
     cam.lookAt(cx, cy, 0);
     cam.updateProjectionMatrix();
     // gökyüzü/güneş/bulut kamerayı takip etsin (sabit backdrop hissi)
