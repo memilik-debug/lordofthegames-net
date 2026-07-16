@@ -184,8 +184,8 @@ h3{font-size:11px;color:#8b949e;margin:9px 0 5px;text-transform:uppercase;letter
 </div>
 <div id="overlay">
   <div id="obox">
-    <h1>⚔ Strateji İmparatorluğu — 1936 v2.2</h1>
-    <h2>Yönetmek istediğiniz ülkeyi seçin. YENİ v2.2: Ekonomi & vergi, Sanayi & üretim, Politika & stabilite, Diplomasi (ittifak/pakt/ticaret) — ve yenilenen harita: fethettiğin toprak senin rengine döner!</h2>
+    <h1>⚔ Strateji İmparatorluğu — 1936 v3.0</h1>
+    <h2>Yönetmek istediğiniz ülkeyi seçin. YENİ v3.0: Detaylı muharebe sistemi — taktik seç (taş-kağıt-makas), tümenlerin güç & düzeni var, cephe genişliği, topçu bombardımanı, siper kazma — ve gerçek siluetlere göre yeniden çizilmiş harita!</h2>
     <p style="color:#8b949e;font-size:12px">Tümenlerinizi şehir şehir ilerletin, başkenti düşürerek ülkeleri ilhak edin, dünyayı fethedin!</p>
     <div id="ngrid"></div>
   </div>
@@ -397,7 +397,7 @@ const NATIONS={
       poly:[[.36,.02],[.415,.035],[.43,.10],[.415,.16],[.40,.20],[.37,.245],[.335,.275],[.30,.26],[.29,.21],[.30,.14],[.315,.07]],
       base:{money:90,manpower:5,industry:7}},
   NO:{name:'Norveç',flag:'🇳🇴',color:'#5599cc',desc:'Buzlu fiyortlar',
-      poly:[[.155,.03],[.27,.005],[.325,.05],[.305,.13],[.29,.20],[.27,.25],[.23,.24],[.185,.185],[.165,.13],[.145,.07]],
+      poly:[[.155,.03],[.265,.005],[.315,.045],[.295,.125],[.28,.195],[.262,.248],[.228,.238],[.185,.185],[.165,.13],[.145,.07]],
       base:{money:55,manpower:4,industry:4}},
   FI:{name:'Finlandiya',flag:'🇫🇮',color:'#44aa88',desc:'Kararlı savunma',
       poly:[[.46,.025],[.60,.015],[.615,.10],[.60,.19],[.565,.235],[.505,.25],[.455,.21],[.44,.12]],
@@ -409,7 +409,7 @@ const NATIONS={
       poly:[[.615,.015],[.98,.01],[.985,.28],[.975,.47],[.88,.52],[.77,.545],[.70,.52],[.665,.475],[.655,.40],[.64,.32],[.625,.24],[.615,.15],[.61,.07]],
       base:{money:190,manpower:22,industry:14}},
   TR:{name:'Türkiye',flag:'🇹🇷',color:'#cc0000',desc:'İki kıta köprüsü',
-      poly:[[.445,.655],[.50,.645],[.585,.635],[.665,.64],[.73,.655],[.775,.69],[.765,.745],[.70,.77],[.63,.775],[.545,.79],[.475,.775],[.425,.745],[.43,.70],[.425,.675]],
+      poly:[[.445,.655],[.50,.645],[.585,.635],[.665,.64],[.725,.66],[.762,.69],[.755,.74],[.70,.77],[.63,.775],[.545,.79],[.475,.775],[.425,.745],[.43,.70],[.425,.675]],
       base:{money:100,manpower:11,industry:7}},
   EG:{name:'Mısır',flag:'🇪🇬',color:'#b8860b',desc:'Nil ve Süveyş gücü',
       poly:[[.40,.825],[.475,.815],[.545,.825],[.585,.85],[.585,.965],[.40,.965]],
@@ -769,11 +769,12 @@ function smoothPath(pts){
     const p1=pts[i];
     const p2=pts[(i+1)%n];
     const p3=pts[(i+2)%n];
-    // Catmull-Rom → cubic Bezier dönüşümü (tension=0.5)
-    const c1x=p1[0]+(p2[0]-p0[0])/6;
-    const c1y=p1[1]+(p2[1]-p0[1])/6;
-    const c2x=p2[0]-(p3[0]-p1[0])/6;
-    const c2y=p2[1]-(p3[1]-p1[1])/6;
+    // Catmull-Rom → cubic Bezier dönüşümü (düşük tension:
+    // detaylı poligonlar şişmesin, kıyı hatları keskin kalsın)
+    const c1x=p1[0]+(p2[0]-p0[0])/9;
+    const c1y=p1[1]+(p2[1]-p0[1])/9;
+    const c2x=p2[0]-(p3[0]-p1[0])/9;
+    const c2y=p2[1]-(p3[1]-p1[1])/9;
     ctx.bezierCurveTo(c1x,c1y,c2x,c2y,p2[0],p2[1]);
   }
   ctx.closePath();
