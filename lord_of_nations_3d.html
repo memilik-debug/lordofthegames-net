@@ -51,6 +51,21 @@
   #parlWrap { position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
     background:radial-gradient(ellipse at 50% 30%, rgba(30,22,12,.86), rgba(4,6,12,.96)); backdrop-filter:blur(3px); }
   #parlWrap.show { display:flex; }
+  /* 3D meclisteyken: salon zaten arkada görünüyor — panel sadece alttaki tartışma barı olur */
+  #parlWrap.in3d { background:none; backdrop-filter:none; align-items:flex-end; padding-bottom:14px; pointer-events:none; }
+  #parlWrap.in3d #parlBox { background:linear-gradient(180deg,rgba(14,20,32,.93),rgba(8,12,20,.97));
+    width:min(880px,94vw); max-height:none; pointer-events:auto; box-shadow:0 -8px 40px rgba(0,0,0,.75); }
+  #parlWrap.in3d #parlChamber { display:none; }
+  #parlWrap.in3d #parlHead { padding:10px 16px; }
+  #parlWrap.in3d #parlFactions { padding:8px 16px 6px; }
+  #parlWrap.in3d #parlStage { padding:9px 16px 12px; }
+  #parlWrap.in3d #parlSub { display:none; }
+  #parlWrap.in3d #parlTitle { font-size:15px; }
+  #parlWrap.in3d #parlQ { font-size:13px; margin-bottom:8px; }
+  #parlWrap.in3d .parlAns { padding:7px 12px; font-size:12.5px; }
+  #parlWrap.in3d #parlAnswers { gap:5px; }
+  #parlWrap.in3d .parlFac { font-size:10.5px; padding:2px 9px; }
+  #parlWrap.in3d.baldrickIn #parlStage, #parlBox.baldrickIn #parlStage { padding-bottom:210px; }
   #parlBox { width:min(940px,96vw); max-height:96vh; overflow:auto; background:linear-gradient(180deg,#141c2c,#0c1220);
     border:1px solid #6a5836; border-radius:12px; box-shadow:0 18px 60px rgba(0,0,0,.7); position:relative; }
   #parlHead { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding:13px 18px;
@@ -1812,6 +1827,11 @@ function openParliament(lawId,repeal){
  $('parlSub').innerHTML=`<b style="color:#e6ecf5">${law.name}</b> — ${law.desc}<br>`+
    `<span style="color:#7f8ca6">Kürsüdesiniz Sayın Başkan. ${PARL.questions.length} soru gelecek; cevaplarınız oyları değiştirecek.</span>`;
  $('parlBaldrick').classList.remove('in');
+ if(G.scene==='parliament'){ // kürsüye geç ve salona dön — vekilleri görerek konuş
+  player.pos.set(0,4.3,10.6);player.yaw=0;player.pitch=-.24;
+  if(parlPodSign)parlPodSign.visible=false;
+ }
+ $('parlWrap').classList.toggle('in3d',G.scene==='parliament'); // 3D salondaysak 2D şemayı kullanma
  $('parlWrap').classList.add('show');
  parlRender();
  parlAskQuestion();
@@ -1825,6 +1845,12 @@ function parlRender(){
  $('parlBarYes').style.width=(yes/PARL_SEATS*100)+'%';
  $('parlBarNo').style.width=(no/PARL_SEATS*100)+'%';
  $('parlThresh').textContent=`Geçmesi için ${PARL.need} oy gerekli (${Math.round(PARL.thr*100)}%)`;
+ parlPaintMPs(PARL.blocs);
+ if(G.scene==='parliament'){ // 3D salonda koltuklar zaten sahnede boyanıyor
+  $('parlFactions').innerHTML=PARL.blocs.map(b=>
+   `<span class="parlFac" style="border-color:${b.col}">${b.icon} ${b.name} · ${b.seats} · <b style="color:${b.yes>=50?'#6fdc8c':'#e08a8a'}">%${b.yes}</b></span>`).join('');
+  return;
+ }
  // Koltukları blok blok boya: kabul edenler yeşil, redciler kırmızı
  let i=0,circles='';
  PARL.blocs.forEach(b=>{
@@ -1844,7 +1870,6 @@ function parlRender(){
    <text x="400" y="336" text-anchor="middle" font-size="15" fill="#ffd86b" font-family="monospace">KÜRSÜ</text>
    <text x="400" y="66" text-anchor="middle" font-size="13" fill="#8c99b3" font-family="monospace">— MECLİS BAŞKANLIĞI —</text>
  </svg>`;
- parlPaintMPs(PARL.blocs);
  $('parlFactions').innerHTML=PARL.blocs.map(b=>
   `<span class="parlFac" style="border-color:${b.col}">${b.icon} ${b.name} · ${b.seats} koltuk · <b style="color:${b.yes>=50?'#6fdc8c':'#e08a8a'}">%${b.yes} kabul</b></span>`).join('');
 }
@@ -1952,10 +1977,11 @@ function parlAnswer(i){
 }
 
 function parlWithdraw(){
- $('parlWrap').classList.remove('show');
+ $('parlWrap').classList.remove('show');$('parlWrap').classList.remove('in3d');
  $('parlBaldrick').classList.remove('in');
  $('parlBox').classList.remove('baldrickIn');
  if(parlBald3D)parlBald3D.visible=false;parlBaldAnim=null;
+ if(parlPodSign)parlPodSign.visible=true;
  PARL=null;
  toast('Teklif geri çekildi.','info');
 }
@@ -1981,7 +2007,7 @@ function parlVote(){
   } else {
    addEvent('bad',`Meclis "${law.name}" teklifini ${yes}-${PARL_SEATS-yes} reddetti.`);
    $('parlAnswers').innerHTML=`<button class="parlAns" style="text-align:center;" onclick="parlWithdraw()">Meclisten çık</button>`;
-   if(G.scene==='parliament'){$('parlWrap').classList.remove('show');parlBaldrickWalkIn(()=>{$('parlWrap').classList.add('show');parlBribeOffer();});}
+   if(G.scene==='parliament'){$('parlWrap').classList.remove('show');parlBaldrickWalkIn(()=>{$('parlWrap').classList.add('in3d');$('parlWrap').classList.add('show');parlBribeOffer();});}
    else setTimeout(parlBribeOffer,900);
   }
  },1100);
@@ -4523,7 +4549,7 @@ function updateDrive(dt){
 // ==================== 🏛️ MECLİS BİNASI (3D) =======================
 // ==================================================================
 const PARLIAMENT_POS={x:-185,z:0};
-let parlScene=null,parlColliders=[],parlInteractables=[],parlMPs=[],parlBald3D=null,parlBaldAnim=null;
+let parlScene=null,parlColliders=[],parlInteractables=[],parlMPs=[],parlBald3D=null,parlBaldAnim=null,parlPodSign=null;
 
 // Dış cephe: sütunlu neoklasik meclis + kubbe + merdiven
 function buildParliamentExterior(){
@@ -4634,8 +4660,8 @@ function buildParliamentInterior(){
  const seal=new THREE.Mesh(new THREE.CircleGeometry(.62,24),new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color)}));
  seal.position.set(0,1.72,5.62);parlScene.add(seal);
  addCol(0,7,6.4,3.8);
- const podSign=makeTextSprite('🎙️ KÜRSÜ',{w:3.2,border:'#ffd86b',color:'#ffd86b'});
- podSign.position.set(0,3.5,7.2);parlScene.add(podSign);
+ parlPodSign=makeTextSprite('🎙️ KÜRSÜ',{w:2.6,border:'#ffd86b',color:'#ffd86b'});
+ parlPodSign.position.set(0,4.6,8.6);parlScene.add(parlPodSign);
 
  // ---- Başkanlık divanı (kürsünün arkası) ----
  const dais=new THREE.Mesh(new THREE.BoxGeometry(14,1.6,4),mat(0x4a3520));dais.position.set(0,.8,12);parlScene.add(dais);
