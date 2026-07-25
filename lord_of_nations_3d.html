@@ -47,6 +47,48 @@
   .btn.danger { background:linear-gradient(180deg,#c54040,#993030); border-color:#d05050; }
   .btn.good { background:linear-gradient(180deg,#4ca850,#348038); border-color:#5ab847; }
 
+  /* ===== 🏛️ MECLİS (v1.9) ===== */
+  #parlWrap { position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at 50% 30%, rgba(30,22,12,.86), rgba(4,6,12,.96)); backdrop-filter:blur(3px); }
+  #parlWrap.show { display:flex; }
+  #parlBox { width:min(940px,96vw); max-height:96vh; overflow:auto; background:linear-gradient(180deg,#141c2c,#0c1220);
+    border:1px solid #6a5836; border-radius:12px; box-shadow:0 18px 60px rgba(0,0,0,.7); position:relative; }
+  #parlHead { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding:13px 18px;
+    border-bottom:1px solid #2a3550; background:linear-gradient(180deg,#1d2740,#141c2c); }
+  #parlTitle { color:#ffd86b; font-size:17px; font-weight:700; }
+  #parlSub { color:#99a6c0; font-size:12px; margin-top:3px; max-width:520px; line-height:1.45; }
+  #parlTally { text-align:right; min-width:190px; }
+  #parlTallyNums { font-size:13px; font-weight:700; }
+  #parlTallyBar { display:flex; height:9px; border-radius:5px; overflow:hidden; background:#26304a; margin:5px 0 3px; border:1px solid #33405e; }
+  #parlBarYes { background:linear-gradient(180deg,#6fdc8c,#3f9e5c); transition:width .5s; }
+  #parlBarNo { background:linear-gradient(180deg,#e08a8a,#a34040); transition:width .5s; }
+  #parlThresh { font-size:11px; color:#99a6c0; }
+  #parlChamber { padding:6px 10px 0; }
+  #parlChamber svg { width:100%; height:auto; display:block; }
+  .parlSeat { transition:fill .45s; }
+  #parlFactions { display:flex; flex-wrap:wrap; gap:7px; padding:4px 18px 10px; justify-content:center; }
+  .parlFac { background:#18203400; border:1px solid #2f3c58; border-radius:20px; padding:3px 11px; font-size:11px; color:#c8d2e0; }
+  #parlStage { padding:12px 18px 18px; border-top:1px solid #2a3550; background:rgba(8,12,22,.5); }
+  #parlSpeaker { color:#ffd86b; font-size:12.5px; font-weight:700; margin-bottom:5px; }
+  #parlQ { color:#e6ecf5; font-size:14px; line-height:1.55; margin-bottom:11px; }
+  #parlAnswers { display:flex; flex-direction:column; gap:7px; }
+  .parlAns { text-align:left; padding:10px 13px; border-radius:6px; background:linear-gradient(180deg,#22304c,#1a2540);
+    border:1px solid #3a4a6a; color:#dfe6f2; cursor:pointer; font-size:13px; line-height:1.45; transition:all .15s; font-family:inherit; }
+  .parlAns:hover { background:linear-gradient(180deg,#2d3f63,#22304c); border-color:#6a86b5; transform:translateX(3px); }
+  .parlAns b { color:#ffd86b; }
+  #parlBaldrick { position:absolute; right:14px; bottom:14px; width:min(400px,90%); display:flex; gap:11px;
+    background:linear-gradient(180deg,#2a2416,#1a1710); border:1px solid #9c6; border-radius:10px; padding:12px 14px;
+    box-shadow:0 10px 34px rgba(0,0,0,.65); transform:translateX(130%); opacity:0;
+    transition:transform .55s cubic-bezier(.2,1.3,.4,1), opacity .4s; pointer-events:none; }
+  #parlBaldrick.in { transform:translateX(0); opacity:1; pointer-events:auto; }
+  #parlBox.baldrickIn #parlStage { padding-bottom:210px; } /* Baldrick sonucu kapatmasın */
+  #parlBaldrickFace { font-size:30px; line-height:1; animation:baldWobble 1.6s ease-in-out infinite; }
+  @keyframes baldWobble { 0%,100%{transform:rotate(-7deg) translateY(0);} 50%{transform:rotate(7deg) translateY(-3px);} }
+  #parlBaldrickName { color:#cfe08a; font-size:12px; font-weight:700; margin-bottom:4px; }
+  #parlBaldrickText { color:#e6ecf5; font-size:12.5px; line-height:1.5; margin-bottom:9px; }
+  #parlBaldrickBtns { display:flex; gap:7px; flex-wrap:wrap; }
+  #parlBaldrickBtns .btn { padding:7px 12px; font-size:12px; }
+
   /* ===== 3D WRAP & HUD ===== */
   #threeWrap { position:absolute; inset:0; }
   #hud { position:absolute; top:0; left:0; right:0; min-height:58px; background:linear-gradient(180deg,rgba(16,26,50,.95),rgba(8,16,34,.92)); border-bottom:2px solid #5a4d2a; display:none; align-items:center; padding:5px 16px; gap:10px; z-index:20; }
@@ -219,6 +261,38 @@
       <div id="panelCats"></div>
       <div id="panelTabs"></div>
       <div id="panelBody"></div>
+    </div>
+  </div>
+
+  <!-- 🏛️ MECLİS (v1.9) -->
+  <div id="parlWrap">
+    <div id="parlBox">
+      <div id="parlHead">
+        <div>
+          <div id="parlTitle">🏛️ Ulusal Meclis</div>
+          <div id="parlSub">—</div>
+        </div>
+        <div id="parlTally">
+          <div id="parlTallyNums">—</div>
+          <div id="parlTallyBar"><div id="parlBarYes"></div><div id="parlBarNo"></div></div>
+          <div id="parlThresh">—</div>
+        </div>
+      </div>
+      <div id="parlChamber"></div>
+      <div id="parlFactions"></div>
+      <div id="parlStage">
+        <div id="parlSpeaker">—</div>
+        <div id="parlQ">—</div>
+        <div id="parlAnswers"></div>
+      </div>
+      <div id="parlBaldrick">
+        <div id="parlBaldrickFace">🥔</div>
+        <div style="flex:1;">
+          <div id="parlBaldrickName">Danışman Baldrick</div>
+          <div id="parlBaldrickText">—</div>
+          <div id="parlBaldrickBtns"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1408,12 +1482,13 @@ function renderPanel(tab){
     const disp=(k==='goldDrain')?((v>0?'-'+v:'+'+(-v))+' altın/ay'):((v>0?'+':'')+(Math.round(v*100)/100));
     return `<span style="color:${good?'#6fdc8c':'#e08a8a'};margin-right:12px;white-space:nowrap;">${lbl}: ${disp}</span>`;}).join(''):'<span style="color:#99a6c0">Aktif kanun yok</span>';
   let html=`<h2>⚖️ Kanunlar <span style="color:#99a6c0;font-size:13px;">(${activeCount}/${LAWS.length} aktif)</span></h2>`;
+  html+=`<div class="card" style="border-left:4px solid #c56a9a;"><h3>🏛️ Kanunlar Meclisten Geçer</h3><div class="desc">Hiçbir kanun tek imzayla yürürlüğe girmez. Teklifi meclise sunarsın, vekiller soru sorar, savunmanı <b>ülkenin gerçek tablosuyla</b> karşılaştırırlar. Yeterli oyu alamazsan Baldrick kulağına eğilir — ama rüşvet <b>dürüst bir ülkede</b> çok daha risklidir.</div></div>`;
   html+=`<div class="card" style="border-left:4px solid #ffd86b;"><h3>📋 Yürürlükteki Net Etkiler (aylık)</h3><div style="line-height:2;">${netStr}</div><div class="desc" style="margin-top:4px;">👥 Kanunlar etnik grupları da etkiler: 🏛️ Baskın Halk · 💼 Tüccarlar · ⛰️ Otonomistler · 🔧 Göçmen İşçiler — detay için <b>Halklar</b> sekmesi.</div></div>`;
   cats.forEach(cat=>{
    html+=`<h3 style="margin:14px 0 6px;color:#ffd86b;border-bottom:1px solid #2a3a55;padding-bottom:4px;">${cat}</h3><div class="grid">`;
    html+=LAWS.filter(l=>l.cat===cat).map(law=>{const active=c.laws&&c.laws[law.id];
      const ethStr=lawEthnicStr(law.id);
-     return `<div class="card" style="${active?'border-left:4px solid #6fdc8c;':''}"><h3 style="font-size:14px;">${active?'✓ ':''}${law.name}</h3><div class="desc">${law.desc}</div>${ethStr?`<div style="font-size:11px;margin-bottom:5px;">👥 ${ethStr}</div>`:''}<button class="btn ${active?'danger':'primary'}" style="font-size:12px;padding:5px 10px;" onclick="act_law('${law.id}')">${active?'Kaldır':'Yürürlüğe Sok'}</button></div>`;}).join('');
+     return `<div class="card" style="${active?'border-left:4px solid #6fdc8c;':''}"><h3 style="font-size:14px;">${active?'✓ ':''}${law.name}</h3><div class="desc">${law.desc}</div>${ethStr?`<div style="font-size:11px;margin-bottom:5px;">👥 ${ethStr}</div>`:''}<button class="btn ${active?'danger':'primary'}" style="font-size:12px;padding:5px 10px;" onclick="act_law('${law.id}')">${active?'🏛️ Kaldırmayı Meclise Sun':'🏛️ Meclise Sun'}</button></div>`;}).join('');
    html+=`</div>`;
   });
   p.innerHTML=html;
@@ -1632,7 +1707,308 @@ function act_train(){if(!spend(2000))return;G.player.military=clamp(G.player.mil
 function act_parade(){if(!spend(1000))return;G.player.morale=clamp(G.player.morale+8,0,100);G.player.armyXP=clamp((G.player.armyXP||0)+1,0,100);toast('Moral arttı','good');rrr();}
 function act_unit(id,n,cost){if(!spend(cost))return;G.player.armyComp[id]=(G.player.armyComp[id]||0)+n;G.player.soldiers+=n;toast(`+${fmt(n)} ${ARMY_UNITS.find(u=>u.id===id).name}`,'good');if(typeof tut==='function')tut('recruit');rrr();}
 function act_doctrine(id){if(!spend(1500))return;G.player.doctrine=id;toast(`Doktrin: ${DOCTRINES.find(d=>d.id===id).name}`,'good');rrr();}
-function act_law(id){if(!G.player.laws)G.player.laws={};G.player.laws[id]=!G.player.laws[id];toast(G.player.laws[id]?'Kanun yürürlükte':'Kanun kaldırıldı',G.player.laws[id]?'good':'bad');if(G.player.laws[id]&&typeof tut==='function')tut('law');rrr();}
+// v1.9: kanunlar artık doğrudan yürürlüğe girmez — önce MECLİS'ten geçmeli
+function act_law(id){const law=LAWS.find(l=>l.id===id);if(!law)return;openParliament(id,!!(G.player.laws&&G.player.laws[id]));}
+function applyLaw(id,on){if(!G.player.laws)G.player.laws={};G.player.laws[id]=on;if(on&&typeof tut==='function')tut('law');rrr();}
+
+// ============================ 🏛️ MECLİS SİSTEMİ (v1.9) ============================
+const PARL_SEATS=120;
+// Meclis blokları — oyunun 4 çıkar grubunun siyasi karşılığı (soldan sağa oturur)
+const PARL_BLOCS=[
+ {id:'migrants',   icon:'🔧', name:'Emek Bloku',      share:.24, col:'#c56a9a'},
+ {id:'autonomists',icon:'⛰️', name:'Bölgeci Blok',    share:.18, col:'#7ac06a'},
+ {id:'dominant',   icon:'🏛️', name:'Milliyetçi Blok', share:.38, col:'#d8a24a'},
+ {id:'merchants',  icon:'💼', name:'Liberal Blok',    share:.20, col:'#4aa8d8'},
+];
+// Rejim meclisin gücünü belirler: otoriter rejimde meclis kolay ikna olur
+const PARL_THRESHOLD={democracy:.50,republic:.48,theocracy:.45,monarchy:.41,communist:.40,fascist:.34};
+let PARL=null;
+
+// Kanun ülkenin ŞU ANKİ durumuna uyuyor mu? (-3..+3) — "ülkenin çıkarları" bileşeni
+function lawFit(law,c){
+ let s=0;const why=[];
+ const drain=law.mod.goldDrain||0, atWar=(c.atWarWith||[]).length>0;
+ const mood=g=>(c.ethnic&&c.ethnic[g])?c.ethnic[g].mood:50;
+ if(drain>0){ if(c.gold<4000){s-=2;why.push('hazine zayıfken yeni gider açıyor');} else if(c.gold>22000){s+=1;why.push('hazine bu gideri rahat kaldırır');} }
+ if(drain<0&&c.gold<5000){s+=2;why.push('hazine acilen gelire muhtaç');}
+ switch(law.id){
+  case 'conscript': case 'reserves':
+   if(atWar||c.military<35){s+=2;why.push(atWar?'savaş sürüyor':'ordu zayıf');}
+   if(c.happiness<45){s-=2;why.push('halk zaten mutsuz');}
+   if(mood('autonomists')<40){s-=1;why.push('sınır bölgeleri kaynıyor');}
+   break;
+  case 'profarmy': if(atWar||c.military<40){s+=1;why.push('ordunun moraline ihtiyaç var');} break;
+  case 'veterans': if(atWar||(c.warWeariness||0)>25){s+=2;why.push('savaş yorgunluğu yüksek');} break;
+  case 'protect': if(c.industry<40){s+=2;why.push('sanayi korumaya muhtaç');} if(mood('merchants')<40){s-=1;why.push('tüccarlar zaten küskün');} break;
+  case 'freetrade': if(c.industry>52){s+=2;why.push('sanayi rekabete hazır');} if(c.industry<30){s-=2;why.push('sanayi rekabete dayanamaz');} if(mood('merchants')<40){s+=1;why.push('tüccarları yatıştırır');} break;
+  case 'subsidy': if(mood('autonomists')<42){s+=2;why.push('otonomist bölgeler teşvik bekliyor');} break;
+  case 'progtax': if(c.gold<6000){s+=2;why.push('bütçe açığı kapanmalı');} if(mood('merchants')<38){s-=2;why.push('sermaye kaçışı riski');} break;
+  case 'laborrights': if(mood('migrants')<42){s+=2;why.push('grev riski yüksek');} if(c.industry<30){s-=1;why.push('sanayi zaten zayıf');} break;
+  case 'freepress': if(c.reputation<48){s+=2;why.push('itibarımız düşük');} if(c.ideology==='fascist'){s-=2;why.push('rejimle çelişiyor');} break;
+  case 'healthcare': case 'welfare': if(c.happiness<45){s+=2;why.push('halk memnuniyetsiz');} if((c.corruption||0)>45){s-=1;why.push('yardımlar yolsuzluğa gidebilir');} break;
+  case 'education': if(c.education<40||c.tech<35){s+=2;why.push('eğitim/bilim geride');} break;
+  case 'meritcracy': case 'anticorrupt': if((c.corruption||0)>35){s+=3;why.push('yolsuzluk kontrolden çıkıyor');} else if((c.corruption||0)<15){s-=1;why.push('yolsuzluk zaten düşük');} break;
+  case 'patriotism': if(atWar){s+=2;why.push('savaşta moral kritik');} if(c.happiness<35){s-=1;why.push('halk propagandaya doymuş');} break;
+  case 'rndfund': if(c.tech<40&&c.gold>14000){s+=2;why.push('teknolojide geriyiz, param var');} break;
+ }
+ return {s:clamp(s,-3,3),why};
+}
+
+function parlSeats(){
+ const rows=[{r:92,n:16},{r:130,n:20},{r:168,n:24},{r:206,n:28},{r:244,n:32}];
+ const cx=400,cy=350,out=[];
+ rows.forEach(row=>{for(let i=0;i<row.n;i++){
+  const t=row.n===1?.5:i/(row.n-1), ang=(193+t*154)*Math.PI/180;
+  out.push({x:cx+row.r*Math.cos(ang), y:cy+row.r*Math.sin(ang), a:ang});
+ }});
+ out.sort((p,q)=>p.a-q.a); // açıya göre sırala ki bloklar bitişik dilimler halinde otursun
+ return out;
+}
+
+function openParliament(lawId,repeal){
+ const c=G.player, law=LAWS.find(l=>l.id===lawId); if(!law)return;
+ if(document.pointerLockElement)document.exitPointerLock();
+ const fit=lawFit(law,c), sign=repeal?-1:1;
+ const thr=PARL_THRESHOLD[c.ideology]!=null?PARL_THRESHOLD[c.ideology]:.48;
+ // Blok koltukları + başlangıç eğilimi
+ let used=0;
+ const blocs=PARL_BLOCS.map((b,i)=>{
+  const seats=(i===PARL_BLOCS.length-1)?PARL_SEATS-used:Math.round(PARL_SEATS*b.share);
+  used+=seats;
+  const mood=(c.ethnic&&c.ethnic[b.id])?c.ethnic[b.id].mood:50;
+  const eth=(LAW_ETHNIC[lawId]&&LAW_ETHNIC[lawId][b.id])||0;
+  // Kendi çıkarı + ülke yararı + ruh hali (küskün blok daha muhalif)
+  let pct=50 + sign*eth*34 + sign*fit.s*7 + (mood-50)*.28;
+  return {...b, seats, mood, yes:clamp(Math.round(pct),3,97)};
+ });
+ PARL={lawId,law,repeal,fit,thr,blocs,q:0,seatPts:parlSeats(),done:false,
+       need:Math.floor(PARL_SEATS*thr)+1, questions:parlQuestions(law,c,repeal,fit)};
+ $('parlTitle').textContent=(repeal?'🏛️ Meclis — Kaldırma Teklifi':'🏛️ Ulusal Meclis — Kanun Teklifi');
+ $('parlSub').innerHTML=`<b style="color:#e6ecf5">${law.name}</b> — ${law.desc}<br>`+
+   `<span style="color:#7f8ca6">Kürsüdesiniz Sayın Başkan. ${PARL.questions.length} soru gelecek; cevaplarınız oyları değiştirecek.</span>`;
+ $('parlBaldrick').classList.remove('in');
+ $('parlWrap').classList.add('show');
+ parlRender();
+ parlAskQuestion();
+}
+
+function parlYesCount(){return PARL.blocs.reduce((t,b)=>t+Math.round(b.seats*b.yes/100),0);}
+
+function parlRender(){
+ const yes=parlYesCount(), no=PARL_SEATS-yes;
+ $('parlTallyNums').innerHTML=`<span style="color:#6fdc8c">KABUL ${yes}</span> · <span style="color:#e08a8a">RET ${no}</span>`;
+ $('parlBarYes').style.width=(yes/PARL_SEATS*100)+'%';
+ $('parlBarNo').style.width=(no/PARL_SEATS*100)+'%';
+ $('parlThresh').textContent=`Geçmesi için ${PARL.need} oy gerekli (${Math.round(PARL.thr*100)}%)`;
+ // Koltukları blok blok boya: kabul edenler yeşil, redciler kırmızı
+ let i=0,circles='';
+ PARL.blocs.forEach(b=>{
+  const y=Math.round(b.seats*b.yes/100);
+  for(let k=0;k<b.seats;k++){
+   const p=PARL.seatPts[i++]; if(!p)continue;
+   const col=k<y?'#5fc97e':'#c85a5a';
+   circles+=`<circle class="parlSeat" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7.5" fill="${col}" stroke="${b.col}" stroke-width="2"/>`;
+  }
+ });
+ $('parlChamber').innerHTML=`<svg viewBox="0 0 800 372" xmlns="http://www.w3.org/2000/svg">
+   <defs><radialGradient id="parlFloor" cx="50%" cy="95%" r="70%">
+     <stop offset="0%" stop-color="#2a3550"/><stop offset="100%" stop-color="#101724"/></radialGradient></defs>
+   <path d="M60 358 A340 340 0 0 1 740 358 Z" fill="url(#parlFloor)" stroke="#33415e"/>
+   ${circles}
+   <rect x="352" y="316" width="96" height="30" rx="5" fill="#3a2f18" stroke="#ffd86b" stroke-width="2"/>
+   <text x="400" y="336" text-anchor="middle" font-size="15" fill="#ffd86b" font-family="monospace">KÜRSÜ</text>
+   <text x="400" y="66" text-anchor="middle" font-size="13" fill="#8c99b3" font-family="monospace">— MECLİS BAŞKANLIĞI —</text>
+ </svg>`;
+ $('parlFactions').innerHTML=PARL.blocs.map(b=>
+  `<span class="parlFac" style="border-color:${b.col}">${b.icon} ${b.name} · ${b.seats} koltuk · <b style="color:${b.yes>=50?'#6fdc8c':'#e08a8a'}">%${b.yes} kabul</b></span>`).join('');
+}
+
+// ---- Sorular: kanunun verisinden ve ülkenin gerçek durumundan üretilir ----
+function parlQuestions(law,c,repeal,fit){
+ const qs=[], drain=law.mod.goldDrain||0, act=repeal?'kaldırılması':'çıkarılması';
+ // 1) Finansman sorusu
+ if(drain>0&&!repeal){
+  qs.push({who:'💼 Bütçe Komisyonu Başkanı',
+   q:`Bu kanun hazineden ayda <b>${drain} altın</b> götürüyor. Kasada <b>${fmt(c.gold)} altın</b> var. Parayı nereden bulacaksınız?`,
+   a:[
+    {t:'<b>Vergileri artıracağız.</b> Yükü omuzlayacak olan bütçedir, halk değil.',
+     ev:()=>c.gold<6000?{all:5,per:{merchants:-10},n:'Meclis mecburiyeti kabul etti, tüccarlar homurdandı.'}
+                       :{all:-3,per:{merchants:-13,dominant:-4},n:'"Kasa doluyken neden vergi?" sorusu cevapsız kaldı.'}},
+    {t:'<b>Hazinemiz güçlü</b>, ek kaynağa gerek yok.',
+     ev:()=>c.gold>20000?{all:13,n:'Rakamlar sizi doğruladı; salon ikna oldu.'}
+                        :{all:-15,n:'Bütçe uzmanı rakamları okudu; salonda gülüşmeler yükseldi.'}},
+    {t:'Gerekirse <b>başka kalemlerden keseceğiz</b> — önceliğimiz bu.',
+     ev:()=>({all:4,per:{dominant:2},n:'Temkinli ama inandırıcı bulundu.'})},
+   ]});
+ } else if(drain<0&&!repeal){
+  qs.push({who:'🔧 Emek Bloku Sözcüsü',
+   q:`Bu kanun halkın cebinden ayda <b>${Math.abs(drain)} altın</b> alıyor. Karşılığında ne vereceksiniz?`,
+   a:[
+    {t:'Gelirin tamamı <b>sağlık ve eğitime</b> gidecek.',ev:()=>({all:6,per:{migrants:13,merchants:-4},n:'Emek bloku alkışladı.'})},
+    {t:'Hazineyi güçlendirmek <b>başlı başına amaçtır</b>.',ev:()=>({all:2,per:{merchants:-9,migrants:-5},n:'Soğuk ama dürüst bulundu.'})},
+    {t:'Yük yalnızca <b>en varlıklı kesimden</b> alınacak.',ev:()=>({all:3,per:{migrants:14,merchants:-17,dominant:3},n:'Salon ikiye bölündü.'})},
+   ]});
+ } else {
+  qs.push({who:'🏛️ Meclis Başkanı',
+   q:`Teklifin ${act} için ilk sözü size veriyorum. Bu düzenleme <b>kime ne kazandıracak?</b>`,
+   a:[
+    {t:'<b>Doğrudan halka</b> — günlük hayatta karşılığı görülecek.',ev:()=>({all:6,per:{migrants:8,dominant:3},n:'Somut vaat iyi karşılandı.'})},
+    {t:'<b>Devlete ve düzene</b> — kurumlarımız güçlenecek.',ev:()=>({all:5,per:{dominant:9,autonomists:-6},n:'Milliyetçi sıralar memnun.'})},
+    {t:'<b>Ekonomiye</b> — üretim ve yatırım artacak.',ev:()=>({all:5,per:{merchants:11,migrants:-4},n:'Liberal sıralar destek verdi.'})},
+   ]});
+ }
+ // 2) En çok zarar gören blok saldırır
+ const eth=LAW_ETHNIC[law.id]||{};
+ let worst=null,wv=0;
+ Object.entries(eth).forEach(([k,v])=>{const vv=repeal?-v:v;if(vv<wv){wv=vv;worst=k;}});
+ if(!worst)worst=PARL_BLOCS[2].id;
+ const bl=PARL_BLOCS.find(b=>b.id===worst);
+ const hostile={
+  dominant:{q:'Bu düzenleme <b>milletin geleneklerini ve devletin otoritesini</b> aşındırıyor. Bize ne diyeceksiniz?',
+   a:[{t:'Devletin otoritesi <b>zayıflamayacak, kurumsallaşacak</b>.',ev:()=>({all:5,per:{dominant:12},n:'Milliyetçi sıralar yumuşadı.'})},
+      {t:'Gelenek önemlidir ama <b>ülkenin ihtiyacı önceliklidir</b>.',ev:()=>({all:3,per:{dominant:-8,merchants:6,migrants:5},n:'Dürüst ama sert bulundu.'})},
+      {t:'Bu kanun <b>tam da milli çıkarın gereğidir</b>.',ev:()=>fit.s>0?{all:8,per:{dominant:14},n:'Gerekçeniz salonu ikna etti.'}:{all:-6,per:{dominant:-6},n:'"Hangi milli çıkar?" diye bağırdılar.'}}]},
+  merchants:{q:'Bu düzenleme <b>sermayeyi ürkütecek</b>, yatırımcı ülkeden kaçacak. Cevabınız?',
+   a:[{t:'Yatırımcıya <b>vergi istisnası</b> getireceğiz.',ev:()=>c.gold>10000?{all:5,per:{merchants:14,migrants:-6},n:'Piyasa rahatladı.'}:{all:-5,per:{merchants:-5},n:'"Hangi parayla?" dediler.'}},
+      {t:'Sermaye <b>istikrardan kaçmaz</b>; bu kanun istikrar getirir.',ev:()=>({all:5,per:{merchants:9},n:'Mantıklı bulundu.'})},
+      {t:'Ülke <b>yalnızca sermayeye göre</b> yönetilemez.',ev:()=>({all:2,per:{merchants:-15,migrants:12,dominant:4},n:'Liberal sıralar ayağa kalktı.'})}]},
+  migrants:{q:'Bu düzenlemenin faturasını <b>fabrikadaki işçi</b> ödeyecek. Grev çıkarsa sorumlusu kim?',
+   a:[{t:'<b>Asgari ücrete zam</b> yapacağız, yük dengelenecek.',ev:()=>c.gold>8000?{all:5,per:{migrants:15,merchants:-8},n:'Emek bloku ikna oldu.'}:{all:-6,per:{migrants:-6},n:'Boş vaat olarak görüldü.'}},
+      {t:'<b>Sendikalarla masaya</b> oturacağız.',ev:()=>({all:6,per:{migrants:11,merchants:-3},n:'Uzlaşmacı tavır beğenildi.'})},
+      {t:'Üretim sürmezse <b>kimseye maaş kalmaz</b>.',ev:()=>({all:3,per:{migrants:-13,merchants:9,dominant:3},n:'Sert ama tutarlı bulundu.'})}]},
+  autonomists:{q:'Bu düzenleme <b>merkezden dayatılıyor</b>. Sınır illerimize kimse sormadı. Ne diyeceksiniz?',
+   a:[{t:'Sınır illerine <b>uygulama muafiyeti</b> tanınacak.',ev:()=>({all:4,per:{autonomists:16,dominant:-9},n:'Bölgeciler rahatladı, merkez kızdı.'})},
+      {t:'<b>Bölgesel teşvik paketi</b> ile telafi edeceğiz.',ev:()=>c.gold>8000?{all:5,per:{autonomists:13},n:'Somut karşılık ikna etti.'}:{all:-5,per:{autonomists:-7},n:'Hazine boşken vaat inandırıcı olmadı.'}},
+      {t:'Kanun <b>ülkenin tamamında eşit</b> uygulanır.',ev:()=>({all:3,per:{autonomists:-15,dominant:11},n:'Bölgeci sıralar salonu terk etmekle tehdit etti.'})}]},
+ }[worst];
+ qs.push({who:`${bl.icon} ${bl.name} Sözcüsü`,q:hostile.q,a:hostile.a});
+ // 3) Ülke çıkarı sorusu — gerçek duruma dayanır
+ const durum=`Hazine ${fmt(c.gold)} · Mutluluk ${Math.round(c.happiness)} · Ordu ${Math.round(c.military)} · Sanayi ${Math.round(c.industry)} · Yolsuzluk ${Math.round(c.corruption||0)}`;
+ const gerekce=fit.why.length?fit.why[0]:'ülkenin dengesini koruyor';
+ qs.push({who:'⚖️ Bağımsız Vekil',
+  q:`Tabloya bakalım: <span style="color:#99a6c0">${durum}</span>.<br>Bu kanun <b>şu an</b> mı gerekli, yoksa gündemi mi değiştiriyorsunuz?`,
+  a:[
+   {t:`<b>Şu an gerekli</b> — çünkü ${gerekce}.`,
+    ev:()=>fit.s>0?{all:17,n:'Gerekçe tabloyla örtüştü; salon ikna oldu.'}:{all:-12,n:'Rakamlar sizi yalanladı; vekiller not düştü.'}},
+   {t:'<b>Uzun vadeli</b> bir yatırım; bugün için değil, yarın için.',ev:()=>({all:5,n:'Makul ama heyecansız bulundu.'})},
+   {t:'Ülkenin <b>önceliği başka</b>, ama bu düzenleme de sırasını bekliyor.',
+    ev:()=>fit.s<=0?{all:9,n:'Dürüstlüğünüz salonda saygı gördü.'}:{all:-4,n:'"Gerekliyse neden erteliyorsunuz?" dediler.'}},
+  ]});
+ return qs;
+}
+
+function parlAskQuestion(){
+ const q=PARL.questions[PARL.q];
+ if(!q){parlVote();return;}
+ $('parlSpeaker').textContent=`${q.who} — Soru ${PARL.q+1}/${PARL.questions.length}`;
+ $('parlQ').innerHTML=q.q;
+ $('parlAnswers').innerHTML=q.a.map((a,i)=>`<button class="parlAns" onclick="parlAnswer(${i})">${a.t}</button>`).join('')+
+  `<button class="parlAns" style="background:none;border-color:#4a3a3a;color:#b08a8a;text-align:center;" onclick="parlWithdraw()">⬅ Teklifi geri çek</button>`;
+}
+
+function parlAnswer(i){
+ const q=PARL.questions[PARL.q]; if(!q)return;
+ const r=q.a[i].ev()||{};
+ PARL.blocs.forEach(b=>{
+  let d=(r.all||0)+((r.per&&r.per[b.id])||0);
+  b.yes=clamp(Math.round(b.yes+d),3,97);
+ });
+ PARL.q++;
+ parlRender();
+ $('parlAnswers').innerHTML='';
+ $('parlSpeaker').textContent='📣 Salon';
+ $('parlQ').innerHTML=`<i style="color:#c8d2e0">${r.n||'Salon sessizce dinledi.'}</i>`;
+ setTimeout(()=>{if(PARL&&!PARL.done)parlAskQuestion();},1250);
+}
+
+function parlWithdraw(){
+ $('parlWrap').classList.remove('show');
+ $('parlBaldrick').classList.remove('in');
+ $('parlBox').classList.remove('baldrickIn');
+ PARL=null;
+ toast('Teklif geri çekildi.','info');
+}
+
+function parlVote(){
+ PARL.done=true;
+ parlRender(); // son tabloyu koltuklara yansıt
+ $('parlSpeaker').textContent='🗳️ OYLAMA';
+ $('parlQ').innerHTML='<i style="color:#c8d2e0">Vekiller oy veriyor...</i>';
+ $('parlAnswers').innerHTML='';
+ setTimeout(()=>{
+  const yes=parlYesCount(), pass=yes>=PARL.need;
+  const c=G.player, law=PARL.law;
+  $('parlSpeaker').textContent=pass?'✅ KABUL EDİLDİ':'❌ REDDEDİLDİ';
+  $('parlQ').innerHTML=pass
+   ? `<b style="color:#6fdc8c">${law.name}</b> ${PARL.repeal?'yürürlükten kaldırıldı':'kabul edildi'}. <b>${yes}</b> kabul / <b>${PARL_SEATS-yes}</b> ret (gereken ${PARL.need}).`
+   : `<b style="color:#e08a8a">Teklif reddedildi.</b> <b>${yes}</b> kabul / <b>${PARL_SEATS-yes}</b> ret — geçmesi için <b>${PARL.need-yes}</b> oy eksik.`;
+  if(pass){
+   applyLaw(PARL.lawId,!PARL.repeal);
+   addEvent('good',`Meclis "${law.name}" teklifini ${yes}-${PARL_SEATS-yes} kabul etti.`);
+   toast(PARL.repeal?'Kanun kaldırıldı':'Kanun yürürlükte','good');
+   $('parlAnswers').innerHTML=`<button class="parlAns" style="text-align:center;" onclick="parlWithdraw()">Meclisten çık</button>`;
+  } else {
+   addEvent('bad',`Meclis "${law.name}" teklifini ${yes}-${PARL_SEATS-yes} reddetti.`);
+   $('parlAnswers').innerHTML=`<button class="parlAns" style="text-align:center;" onclick="parlWithdraw()">Meclisten çık</button>`;
+   setTimeout(parlBribeOffer,900);
+  }
+ },1100);
+}
+
+// ---- 🥔 Baldrick devreye girer: rüşvet teklifi ----
+function parlBribeOffer(){
+ if(!PARL)return;
+ const c=G.player, missing=Math.max(1,PARL.need-parlYesCount());
+ const cost=Math.round((1100+missing*430)*(1+(c.inflation||0)/100));
+ // Ülke ne kadar DÜZGÜNSE rüşvet o kadar RİSKLİ; çürümüş ülkede kimse şaşırmaz
+ const health=(c.reputation+c.happiness+(100-(c.corruption||0)))/3;
+ const risk=Math.round(clamp(4+health*.75,6,80));
+ PARL.bribe={cost,risk,missing};
+ $('parlBaldrickText').innerHTML=`Kurnaz bir planım var efendim. <b>${missing} vekil</b> eksik — ama o vekillerin de ailesi var, borcu var...<br>`+
+  `<b style="color:#ffd86b">${fmt(cost)} altın</b> verirseniz gerekli görüşmeleri yaparım.<br>`+
+  `<span style="color:${risk>50?'#e08a8a':'#8fd8a0'}">Yakalanma riski: %${risk}</span> `+
+  `<span style="color:#7f8ca6">(${risk>50?'ülkemiz fazla dürüst efendim, göze batarız':'bu ülkede kimse şaşırmaz efendim'})</span>`;
+ $('parlBaldrickBtns').innerHTML=
+  `<button class="btn primary" onclick="parlBribe()" ${c.gold<cost?'disabled style="opacity:.45;cursor:not-allowed;"':''}>💰 ${fmt(cost)} altın ver</button>`+
+  `<button class="btn" onclick="parlBribeDecline()">Hayır, kanun kanundur</button>`;
+ $('parlBaldrick').classList.add('in');
+ $('parlBox').classList.add('baldrickIn');
+}
+function parlBribeDecline(){
+ $('parlBaldrick').classList.remove('in');
+ $('parlBox').classList.remove('baldrickIn');
+ G.player.reputation=clamp(G.player.reputation+2,0,100);
+ toast('Baldrick\'i geri çevirdin. İtibar +2','good');
+ rrr();
+}
+function parlBribe(){
+ if(!PARL||!PARL.bribe)return;
+ const c=G.player, {cost,risk}=PARL.bribe;
+ if(c.gold<cost){toast('Hazine yetersiz.','bad');return;}
+ c.gold-=cost;
+ $('parlBaldrick').classList.remove('in');
+ $('parlBox').classList.remove('baldrickIn');
+ const caught=Math.random()*100<risk;
+ if(caught){
+  c.reputation=clamp(c.reputation-12,0,100);
+  c.happiness=clamp(c.happiness-7,0,100);
+  c.corruption=clamp((c.corruption||0)+6,0,100);
+  if(c.ethnic){['dominant','merchants'].forEach(k=>{if(c.ethnic[k])c.ethnic[k].mood=clamp(c.ethnic[k].mood-8,0,100);});}
+  addEvent('bad',`RÜŞVET SKANDALI: "${PARL.law.name}" için vekillere para teklif edildiği ortaya çıktı. Kanun yine geçmedi.`);
+  toast('🚨 Skandal! Rüşvet ortaya çıktı — itibar -12, mutluluk -7','bad');
+  $('parlSpeaker').textContent='🚨 SKANDAL';
+  $('parlQ').innerHTML='<b style="color:#e08a8a">Bir vekil görüşmeyi basına sızdırdı.</b> Para gitti, kanun geçmedi, itibarınız yerlerde.';
+ } else {
+  c.corruption=clamp((c.corruption||0)+3,0,100);
+  applyLaw(PARL.lawId,!PARL.repeal);
+  addEvent('info',`"${PARL.law.name}" ikinci oylamada kabul edildi. Bazı vekiller fikir değiştirdi.`);
+  toast('Kanun geçti. Baldrick göz kırptı. (Yolsuzluk +3)','info');
+  $('parlSpeaker').textContent='✅ İKİNCİ OYLAMA — KABUL';
+  $('parlQ').innerHTML=`<b style="color:#6fdc8c">${PARL.law.name}</b> kabul edildi. Baldrick koridorda birilerinin omzuna dokundu, o kadar.`;
+ }
+ $('parlAnswers').innerHTML=`<button class="parlAns" style="text-align:center;" onclick="parlWithdraw()">Meclisten çık</button>`;
+ rrr();
+}
 function act_ideology(id){if(!spend(3000))return;G.player.ideology=id;G.player.happiness=clamp(G.player.happiness-5,0,100);const ido=IDEOLOGIES.find(x=>x.id===id);['happiness','military','industry','morale','reputation'].forEach(k=>{if(ido.mods[k])G.player[k]=clamp(G.player[k]+ido.mods[k],0,100);});addEvent('good',`🏛️ Rejim değişti: ${ido.name}`);toast(`Yeni rejim: ${ido.name}`,'good');rrr();}
 function act_religion(id){if(!spend(2000))return;G.player.religion=id;G.player.happiness=clamp(G.player.happiness-8,0,100);const r=RELIGIONS.find(x=>x.id===id);Object.entries(r.mods).forEach(([k,v])=>{if(typeof G.player[k]==='number')G.player[k]=clamp(G.player[k]+v,0,100);});addEvent('good',`⛪ Devlet dini: ${r.name}`);toast(`Yeni din: ${r.name}`,'good');if(officeNPCs.religion)updateReligionNPC();rrr();}
 function act_fest(id){const f=FESTIVALS.find(x=>x.id===id);if(!spend(f.cost))return;f.apply(G.player);if(G.stats){G.stats.fests++;checkNewTitles();}addEvent('good',`${f.name} düzenlendi.`);toast(`${f.name} kutlandı!`,'good');rrr();}
@@ -1796,8 +2172,26 @@ function startGame(){
  init3D();
  enterOffice();
  toast(`Hoş geldin Başkan! Bakanlarınla konuşmak için yanlarına git ve E bas.`,'good');
- setTimeout(()=>{try{startTutorial(false);}catch(e){}},600);
+ // v1.9: eğitim yalnızca ilk kez otomatik açılır; tamamlandıysa Baldrick'ten tekrar istenir
+ setTimeout(()=>{try{
+  if(tutorialSeen()){
+   G.tutorial={done:{},completed:true,active:false};
+   toast('🎓 Eğitimi daha önce tamamladın. Tekrar görmek istersen Baldrick ile konuş.','info');
+  } else startTutorial(false);
+ }catch(e){}},600);
 }
+
+// ============================ 💾 KAYIT SİSTEMİ (v1.9) ============================
+// Tarayıcıda kalıcı olarak saklanan ilerleme. Şimdilik: eğitim tamamlandı mı.
+const SAVE_KEY='lotg_lon_save';
+function loadSave(){
+ try{const raw=localStorage.getItem(SAVE_KEY);return raw?JSON.parse(raw):{};}catch(e){return {};}
+}
+function writeSave(patch){
+ try{const s=loadSave();Object.assign(s,patch);localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
+}
+function tutorialSeen(){return !!loadSave().tutorialDone;}
+function resetSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}toast('Kayıt sıfırlandı — eğitim yeniden açılacak.','info');}
 
 // ============================ 3D CORE ============================
 let renderer,camera,clock;
@@ -2401,6 +2795,7 @@ function baldrickTalk(){
  if(document.pointerLockElement)document.exitPointerLock();
  // Eğitim tamamlanmadıysa Baldrick rehberli eğitimi (yeniden) başlatır
  if(!G.tutorial||!G.tutorial.completed){startTutorial(false);return;}
+ if(G.tutorial.active){renderTutorialBanner();}
  const c=G.player;
  const tips=[];
  if(c.gold<3000)tips.push('Hazine boşalıyor efendim. Vergileri artırın ya da kaynak satın.');
@@ -2460,6 +2855,7 @@ function tut(key){
  renderTutorialBanner();
  if(TUT_STEPS.every(s=>t.done[s.key])){
   t.completed=true;t.active=false;
+  writeSave({tutorialDone:true}); // v1.9: bir daha otomatik açılmasın
   G.player.gold+=3000;G.player.happiness=clamp(G.player.happiness+5,0,100);
   toast('🎓 Eğitim tamamlandı! Baldrick +3000 altın ve +5 mutluluk hediye etti.','good');
   try{rrr();}catch(e){}
