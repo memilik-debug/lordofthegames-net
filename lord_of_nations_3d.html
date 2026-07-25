@@ -1894,6 +1894,16 @@ function lawFit(law,c){
  return {s:clamp(s,-3,3),why};
 }
 
+// Meclis zemin yüksekliği — merdivene basınca oyuncu yükselir
+function parlGroundH(x,z){
+ if(Math.abs(x)<=3.2&&z>=5.2&&z<=9.45)return 1.1;      // kürsü platformu
+ if(Math.abs(x)<=2.6){                                  // basamaklar
+  if(z>9.45&&z<=10.15)return .84;
+  if(z>10.15&&z<=10.85)return .56;
+  if(z>10.85&&z<=11.55)return .28;
+ }
+ return 0;
+}
 function parlSeats(){
  const rows=[{r:92,n:16},{r:130,n:20},{r:168,n:24},{r:206,n:28},{r:244,n:32}];
  const cx=400,cy=350,out=[];
@@ -1938,7 +1948,7 @@ function openParliament(lawId,repeal){
    `<span style="color:#7f8ca6">Kürsüdesiniz Sayın Başkan. ${PARL.questions.length} soru gelecek; cevaplarınız oyları değiştirecek.</span>`;
  $('parlBaldrick').classList.remove('in');
  if(G.scene==='parliament'){ // kürsüye geç ve salona dön — vekilleri görerek konuş
-  player.pos.set(0,4.3,10.6);player.yaw=0;player.pitch=-.24;
+  player.pos.set(0,2.8,8.7);player.yaw=0;player.pitch=-.05;player.eye=2.8;
   if(parlPodSign)parlPodSign.visible=false;
  }
  $('parlWrap').classList.toggle('in3d',G.scene==='parliament'); // 3D salondaysak 2D şemayı kullanma
@@ -3480,6 +3490,7 @@ function updateWalk(dt){
   tryMove(player.pos.x+mvx*sp,player.pos.z+mvz*sp,cols);
  }
  // --- ZIPLAMA (boşluk) + yerçekimi ---
+ if(G.scene==='parliament')player.eye=1.7+parlGroundH(player.pos.x,player.pos.z);
  const zeminY=player.eye||1.7;
  if(keys[' ']&&player.onGround){player.vy=6.2;player.onGround=false;}
  if(!player.onGround){
@@ -4904,43 +4915,63 @@ function buildParliamentInterior(){
  });
 
  // ---- Kürsü (podium) ----
- const podBase=new THREE.Mesh(new THREE.BoxGeometry(6,1.1,3.4),mat(0x3f2c18));podBase.position.set(0,.55,7);parlScene.add(podBase);
+ // Platform (z 5.2..9.4) — üstüne çıkılabilir, çarpışma kutusu YOK
+ const podBase=new THREE.Mesh(new THREE.BoxGeometry(6.4,1.1,4.2),mat(0x3f2c18));podBase.position.set(0,.55,7.3);parlScene.add(podBase);
+ const podTop=new THREE.Mesh(new THREE.BoxGeometry(6.4,.08,4.2),mat(0x6b4a28));podTop.position.set(0,1.14,7.3);parlScene.add(podTop);
+ // Merdiven: 3 basamak, salona bakan (+z) taraftan çıkılır
+ for(let i=0;i<3;i++){
+  const h=.28*(i+1);
+  const st=new THREE.Mesh(new THREE.BoxGeometry(5.2,h,.7),mat(0x4a3520));
+  st.position.set(0,h/2,11.15-i*.7);parlScene.add(st);
+  const edge=new THREE.Mesh(new THREE.BoxGeometry(5.2,.05,.72),mat(0xffd86b));
+  edge.position.set(0,h+.02,11.15-i*.7);parlScene.add(edge);
+ }
+ // Merdiven korkulukları (sadece görsel)
+ [-2.75,2.75].forEach(x=>{
+  const rail=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,3.1),mat(0xffd86b));
+  rail.position.set(x,1.15,10.1);rail.rotation.x=-.19;parlScene.add(rail);
+  [9.1,11.3].forEach((z,k)=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,k?.95:1.25),mat(0xffd86b));post.position.set(x,k?.48:.62,z);parlScene.add(post);});
+ });
  const rostrum=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.25,1.1),mat(0x5a3f22));rostrum.position.set(0,1.72,6.2);parlScene.add(rostrum);
  const rtop=new THREE.Mesh(new THREE.BoxGeometry(2.7,.12,1.3),mat(0x7a5730));rtop.position.set(0,2.4,6.2);parlScene.add(rtop);
  const seal=new THREE.Mesh(new THREE.CircleGeometry(.62,24),new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color)}));
  seal.position.set(0,1.72,5.62);parlScene.add(seal);
- addCol(0,7,6.4,3.8);
  parlPodSign=makeTextSprite('🎙️ KÜRSÜ',{w:2.6,border:'#ffd86b',color:'#ffd86b'});
  parlPodSign.position.set(0,4.6,8.6);parlScene.add(parlPodSign);
 
  // ---- Başkanlık divanı (kürsünün arkası) ----
- const dais=new THREE.Mesh(new THREE.BoxGeometry(14,1.6,4),mat(0x4a3520));dais.position.set(0,.8,12);parlScene.add(dais);
- const daisDesk=new THREE.Mesh(new THREE.BoxGeometry(13,1.2,1.2),mat(0x5a3f22));daisDesk.position.set(0,2.2,11);parlScene.add(daisDesk);
- addCol(0,12,14.4,4.4);
+ const dais=new THREE.Mesh(new THREE.BoxGeometry(12,1.6,3.6),mat(0x4a3520));dais.position.set(0,.8,16);parlScene.add(dais);
+ const daisDesk=new THREE.Mesh(new THREE.BoxGeometry(11,1.2,1.2),mat(0x5a3f22));daisDesk.position.set(0,2.2,15.1);parlScene.add(daisDesk);
+ addCol(0,16,12.4,4);
  [-3.2,0,3.2].forEach((x,i)=>{
   const p=makePerson(i===1?0x2a2a38:0x33384a);
-  p.position.set(x,1.6,12.6);p.rotation.y=Math.PI;parlScene.add(p);
+  p.position.set(x,1.6,16.6);p.rotation.y=Math.PI;parlScene.add(p);
  });
- const spk=makeTextSprite('⚖️ MECLİS BAŞKANLIĞI',{w:7});spk.position.set(0,5.2,12);parlScene.add(spk);
+ const spk=makeTextSprite('⚖️ MECLİS BAŞKANLIĞI',{w:7});spk.position.set(0,5.2,16);parlScene.add(spk);
  // arkada ülke bayrağı
  const flagFrame=new THREE.Mesh(new THREE.BoxGeometry(9.8,6.2,.2),mat(0xffd86b));
- flagFrame.position.set(0,7.4,15.7);parlScene.add(flagFrame);
+ flagFrame.position.set(0,7.4,19.4);parlScene.add(flagFrame);
  const bigFlag=new THREE.Mesh(new THREE.PlaneGeometry(9,5.4),
    new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color),side:THREE.DoubleSide}));
- bigFlag.position.set(0,7.4,15.55);parlScene.add(bigFlag);
+ bigFlag.position.set(0,7.4,19.25);parlScene.add(bigFlag);
  // arma madalyonu
  const medal=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,.22,24),mat(0xffd86b));
- medal.rotation.x=Math.PI/2;medal.position.set(0,7.4,15.4);parlScene.add(medal);
+ medal.rotation.x=Math.PI/2;medal.position.set(0,7.4,19.1);parlScene.add(medal);
  const medalIn=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.15,.26,24),
    new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color)}));
- medalIn.rotation.x=Math.PI/2;medalIn.position.set(0,7.4,15.34);parlScene.add(medalIn);
+ medalIn.rotation.x=Math.PI/2;medalIn.position.set(0,7.4,19.04);parlScene.add(medalIn);
 
  // ---- Kapı (şehre çık) ----
- const door=new THREE.Mesh(new THREE.BoxGeometry(4.5,5,.4),mat(0x4a3520));door.position.set(13,2.5,20.6);parlScene.add(door);
- const dsign=makeTextSprite('🚪 ÇIK (şehre)',{w:3.8,border:'#6fdc8c',color:'#6fdc8c'});dsign.position.set(13,5.4,20.2);parlScene.add(dsign);
+ const door=new THREE.Mesh(new THREE.BoxGeometry(.4,5,4.5),mat(0x4a3520));door.position.set(26.6,2.5,12.5);parlScene.add(door);
+ const dsign=makeTextSprite('🚪 ÇIK (şehre)',{w:3.8,border:'#6fdc8c',color:'#6fdc8c'});dsign.position.set(25.6,5.4,12.5);parlScene.add(dsign);
+ // Girişten kürsüye kırmızı yürüyüş halısı (yolu gösterir)
+ const runner=new THREE.Mesh(new THREE.PlaneGeometry(24,3.2),mat(0x7a2434));
+ runner.rotation.x=-Math.PI/2;runner.position.set(13,.04,12.5);parlScene.add(runner);
+ const runner2=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3.4),mat(0x7a2434));
+ runner2.rotation.x=-Math.PI/2;runner2.position.set(0,.04,12.6);parlScene.add(runner2);
 
- parlInteractables.push({scene:'parliament',x:0,z:9.6,radius:3.6,label:'<b>E</b> — 🎙️ Kürsüye çık (kanun teklifi sun)',action:()=>parlPodium()});
- parlInteractables.push({scene:'parliament',x:13,z:19.4,radius:3.2,label:'<b>E</b> — 🚪 Şehre çık',action:()=>leaveParliament()});
+ parlInteractables.push({scene:'parliament',x:0,z:9.2,radius:4.2,label:'<b>E</b> — 🎙️ Kürsüye çık (kanun teklifi sun)',action:()=>parlPodium()});
+ parlInteractables.push({scene:'parliament',x:24.6,z:12.5,radius:3.2,label:'<b>E</b> — 🚪 Şehre çık',action:()=>leaveParliament()});
 }
 let PARL_SEAT_PTS=[];
 
@@ -4949,7 +4980,7 @@ function enterParliament(){
  if(!parlScene)buildParliamentInterior();
  G.scene='parliament';curScene=parlScene;G.driving=false;
  for(const k in keys)keys[k]=false;
- player.pos.set(13,1.7,17.5);player.yaw=Math.PI/4;player.pitch=-.05;
+ player.pos.set(23,1.7,12.5);player.yaw=Math.PI/2;player.pitch=-.03;
  $('hud').style.display='flex';$('crosshairDot').style.display='block';
  $('sceneLabel').textContent='🏛️ Ulusal Meclis — '+G.player.capital;$('sceneLabel').style.display='block';
  $('lockHint').textContent='WASD: yürü | BOŞLUK: zıpla | OK TUŞLARI: bak | E: etkileşim | Kürsüye git';
