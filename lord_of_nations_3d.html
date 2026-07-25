@@ -1747,6 +1747,102 @@ function act_law(id){
 }
 function applyLaw(id,on){if(!G.player.laws)G.player.laws={};G.player.laws[id]=on;if(on&&typeof tut==='function')tut('law');rrr();}
 
+// ============================ 📖 KÜL YILLARI EVRENİ (v1.9) ============================
+// Kıtanın ortak geçmişi: 150 yıl önce Alpenya'daki Kelbaran Dağı patladı, gökyüzü üç yıl
+// kapandı, üç hasat üst üste tutmadı. Her devletin kimliği "o üç yılda ne yaptığı"dır.
+const ASH_INTRO=[
+ 'Sayın Başkan, koltuğa oturmadan önce bilmeniz gereken bir şey var.',
+ 'Bundan yüz elli yıl önce Alpenya\'daki Kelbaran Dağı patladı. Gökyüzü üç yıl boyunca kapandı.',
+ 'Üç hasat üst üste tutmadı. Buna KÜL YILLARI diyoruz. Eski düzen savaşla değil, açlıkla çöktü.',
+ 'Bugünkü on beş devletin hepsi o külden çıktı. Ve kıtadaki bütün husumetler tek bir soruya dayanır:',
+ '"Kül Yıllarında sen ne yaptın?"',
+ 'Kimse unutamıyor efendim, çünkü yazıldı. Egeyalı kâtipler üç yıl boyunca kim kime tahıl verdi,',
+ 'kim ambarını kapattı diye kaydetti. O kayıtlara KÜL DEFTERLERİ deniyor, hâlâ Athelos\'ta duruyor.',
+ 'Bir de Alpenhof\'taki TAHIL MECLİSİ var — kıtanın ilk ortak kurumu, o yıllarda tahılı paylaştırdı.',
+];
+const ASH_OUTRO=[
+ 'Ve şu sıralar işler geriliyor efendim: Kelbaran yirmi yıldır yeniden duman veriyor,',
+ 'yeni bir kuşak da Kül Defterleri\'nin yeniden açılmasını istiyor. Herkes hesap sorulmasını istiyor —',
+ 'tabii kendi sayfası okunmadığı sürece.',
+ 'İşte devraldığınız kıta bu efendim. Şimdi izninizle, ülkemizin kendi sayfasına bakalım.',
+];
+const COUNTRY_LORE={
+ turan:['Bizim yaylalarımız soğuğa dayanıklı tahıl yetiştiriyordu efendim — Kül Yıllarında hasadı tutan tek yer burasıydı.',
+  'Turan kıtayı besledi. Ama bedava değil: tahılı borçla verdik, borç ödenmeyince toprakla aldık.',
+  'Yüz yirmi yıl önce kıtanın yarısında toprağımız vardı. Tek kurşun atmadan.',
+  'Sonra REDDİYE oldu: doksan beş yıl önce borçlular hep birlikte borcu tanımadıklarını ilan etti ve toprakları geri aldı.',
+  'Tek kurşun atmadan kazandığımızı, tek kurşun atamadan kaybettik. Biz buna hırsızlık diyoruz; onlar kurtuluş.',
+  'İki taraf da aynı defteri delil gösteriyor efendim. Ve o defterlerde bizim alacağımız hâlâ yazılı.'],
+ eirlanda:['Küçük, yağmurlu, fakir bir adayız efendim — ama Kül Yıllarında elimizdeki tohumluk buğdayın tamamını kıtaya gönderdik.',
+  'Yani ertesi yıl ekecek bir şeyimiz kalmadı. Adanın üçte biri açlıktan öldü.',
+  'Kimse borcunu ödemedi. Yüz elli yıldır fakiriz, çünkü yüz elli yıl önce her şeyimizi verdik.',
+  'Ama bir şeyimiz var efendim: Tahıl Meclisi\'nde bizim temsilcimiz ayağa kalkınca salon susar. Ordumuz yok; sözümüz var.'],
+ albiona:['Kıtanın en büyük donanması bizim efendim. Ve Kül Yıllarında limanlarımızı kapattık.',
+  'Gemilerimiz kendi halkımızı besledi, kıtaya bir çuval bile geçmedi. Halkımızın neredeyse tamamını kurtardık.',
+  'Kül Defterleri\'nde adımız "Kapalı Liman" diye geçiyor. Yüz elli yıldır hiçbir masaya tam eşit oturamadık.',
+  'Zenginiz, güçlüyüz ve yalnızız. Dış politikamızın tek gerçek amacı o defterlerin kapatılması efendim.'],
+ prusen:['Kül Yıllarını bitiren EISENBURG FORMÜLÜ burada bulundu efendim — kül basmış toprağı yeniden verimli kılan karışım.',
+  'Kıtayı açlıktan biz kurtardık ve karşılığında hiçbir şey istemedik.',
+  'Bizde işler duayla değil laboratuvarla çözülür. En iyi üniversiteler, en iyi sanayi bizde.',
+  'Tek pürüz: formülü verdik ama patentini sattık. Her gübre fabrikası bize telif ödüyor ve herkes bunu biraz haksız buluyor.'],
+ alpenya:['Patlayan dağ bizimdi efendim. Kelbaran bizim kutsal dağımızdı; adını anmak Alpenhof\'ta hâlâ ayıptır.',
+  'Kıtaya olan borcumuzu iki şeyle ödüyoruz: Tahıl Meclisi\'ne ev sahipliği yapmak ve kimseden yana olmamak.',
+  'Yüz elli yıllık mutlak tarafsızlık. Herkesin altını bizim kasalarımızda; bu yüzden kimse bize girmez.',
+  'Ama bir sorun var efendim: Kelbaran yirmi yıldır yeniden duman veriyor. Bunu kimseye söylemek istemiyoruz.'],
+ egeya:['Kül Yıllarında yiyeceğimiz yoktu efendim, ama kâtiplerimiz vardı.',
+  'Yazıcılarımız üç yıl boyunca kıtayı dolaşıp kim ne yaptı diye yazdı. KÜL DEFTERLERİ bizim eserimiz.',
+  'Her devletin en utanç verici anı Athelos\'ta bir rafta duruyor. Küçük ordumuza rağmen kimse bizi gözden çıkaramıyor.',
+  'Ama herkes o defterleri istiyor — kimi yakmak, kimi okutmak için. Altmış yılda üç hırsızlık girişimi yaşadık.'],
+ aurelia:['Kül Yıllarında bizim soylularımız ambarlarını halktan sakladı efendim.',
+  'Halk ambarları kırdı, sarayı bastı ve kıtanın ilk cumhuriyetini kurdu. "Ekmek kimindir?" sorusu burada siyasi bir soru oldu.',
+  'Kıtadaki her meclis, Auros\'taki o ilk halk kurulunun torunudur.',
+  'Devrim kazandı ama hiç durulmadık: yüz kırk beş yılda on bir anayasa değiştirdik. İstikrarsızlık artık milli huyumuz.'],
+ volzaria:['Kıtanın en büyük ülkesiyiz efendim. Kül Yıllarında ovalarımız çorak kaldı.',
+  'Hayatta kalmak için bütün sürülerimizi kestik. Milyonlar öldü ama devlet ayakta kaldı — çünkü merkez sertti.',
+  'Kimseden yardım istemedik, kimseye borçlu değiliz. Kül Defterleri\'nde adımız ne iyiyle ne kötüyle geçer; hiç geçmez.',
+  'Krasnograd bununla gurur duyar. Ama nüfusumuzu yüz elli yılda toparlayamadık: toprağımız devasa, insanımız az.'],
+ sarmatya:['AÇ YÜRÜYÜŞ buradan geçti efendim. Yüz binlerce insan bu ovalarda durdu ve bir daha gitmedi.',
+  'Sarmatya bir halkın değil, bir göçün kurduğu ülkedir. Sekiz dil, dört inanç, tek pasaport.',
+  '"Sarmatyalı kimdir?" sorusunun yüz elli yıldır cevabı yok. Her hükümet yeniden tanımlıyor, her denemede birileri dışarıda kalıyor.',
+  'Toprağımız verimli, işçimiz çalışkan. Tam ortada olmak hem lanet hem şans efendim.'],
+ venedra:['Kül Yıllarında tüccar filomuz tahılı ucuza alıp pahalıya sattı efendim.',
+  'Kıta açken Romara\'da yeni saraylar yapıldı. Bugün kıtanın en zengin üçüncü ülkesi, en sevilmeyen birincisiyiz.',
+  'Kül Defterleri\'ndeki en uzun bölüm bizimdir — ve hepsi rakamdır.',
+  'Yüz elli yıldır yardımla, bursla, müze bağışıyla temizlemeye çalışıyoruz. Olmuyor. Para her kapıyı açıyor ama saygı satın alamıyor.'],
+ karpatya:['Dağ vadilerimiz külü tuttu, hasadı korudu efendim. Kül Yıllarını aç kalmadan atlattık.',
+  'Ve komşularımıza kapılarımızı açmadık. Vadi geçitlerini tuttuk, aç kalabalıkları geri çevirdik.',
+  'Kıta bunu affetmedi. Bize "KAPALI VADİLER" diyorlar.',
+  'Savunmamız şu: vadimiz on bin kişiyi besler, kapıya iki yüz bin kişi geldi. Hepsini alsak hepimiz ölürdük.',
+  'Bu doğru efendim. Ve kimsenin dinlemek istemediği bir doğru.'],
+ balkarya:['Karpatya kapıyı kapatınca Aç Yürüyüş bize döndü efendim. Biz ormanlarımızı açtık, kimseyi geri çevirmedik.',
+  'Kendi halkımız da açtı, gelenler de. Beraber aç kaldık.',
+  'Kıtanın en misafirperver ve en karışık ülkesiyiz — ve bu yüzden her komşumuz bir köşemizde "bizim insanımız var" diyor.',
+  'Cömertliğimizin bedelini hâlâ ödüyoruz: sınırlarımız yüz elli yıldır tartışmalı, çünkü içimizde herkesten biraz var.'],
+ iberya:['Yarımadamız dağlarla kıtadan ayrı efendim. Kül Yıllarında bize kimse gelmedi, kimse bizi sormadı.',
+  'Balıkla ve zeytinle kendi başımıza hayatta kaldık.',
+  'Kül Defterleri\'nde Iberya neredeyse hiç anılmaz — ne iyilikle ne kötülükle. Solderalılar bunu bir hakaret sayar.',
+  'Bize kimse gelmedi, biz de kimseye gitmeyiz. Fakiriz ama kimseye borçlu değiliz.'],
+ norvenna:['Toprak kül altındayken deniz doluydu efendim. Balıkçı filomuz kuzeyin tamamını besledi — hem de ücretsiz.',
+  'Ama yalnızca kuzeye. Güneye gitmeye gemimiz yetmedi.',
+  'Kül Defterleri\'nde adımız temiz geçer. Bu yüzden Tahıl Meclisi\'nde sözümüz ağırdır ve biz bunu israf etmeyiz.',
+  'Kıtanın en büyük ticaret filosu bizde. Ama kıyımız uzun, ordumuz küçük efendim.'],
+ suomia:['Kuzeyin göllük ormanları farklı ürün yetiştiriyordu efendim; kül bize geç ulaştı.',
+  'Kül Yıllarında biz büyüdük. Kimse bakmazken sınırlarımızı genişlettik, ambarlarımızı doldurduk.',
+  'Kimseye bir şey vermedik, kimseden bir şey istemedik.',
+  'Kıta bunu fark etti. Bize "SESSİZ YILLAR ÜLKESİ" diyorlar ve bu bir iltifat değil.',
+  'Ormanda ve karda savaşmayı biliriz. Bütün siyasetimiz tek cümleye dayanır: bir daha kimse bize bakmasın.'],
+};
+function loreLines(){
+ const id=G.player?G.player.id:null;
+ const own=(id&&COUNTRY_LORE[id])?COUNTRY_LORE[id]:['Ülkemizin Kül Defterleri\'ndeki sayfası kayıp efendim. Belki de böylesi iyidir.'];
+ return ASH_INTRO.concat(ASH_OUTRO,own,['Kıtanın hikâyesi bu efendim. Şimdi sıra sizde: bu sayfaya ne yazacaksınız?']);
+}
+function tellLore(after){
+ if(document.pointerLockElement)document.exitPointerLock();
+ G.dialog={name:'🥔 Danışman Baldrick',idx:0,lines:loreLines(),after:after||null};
+ showDialogLine();
+}
+
 // ============================ 🏛️ MECLİS SİSTEMİ (v1.9) ============================
 const PARL_SEATS=120;
 // Meclis blokları — oyunun 4 çıkar grubunun siyasi karşılığı (soldan sağa oturur)
@@ -2246,10 +2342,13 @@ function startGame(){
  toast(`Hoş geldin Başkan! Bakanlarınla konuşmak için yanlarına git ve E bas.`,'good');
  // v1.9: eğitim yalnızca ilk kez otomatik açılır; tamamlandıysa Baldrick'ten tekrar istenir
  setTimeout(()=>{try{
-  if(tutorialSeen()){
-   G.tutorial={done:{},completed:true,active:false};
-   toast('🎓 Eğitimi daha önce tamamladın. Tekrar görmek istersen Baldrick ile konuş.','info');
-  } else startTutorial(false);
+  // Önce Baldrick kıtanın ve ülkenin hikâyesini anlatır, sonra eğitim
+  tellLore(()=>{
+   if(tutorialSeen()){
+    G.tutorial={done:{},completed:true,active:false};
+    toast('🎓 Eğitimi daha önce tamamladın. Tekrar görmek istersen Baldrick ile konuş.','info');
+   } else startTutorial(false);
+  });
  }catch(e){}},600);
 }
 
@@ -2893,7 +2992,10 @@ function baldrickTalk(){
  if(c._consume&&!c._consume.steelOK)tips.push('Ordu çelik bulamıyor efendim! Borsadan çelik alın ya da maden inşa edin, yoksa moral eriyecek.');
  if(c._consume&&!c._consume.grainOK)tips.push('Tahıl ambarları boş efendim! Halk aç kalmadan çiftlik kurun ya da borsadan tahıl alın.');
  if(tips.length===0)tips.push('Her şey yolunda görünüyor efendim. Şüpheli derecede yolunda...');
- G.dialog={lines:['Kurnaz bir planım var efendim!',pick(tips),'Eğitimi tekrar görmek isterseniz, aşağıdan başlatabilirsiniz.','Bir de... maaş zammı mümkün mü efendim? (değil mi... peki.)'],idx:0,name:'🥔 Danışman Baldrick',after:()=>{if(confirm('Baldrick eğitimini baştan görmek ister misin?'))startTutorial(true);}};
+ G.dialog={lines:['Kurnaz bir planım var efendim!',pick(tips),'Ülkemizin hikâyesini ya da eğitimi tekrar dinlemek isterseniz, aşağıdan seçebilirsiniz.','Bir de... maaş zammı mümkün mü efendim? (değil mi... peki.)'],idx:0,name:'🥔 Danışman Baldrick',after:()=>{
+  if(confirm('Ülkemizin ve Kül Yılları\'nın hikâyesini tekrar dinlemek ister misin?')){tellLore(null);return;}
+  if(confirm('Peki Baldrick eğitimini baştan görmek ister misin?'))startTutorial(true);
+ }};
  showDialogLine();
 }
 // ===================== BALDRICK REHBERLİ EĞİTİM =====================
