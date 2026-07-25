@@ -273,7 +273,7 @@
   <div id="sceneLabel"></div>
   <div id="crosshairDot"></div>
   <div id="interactPrompt"></div>
-  <div id="lockHint">WASD: yürü | OK TUŞLARI: etrafına bak | E: etkileşim | Tıkla: fareyle bak (fare kilidi)</div>
+  <div id="lockHint">WASD: yürü | BOŞLUK: zıpla | OK TUŞLARI: bak | E: etkileşim | Tıkla: fareyle bak</div>
 
   <div id="dialogBox">
     <div id="dialogName">—</div>
@@ -2269,13 +2269,13 @@ function resetSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}toast('Kay
 let renderer,camera,clock;
 let officeScene=null,cityScene=null;
 let curScene=null;
-const player={pos:new THREE.Vector3(0,1.7,12),yaw:0,pitch:0,speed:5};
+const player={pos:new THREE.Vector3(0,1.7,12),yaw:0,pitch:0,speed:5,vy:0,onGround:true,eye:1.7};
 let colliders=[];
 let interactables=[];
 let locked=false;
 const officeNPCs={};
 const keys={};
-window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()))e.preventDefault();});
+window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault();});
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
 function init3D(){
@@ -3025,9 +3025,64 @@ function buildCity(){
   else{
    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,6),new THREE.MeshLambertMaterial({color:0x2a2a30}));pole.position.set(lx,3,lz);cityScene.add(pole);
    const head=new THREE.Mesh(new THREE.SphereGeometry(.4,8,8),new THREE.MeshBasicMaterial({color:0xfff0b0}));head.position.set(lx,6,lz);cityScene.add(head);
+   const arm=new THREE.Mesh(new THREE.BoxGeometry(.14,.14,1.2),new THREE.MeshLambertMaterial({color:0x2a2a30}));arm.position.set(lx,5.9,lz-.5);cityScene.add(arm);
+   const foot=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,.5,8),new THREE.MeshLambertMaterial({color:0x35353c}));foot.position.set(lx,.25,lz);cityScene.add(foot);
   }
   // Not: gündüz sahnesi olduğu için sokak lambalarına gerçek ışık eklenmez (performans)
  }
+ // ===== Şehir dekoru: ağaçlar, parklar, banklar, bulutlar =====
+ const lam=c=>new THREE.MeshLambertMaterial({color:c});
+ // Yol kenarı ağaçları (kaldırım dışına, binalara çarpmayacak şekilde)
+ const treeSpots=[];
+ for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
+  for(const [ox,oz] of [[7,14],[-7,-14],[14,-7],[-14,7]]){
+   const tx=gx*45+ox, tz=gz*45+oz;
+   if(Math.hypot(tx,tz)<26)continue;                      // ofis meydanı boş kalsın
+   if(Math.abs(tx-PARLIAMENT_POS.x)<34&&Math.abs(tz-PARLIAMENT_POS.z)<26)continue;
+   if(Math.abs(tx-GENSTAFF_POS.x)<34&&Math.abs(tz-GENSTAFF_POS.z)<26)continue;
+   treeSpots.push([tx,tz]);
+  }
+ }
+ treeSpots.forEach(([tx,tz],i)=>{
+  if(i%3===0)return;
+  const h=4.5+((i*37)%10)*.35;
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.28,.4,h,7),lam(0x5a3f24));
+  trunk.position.set(tx,h/2,tz);trunk.castShadow=true;cityScene.add(trunk);
+  const g1=new THREE.Mesh(new THREE.SphereGeometry(2.4,9,7),lam(i%2?0x3f7a34:0x4d8a3a));
+  g1.position.set(tx,h+1.4,tz);g1.scale.y=.85;g1.castShadow=true;cityScene.add(g1);
+  const g2=new THREE.Mesh(new THREE.SphereGeometry(1.7,8,6),lam(0x589a44));
+  g2.position.set(tx+.7,h+2.6,tz-.5);cityScene.add(g2);
+ });
+ // Köşe parkları (çim + bank + çalı)
+ [[-45,45],[45,-45],[-90,-45],[90,45]].forEach(([px,pz],k)=>{
+  const lawn=new THREE.Mesh(new THREE.PlaneGeometry(24,24),lam(0x4e8a3e));
+  lawn.rotation.x=-Math.PI/2;lawn.position.set(px,.03,pz);cityScene.add(lawn);
+  const path=new THREE.Mesh(new THREE.PlaneGeometry(24,3),lam(0xc2b79c));
+  path.rotation.x=-Math.PI/2;path.position.set(px,.05,pz);cityScene.add(path);
+  for(let b=0;b<2;b++){
+   const seat=new THREE.Mesh(new THREE.BoxGeometry(3,.22,1),lam(0x6b4a2a));
+   seat.position.set(px-6+b*12,.75,pz+3);cityScene.add(seat);
+   const back=new THREE.Mesh(new THREE.BoxGeometry(3,.9,.18),lam(0x6b4a2a));
+   back.position.set(px-6+b*12,1.2,pz+3.45);cityScene.add(back);
+   [-1.2,1.2].forEach(dx=>{const lg=new THREE.Mesh(new THREE.BoxGeometry(.18,.75,.9),lam(0x3a3a3a));lg.position.set(px-6+b*12+dx,.38,pz+3);cityScene.add(lg);});
+  }
+  for(let c2=0;c2<5;c2++){
+   const bush=new THREE.Mesh(new THREE.SphereGeometry(1.1,7,5),lam(0x3d7a30));
+   bush.position.set(px-9+((c2*97)%18),.8,pz-9+((c2*53)%16));bush.scale.y=.7;cityScene.add(bush);
+  }
+ });
+ // Gökyüzünde bulutlar
+ for(let i=0;i<16;i++){
+  const cl=new THREE.Group();
+  for(let b=0;b<4;b++){
+   const puff=new THREE.Mesh(new THREE.SphereGeometry(7+((i*b*13)%6),8,6),
+     new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:.82}));
+   puff.position.set(b*9-13,((i+b)%3)*2.2,((i*b)%3)*4-4);cl.add(puff);
+  }
+  cl.position.set(((i*137)%460)-230,58+((i*29)%22),((i*211)%460)-230);
+  cityScene.add(cl);
+ }
+
  // Office building (player spawn in front)
  const off=new THREE.Group();
  const ob=new THREE.Mesh(new THREE.BoxGeometry(26,14,16),new THREE.MeshLambertMaterial({color:0xd8d0bc}));
@@ -3252,6 +3307,7 @@ function buildHouse(){if(hasModel('house')){const m=getModel('house',{yaw:rand(0
 
 // ============================ SCENE SWITCH ============================
 function enterOffice(){
+ player.vy=0;player.onGround=true;player.eye=1.7;
  if(!officeScene)buildOffice();
  if(camera){camera.fov=62;camera.updateProjectionMatrix();}
  G.scene='office';curScene=officeScene;G.driving=false;
@@ -3261,7 +3317,7 @@ function enterOffice(){
  $('crosshairDot').style.display='block';
  $('sceneLabel').textContent='🏛️ Başkanlık Ofisi';
  $('sceneLabel').style.display='block';
- $('lockHint').textContent='WASD: yürü | OK TUŞLARI: etrafına bak | E: etkileşim | Tıkla: fareyle bak';
+ $('lockHint').textContent='WASD: yürü | BOŞLUK: zıpla | OK TUŞLARI: bak | E: etkileşim | Tıkla: fareyle bak';
  $('lockHint').style.display='block';
  hideWarUI();
  renderHUD();
@@ -3273,7 +3329,7 @@ function enterCity(){
  for(const k in keys)keys[k]=false;
  player.pos.set(0,1.7,-14);player.yaw=Math.PI;player.pitch=0;
  $('sceneLabel').textContent='🏙️ '+G.player.customName+' — Başkent '+G.player.capital;
- $('lockHint').textContent='WASD: yürü | OK TUŞLARI: etrafına bak | E: etkileşim | Tıkla: fareyle bak';
+ $('lockHint').textContent='WASD: yürü | BOŞLUK: zıpla | OK TUŞLARI: bak | E: etkileşim | Tıkla: fareyle bak';
  $('lockHint').style.display='block';
  toast('Şehrindesin! İnşa ettiğin yapılar burada. Saraya dönmek için kapıya git.','good');
  if(typeof tut==='function')tut('city');
@@ -3321,6 +3377,17 @@ function updateWalk(dt){
   const cols=G.scene==='office'?colliders:G.scene==='genstaff'?gsColliders:G.scene==='parliament'?parlColliders:cityColliders;
   tryMove(player.pos.x+mvx*sp,player.pos.z+mvz*sp,cols);
  }
+ // --- ZIPLAMA (boşluk) + yerçekimi ---
+ const zeminY=player.eye||1.7;
+ if(keys[' ']&&player.onGround){player.vy=6.2;player.onGround=false;}
+ if(!player.onGround){
+  player.vy-=17.5*dt;
+  player.pos.y+=player.vy*dt;
+  if(player.pos.y<=zeminY){player.pos.y=zeminY;player.vy=0;player.onGround=true;}
+ } else if(Math.abs(player.pos.y-zeminY)>.001){
+  player.pos.y=zeminY; // sahne değişiminde göz hizasını toparla
+ }
+
  if(G.scene==='office'){
   player.pos.x=clamp(player.pos.x,-22.2,22.2);
   player.pos.z=clamp(player.pos.z,-18.2,18.2);
@@ -4540,7 +4607,7 @@ function exitCar(silent){
  const rx=Math.cos(u.heading),rz=-Math.sin(u.heading); // sağ yön
  player.pos.set(playerCar.position.x+rx*2.6,1.7,playerCar.position.z+rz*2.6);
  player.yaw=u.heading;player.pitch=0;
- $('lockHint').textContent='WASD: yürü | OK TUŞLARI: etrafına bak | E: etkileşim | Tıkla: fareyle bak';
+ $('lockHint').textContent='WASD: yürü | BOŞLUK: zıpla | OK TUŞLARI: bak | E: etkileşim | Tıkla: fareyle bak';
  if(!silent)toast('Araçtan indin.','info');
 }
 function updateDrive(dt){
@@ -4661,6 +4728,50 @@ function buildParliamentInterior(){
  const ring=new THREE.Mesh(new THREE.TorusGeometry(6,.32,8,28),new THREE.MeshBasicMaterial({color:0xffd86b}));
  ring.rotation.x=Math.PI/2;ring.position.set(0,12.4,-3);parlScene.add(ring);
 
+ // --- Süsleme katmanı ---
+ // Mermer zemin şeridi (kürsü ile sıralar arası)
+ const marble=new THREE.Mesh(new THREE.CircleGeometry(8.2,40),mat(0xd8d2c4));
+ marble.rotation.x=-Math.PI/2;marble.position.set(0,.05,2);parlScene.add(marble);
+ const marbleIn=new THREE.Mesh(new THREE.CircleGeometry(3.4,32),mat(0xffd86b));
+ marbleIn.rotation.x=-Math.PI/2;marbleIn.position.set(0,.06,2);parlScene.add(marbleIn);
+ const marbleCore=new THREE.Mesh(new THREE.CircleGeometry(2.9,32),mat(0xc9c0ac));
+ marbleCore.rotation.x=-Math.PI/2;marbleCore.position.set(0,.07,2);parlScene.add(marbleCore);
+
+ // Duvar boyunca ahşap lambri + mermer sütunlar
+ for(let i=0;i<14;i++){
+  const a=Math.PI*(1.0+i/13*1.0);
+  const cx=Math.cos(a)*25.2, cz=-3+Math.sin(a)*25.2;
+  const col=new THREE.Mesh(new THREE.CylinderGeometry(.62,.7,10,10),mat(0xe0d8c4));
+  col.position.set(cx,5,cz);parlScene.add(col);
+  const cap=new THREE.Mesh(new THREE.BoxGeometry(1.7,.5,1.7),mat(0xf0e8d4));cap.position.set(cx,10.2,cz);parlScene.add(cap);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(1.8,.5,1.8),mat(0xc8bfa8));base.position.set(cx,.25,cz);parlScene.add(base);
+ }
+ // Ziyaretçi balkonu (sıraların üstünde halka)
+ const gallery=new THREE.Mesh(new THREE.RingGeometry(23,25.6,44,1,Math.PI*1.02,Math.PI*.96),mat(0x6b5233));
+ gallery.rotation.x=-Math.PI/2;gallery.position.set(0,6.4,-3);parlScene.add(gallery);
+ const galRail=new THREE.Mesh(new THREE.TorusGeometry(23.2,.16,6,44,Math.PI*.96),mat(0xffd86b));
+ galRail.rotation.x=Math.PI/2;galRail.rotation.z=Math.PI*1.02;galRail.position.set(0,7.2,-3);parlScene.add(galRail);
+ // balkonda izleyiciler
+ for(let i=0;i<26;i++){
+  const a=Math.PI*(1.05+i/25*.9), r=24.3;
+  const v=makeMP(i%3===0?0x4a5568:i%3===1?0x5a4a5a:0x46564a);
+  v.position.set(Math.cos(a)*r,6.5,-3+Math.sin(a)*r);
+  v.lookAt(new THREE.Vector3(0,7,4));v.scale.setScalar(.9);parlScene.add(v);
+ }
+ // Avizeler
+ [[-11,4],[11,4],[0,-9]].forEach(([cx,cz])=>{
+  const ch=new THREE.Group();
+  const rod=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,2.2),mat(0x3a2a18));rod.position.y=1.1;ch.add(rod);
+  const hoop=new THREE.Mesh(new THREE.TorusGeometry(1.5,.11,6,18),mat(0xffd86b));hoop.rotation.x=Math.PI/2;ch.add(hoop);
+  for(let k=0;k<8;k++){
+   const a=k/8*Math.PI*2;
+   const cndl=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.5),new THREE.MeshBasicMaterial({color:0xfff0c0}));
+   cndl.position.set(Math.cos(a)*1.5,.35,Math.sin(a)*1.5);ch.add(cndl);
+  }
+  ch.position.set(cx,8.2,cz);parlScene.add(ch);
+  const cl=new THREE.PointLight(0xffe8b8,.55,26);cl.position.set(cx,7.6,cz);parlScene.add(cl);
+ });
+
  // ---- Kademeli yarım daire sıralar + vekiller ----
  const rows=[{r:9.5,n:16,h:0},{r:12.5,n:20,h:.75},{r:15.5,n:24,h:1.5},{r:18.5,n:28,h:2.25},{r:21.5,n:32,h:3}];
  const pts=[];
@@ -4671,6 +4782,11 @@ function buildParliamentInterior(){
   // sıra (ahşap bank)
   const bench=new THREE.Mesh(new THREE.TorusGeometry(row.r+1.15,.28,6,40,Math.PI*.88),mat(0x4a3520));
   bench.rotation.x=Math.PI/2;bench.rotation.z=Math.PI*1.06;bench.position.set(0,row.h+.95,-3);parlScene.add(bench);
+  // vekillerin önündeki yazı bankosu (koyu ahşap + altın kenar)
+  const desk=new THREE.Mesh(new THREE.TorusGeometry(row.r-1.05,.42,6,40,Math.PI*.88),mat(0x3d2a16));
+  desk.rotation.x=Math.PI/2;desk.rotation.z=Math.PI*1.06;desk.position.set(0,row.h+.72,-3);parlScene.add(desk);
+  const trim=new THREE.Mesh(new THREE.TorusGeometry(row.r-1.05,.07,6,40,Math.PI*.88),mat(0xffd86b));
+  trim.rotation.x=Math.PI/2;trim.rotation.z=Math.PI*1.06;trim.position.set(0,row.h+1.12,-3);parlScene.add(trim);
   for(let i=0;i<row.n;i++){
    const t=i/(row.n-1), ang=Math.PI*(1.08+t*.84);
    pts.push({x:Math.cos(ang)*row.r, z:-3+Math.sin(ang)*row.r, y:row.h, a:ang});
@@ -4705,9 +4821,17 @@ function buildParliamentInterior(){
  });
  const spk=makeTextSprite('⚖️ MECLİS BAŞKANLIĞI',{w:7});spk.position.set(0,5.2,12);parlScene.add(spk);
  // arkada ülke bayrağı
+ const flagFrame=new THREE.Mesh(new THREE.BoxGeometry(9.8,6.2,.2),mat(0xffd86b));
+ flagFrame.position.set(0,7.4,15.7);parlScene.add(flagFrame);
  const bigFlag=new THREE.Mesh(new THREE.PlaneGeometry(9,5.4),
    new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color),side:THREE.DoubleSide}));
- bigFlag.position.set(0,7.4,15.6);parlScene.add(bigFlag);
+ bigFlag.position.set(0,7.4,15.55);parlScene.add(bigFlag);
+ // arma madalyonu
+ const medal=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,.22,24),mat(0xffd86b));
+ medal.rotation.x=Math.PI/2;medal.position.set(0,7.4,15.4);parlScene.add(medal);
+ const medalIn=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.15,.26,24),
+   new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color)}));
+ medalIn.rotation.x=Math.PI/2;medalIn.position.set(0,7.4,15.34);parlScene.add(medalIn);
 
  // ---- Kapı (şehre çık) ----
  const door=new THREE.Mesh(new THREE.BoxGeometry(4.5,5,.4),mat(0x4a3520));door.position.set(13,2.5,20.6);parlScene.add(door);
@@ -4719,13 +4843,14 @@ function buildParliamentInterior(){
 let PARL_SEAT_PTS=[];
 
 function enterParliament(){
+ player.vy=0;player.onGround=true;player.eye=1.7;
  if(!parlScene)buildParliamentInterior();
  G.scene='parliament';curScene=parlScene;G.driving=false;
  for(const k in keys)keys[k]=false;
  player.pos.set(13,1.7,17.5);player.yaw=Math.PI/4;player.pitch=-.05;
  $('hud').style.display='flex';$('crosshairDot').style.display='block';
  $('sceneLabel').textContent='🏛️ Ulusal Meclis — '+G.player.capital;$('sceneLabel').style.display='block';
- $('lockHint').textContent='WASD: yürü | OK TUŞLARI: bak | E: etkileşim | Kürsüye git';
+ $('lockHint').textContent='WASD: yürü | BOŞLUK: zıpla | OK TUŞLARI: bak | E: etkileşim | Kürsüye git';
  $('lockHint').style.display='block';
  hideWarUI();renderHUD();
  parlPaintMPs(null);
@@ -4740,7 +4865,7 @@ function leaveParliament(){
  for(const k in keys)keys[k]=false;
  player.pos.set(PARLIAMENT_POS.x,1.7,PARLIAMENT_POS.z-24);player.yaw=Math.PI;player.pitch=0;
  $('sceneLabel').textContent='🏙️ '+G.player.customName+' — Başkent '+G.player.capital;
- $('lockHint').textContent='WASD: yürü | OK TUŞLARI: bak | E: etkileşim | Araca dön';
+ $('lockHint').textContent='WASD: yürü | BOŞLUK: zıpla | OK TUŞLARI: bak | E: etkileşim | Araca dön';
  toast('Meclisten çıktın.','info');
 }
 
@@ -4853,6 +4978,7 @@ function buildGenStaff(){
  gsInteractables.push({scene:'genstaff',x:0,z:14.5,radius:3,label:'<b>E</b> — 🚪 Şehre çık',action:()=>leaveGenStaff()});
 }
 function enterGenStaff(){
+ player.vy=0;player.onGround=true;player.eye=1.7;
  if(!gsScene)buildGenStaff();
  G.scene='genstaff';curScene=gsScene;G.driving=false;
  for(const k in keys)keys[k]=false;
@@ -4870,7 +4996,7 @@ function leaveGenStaff(){
  for(const k in keys)keys[k]=false;
  player.pos.set(GENSTAFF_POS.x,1.7,GENSTAFF_POS.z-13);player.yaw=Math.PI;player.pitch=0;
  $('sceneLabel').textContent='🏙️ '+G.player.customName+' — Başkent '+G.player.capital;
- $('lockHint').textContent='WASD: yürü | OK TUŞLARI: bak | E: etkileşim | Araca dön';
+ $('lockHint').textContent='WASD: yürü | BOŞLUK: zıpla | OK TUŞLARI: bak | E: etkileşim | Araca dön';
  toast('Üsten çıktın. Araçla şehre dönebilirsin.','info');
 }
 
