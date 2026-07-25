@@ -47,6 +47,13 @@
   .btn.danger { background:linear-gradient(180deg,#c54040,#993030); border-color:#d05050; }
   .btn.good { background:linear-gradient(180deg,#4ca850,#348038); border-color:#5ab847; }
 
+  /* Bekleyen kanun teklifi göstergesi */
+  #lawPending { position:absolute; left:12px; top:104px; z-index:38; display:none; max-width:280px;
+    background:rgba(12,18,30,.93); border:1px solid #ffd86b; border-left-width:4px; border-radius:8px;
+    padding:9px 13px; font-size:12px; color:#e6ecf5; box-shadow:0 4px 18px rgba(0,0,0,.55); line-height:1.5; }
+  #lawPending b { color:#ffd86b; }
+  #lawPending .lpDist { color:#7ad0ff; font-weight:700; }
+
   /* ===== 🏛️ MECLİS (v1.9) ===== */
   #parlWrap { position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
     background:radial-gradient(ellipse at 50% 30%, rgba(30,22,12,.86), rgba(4,6,12,.96)); backdrop-filter:blur(3px); }
@@ -256,6 +263,7 @@
     <div id="hudDate">Yıl 1, Ay 1</div>
     <button id="endTurnBtn" onclick="endTurn()">Sıradaki Ay ▶</button>
   </div>
+  <div id="lawPending"></div>
   <div id="sceneLabel"></div>
   <div id="crosshairDot"></div>
   <div id="interactPrompt"></div>
@@ -3326,6 +3334,7 @@ function animate(){
  const dt=Math.min(.05,clock.getDelta());
  const _cg=document.getElementById('cineGrade');
  if(_cg){const on=(G.scene==='office'||G.scene==='city'||G.scene==='war'||G.scene==='naval'||G.scene==='genstaff'||G.scene==='parliament')&&!G.planner&&!G.activePanelTabs&&!PARL;_cg.style.opacity=on?'1':'0';}
+ updateLawPending();
  if(G.scene==='office'||G.scene==='city'||G.scene==='genstaff'||G.scene==='parliament'){
   if(G.scene==='city'&&G.driving){
    updateDrive(dt);
@@ -3361,6 +3370,23 @@ function animate(){
   updateNaval3D(dt);
   renderer.render(navalScene,navCamera);
  }
+}
+function updateLawPending(){
+ const el=$('lawPending'); if(!el)return;
+ if(!G.pendingLawId||G.scene==='parliament'||PARL){el.style.display='none';return;}
+ const law=LAWS.find(l=>l.id===G.pendingLawId);
+ if(!law){el.style.display='none';return;}
+ let yon='';
+ if(G.scene==='city'){
+  const dx=PARLIAMENT_POS.x-player.pos.x, dz=(PARLIAMENT_POS.z-20)-player.pos.z;
+  const d=Math.round(Math.hypot(dx,dz));
+  if(d<9) yon='<span class="lpDist">Kapıdasın</span> — <b>E</b> ile gir';
+  else yon=`<span class="lpDist">${d} m</span> ${dx<-15?'batıda ⬅':dx>15?'doğuda ➡':''} — 🚗 araçla git`;
+ } else {
+  yon='Ofisten çık → şehrin <b>batısındaki</b> 🏛️ Ulusal Meclis\'e git';
+ }
+ el.innerHTML=`📜 <b>Teklif hazır:</b> ${law.name}<br>${yon}`;
+ el.style.display='block';
 }
 function updateInteractList(){
  // merge office+city interactables view
