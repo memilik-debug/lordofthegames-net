@@ -826,7 +826,7 @@ const BUILD_TYPES=[
 ];
 
 // ============================ STATE ============================
-const G={scene:'map',year:1,month:1,selectedCountryId:null,player:null,countries:[],events:[],hoveredCountry:null,research:null,ministers:[],war:null,naval:null,notif:0,dialog:null,activePanelTabs:null,currentTab:null,worldTick:0,pendingWarTargetId:null,driving:false,campaign:null,warHistory:[],market:null};
+const G={scene:'map',year:1,month:1,selectedCountryId:null,player:null,countries:[],events:[],hoveredCountry:null,research:null,ministers:[],war:null,naval:null,notif:0,dialog:null,activePanelTabs:null,currentTab:null,worldTick:0,pendingWarTargetId:null,pendingLawId:null,driving:false,campaign:null,warHistory:[],market:null};
 
 function makeCountry(tpl){
  return {id:tpl.name.toLowerCase(),name:tpl.name,customName:tpl.name,color:tpl.color,capital:tpl.cap,biome:tpl.biome,polygon:tpl.polygon,isPlayer:false,
@@ -1708,7 +1708,14 @@ function act_parade(){if(!spend(1000))return;G.player.morale=clamp(G.player.mora
 function act_unit(id,n,cost){if(!spend(cost))return;G.player.armyComp[id]=(G.player.armyComp[id]||0)+n;G.player.soldiers+=n;toast(`+${fmt(n)} ${ARMY_UNITS.find(u=>u.id===id).name}`,'good');if(typeof tut==='function')tut('recruit');rrr();}
 function act_doctrine(id){if(!spend(1500))return;G.player.doctrine=id;toast(`Doktrin: ${DOCTRINES.find(d=>d.id===id).name}`,'good');rrr();}
 // v1.9: kanunlar artık doğrudan yürürlüğe girmez — önce MECLİS'ten geçmeli
-function act_law(id){const law=LAWS.find(l=>l.id===id);if(!law)return;openParliament(id,!!(G.player.laws&&G.player.laws[id]));}
+function act_law(id){
+ const law=LAWS.find(l=>l.id===id);if(!law)return;
+ if(G.scene==='parliament'){openParliament(id,!!(G.player.laws&&G.player.laws[id]));return;}
+ // Kanun ancak MECLİSTE, kürsüden savunularak çıkar — oyuncu binaya gitmeli
+ G.pendingLawId=id;
+ closePanel();
+ toast(`📜 "${law.name}" teklifi hazırlandı. Şehrin batısındaki 🏛️ Ulusal Meclis'e git ve kürsüye çık.`,'info');
+}
 function applyLaw(id,on){if(!G.player.laws)G.player.laws={};G.player.laws[id]=on;if(on&&typeof tut==='function')tut('law');rrr();}
 
 // ============================ 🏛️ MECLİS SİSTEMİ (v1.9) ============================
@@ -1721,7 +1728,15 @@ const PARL_BLOCS=[
  {id:'merchants',  icon:'💼', name:'Liberal Blok',    share:.20, col:'#4aa8d8'},
 ];
 // Rejim meclisin gücünü belirler: otoriter rejimde meclis kolay ikna olur
-const PARL_THRESHOLD={democracy:.50,republic:.48,theocracy:.45,monarchy:.41,communist:.40,fascist:.34};
+const PARL_THRESHOLD={democracy:.58,republic:.55,theocracy:.52,monarchy:.47,communist:.46,fascist:.40};
+// 🏛️ Milliyetçi blok GELENEKÇİDİR: modernleşmeye ve reforma direnir, asker/otorite/gelenek
+// kanunlarını destekler. (+) modern/reformcu kanun, (-) gelenekçi/otoriter kanun.
+const LAW_MODERNITY={
+ freepress:3, laborrights:3, meritcracy:3, rndfund:3, education:3,
+ healthcare:2, welfare:2, freetrade:2, anticorrupt:2,
+ progtax:1, subsidy:1,
+ reserves:-1, profarmy:-1, protect:-1, veterans:-1, conscript:-2, patriotism:-3,
+};
 let PARL=null;
 
 // Kanun ülkenin ŞU ANKİ durumuna uyuyor mu? (-3..+3) — "ülkenin çıkarları" bileşeni
@@ -1772,17 +1787,27 @@ function openParliament(lawId,repeal){
  const thr=PARL_THRESHOLD[c.ideology]!=null?PARL_THRESHOLD[c.ideology]:.48;
  // Blok koltukları + başlangıç eğilimi
  let used=0;
+ const modern=LAW_MODERNITY[lawId]||0;
  const blocs=PARL_BLOCS.map((b,i)=>{
   const seats=(i===PARL_BLOCS.length-1)?PARL_SEATS-used:Math.round(PARL_SEATS*b.share);
   used+=seats;
   const mood=(c.ethnic&&c.ethnic[b.id])?c.ethnic[b.id].mood:50;
   const eth=(LAW_ETHNIC[lawId]&&LAW_ETHNIC[lawId][b.id])||0;
-  // Kendi çıkarı + ülke yararı + ruh hali (küskün blok daha muhalif)
-  let pct=50 + sign*eth*34 + sign*fit.s*7 + (mood-50)*.28;
+  // Meclis peşinen ikna olmuş değildir: taban destek 50'nin altında başlar
+  let pct=44 + sign*eth*32 + (mood-50)*.28;
+  if(b.id==='dominant'){
+   // Gelenekçi blok: modernleşmeye direnir VE "ülkeye iyi geliyor" gerekçesine ikna olmaz —
+   // onlar için iyi yönetim değil, düzenin korunması esastır.
+   pct -= sign*modern*14;
+   pct -= sign*fit.s*7;
+  } else {
+   pct += sign*fit.s*6; // diğer bloklar ülke yararına bakar
+  }
   return {...b, seats, mood, yes:clamp(Math.round(pct),3,97)};
  });
- PARL={lawId,law,repeal,fit,thr,blocs,q:0,seatPts:parlSeats(),done:false,
-       need:Math.floor(PARL_SEATS*thr)+1, questions:parlQuestions(law,c,repeal,fit)};
+ PARL={lawId,law,repeal,fit,thr,blocs,q:0,seatPts:parlSeats(),done:false,modern,
+       need:Math.floor(PARL_SEATS*thr)+1};
+ PARL.questions=parlQuestions(law,c,repeal,fit,blocs);
  $('parlTitle').textContent=(repeal?'🏛️ Meclis — Kaldırma Teklifi':'🏛️ Ulusal Meclis — Kanun Teklifi');
  $('parlSub').innerHTML=`<b style="color:#e6ecf5">${law.name}</b> — ${law.desc}<br>`+
    `<span style="color:#7f8ca6">Kürsüdesiniz Sayın Başkan. ${PARL.questions.length} soru gelecek; cevaplarınız oyları değiştirecek.</span>`;
@@ -1819,12 +1844,13 @@ function parlRender(){
    <text x="400" y="336" text-anchor="middle" font-size="15" fill="#ffd86b" font-family="monospace">KÜRSÜ</text>
    <text x="400" y="66" text-anchor="middle" font-size="13" fill="#8c99b3" font-family="monospace">— MECLİS BAŞKANLIĞI —</text>
  </svg>`;
+ parlPaintMPs(PARL.blocs);
  $('parlFactions').innerHTML=PARL.blocs.map(b=>
   `<span class="parlFac" style="border-color:${b.col}">${b.icon} ${b.name} · ${b.seats} koltuk · <b style="color:${b.yes>=50?'#6fdc8c':'#e08a8a'}">%${b.yes} kabul</b></span>`).join('');
 }
 
 // ---- Sorular: kanunun verisinden ve ülkenin gerçek durumundan üretilir ----
-function parlQuestions(law,c,repeal,fit){
+function parlQuestions(law,c,repeal,fit,blocs){
  const qs=[], drain=law.mod.goldDrain||0, act=repeal?'kaldırılması':'çıkarılması';
  // 1) Finansman sorusu
  if(drain>0&&!repeal){
@@ -1857,17 +1883,21 @@ function parlQuestions(law,c,repeal,fit){
     {t:'<b>Ekonomiye</b> — üretim ve yatırım artacak.',ev:()=>({all:5,per:{merchants:11,migrants:-4},n:'Liberal sıralar destek verdi.'})},
    ]});
  }
- // 2) En çok zarar gören blok saldırır
- const eth=LAW_ETHNIC[law.id]||{};
- let worst=null,wv=0;
- Object.entries(eth).forEach(([k,v])=>{const vv=repeal?-v:v;if(vv<wv){wv=vv;worst=k;}});
- if(!worst)worst=PARL_BLOCS[2].id;
+ // 2) Meclisteki EN MUHALİF blok saldırır (gerçek oy tablosuna göre)
+ let worst=blocs.slice().sort((a,b)=>a.yes-b.yes)[0].id;
  const bl=PARL_BLOCS.find(b=>b.id===worst);
+ const modern=LAW_MODERNITY[law.id]||0;
  const hostile={
-  dominant:{q:'Bu düzenleme <b>milletin geleneklerini ve devletin otoritesini</b> aşındırıyor. Bize ne diyeceksiniz?',
-   a:[{t:'Devletin otoritesi <b>zayıflamayacak, kurumsallaşacak</b>.',ev:()=>({all:5,per:{dominant:12},n:'Milliyetçi sıralar yumuşadı.'})},
-      {t:'Gelenek önemlidir ama <b>ülkenin ihtiyacı önceliklidir</b>.',ev:()=>({all:3,per:{dominant:-8,merchants:6,migrants:5},n:'Dürüst ama sert bulundu.'})},
-      {t:'Bu kanun <b>tam da milli çıkarın gereğidir</b>.',ev:()=>fit.s>0?{all:8,per:{dominant:14},n:'Gerekçeniz salonu ikna etti.'}:{all:-6,per:{dominant:-6},n:'"Hangi milli çıkar?" diye bağırdılar.'}}]},
+  dominant: modern>0
+   // Modern/reformcu kanuna gelenekçi itiraz
+   ? {q:'Bu <b>modernlik hevesi</b> milletin dokusunu bozuyor. Atalarımız bu topraklarda bu kanunsuz da yaşadı. Neyi düzeltiyormuşsunuz?',
+      a:[{t:'Bu düzenleme <b>geleneği yıkmaz, güçlendirir</b> — kökü sağlam ağaç dala dayanır.',ev:()=>({all:4,per:{dominant:13},n:'Milliyetçi sıralar isteksizce yumuşadı.'})},
+         {t:'Ülke ilerlemezse <b>koruyacak bir şey de kalmaz</b>.',ev:()=>fit.s>0?{all:9,per:{dominant:-4,merchants:8,migrants:7},n:'Salonun çoğunluğu ikna oldu, gelenekçiler homurdandı.'}:{all:-5,per:{dominant:-9},n:'"İlerleme diye ne satıyorsunuz?" diye bağırdılar.'}},
+         {t:'<b>Halk bunu istiyor</b>, siz istemiyorsunuz.',ev:()=>({all:2,per:{dominant:-17,migrants:11,autonomists:6},n:'Milliyetçi sıralar ayağa kalktı, salon karıştı.'})}]}
+   : {q:'Bu düzenleme <b>milletin geleneklerini ve devletin otoritesini</b> aşındırıyor. Bize ne diyeceksiniz?',
+      a:[{t:'Devletin otoritesi <b>zayıflamayacak, kurumsallaşacak</b>.',ev:()=>({all:5,per:{dominant:12},n:'Milliyetçi sıralar yumuşadı.'})},
+         {t:'Gelenek önemlidir ama <b>ülkenin ihtiyacı önceliklidir</b>.',ev:()=>({all:3,per:{dominant:-8,merchants:6,migrants:5},n:'Dürüst ama sert bulundu.'})},
+         {t:'Bu kanun <b>tam da milli çıkarın gereğidir</b>.',ev:()=>fit.s>0?{all:8,per:{dominant:14},n:'Gerekçeniz salonu ikna etti.'}:{all:-6,per:{dominant:-6},n:'"Hangi milli çıkar?" diye bağırdılar.'}}]},
   merchants:{q:'Bu düzenleme <b>sermayeyi ürkütecek</b>, yatırımcı ülkeden kaçacak. Cevabınız?',
    a:[{t:'Yatırımcıya <b>vergi istisnası</b> getireceğiz.',ev:()=>c.gold>10000?{all:5,per:{merchants:14,migrants:-6},n:'Piyasa rahatladı.'}:{all:-5,per:{merchants:-5},n:'"Hangi parayla?" dediler.'}},
       {t:'Sermaye <b>istikrardan kaçmaz</b>; bu kanun istikrar getirir.',ev:()=>({all:5,per:{merchants:9},n:'Mantıklı bulundu.'})},
@@ -1925,6 +1955,7 @@ function parlWithdraw(){
  $('parlWrap').classList.remove('show');
  $('parlBaldrick').classList.remove('in');
  $('parlBox').classList.remove('baldrickIn');
+ if(parlBald3D)parlBald3D.visible=false;parlBaldAnim=null;
  PARL=null;
  toast('Teklif geri çekildi.','info');
 }
@@ -1950,7 +1981,8 @@ function parlVote(){
   } else {
    addEvent('bad',`Meclis "${law.name}" teklifini ${yes}-${PARL_SEATS-yes} reddetti.`);
    $('parlAnswers').innerHTML=`<button class="parlAns" style="text-align:center;" onclick="parlWithdraw()">Meclisten çık</button>`;
-   setTimeout(parlBribeOffer,900);
+   if(G.scene==='parliament'){$('parlWrap').classList.remove('show');parlBaldrickWalkIn(()=>{$('parlWrap').classList.add('show');parlBribeOffer();});}
+   else setTimeout(parlBribeOffer,900);
   }
  },1100);
 }
@@ -2224,7 +2256,7 @@ function init3D(){
  camera.rotation.order='YXZ';
  clock=new THREE.Clock();
  window.addEventListener('resize',()=>{renderer.setSize(window.innerWidth,window.innerHeight);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();});
- document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;for(const k in keys)keys[k]=false;$('lockHint').style.display=(G.scene==='office'||G.scene==='city'||G.scene==='genstaff')?'block':'none';});
+ document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;for(const k in keys)keys[k]=false;$('lockHint').style.display=(G.scene==='office'||G.scene==='city'||G.scene==='genstaff'||G.scene==='parliament')?'block':'none';});
  window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
  document.addEventListener('mousemove',e=>{
   if(!locked)return;
@@ -2235,7 +2267,7 @@ function init3D(){
  });
  renderer.domElement.addEventListener('click',()=>{
   if(G.activePanelTabs||G.dialog||G.planner)return;
-  if((G.scene==='office'||G.scene==='city'||G.scene==='genstaff'||G.scene==='war')&&!locked&&!G.driving){try{renderer.domElement.requestPointerLock();}catch(e){}}
+  if((G.scene==='office'||G.scene==='city'||G.scene==='genstaff'||G.scene==='parliament'||G.scene==='war')&&!locked&&!G.driving){try{renderer.domElement.requestPointerLock();}catch(e){}}
  });
  window.addEventListener('keydown',e=>{
   if(e.key.toLowerCase()==='e')onInteract();
@@ -3003,6 +3035,16 @@ function buildCity(){
  const arrowSign=makeTextSprite('→ Genelkurmay bu yönde',{w:6,border:'#7ad0ff',color:'#7ad0ff'});
  arrowSign.position.set(60,5,3);cityScene.add(arrowSign);
 
+ // ===== Ulusal Meclis (şehrin batısında — araba ile git) =====
+ const plB=buildParliamentExterior();
+ plB.position.set(PARLIAMENT_POS.x,0,PARLIAMENT_POS.z);cityScene.add(plB);
+ addCityCollider(PARLIAMENT_POS.x,PARLIAMENT_POS.z,46,30);
+ const plSign=makeTextSprite('🏛️ ULUSAL MECLİS',{w:10});
+ plSign.position.set(PARLIAMENT_POS.x,26,PARLIAMENT_POS.z-14);cityScene.add(plSign);
+ cityInteractables.push({scene:'city',x:PARLIAMENT_POS.x,z:PARLIAMENT_POS.z-20,radius:6,label:'<b>E</b> — 🏛️ Meclise gir',action:()=>enterParliament()});
+ const plArrow=makeTextSprite('← Ulusal Meclis bu yönde',{w:6,border:'#ffd86b',color:'#ffd86b'});
+ plArrow.position.set(-60,5,3);cityScene.add(plArrow);
+
  // ===== Araştırma Merkezi (şehirde, yürüyerek ulaşılır) =====
  const rcB=buildResearchCenter();
  rcB.position.set(RESEARCH_POS.x,0,RESEARCH_POS.z);cityScene.add(rcB);
@@ -3236,7 +3278,7 @@ function updateWalk(dt){
  if(mvx||mvz){
   const len=Math.hypot(mvx,mvz);mvx/=len;mvz/=len;
   const sp=(keys['shift']?8.5:5)*dt;
-  const cols=G.scene==='office'?colliders:G.scene==='genstaff'?gsColliders:cityColliders;
+  const cols=G.scene==='office'?colliders:G.scene==='genstaff'?gsColliders:G.scene==='parliament'?parlColliders:cityColliders;
   tryMove(player.pos.x+mvx*sp,player.pos.z+mvz*sp,cols);
  }
  if(G.scene==='office'){
@@ -3245,6 +3287,9 @@ function updateWalk(dt){
  } else if(G.scene==='genstaff'){
   player.pos.x=clamp(player.pos.x,-13.4,13.4);
   player.pos.z=clamp(player.pos.z,-13.4,15.4);
+ } else if(G.scene==='parliament'){
+  player.pos.x=clamp(player.pos.x,-25.5,25.5);
+  player.pos.z=clamp(player.pos.z,-27.5,21.5);
  } else {
   player.pos.x=clamp(player.pos.x,-240,240);
   player.pos.z=clamp(player.pos.z,-240,240);
@@ -3254,8 +3299,8 @@ function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(.05,clock.getDelta());
  const _cg=document.getElementById('cineGrade');
- if(_cg){const on=(G.scene==='office'||G.scene==='city'||G.scene==='war'||G.scene==='naval'||G.scene==='genstaff')&&!G.planner&&!G.activePanelTabs;_cg.style.opacity=on?'1':'0';}
- if(G.scene==='office'||G.scene==='city'||G.scene==='genstaff'){
+ if(_cg){const on=(G.scene==='office'||G.scene==='city'||G.scene==='war'||G.scene==='naval'||G.scene==='genstaff'||G.scene==='parliament')&&!G.planner&&!G.activePanelTabs&&!PARL;_cg.style.opacity=on?'1':'0';}
+ if(G.scene==='office'||G.scene==='city'||G.scene==='genstaff'||G.scene==='parliament'){
   if(G.scene==='city'&&G.driving){
    updateDrive(dt);
   } else {
@@ -3267,6 +3312,7 @@ function animate(){
   const t=clock.elapsedTime;
   if(G.scene==='office')Object.values(officeNPCs).forEach((n,i)=>{n.mesh.position.y=Math.sin(t*1.5+i)*.02;});
   if(G.scene==='genstaff')gsNPCs.forEach((n,i)=>{n.position.y=Math.sin(t*1.4+i)*.025;});
+  if(G.scene==='parliament')updateParliament3D(t,dt);
   // şehir arabaları
   if(G.scene==='city'&&cityCars.length){
    cityCars.forEach(car=>{
@@ -3300,8 +3346,8 @@ let interactablesView=[];
 // patch updateInteract to use view
 function updateInteract(){
  nearInteract=null;
- if(G.dialog||G.activePanelTabs||G.planner){$('interactPrompt').style.display='none';return;}
- const list=G.scene==='city'?cityInteractables:G.scene==='genstaff'?gsInteractables:interactables;
+ if(G.dialog||G.activePanelTabs||G.planner||PARL){$('interactPrompt').style.display='none';return;}
+ const list=G.scene==='city'?cityInteractables:G.scene==='genstaff'?gsInteractables:G.scene==='parliament'?parlInteractables:interactables;
  let best=null,bd=99;
  list.forEach(it=>{
   if(G.driving&&it.isCar)return; // sürerken araba istemini gösterme
@@ -4471,6 +4517,232 @@ function updateDrive(dt){
  const cx=playerCar.position.x-fx*camDist, cz=playerCar.position.z-fz*camDist;
  camera.position.set(cx,camH,cz);
  camera.lookAt(playerCar.position.x+fx*5,1.6,playerCar.position.z+fz*5);
+}
+
+// ==================================================================
+// ==================== 🏛️ MECLİS BİNASI (3D) =======================
+// ==================================================================
+const PARLIAMENT_POS={x:-185,z:0};
+let parlScene=null,parlColliders=[],parlInteractables=[],parlMPs=[],parlBald3D=null,parlBaldAnim=null;
+
+// Dış cephe: sütunlu neoklasik meclis + kubbe + merdiven
+function buildParliamentExterior(){
+ if(hasModel('parliament'))return getModel('parliament');
+ const g=new THREE.Group();
+ const stone=c=>new THREE.MeshLambertMaterial({color:c});
+ // kaide + merdiven
+ const base=new THREE.Mesh(new THREE.BoxGeometry(46,2,30),stone(0xbfb49c));base.position.set(0,1,0);g.add(base);
+ for(let i=0;i<4;i++){
+  const st=new THREE.Mesh(new THREE.BoxGeometry(26-i*1.2,.5,2.2),stone(0xcabfa6));
+  st.position.set(0,.25+i*.5,-15.4-i*1.1);g.add(st);
+ }
+ // ana gövde
+ const main=new THREE.Mesh(new THREE.BoxGeometry(40,14,24),stone(0xd6cbb2));main.position.set(0,9,0);main.castShadow=true;g.add(main);
+ // yan kanatlar
+ [-25,25].forEach(x=>{const w=new THREE.Mesh(new THREE.BoxGeometry(12,10,18),stone(0xc9bda4));w.position.set(x,7,0);g.add(w);});
+ // ön sütun dizisi
+ for(let i=0;i<8;i++){
+  const col=new THREE.Mesh(new THREE.CylinderGeometry(.85,.95,12,12),stone(0xe6dcc4));
+  col.position.set(-14+i*4,8,-12.6);col.castShadow=true;g.add(col);
+  const cap=new THREE.Mesh(new THREE.BoxGeometry(2.3,.6,2.3),stone(0xf0e8d4));cap.position.set(-14+i*4,14.2,-12.6);g.add(cap);
+ }
+ // alınlık (üçgen fronton)
+ const ped=new THREE.Mesh(new THREE.CylinderGeometry(.01,15,4,3),stone(0xe0d6be));
+ ped.rotation.y=Math.PI/2;ped.position.set(0,16.6,-12.6);g.add(ped);
+ // kubbe + kasnak
+ const drum=new THREE.Mesh(new THREE.CylinderGeometry(8,8,5,20),stone(0xd0c5ac));drum.position.set(0,18.5,2);g.add(drum);
+ const dome=new THREE.Mesh(new THREE.SphereGeometry(8,20,12,0,Math.PI*2,0,Math.PI/2),stone(0xa8b8a0));
+ dome.position.set(0,21,2);dome.castShadow=true;g.add(dome);
+ const fin=new THREE.Mesh(new THREE.CylinderGeometry(.2,.5,3.5,8),stone(0xffd86b));fin.position.set(0,30.4,2);g.add(fin);
+ // bayrak direkleri (ülke rengi)
+ [-19,19].forEach(x=>{
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,13),stone(0x4a4a4a));pole.position.set(x,8.5,-17);g.add(pole);
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(3.4,2.1),new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color),side:THREE.DoubleSide}));
+  fl.position.set(x+1.8,13,-17);g.add(fl);
+ });
+ // kapı
+ const door=new THREE.Mesh(new THREE.BoxGeometry(5,7,.6),stone(0x5a4128));door.position.set(0,5.5,-12.2);g.add(door);
+ return g;
+}
+
+// Tek vekil: gövde + kafa (120 adet olacağı için sade tutuldu)
+function makeMP(col){
+ const g=new THREE.Group();
+ const body=new THREE.Mesh(new THREE.BoxGeometry(.5,.62,.34),new THREE.MeshLambertMaterial({color:col}));
+ body.position.y=.94;g.add(body);
+ const head=new THREE.Mesh(new THREE.BoxGeometry(.28,.3,.26),new THREE.MeshLambertMaterial({color:0xc9a07a}));
+ head.position.y=1.42;g.add(head);
+ g.userData.body=body;
+ return g;
+}
+
+// İç salon: kademeli yarım daire sıralar, 120 vekil, kürsü, başkanlık divanı, kubbe
+function buildParliamentInterior(){
+ parlScene=new THREE.Scene();
+ parlScene.background=new THREE.Color(0x171b26);
+ applyEnv(parlScene);
+ parlScene.add(new THREE.AmbientLight(0xd8dcc8,.85));
+ parlScene.add(new THREE.HemisphereLight(0xe8eef8,0x30281e,.6));
+ const sun=new THREE.DirectionalLight(0xfff2d8,.55);sun.position.set(6,20,10);parlScene.add(sun);
+ parlColliders=[];parlMPs=[];parlInteractables.length=0;parlBald3D=null;
+ const addCol=(x,z,w,d)=>parlColliders.push({minX:x-w/2,maxX:x+w/2,minZ:z-d/2,maxZ:z+d/2});
+ const mat=c=>new THREE.MeshLambertMaterial({color:c});
+
+ // zemin, duvarlar, kubbe tavan
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(54,.2,52),mat(0x6b5638));floor.position.set(0,-.1,-3);parlScene.add(floor);
+ const carpet=new THREE.Mesh(new THREE.CircleGeometry(15,32),mat(0x7a2434));
+ carpet.rotation.x=-Math.PI/2;carpet.position.set(0,.03,-2);parlScene.add(carpet);
+ wallMesh(parlScene,0,-29,54,.8,11,0xcfc4aa);
+ wallMesh(parlScene,0,23,54,.8,11,0xcfc4aa);
+ wallMesh(parlScene,-27,-3,.8,52,11,0xcfc4aa);
+ wallMesh(parlScene,27,-3,.8,52,11,0xcfc4aa);
+ const dome=new THREE.Mesh(new THREE.SphereGeometry(20,24,14,0,Math.PI*2,Math.PI/2,Math.PI/2),
+   new THREE.MeshLambertMaterial({color:0xe8e0cc,side:THREE.BackSide}));
+ dome.position.set(0,11,-3);parlScene.add(dome);
+ const oculus=new THREE.PointLight(0xfff4d8,1.15,44);oculus.position.set(0,13,-3);parlScene.add(oculus);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(6,.32,8,28),new THREE.MeshBasicMaterial({color:0xffd86b}));
+ ring.rotation.x=Math.PI/2;ring.position.set(0,12.4,-3);parlScene.add(ring);
+
+ // ---- Kademeli yarım daire sıralar + vekiller ----
+ const rows=[{r:9.5,n:16,h:0},{r:12.5,n:20,h:.75},{r:15.5,n:24,h:1.5},{r:18.5,n:28,h:2.25},{r:21.5,n:32,h:3}];
+ const pts=[];
+ rows.forEach(row=>{
+  // kademe platformu
+  const tier=new THREE.Mesh(new THREE.RingGeometry(row.r-1.5,row.r+1.5,40,1,Math.PI*1.06,Math.PI*.88),mat(0x7d6642));
+  tier.rotation.x=-Math.PI/2;tier.position.set(0,row.h+.04,-3);parlScene.add(tier);
+  // sıra (ahşap bank)
+  const bench=new THREE.Mesh(new THREE.TorusGeometry(row.r+1.15,.28,6,40,Math.PI*.88),mat(0x4a3520));
+  bench.rotation.x=Math.PI/2;bench.rotation.z=Math.PI*1.06;bench.position.set(0,row.h+.95,-3);parlScene.add(bench);
+  for(let i=0;i<row.n;i++){
+   const t=i/(row.n-1), ang=Math.PI*(1.08+t*.84);
+   pts.push({x:Math.cos(ang)*row.r, z:-3+Math.sin(ang)*row.r, y:row.h, a:ang});
+  }
+ });
+ pts.sort((p,q)=>p.a-q.a); // açıya göre sırala → bloklar bitişik dilim olarak otursun
+ PARL_SEAT_PTS=pts;
+ pts.forEach(p=>{
+  const mp=makeMP(0x7a8496);
+  mp.position.set(p.x,p.y,p.z);
+  mp.lookAt(new THREE.Vector3(0,p.y+1,4)); // kürsüye dön
+  parlScene.add(mp);parlMPs.push(mp);
+ });
+
+ // ---- Kürsü (podium) ----
+ const podBase=new THREE.Mesh(new THREE.BoxGeometry(6,1.1,3.4),mat(0x3f2c18));podBase.position.set(0,.55,7);parlScene.add(podBase);
+ const rostrum=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.25,1.1),mat(0x5a3f22));rostrum.position.set(0,1.72,6.2);parlScene.add(rostrum);
+ const rtop=new THREE.Mesh(new THREE.BoxGeometry(2.7,.12,1.3),mat(0x7a5730));rtop.position.set(0,2.4,6.2);parlScene.add(rtop);
+ const seal=new THREE.Mesh(new THREE.CircleGeometry(.62,24),new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color)}));
+ seal.position.set(0,1.72,5.62);parlScene.add(seal);
+ addCol(0,7,6.4,3.8);
+ const podSign=makeTextSprite('🎙️ KÜRSÜ',{w:3.2,border:'#ffd86b',color:'#ffd86b'});
+ podSign.position.set(0,3.5,7.2);parlScene.add(podSign);
+
+ // ---- Başkanlık divanı (kürsünün arkası) ----
+ const dais=new THREE.Mesh(new THREE.BoxGeometry(14,1.6,4),mat(0x4a3520));dais.position.set(0,.8,12);parlScene.add(dais);
+ const daisDesk=new THREE.Mesh(new THREE.BoxGeometry(13,1.2,1.2),mat(0x5a3f22));daisDesk.position.set(0,2.2,11);parlScene.add(daisDesk);
+ addCol(0,12,14.4,4.4);
+ [-3.2,0,3.2].forEach((x,i)=>{
+  const p=makePerson(i===1?0x2a2a38:0x33384a);
+  p.position.set(x,1.6,12.6);p.rotation.y=Math.PI;parlScene.add(p);
+ });
+ const spk=makeTextSprite('⚖️ MECLİS BAŞKANLIĞI',{w:7});spk.position.set(0,5.2,12);parlScene.add(spk);
+ // arkada ülke bayrağı
+ const bigFlag=new THREE.Mesh(new THREE.PlaneGeometry(9,5.4),
+   new THREE.MeshBasicMaterial({color:new THREE.Color(G.player.color),side:THREE.DoubleSide}));
+ bigFlag.position.set(0,7.4,15.6);parlScene.add(bigFlag);
+
+ // ---- Kapı (şehre çık) ----
+ const door=new THREE.Mesh(new THREE.BoxGeometry(4.5,5,.4),mat(0x4a3520));door.position.set(13,2.5,20.6);parlScene.add(door);
+ const dsign=makeTextSprite('🚪 ÇIK (şehre)',{w:3.8,border:'#6fdc8c',color:'#6fdc8c'});dsign.position.set(13,5.4,20.2);parlScene.add(dsign);
+
+ parlInteractables.push({scene:'parliament',x:0,z:9.6,radius:3.6,label:'<b>E</b> — 🎙️ Kürsüye çık (kanun teklifi sun)',action:()=>parlPodium()});
+ parlInteractables.push({scene:'parliament',x:13,z:19.4,radius:3.2,label:'<b>E</b> — 🚪 Şehre çık',action:()=>leaveParliament()});
+}
+let PARL_SEAT_PTS=[];
+
+function enterParliament(){
+ if(!parlScene)buildParliamentInterior();
+ G.scene='parliament';curScene=parlScene;G.driving=false;
+ for(const k in keys)keys[k]=false;
+ player.pos.set(13,1.7,17.5);player.yaw=Math.PI/4;player.pitch=-.05;
+ $('hud').style.display='flex';$('crosshairDot').style.display='block';
+ $('sceneLabel').textContent='🏛️ Ulusal Meclis — '+G.player.capital;$('sceneLabel').style.display='block';
+ $('lockHint').textContent='WASD: yürü | OK TUŞLARI: bak | E: etkileşim | Kürsüye git';
+ $('lockHint').style.display='block';
+ hideWarUI();renderHUD();
+ parlPaintMPs(null);
+ if(G.pendingLawId){
+  const l=LAWS.find(x=>x.id===G.pendingLawId);
+  if(l)toast(`Kürsüye çık → "${l.name}" teklifini savun.`,'good');
+ }
+}
+function leaveParliament(){
+ if(!cityScene||G.cityDirty)buildCity();
+ G.scene='city';curScene=cityScene;G.driving=false;
+ for(const k in keys)keys[k]=false;
+ player.pos.set(PARLIAMENT_POS.x,1.7,PARLIAMENT_POS.z-24);player.yaw=Math.PI;player.pitch=0;
+ $('sceneLabel').textContent='🏙️ '+G.player.customName+' — Başkent '+G.player.capital;
+ $('lockHint').textContent='WASD: yürü | OK TUŞLARI: bak | E: etkileşim | Araca dön';
+ toast('Meclisten çıktın.','info');
+}
+
+// Kürsüye çıkınca: bekleyen teklif varsa onu aç, yoksa kanun seçtir
+function parlPodium(){
+ if(document.pointerLockElement)document.exitPointerLock();
+ if(G.pendingLawId){const id=G.pendingLawId;G.pendingLawId=null;openParliament(id,!!(G.player.laws&&G.player.laws[id]));return;}
+ const c=G.player;
+ const rows=LAWS.map(l=>{const on=c.laws&&c.laws[l.id];
+  return `<button class="btn ${on?'danger':'primary'}" style="display:block;width:100%;margin-bottom:5px;text-align:left;font-size:12px;" onclick="(window.__pickLaw||function(){})('${l.id}')">${on?'✖ Kaldır: ':'＋ '}<b>${l.name}</b> — ${l.desc}</button>`;}).join('');
+ showModal('🏛️ Meclise Sunulacak Teklif',`<div style="max-height:52vh;overflow:auto;">${rows}</div>`,[{text:'Vazgeç'}]);
+ window.__pickLaw=id=>{$('modal').classList.remove('show');window.__pickLaw=null;openParliament(id,!!(c.laws&&c.laws[id]));};
+}
+
+// Vekilleri oy eğilimine göre boya (null = henüz oylanmadı → nötr)
+function parlPaintMPs(blocs){
+ if(!parlMPs.length)return;
+ if(!blocs){parlMPs.forEach(mp=>mp.userData.body.material.color.setHex(0x7a8496));return;}
+ let i=0;
+ blocs.forEach(b=>{
+  const y=Math.round(b.seats*b.yes/100);
+  for(let k=0;k<b.seats;k++){
+   const mp=parlMPs[i++];if(!mp)continue;
+   mp.userData.body.material.color.setHex(k<y?0x4fbf72:0xc05050);
+   mp.userData.vote=k<y?1:0;
+  }
+ });
+}
+
+// Salon canlı: redciler huzursuz kıpırdar, kabul edenler sakin durur
+function updateParliament3D(t,dt){
+ for(let i=0;i<parlMPs.length;i++){
+  const mp=parlMPs[i], v=mp.userData.vote;
+  const amp=v===0?.055:.018, spd=v===0?3.4:1.3;
+  mp.position.y=(PARL_SEAT_PTS[i]?PARL_SEAT_PTS[i].y:0)+Math.abs(Math.sin(t*spd+i*.7))*amp;
+ }
+ // Baldrick kürsüye doğru yürür
+ if(parlBaldAnim&&parlBald3D){
+  const a=parlBaldAnim;a.t=Math.min(1,a.t+dt/a.dur);
+  const e=a.t<.5?2*a.t*a.t:1-Math.pow(-2*a.t+2,2)/2;
+  parlBald3D.position.lerpVectors(a.from,a.to,e);
+  parlBald3D.position.y=Math.abs(Math.sin(a.t*22))*.09;
+  if(a.t>=1){parlBaldAnim=null;if(a.done)a.done();}
+ }
+}
+
+// Baldrick animasyonla yanımıza gelir
+function parlBaldrickWalkIn(done){
+ if(!parlScene){if(done)done();return;}
+ if(!parlBald3D){
+  parlBald3D=makePerson(0x6a5436,0xd9b08a);
+  const tag=makeTextSprite('🥔 Baldrick',{w:2.6,border:'#9c6',color:'#cfe08a'});
+  tag.position.set(0,2.5,0);parlBald3D.add(tag);
+  parlScene.add(parlBald3D);
+ }
+ parlBald3D.visible=true;
+ const from=new THREE.Vector3(-13,0,16), to=new THREE.Vector3(-2.6,0,8.4);
+ parlBald3D.position.copy(from);
+ parlBald3D.lookAt(new THREE.Vector3(0,1,6));
+ parlBaldAnim={from,to,t:0,dur:2.1,done};
 }
 
 // ---------- Genelkurmay iç mekan ----------
