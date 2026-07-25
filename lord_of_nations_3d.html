@@ -47,6 +47,11 @@
   .btn.danger { background:linear-gradient(180deg,#c54040,#993030); border-color:#d05050; }
   .btn.good { background:linear-gradient(180deg,#4ca850,#348038); border-color:#5ab847; }
 
+  /* Build rozeti — hangi sürümün yüklü olduğunu anlamak için */
+  #buildTag { position:absolute; right:8px; bottom:6px; z-index:70; font-size:10px; letter-spacing:.5px;
+    color:rgba(255,216,107,.55); background:rgba(6,10,18,.6); padding:2px 7px; border-radius:4px;
+    pointer-events:none; font-family:monospace; }
+
   /* Bekleyen kanun teklifi göstergesi */
   #lawPending { position:absolute; left:12px; top:104px; z-index:38; display:none; max-width:280px;
     background:rgba(12,18,30,.93); border:1px solid #ffd86b; border-left-width:4px; border-radius:8px;
@@ -263,6 +268,7 @@
     <div id="hudDate">Yıl 1, Ay 1</div>
     <button id="endTurnBtn" onclick="endTurn()">Sıradaki Ay ▶</button>
   </div>
+  <div id="buildTag">LoN v1.9 · MECLİS-3D</div>
   <div id="lawPending"></div>
   <div id="sceneLabel"></div>
   <div id="crosshairDot"></div>
