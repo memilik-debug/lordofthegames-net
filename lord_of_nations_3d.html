@@ -2463,6 +2463,20 @@ function texMarble(rep){return _mkTex('marble'+(rep||1),256,256,(c,w,h)=>{
   const hl=c.createLinearGradient(0,0,w,h);hl.addColorStop(0,'rgba(255,255,255,.12)');hl.addColorStop(.5,'rgba(255,255,255,0)');hl.addColorStop(1,'rgba(255,255,255,.05)');c.fillStyle=hl;c.fillRect(0,0,w,h);
 },rep);}
 function texCarpet(rep,base,edge){return _mkTex('carp'+base+rep,128,128,(c,w,h)=>{c.fillStyle=base;c.fillRect(0,0,w,h);c.strokeStyle=edge;c.lineWidth=8;c.strokeRect(10,10,w-20,h-20);c.lineWidth=2;c.strokeRect(20,20,w-40,h-40);for(let i=0;i<200;i++){c.fillStyle='rgba(0,0,0,.05)';c.fillRect(rand(0,w),rand(0,h),2,2);}},rep);}
+function texParquet(rep){return _mkTex('parq2'+rep,128,128,(c,w,h)=>{
+ c.fillStyle='#2e2011';c.fillRect(0,0,w,h);                 // derz (koyu)
+ const tons=['#a87a42','#946a38','#b98a4e','#825c30','#c09258','#8d6535'];
+ for(let by=0;by<h;by+=32)for(let bx=0;bx<w;bx+=32){
+  const yatay=((bx/32)+(by/32))%2===0;
+  for(let k=0;k<4;k++){
+   c.fillStyle=tons[(bx/32*7+by/32*3+k)%tons.length];
+   if(yatay)c.fillRect(bx+1,by+k*8+1,30,6.4);
+   else c.fillRect(bx+k*8+1,by+1,6.4,30);
+  }
+  c.strokeStyle='rgba(28,18,8,.85)';c.lineWidth=1.6;c.strokeRect(bx+.8,by+.8,30.4,30.4);
+ }
+ for(let i=0;i<260;i++){c.fillStyle='rgba(0,0,0,.10)';c.fillRect(rand(0,w),rand(0,h),2,1);}
+},rep);}
 function texWall(rep){return _mkTex('wall'+rep,128,128,(c,w,h)=>{c.fillStyle='#9a8d76';c.fillRect(0,0,w,h);for(let i=0;i<300;i++){const g=irand(-14,14);c.fillStyle=`rgba(${130+g},${120+g},${100+g},.5)`;c.fillRect(rand(0,w),rand(0,h),3,3);}},rep);}
 function texWater(rep){return _mkTex('water'+rep,128,128,(c,w,h)=>{c.fillStyle='#1d5d96';c.fillRect(0,0,w,h);for(let i=0;i<300;i++){c.fillStyle=`rgba(140,200,240,${rand(.05,.18)})`;c.fillRect(rand(0,w),rand(0,h),rand(2,6),1);}},rep);}
 function texBuilding(col){return _mkTex('bld'+col,64,128,(c,w,h)=>{c.fillStyle=col;c.fillRect(0,0,w,h);for(let y=8;y<h-6;y+=16)for(let x=6;x<w-6;x+=14){c.fillStyle=Math.random()<.6?'#ffe9a8':'#2a3038';c.fillRect(x,y,8,9);c.fillStyle='rgba(0,0,0,.25)';c.strokeRect(x,y,8,9);}});}
@@ -4827,9 +4841,17 @@ function buildParliamentInterior(){
  const mat=c=>new THREE.MeshLambertMaterial({color:c});
 
  // zemin, duvarlar, kubbe tavan
- const floor=new THREE.Mesh(new THREE.BoxGeometry(54,.2,52),mat(0x6b5638));floor.position.set(0,-.1,-3);parlScene.add(floor);
- const carpet=new THREE.Mesh(new THREE.CircleGeometry(15,32),mat(0x7a2434));
- carpet.rotation.x=-Math.PI/2;carpet.position.set(0,.03,-2);parlScene.add(carpet);
+ const floorTex=texParquet(14);
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(54,.2,52),new THREE.MeshLambertMaterial({map:floorTex}));
+ floor.position.set(0,-.1,-3);floor.receiveShadow=true;parlScene.add(floor);
+ // duvar dibi bordür (odayı çerçeveler, boş zemin hissini kırar)
+ [[0,-28.2,52,1.6],[0,22.2,52,1.6],[-26.2,-3,1.6,50],[26.2,-3,1.6,50]].forEach(([bx,bz,bw,bd])=>{
+  const bd1=new THREE.Mesh(new THREE.PlaneGeometry(bw,bd),mat(0x8a6f45));
+  bd1.rotation.x=-Math.PI/2;bd1.position.set(bx,.02,bz);parlScene.add(bd1);
+  const bd2=new THREE.Mesh(new THREE.PlaneGeometry(bw*.94,bd*.5),mat(0x5a4526));
+  bd2.rotation.x=-Math.PI/2;bd2.position.set(bx,.03,bz);parlScene.add(bd2);
+ });
+ // Zemin madalyonu aşağıda eş merkezli kuruluyor (mermer + altın halka + arma)
  wallMesh(parlScene,0,-29,54,.8,11,0xcfc4aa);
  wallMesh(parlScene,0,23,54,.8,11,0xcfc4aa);
  wallMesh(parlScene,-27,-3,.8,52,11,0xcfc4aa);
@@ -4849,13 +4871,26 @@ function buildParliamentInterior(){
  oculusGlass.rotation.x=Math.PI/2;oculusGlass.position.set(0,22.1,-3);parlScene.add(oculusGlass);
 
  // --- Süsleme katmanı ---
- // Mermer zemin şeridi (kürsü ile sıralar arası)
- const marble=new THREE.Mesh(new THREE.CircleGeometry(8.2,40),mat(0xd8d2c4));
- marble.rotation.x=-Math.PI/2;marble.position.set(0,.05,2);parlScene.add(marble);
- const marbleIn=new THREE.Mesh(new THREE.CircleGeometry(3.4,32),mat(0xffd86b));
- marbleIn.rotation.x=-Math.PI/2;marbleIn.position.set(0,.06,2);parlScene.add(marbleIn);
- const marbleCore=new THREE.Mesh(new THREE.CircleGeometry(2.9,32),mat(0xc9c0ac));
- marbleCore.rotation.x=-Math.PI/2;marbleCore.position.set(0,.07,2);parlScene.add(marbleCore);
+ // --- Zemin madalyonu: hepsi (0,-1) merkezli, katman katman ---
+ const MC={x:0,z:-1};
+ const lay=(geo,col,y)=>{const m=new THREE.Mesh(geo,mat(col));m.rotation.x=-Math.PI/2;m.position.set(MC.x,y,MC.z);parlScene.add(m);return m;};
+ lay(new THREE.RingGeometry(8.6,13.4,56),0x7a2434,.02);        // kırmızı halı kuşağı
+ lay(new THREE.RingGeometry(13.4,13.9,56),0xffd86b,.03);       // dış altın bant
+ lay(new THREE.CircleGeometry(8.6,56),0xd8d2c4,.02);           // mermer göbek
+ lay(new THREE.RingGeometry(6.2,6.6,48),0xb9ae94,.04);         // mermer iç çember
+ lay(new THREE.RingGeometry(3.5,4.1,40),0xffd86b,.05);         // altın halka
+ lay(new THREE.CircleGeometry(3.4,40),0x9c917a,.04);           // halka içi taş
+ const emblem=new THREE.Mesh(new THREE.CircleGeometry(2.6,40),
+   new THREE.MeshLambertMaterial({color:new THREE.Color(G.player.color)}));
+ emblem.rotation.x=-Math.PI/2;emblem.position.set(MC.x,.06,MC.z);parlScene.add(emblem);
+ // madalyondan dışa ışın çizgileri
+ for(let i=0;i<12;i++){
+  const a=i/12*Math.PI*2;
+  const spoke=new THREE.Mesh(new THREE.PlaneGeometry(.22,4.6),mat(0xc9c0ac));
+  spoke.rotation.x=-Math.PI/2;spoke.rotation.z=-a;
+  spoke.position.set(MC.x+Math.cos(a)*6.4,.035,MC.z+Math.sin(a)*6.4);
+  parlScene.add(spoke);
+ }
 
  // Duvar boyunca ahşap lambri + mermer sütunlar
  for(let i=0;i<14;i++){
@@ -4897,7 +4932,7 @@ function buildParliamentInterior(){
  const pts=[];
  rows.forEach(row=>{
   // kademe platformu
-  const tier=new THREE.Mesh(new THREE.RingGeometry(row.r-1.5,row.r+1.5,40,1,Math.PI*1.06,Math.PI*.88),mat(0x7d6642));
+  const tier=new THREE.Mesh(new THREE.RingGeometry(row.r-1.5,row.r+1.5,40,1,Math.PI*.06,Math.PI*.88),mat(0x7d6642));
   tier.rotation.x=-Math.PI/2;tier.position.set(0,row.h+.04,-3);parlScene.add(tier);
   // sıra (ahşap bank)
   const bench=new THREE.Mesh(new THREE.TorusGeometry(row.r+1.15,.28,6,40,Math.PI*.88),mat(0x4a3520));
@@ -4973,10 +5008,10 @@ function buildParliamentInterior(){
  const door=new THREE.Mesh(new THREE.BoxGeometry(.4,5,4.5),mat(0x4a3520));door.position.set(26.6,2.5,12.5);parlScene.add(door);
  const dsign=makeTextSprite('🚪 ÇIK (şehre)',{w:3.8,border:'#6fdc8c',color:'#6fdc8c'});dsign.position.set(25.6,5.4,12.5);parlScene.add(dsign);
  // Girişten kürsüye kırmızı yürüyüş halısı (yolu gösterir)
- const runner=new THREE.Mesh(new THREE.PlaneGeometry(24,3.2),mat(0x7a2434));
- runner.rotation.x=-Math.PI/2;runner.position.set(13,.04,12.5);parlScene.add(runner);
- const runner2=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3.4),mat(0x7a2434));
- runner2.rotation.x=-Math.PI/2;runner2.position.set(0,.04,12.6);parlScene.add(runner2);
+ const runner=new THREE.Mesh(new THREE.PlaneGeometry(25,3.4),mat(0x7a2434));
+ runner.rotation.x=-Math.PI/2;runner.position.set(13.2,.05,12.5);parlScene.add(runner);
+ [1.7,-1.7].forEach(dz=>{const trim=new THREE.Mesh(new THREE.PlaneGeometry(25,.22),mat(0xffd86b));
+  trim.rotation.x=-Math.PI/2;trim.position.set(13.2,.06,12.5+dz);parlScene.add(trim);});
 
  parlInteractables.push({scene:'parliament',x:0,z:9.2,radius:4.2,label:'<b>E</b> — 🎙️ Kürsüye çık (kanun teklifi sun)',action:()=>parlPodium()});
  parlInteractables.push({scene:'parliament',x:24.6,z:12.5,radius:3.2,label:'<b>E</b> — 🚪 Şehre çık',action:()=>leaveParliament()});
