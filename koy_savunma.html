@@ -199,6 +199,7 @@
             cursor:pointer; user-select:none; transition:all .12s; position:relative; color:#94a3b8;
         }
         .ord-btn:hover { transform:translateY(-2px); border-color:#64748b; }
+        @keyframes ordPulse { 0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.55)} 50%{box-shadow:0 0 0 7px rgba(251,191,36,0)} }
         .ord-btn .ord-label { font-size:8.5px; font-weight:600; letter-spacing:.2px; white-space:nowrap; }
         .ord-btn .ord-key {
             position:absolute; top:-6px; right:-5px; background:#0f172a; border:1px solid #334155;
@@ -1289,6 +1290,9 @@
     // ─── Asker emir sistemi (1-5 tuşları) ───
     const CASTLE_X = 700, CASTLE_Y = 500;
     let soldierOrder = 'free';
+    let orderPick = null;        // 'defend' | 'attack' bekliyorsa hedef seciliyor
+    let orderMark = null;        // {x,y,type,r} haritada cizilen isaret
+    const ORDER_R = {defend: 170, attack: 240};
     const SOLDIER_ORDERS = [
         {id:'follow',  key:'1', ico:'🧍', tr:'Beni Takip Et', en:'Follow Me',  col:'#38bdf8'},
         {id:'attack',  key:'2', ico:'⚔️', tr:'Saldır',        en:'Attack',     col:'#ef4444'},
@@ -1298,21 +1302,63 @@
     ];
     function setSoldierOrder(id){
         const o = SOLDIER_ORDERS.find(x=>x.id===id); if(!o) return;
-        soldierOrder = id;
-        // "Savun" emrinde nöbet noktası = askerin o anki yeri (kahraman varsa etrafı)
-        if (id === 'defend') {
-            soldiers.forEach(s => {
-                if (hero) {
-                    const a = Math.random()*Math.PI*2, r = 40 + Math.random()*70;
-                    s.rallyX = Math.max(60, Math.min(1340, hero.x + Math.cos(a)*r));
-                    s.rallyY = Math.max(60, Math.min(940, hero.y + Math.sin(a)*r));
-                } else { s.rallyX = s.x; s.rallyY = s.y; }
-            });
+        // Savun/Saldır: önce haritada nokta seçtir
+        if (id === 'defend' || id === 'attack') {
+            orderPick = id;
+            updateOrderBar();
+            const ip = (lang === 'tr')
+                ? (id === 'defend' ? '🛡️ Haritada savunulacak noktaya tıkla' : '⚔️ Haritada saldırılacak noktaya tıkla')
+                : (id === 'defend' ? '🛡️ Click the spot to defend' : '⚔️ Click the spot to attack');
+            try { showSpellToast(ip, o.col); } catch(e){}
+            return;
         }
-        if (id === 'attack') soldiers.forEach(s => { s.rallyX = s.x; s.rallyY = s.y; });
+        applySoldierOrder(id, null, null);
+    }
+    // Emri uygula (hedef verilmişse oraya)
+    function applySoldierOrder(id, tx, ty){
+        const o = SOLDIER_ORDERS.find(x=>x.id===id); if(!o) return;
+        soldierOrder = id; orderPick = null;
+        if (id === 'defend' || id === 'attack') {
+            const cx = (tx != null) ? tx : (hero ? hero.x : CASTLE_X);
+            const cy = (ty != null) ? ty : (hero ? hero.y : CASTLE_Y);
+            orderMark = {x: cx, y: cy, type: id, r: ORDER_R[id], life: 0};
+            soldiers.forEach(s => {
+                const a = Math.random()*Math.PI*2, rr = (id === 'defend' ? 25 + Math.random()*75 : Math.random()*60);
+                s.rallyX = Math.max(60, Math.min(1340, cx + Math.cos(a)*rr));
+                s.rallyY = Math.max(60, Math.min(940, cy + Math.sin(a)*rr));
+            });
+        } else { orderMark = null; }
         updateOrderBar();
         const label = (lang === 'tr') ? o.tr : o.en;
         try { showSpellToast(o.ico + ' ' + label + ' (' + soldiers.length + ')', o.col); } catch(e){}
+    }
+    // Haritaya çizilen emir işareti
+    function drawOrderMark(){
+        if (!orderMark || window.RENDER3D) return;
+        orderMark.life++;
+        const mx = orderMark.x + camera.x, my = orderMark.y + camera.y;
+        const col = orderMark.type === 'defend' ? '#22c55e' : '#ef4444';
+        const puls = 1 + Math.sin(orderMark.life * 0.06) * 0.04;
+        ctx.save();
+        ctx.globalAlpha = 0.20;
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.ellipse(mx, my, orderMark.r*puls, orderMark.r*0.55*puls, 0, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 0.85;
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.setLineDash([9, 7]);
+        ctx.lineDashOffset = -orderMark.life * 0.5;
+        ctx.beginPath(); ctx.ellipse(mx, my, orderMark.r*puls, orderMark.r*0.55*puls, 0, 0, Math.PI*2); ctx.stroke();
+        ctx.setLineDash([]);
+        // Merkez bayrak
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx, my - 26); ctx.stroke();
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.moveTo(mx, my - 26); ctx.lineTo(mx + 17, my - 21); ctx.lineTo(mx, my - 15); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(orderMark.type === 'defend' ? '🛡️' : '⚔️', mx, my - 30);
+        ctx.textAlign = 'left';
+        ctx.restore();
     }
     function updateOrderBar(){
         const bar = document.getElementById('order-bar'); if(!bar) return;
@@ -1320,9 +1366,11 @@
         SOLDIER_ORDERS.forEach(o=>{
             const b = document.getElementById('ord-'+o.id); if(!b) return;
             const on = soldierOrder === o.id;
-            b.style.borderColor = on ? o.col : '#334155';
-            b.style.background  = on ? o.col+'33' : '#1e293b';
-            b.style.color       = on ? '#fff' : '#94a3b8';
+            const bekl = orderPick === o.id;
+            b.style.borderColor = bekl ? '#fbbf24' : (on ? o.col : '#334155');
+            b.style.background  = bekl ? 'rgba(251,191,36,.22)' : (on ? o.col+'33' : '#1e293b');
+            b.style.color       = (on||bekl) ? '#fff' : '#94a3b8';
+            b.style.animation   = bekl ? 'ordPulse .8s ease-in-out infinite' : 'none';
             const lbl = b.querySelector('.ord-label');
             if (lbl) lbl.textContent = (lang === 'tr') ? o.tr : o.en;
         });
@@ -1606,7 +1654,60 @@
                     ctx.beginPath(); ctx.arc(6, -8, 1.5, 0, Math.PI*2); ctx.fill();
                     break;
                 }
-                case 'archery':
+                case 'archery': {
+                    // Okçu Kışlası — açık talim alanı: ahşap sundurma, hedef tahtaları, ok kovanları
+                    // Zemin (talim sahası)
+                    ctx.fillStyle = '#6b5535';
+                    ctx.beginPath(); ctx.ellipse(0, 20, 40, 15, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#463621'; ctx.lineWidth = 1.5; ctx.stroke();
+                    // Arka duvar (saman balyası sırası)
+                    for (let i = -1; i <= 1; i++) {
+                        ctx.fillStyle = i === 0 ? '#c9a227' : '#b08d1f';
+                        ctx.fillRect(-30 + i*21, -6, 18, 13);
+                        ctx.strokeStyle = '#7a5f12'; ctx.lineWidth = 1; ctx.strokeRect(-30 + i*21, -6, 18, 13);
+                        ctx.strokeStyle = '#8f6f16';
+                        ctx.beginPath(); ctx.moveTo(-30 + i*21, 0.5); ctx.lineTo(-12 + i*21, 0.5); ctx.stroke();
+                    }
+                    // Hedef tahtası (kırmızı-beyaz halkalar)
+                    const tx0 = 14, ty0 = -12;
+                    [[9,'#f8fafc'],[6,'#dc2626'],[3,'#f8fafc'],[1.5,'#dc2626']].forEach(([r,c]) => {
+                        ctx.fillStyle = c; ctx.beginPath(); ctx.arc(tx0, ty0, r, 0, Math.PI*2); ctx.fill();
+                    });
+                    ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.arc(tx0, ty0, 9, 0, Math.PI*2); ctx.stroke();
+                    // Hedefe saplı oklar
+                    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.3;
+                    ctx.beginPath(); ctx.moveTo(tx0+2, ty0-1); ctx.lineTo(tx0+11, ty0-6); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(tx0-1, ty0+3); ctx.lineTo(tx0+8, ty0+8); ctx.stroke();
+                    // Sundurma direkleri + çatı
+                    ctx.fillStyle = '#5b3d1d';
+                    ctx.fillRect(-34, -30, 4, 26); ctx.fillRect(-6, -30, 4, 26);
+                    ctx.fillStyle = '#166534';
+                    ctx.beginPath();
+                    ctx.moveTo(-40, -30); ctx.lineTo(-18, -40); ctx.lineTo(4, -30); ctx.closePath(); ctx.fill();
+                    ctx.strokeStyle = '#0f2e18'; ctx.lineWidth = 1.5; ctx.stroke();
+                    // Yay standı (asılı yaylar)
+                    ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(-26, -16, 7, -1.2, 1.2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(-14, -16, 7, -1.2, 1.2); ctx.stroke();
+                    ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = 0.8;
+                    ctx.beginPath(); ctx.moveTo(-23.5, -22.5); ctx.lineTo(-23.5, -9.5); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(-11.5, -22.5); ctx.lineTo(-11.5, -9.5); ctx.stroke();
+                    // Ok kovanı
+                    ctx.fillStyle = '#7c4a1e';
+                    ctx.beginPath(); ctx.ellipse(-2, 12, 5, 7, 0.2, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#4a2c10'; ctx.lineWidth = 1; ctx.stroke();
+                    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.1;
+                    for (let i = -1; i <= 1; i++) {
+                        ctx.beginPath(); ctx.moveTo(-2 + i*1.6, 7); ctx.lineTo(-3 + i*2.2, 0); ctx.stroke();
+                    }
+                    // Yeşil bayrak
+                    ctx.strokeStyle = '#3f2a12'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(30, -8); ctx.lineTo(30, -36); ctx.stroke();
+                    ctx.fillStyle = '#16a34a';
+                    ctx.beginPath(); ctx.moveTo(30, -36); ctx.lineTo(46, -31); ctx.lineTo(30, -26); ctx.closePath(); ctx.fill();
+                    break;
+                }
                 case 'barracks': {
                     // Military barracks - stone walls + red roof
                     ctx.fillStyle = '#0f172a';
@@ -2380,7 +2481,9 @@
             ctx.fillRect(sx + 1.5, sy + 4 + bob, 3.5, 7 + Math.abs(stride*0.3));
             // Body / tunic
             const bodyGrad = ctx.createLinearGradient(0, sy - 4 + bob, 0, sy + 6 + bob);
+            const archer = this.kind === 'archer';
             if (knight) { bodyGrad.addColorStop(0, '#fde68a'); bodyGrad.addColorStop(0.5, '#fbbf24'); bodyGrad.addColorStop(1, '#92400e'); }
+            else if (archer) { bodyGrad.addColorStop(0, '#86efac'); bodyGrad.addColorStop(0.5, '#16a34a'); bodyGrad.addColorStop(1, '#14532d'); }
             else { bodyGrad.addColorStop(0, '#60a5fa'); bodyGrad.addColorStop(0.5, '#2563eb'); bodyGrad.addColorStop(1, '#1e3a8a'); }
             ctx.fillStyle = bodyGrad;
             ctx.beginPath();
@@ -2407,25 +2510,71 @@
                 ctx.fillStyle = '#fbbf24';
                 ctx.beginPath(); ctx.arc(sx - 6*f, sy + 2 + bob, 1.5, 0, Math.PI*2); ctx.fill();
             }
-            // Sword arm — swings forward on attack
+            // Silah: okçuda yay + sırtta okluk, diğerlerinde kılıç
             const swing = this.attackFrame > 0 ? (this.attackFrame / 8) * 0.9 : 0;
-            ctx.save();
-            ctx.translate(sx + 5*f, sy + 1 + bob);
-            ctx.rotate(f * (swing - 0.3));
-            ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 2.2;
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -10); ctx.stroke();
-            ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(2, 0); ctx.stroke();
-            ctx.restore();
-            // Helmet
-            const helmGrad = ctx.createLinearGradient(0, sy - 13 + bob, 0, sy - 5 + bob);
-            helmGrad.addColorStop(0, '#cbd5e1'); helmGrad.addColorStop(1, '#475569');
-            ctx.fillStyle = helmGrad;
-            ctx.beginPath(); ctx.arc(sx, sy - 9 + bob, 5, Math.PI, 0); ctx.closePath(); ctx.fill();
-            ctx.fillRect(sx - 5, sy - 9 + bob, 10, 4);
-            ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
-            // Visor slit
-            ctx.fillStyle = '#000'; ctx.fillRect(sx - 4, sy - 7 + bob, 8, 1.2);
+            if (archer) {
+                // Sırttaki okluk
+                ctx.strokeStyle = '#7c4a1e'; ctx.lineWidth = 3.2;
+                ctx.beginPath(); ctx.moveTo(sx - 3*f, sy - 3 + bob); ctx.lineTo(sx - 6*f, sy + 4 + bob); ctx.stroke();
+                ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+                for (let i = -1; i <= 1; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(sx - 3.5*f + i*1.1, sy - 4 + bob);
+                    ctx.lineTo(sx - 4.5*f + i*1.1, sy - 8 + bob);
+                    ctx.stroke();
+                }
+                // Yay (çekince geriliyor)
+                const cek = this.attackFrame > 0 ? 0.55 : 0.25;
+                ctx.save();
+                ctx.translate(sx + 6*f, sy + bob);
+                ctx.scale(f, 1);
+                ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, 9, -1.15, 1.15); ctx.stroke();
+                ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 0.9;
+                const by = Math.sin(1.15) * 9, bx = Math.cos(1.15) * 9;
+                ctx.beginPath();
+                ctx.moveTo(bx, -by);
+                ctx.lineTo(bx - 9*cek, 0);
+                ctx.lineTo(bx, by);
+                ctx.stroke();
+                if (this.attackFrame > 0) {   // kirişteki ok
+                    ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 1.4;
+                    ctx.beginPath(); ctx.moveTo(bx - 9*cek, 0); ctx.lineTo(bx + 7, 0); ctx.stroke();
+                }
+                ctx.restore();
+            } else {
+                ctx.save();
+                ctx.translate(sx + 5*f, sy + 1 + bob);
+                ctx.rotate(f * (swing - 0.3));
+                ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 2.2;
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -10); ctx.stroke();
+                ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(2, 0); ctx.stroke();
+                ctx.restore();
+            }
+            // Baş: okçuda kapüşon, diğerlerinde miğfer
+            if (archer) {
+                const hood = ctx.createLinearGradient(0, sy - 14 + bob, 0, sy - 4 + bob);
+                hood.addColorStop(0, '#4ade80'); hood.addColorStop(1, '#15803d');
+                ctx.fillStyle = hood;
+                ctx.beginPath(); ctx.arc(sx, sy - 9 + bob, 5.2, Math.PI, 0); ctx.closePath(); ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(sx - 5.2, sy - 9 + bob);
+                ctx.lineTo(sx - 5.8*f, sy - 3 + bob);
+                ctx.lineTo(sx + 5.2, sy - 9 + bob);
+                ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
+                ctx.fillStyle = '#f5d0a9';
+                ctx.fillRect(sx - 2 + 2*f, sy - 8 + bob, 4, 3.4);
+            } else {
+                const helmGrad = ctx.createLinearGradient(0, sy - 13 + bob, 0, sy - 5 + bob);
+                helmGrad.addColorStop(0, '#cbd5e1'); helmGrad.addColorStop(1, '#475569');
+                ctx.fillStyle = helmGrad;
+                ctx.beginPath(); ctx.arc(sx, sy - 9 + bob, 5, Math.PI, 0); ctx.closePath(); ctx.fill();
+                ctx.fillRect(sx - 5, sy - 9 + bob, 10, 4);
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
+                ctx.fillStyle = '#000'; ctx.fillRect(sx - 4, sy - 7 + bob, 8, 1.2);
+            }
             // Plume on knight helmets
             if (knight) {
                 ctx.fillStyle = '#dc2626';
@@ -5095,7 +5244,7 @@
     function startGame(map) {
         currentMap = (map && mapSettings[map]) ? map : 'kingdom';
         gameActive = true;
-        soldierOrder = 'free';
+        soldierOrder = 'free'; orderPick = null; orderMark = null;
         document.getElementById('start-screen').style.display = 'none';
         // Lav haritasında ekstra zorluk
         const ms = mapSettings[currentMap];
@@ -5663,6 +5812,7 @@
         } // end !RENDER3D scenery/castle block
 
         buildings.forEach((b, i) => { if(b.hp <= 0) buildings.splice(i, 1); else b.update(), b.draw(); });
+        drawOrderMark();
         soldiers.forEach(s => { s.update(); s.draw(); });
         if (cycle % 20 === 0) updateOrderBar();
         // Hero update/draw (between soldiers and enemies for layering)
@@ -5837,6 +5987,8 @@
         const x = __w.x, y = __w.y;
 
         if (!isRight) {
+            // Emir hedefi bekleniyorsa ilk tık noktayı belirler
+            if (orderPick) { applySoldierOrder(orderPick, x, y); return; }
             isMouseDown = true;
             let clickedB = buildings.find(b => Math.hypot(b.x-x, b.y-y) < 40);
             if (clickedB) { openUpgrade(clickedB, clientX, clientY); return; }
