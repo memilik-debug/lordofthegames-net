@@ -452,9 +452,15 @@
             flex-direction: column;
             z-index: 2000;
             min-width: 180px;
+            width: min(310px, 92vw);
+            max-height: 82vh;
+            overflow-y: auto;
+            overscroll-behavior: contain;
             box-shadow: 0 0 40px rgba(0,0,0,0.8);
             backdrop-filter: blur(10px);
         }
+        #upgrade-panel::-webkit-scrollbar { width: 6px; }
+        #upgrade-panel::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
 
         #ui-hint {
             position: absolute;
@@ -1412,6 +1418,17 @@
             const mult = 1 + (this.level - 1) * 0.6;
             
             if (this.timer % 100 === 0) {
+                // Bakım gideri: yalnızca bir kez, ilk binanın turunda tahsil edilir
+                if (!Building._bakimTur || Building._bakimTur !== this.timer){
+                    Building._bakimTur = this.timer;
+                    const bk = (typeof totalUpkeep === 'function') ? totalUpkeep() : 0;
+                    if (bk > 0){
+                        stats.gold -= bk;
+                        if (stats.gold < 0){ stats.gold = 0; if (!Building._bakimUyari){ Building._bakimUyari = 1;
+                            try{ showSpellToast('⚠️ Bakım giderini karşılayamıyorsun!', '#ef4444'); }catch(e){} } }
+                        else Building._bakimUyari = 0;
+                    }
+                }
                 const pMul = evoMul(this, 'prod'), gMul = evoMul(this, 'gold'), hMul = evoMul(this, 'heal');
                 if (this.type === 'wood') stats.wood += Math.floor(25 * mult * pMul);
                 if (this.type === 'stone') stats.stone += Math.floor(20 * mult * pMul);
@@ -5257,6 +5274,7 @@
         currentMap = (map && mapSettings[map]) ? map : 'kingdom';
         gameActive = true;
         soldierOrder = 'free'; orderPick = null; orderMark = null;
+        if (typeof initResearch === 'function') initResearch();
         document.getElementById('start-screen').style.display = 'none';
         // Lav haritasında ekstra zorluk
         const ms = mapSettings[currentMap];
@@ -5420,8 +5438,9 @@
     function evoMul(b, key){
         let m = 1;
         if (b && b.evolutions) for (const id of b.evolutions){
-            const e = EVO[id];
-            if (e && typeof e[key] === 'number') m *= e[key];
+            // partMul: bonus + zorluğa göre ölçeklenmiş ceza
+            m *= (typeof partMul === 'function') ? partMul(id, key)
+                 : ((EVO[id] && typeof EVO[id][key] === 'number') ? EVO[id][key] : 1);
         }
         return m;
     }
@@ -5540,11 +5559,176 @@
         ]
     };
 
+    // ═══════════════ PARÇA / YUVA / ARAŞTIRMA SİSTEMİ ═══════════════
+    // Yükseltmeler artık "seç ve unut" değil: her binanın sınırlı YUVASI var,
+    // yükseltmeler takılıp sökülebilen PARÇA. Her parçanın bir bedeli (dezavantaj),
+    // çok kaynaklı maliyeti ve tur başına BAKIM gideri var. Bir parçayı takabilmek
+    // için önce ARAŞTIRMAN gerekir; aynı anda tek araştırma yürür.
+
+    // Seviyeye göre yuva sayısı (bina yükseldikçe daha çok parça taşır)
+    const SLOTS_BY_LEVEL = [1, 2, 2, 3, 4];
+    function slotCount(b){ return SLOTS_BY_LEVEL[Math.min(4, Math.max(0, (b.level||1) - 1))]; }
+
+    // Parçanın hangi kademede olduğu (evrim ağacındaki satır) → maliyet/araştırma ölçeği
+    const PART_TIER = {};
+    (function(){
+        for (const k in evolutionTree)
+            evolutionTree[k].forEach((row, i) => row.forEach(o => { PART_TIER[o.id] = i + 1; }));
+    })();
+
+    // Bir parçanın toplam "güç puanı" — maliyet, bakım ve ceza bundan türetilir
+    function partPower(id){
+        const e = EVO[id] || {}; let g = 0;
+        ['dmg','rng','aoe','slow','heal','prod','gold','hp','sldHp','sldSpd'].forEach(k => { if (e[k]) g += (e[k] - 1); });
+        if (e.rate) g += (1 / e.rate - 1);
+        if (e.auraBonus) g += e.auraBonus * 2.2;
+        return Math.max(0.1, g);
+    }
+
+    // Hangi bonus hangi bedeli getirir (güçlenen şeyin karşılığı zayıflar)
+    const PEN_MAP = { dmg:'rate', rate:'dmg', rng:'dmg', aoe:'rate', slow:'dmg',
+                      heal:'hp', prod:'hp', gold:'prod', hp:'rate', sldHp:'sldSpd', sldSpd:'sldHp' };
+    // Elle ayarlanmış imza parçalar (kuralın dışına çıkanlar)
+    const PEN_OVERRIDE = {
+        crossbow:{rate:1.45, rng:0.85}, multishot:{rate:1.25}, rapid:{dmg:0.78},
+        doublebarrel:{dmg:0.72}, rapid_beam:{dmg:0.7}, tesla:{dmg:0.8}, volley:{dmg:0.82},
+        tank:{rate:1.3}, ironbark:{prod:0.85}, reinforced:{rate:1.25},
+        sniper:{rate:1.3}, longbow:{dmg:0.88}, range:{dmg:0.85},
+        dragon_hoard:{hp:0.7}, taxman:{prod:0.85}, wealth:{hp:0.85},
+        apocalypse:{rate:1.5}, absolute_zero:{dmg:0.8}, death_ray:{rate:1.55},
+        immortal:{sldSpd:0.8}, elite:{prod:0.85},
+    };
+    function partPenalty(id){
+        if (PEN_OVERRIDE[id]) return PEN_OVERRIDE[id];
+        const e = EVO[id] || {};
+        // En güçlü bonusu bul
+        let best = null, bv = 0;
+        for (const k in PEN_MAP){
+            const v = (k === 'rate') ? (e.rate ? 1/e.rate : 0) : (e[k] || 0);
+            const m = v ? Math.abs(v - 1) : 0;
+            if (m > bv) { bv = m; best = k; }
+        }
+        if (!best || bv < 0.05) return {};
+        const hedef = PEN_MAP[best];
+        const siddet = Math.min(0.42, bv * 0.42);
+        // rate'te büyük = yavaş (kötü); diğerlerinde küçük = kötü
+        return (hedef === 'rate') ? {rate: 1 + siddet} : {[hedef]: 1 - siddet};
+    }
+    // Kolay modda cezalar hafifler, zorda biraz artar
+    function penScale(){
+        return difficulty === 'easy' ? 0.40 : (difficulty === 'hard' ? 1.15 : 1.0);
+    }
+    // Cezalar dahil nihai çarpan
+    function partMul(id, key){
+        const bon = (EVO[id] || {})[key];
+        const pen = partPenalty(id)[key];
+        let m = (typeof bon === 'number') ? bon : 1;
+        if (typeof pen === 'number'){
+            const s = penScale();
+            m *= 1 + (pen - 1) * s;      // cezayı zorluğa göre ölçekle
+        }
+        return m;
+    }
+
+    // Maliyet ve bakım — güç puanı ve kademeye göre
+    function partCost(id){
+        const g = partPower(id), t = PART_TIER[id] || 1;
+        return {
+            gold:  Math.round(60 + g * 95 + t * 45),
+            wood:  t >= 2 ? Math.round(10 + g * 22) : 0,
+            stone: t >= 3 ? Math.round(12 + g * 26) : 0,
+        };
+    }
+    function partUpkeep(id){ return Math.max(1, Math.round(partPower(id) * 5 + (PART_TIER[id] || 1) * 2)); }
+    function researchCost(id){
+        const g = partPower(id), t = PART_TIER[id] || 1;
+        return { gold: Math.round(80 + g * 70 + t * 60), sure: Math.round(360 + g * 180 + t * 200) };
+    }
+
+    // ── Araştırma durumu ──
+    let researched = {};          // id -> true
+    let research = null;          // {id, left, total}
+    function initResearch(){
+        researched = {}; research = null;
+        // 1. kademe parçalar baştan açık ki oyun kilitlenmesin
+        for (const id in PART_TIER) if (PART_TIER[id] === 1) researched[id] = true;
+    }
+    function startResearch(id){
+        if (research || researched[id]) return false;
+        const c = researchCost(id);
+        if (stats.gold < c.gold) { try{ showSpellToast('Yetersiz altın', '#ef4444'); }catch(e){} return false; }
+        stats.gold -= c.gold;
+        research = { id: id, left: c.sure, total: c.sure };
+        try { showSpellToast('🔬 Araştırma başladı: ' + partName(id), '#38bdf8'); } catch(e){}
+        return true;
+    }
+    function tickResearch(){
+        if (!research) return;
+        research.left--;
+        if (research.left <= 0){
+            researched[research.id] = true;
+            try { showSpellToast('✅ Araştırma tamam: ' + partName(research.id), '#22c55e'); } catch(e){}
+            research = null;
+        }
+    }
+    function partName(id){
+        for (const k in evolutionTree) for (const row of evolutionTree[k]) for (const o of row)
+            if (o.id === id) return (typeof o.t === 'object') ? LT(o.t) : o.t;
+        return id;
+    }
+    function partDesc(id){
+        for (const k in evolutionTree) for (const row of evolutionTree[k]) for (const o of row)
+            if (o.id === id) return (typeof o.d === 'object') ? LT(o.d) : (o.d || '');
+        return '';
+    }
+    // Bir bina tipinin tüm parçaları
+    function partsOf(type){
+        const out = [];
+        (evolutionTree[type] || []).forEach((row, i) => row.forEach(o => out.push(o.id)));
+        return out;
+    }
+
+    // ── Takma / sökme ──
+    function installPart(b, id){
+        b.evolutions = b.evolutions || [];
+        if (b.evolutions.includes(id)) return false;
+        if (b.evolutions.length >= slotCount(b)) { try{ showSpellToast('Boş yuva yok', '#ef4444'); }catch(e){} return false; }
+        if (!researched[id]) { try{ showSpellToast('Önce araştırman gerek', '#f59e0b'); }catch(e){} return false; }
+        const c = partCost(id);
+        if (stats.gold < c.gold || stats.wood < (c.wood||0) || stats.stone < (c.stone||0)){
+            try{ showSpellToast('Yetersiz kaynak', '#ef4444'); }catch(e){} return false;
+        }
+        stats.gold -= c.gold; stats.wood -= (c.wood||0); stats.stone -= (c.stone||0);
+        b.evolutions.push(id);
+        b.path = id;
+        try { sfx.upgrade(); } catch(e){}
+        return true;
+    }
+    function removePart(b, id){
+        if (!b.evolutions) return false;
+        const i = b.evolutions.indexOf(id); if (i < 0) return false;
+        b.evolutions.splice(i, 1);
+        b.path = b.evolutions.length ? b.evolutions[b.evolutions.length - 1] : null;
+        const c = partCost(id);   // sökerken yarısı geri gelir
+        stats.gold += Math.floor(c.gold * 0.5);
+        stats.wood += Math.floor((c.wood||0) * 0.5);
+        stats.stone += Math.floor((c.stone||0) * 0.5);
+        try { showSpellToast('🔧 Parça söküldü — kaynağın yarısı geri geldi', '#f59e0b'); } catch(e){}
+        return true;
+    }
+    // Toplam bakım gideri (tur başına altın)
+    function totalUpkeep(){
+        let u = 0;
+        buildings.forEach(b => { if (b.evolutions) b.evolutions.forEach(id => { u += partUpkeep(id); }); });
+        return u;
+    }
+
+
     function openUpgrade(b, screenX, screenY) {
         selectedBuilding = b;
         upgradePanel.style.display = 'flex';
-        upgradePanel.style.left = Math.min(window.innerWidth - 200, Math.max(10, screenX - 90)) + 'px';
-        upgradePanel.style.top = Math.max(10, screenY - 120) + 'px';
+        upgradePanel.style.left = Math.min(window.innerWidth - 320, Math.max(8, screenX - 150)) + 'px';
+        upgradePanel.style.top = Math.max(8, Math.min(window.innerHeight * 0.10, screenY - 120)) + 'px';
         const BINA_AD = {wood:{tr:'Odun Kampı',en:'Lumber Camp'},stone:{tr:'Taş Ocağı',en:'Quarry'},gold:{tr:'Altın Madeni',en:'Gold Mine'},
             wall:{tr:'Duvar',en:'Wall'},archer:{tr:'Okçu Kulesi',en:'Archer Tower'},barracks:{tr:'Kışla',en:'Barracks'},
             archery:{tr:'Okçu Kışlası',en:'Archery Range'},temple:{tr:'Mabet',en:'Temple'},tower:{tr:'Kule',en:'Tower'},
@@ -5631,58 +5815,138 @@
             }
         })();
 
-        if (b.level < 5) {
-            const tree = evolutionTree[b.type];
-            const opts = tree ? tree[b.level - 1] : null;
-            if (opts) {
-                const cost = 80 + 60 * b.level;
-                const header = document.createElement('div');
-                header.style.cssText = 'font-size:11px;margin-bottom:8px;font-weight:bold;color:#fbbf24;text-align:center;letter-spacing:1px;';
-                header.innerText = LT({tr:'EVRİM LVL ',en:'EVOLVE TO LVL ',de:'ENTWICKELN AUF STUFE ',fr:'ÉVOLUER AU NIV ',zh:'进化至等级 '}) + (b.level + 1) + ' · 💰' + cost;
-                actions.appendChild(header);
-                opts.forEach(opt => {
-                    const div = document.createElement('div');
-                    div.style.cssText = 'background:rgba(15,23,42,0.7);border:2px solid #475569;border-radius:8px;padding:10px;margin-bottom:6px;cursor:pointer;transition:0.18s;';
-                    div.onmouseenter = () => { div.style.borderColor = '#fbbf24'; div.style.background = 'rgba(251,191,36,0.12)'; };
-                    div.onmouseleave = () => { div.style.borderColor = '#475569'; div.style.background = 'rgba(15,23,42,0.7)'; };
-                    const tt = (typeof opt.t === 'object') ? LT(opt.t) : opt.t;
-                    const dd = (typeof opt.d === 'object') ? LT(opt.d) : opt.d;
-                    const E = EVO[opt.id] || {};
-                    const ROZET = {dmg:'⚔️ hasar', rate:'💨 hız', rng:'🔭 menzil', hp:'🛡️ can',
-                                   prod:'📦 üretim', gold:'🪙 altın', aoe:'💥 alan', slow:'🧊 yavaş',
-                                   heal:'✨ şifa', sldHp:'🪖 asker canı', sldSpd:'🏃 asker hızı'};
-                    const rozetler = Object.keys(ROZET).filter(k => E[k] && E[k] !== 1).map(k => {
-                        const v = E[k];
-                        const yuzde = (k === 'rate') ? Math.round((1/v - 1) * 100) : Math.round((v - 1) * 100);
-                        return '<span style="background:rgba(34,197,94,.15);border:1px solid #22c55e55;color:#86efac;' +
-                               'border-radius:5px;padding:1px 5px;font-size:9.5px;margin-right:3px;white-space:nowrap;">' +
-                               ROZET[k] + ' +%' + yuzde + '</span>';
-                    });
-                    if (E.auraBonus) rozetler.push('<span style="background:rgba(251,191,36,.15);border:1px solid #fbbf2455;color:#fde68a;border-radius:5px;padding:1px 5px;font-size:9.5px;">🌟 aura +%' + Math.round(E.auraBonus*100) + '</span>');
-                    div.innerHTML = `<div style="font-weight:bold;color:#fde68a;font-size:13px">${tt}</div>` +
-                        `<div style="font-size:10px;color:#cbd5e1;margin-top:3px">${dd}</div>` +
-                        (rozetler.length ? `<div style="margin-top:5px;line-height:1.9">${rozetler.join('')}</div>` : '');
-                    div.onclick = (e) => {
-                        e.stopPropagation();
-                        if (stats.gold >= cost) {
-                            stats.gold -= cost;
-                            b.level++;
-                            b.evolutions = b.evolutions || [];
-                            b.evolutions.push(opt.id);   // birikimli: önceki seçimler silinmiyor
-                            b.path = opt.id;             // eski özel davranışlar için son yol
-                            // visual scale up to show evolution
-                            b.evolved = true;
-                            sfx.upgrade();
-                            upgradePanel.style.display = 'none';
-                        }
-                    };
-                    actions.appendChild(div);
-                });
+        // ── YUVALAR ──
+        (function(){
+            const yuva = slotCount(b), takili = (b.evolutions || []);
+            const bas = document.createElement('div');
+            bas.style.cssText = 'font-size:10px;color:#64748b;letter-spacing:1px;margin:2px 0 5px;';
+            bas.innerText = 'YUVALAR  ' + takili.length + '/' + yuva +
+                (b.level < 5 ? '  ·  seviye atlayınca artar' : '');
+            actions.appendChild(bas);
+
+            const sira = document.createElement('div');
+            sira.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;';
+            for (let i = 0; i < yuva; i++){
+                const id = takili[i];
+                const d = document.createElement('div');
+                if (id){
+                    d.style.cssText = 'flex:1;min-width:84px;background:rgba(34,197,94,.12);border:1px solid #22c55e66;' +
+                        'border-radius:7px;padding:5px 6px;cursor:pointer;';
+                    d.innerHTML = '<div style="font-size:10.5px;font-weight:700;color:#bbf7d0;line-height:1.2">' + partName(id) + '</div>' +
+                        '<div style="font-size:9px;color:#86efac;margin-top:2px">🔧 sök · +' + Math.floor(partCost(id).gold*0.5) + '🪙</div>';
+                    d.title = 'Sök (harcadığının yarısı geri gelir)';
+                    d.onclick = (e) => { e.stopPropagation(); removePart(b, id); openUpgrade(b, screenX, screenY); };
+                } else {
+                    d.style.cssText = 'flex:1;min-width:84px;background:rgba(15,23,42,.5);border:1px dashed #475569;' +
+                        'border-radius:7px;padding:9px 6px;text-align:center;color:#64748b;font-size:10px;';
+                    d.innerText = '+ boş yuva';
+                }
+                sira.appendChild(d);
             }
+            actions.appendChild(sira);
+
+            // Bakım özeti
+            const bk = takili.reduce((a, id) => a + partUpkeep(id), 0);
+            if (bk){
+                const u = document.createElement('div');
+                u.style.cssText = 'font-size:10px;color:#fbbf24;margin:-4px 0 8px;';
+                u.innerText = '🔩 Bu binanın bakımı: ' + bk + ' altın/tur  ·  toplam: ' + totalUpkeep() + '/tur';
+                actions.appendChild(u);
+            }
+        })();
+
+        // ── TAKILABİLİR PARÇALAR ──
+        (function(){
+            const takili = (b.evolutions || []);
+            const dolu = takili.length >= slotCount(b);
+            const hepsi = partsOf(b.type).filter(id => !takili.includes(id));
+            if (!hepsi.length) return;
+            const h = document.createElement('div');
+            h.style.cssText = 'font-size:10px;color:#64748b;letter-spacing:1px;margin:4px 0 5px;';
+            h.innerText = dolu ? 'PARÇALAR — yuva dolu, önce sök' : 'TAKILABİLİR PARÇALAR';
+            actions.appendChild(h);
+
+            hepsi.forEach(id => {
+                const c = partCost(id), arastirildi = !!researched[id];
+                const alinabilir = arastirildi && !dolu &&
+                    stats.gold >= c.gold && stats.wood >= (c.wood||0) && stats.stone >= (c.stone||0);
+                const d = document.createElement('div');
+                d.style.cssText = 'background:rgba(15,23,42,.7);border:1px solid ' +
+                    (alinabilir ? '#475569' : '#33415580') + ';border-radius:8px;padding:7px 8px;margin-bottom:5px;' +
+                    (alinabilir ? 'cursor:pointer;' : 'opacity:.55;');
+
+                const E = EVO[id] || {}, P = partPenalty(id);
+                const AD = {dmg:'⚔️ hasar', rate:'💨 hız', rng:'🔭 menzil', hp:'🛡️ can', prod:'📦 üretim',
+                            gold:'🪙 altın', aoe:'💥 alan', slow:'🧊 yavaş', heal:'✨ şifa',
+                            sldHp:'🪖 asker canı', sldSpd:'🏃 asker hızı'};
+                const yuz = (k, v) => (k === 'rate') ? Math.round((1/v - 1) * 100) : Math.round((v - 1) * 100);
+                const iyi = Object.keys(AD).filter(k => E[k] && E[k] !== 1).map(k =>
+                    '<span style="background:rgba(34,197,94,.15);border:1px solid #22c55e55;color:#86efac;border-radius:5px;padding:1px 5px;font-size:9px;margin-right:3px;">' +
+                    AD[k] + ' +%' + yuz(k, E[k]) + '</span>');
+                if (E.auraBonus) iyi.push('<span style="background:rgba(251,191,36,.15);border:1px solid #fbbf2455;color:#fde68a;border-radius:5px;padding:1px 5px;font-size:9px;">🌟 aura +%' + Math.round(E.auraBonus*100) + '</span>');
+                const sc = penScale();
+                const kotu = Object.keys(AD).filter(k => P[k]).map(k => {
+                    const gercek = 1 + (P[k] - 1) * sc;
+                    return '<span style="background:rgba(239,68,68,.14);border:1px solid #ef444455;color:#fca5a5;border-radius:5px;padding:1px 5px;font-size:9px;margin-right:3px;">' +
+                        AD[k] + ' ' + yuz(k, gercek) + '%</span>';
+                });
+
+                const fiyat = '🪙' + c.gold + (c.wood ? ' 🪵' + c.wood : '') + (c.stone ? ' 🪨' + c.stone : '');
+                d.innerHTML =
+                    '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px">' +
+                      '<span style="font-weight:700;color:#fde68a;font-size:12px">' + partName(id) + '</span>' +
+                      '<span style="font-size:9.5px;color:#cbd5e1;white-space:nowrap">' + fiyat + '</span></div>' +
+                    '<div style="font-size:9.5px;color:#94a3b8;margin-top:2px">' + partDesc(id) +
+                      ' · 🔩 bakım ' + partUpkeep(id) + '/tur</div>' +
+                    (iyi.length ? '<div style="margin-top:4px;line-height:1.8">' + iyi.join('') + '</div>' : '') +
+                    (kotu.length ? '<div style="margin-top:2px;line-height:1.8">' + kotu.join('') + '</div>' : '') +
+                    (!arastirildi ? '<div style="margin-top:4px;font-size:9.5px;color:#38bdf8">🔬 Araştırılmadı — ' +
+                        researchCost(id).gold + '🪙 · ' + Math.round(researchCost(id).sure/60) + ' sn' +
+                        (research ? ' (başka araştırma sürüyor)' : '') + '</div>' : '');
+
+                d.onclick = (e) => {
+                    e.stopPropagation();
+                    if (!arastirildi){ if (startResearch(id)) openUpgrade(b, screenX, screenY); return; }
+                    if (installPart(b, id)) openUpgrade(b, screenX, screenY);
+                };
+                actions.appendChild(d);
+            });
+        })();
+
+        // ── SÜREN ARAŞTIRMA ──
+        if (research){
+            const r = document.createElement('div');
+            const yuzde = Math.round((1 - research.left / research.total) * 100);
+            r.style.cssText = 'margin-top:7px;padding:6px 8px;background:rgba(56,189,248,.1);border:1px solid #38bdf855;border-radius:8px;';
+            r.innerHTML = '<div style="font-size:10px;color:#7dd3fc">🔬 ' + partName(research.id) + ' — %' + yuzde + '</div>' +
+                '<div style="height:5px;background:#0f172a;border-radius:3px;margin-top:4px;overflow:hidden">' +
+                '<div style="height:100%;width:' + yuzde + '%;background:linear-gradient(90deg,#0ea5e9,#7dd3fc)"></div></div>';
+            actions.appendChild(r);
+        }
+
+        // ── SEVİYE YÜKSELTME (yuva açar) ──
+        if (b.level < 5){
+            const cost = 80 + 60 * b.level;
+            const up = document.createElement('div');
+            const ok = stats.gold >= cost;
+            up.style.cssText = 'margin-top:8px;padding:8px;text-align:center;border-radius:8px;font-weight:700;font-size:12px;' +
+                'background:' + (ok ? 'rgba(251,191,36,.15)' : 'rgba(15,23,42,.6)') +
+                ';border:1px solid ' + (ok ? '#fbbf24' : '#33415580') + ';color:' + (ok ? '#fde68a' : '#64748b') +
+                (ok ? ';cursor:pointer' : ';opacity:.6');
+            const yeniYuva = SLOTS_BY_LEVEL[Math.min(4, b.level)];
+            up.innerHTML = '⬆️ Seviye ' + (b.level + 1) + ' · 💰' + cost +
+                '<div style="font-size:9.5px;font-weight:400;color:#cbd5e1;margin-top:2px">yuva ' + slotCount(b) + ' → ' + yeniYuva + ' · tüm değerler +%60</div>';
+            up.onclick = (e) => {
+                e.stopPropagation();
+                if (stats.gold < cost) return;
+                stats.gold -= cost; b.level++; b.evolved = true;
+                try { sfx.upgrade(); } catch(err) {}
+                openUpgrade(b, screenX, screenY);
+            };
+            actions.appendChild(up);
         } else {
-            // innerHTML kullanmıyoruz: yukarıdaki "GÜNCEL GÜÇ" kutusunu silmesin
             const efs = document.createElement('div');
-            efs.style.cssText = 'text-align:center;color:var(--gold);font-size:14px;font-weight:bold;letter-spacing:2px;margin-top:4px;';
+            efs.style.cssText = 'text-align:center;color:var(--gold);font-size:13px;font-weight:bold;letter-spacing:2px;margin-top:6px;';
             efs.innerText = '⭐ EFSANEVİ ⭐';
             actions.appendChild(efs);
         }
@@ -6003,6 +6267,7 @@
         drawOrderMark();
         soldiers.forEach(s => { s.update(); s.draw(); });
         if (cycle % 20 === 0) updateOrderBar();
+        if (typeof tickResearch === 'function') tickResearch();
         // Hero update/draw (between soldiers and enemies for layering)
         if (hero) {
             hero.update();
