@@ -4580,6 +4580,127 @@
           outro:{tr:[{n:'baldric',t:'Ejderha düştü! Krallık kurtuldu. Sen bir efsanesin Lordum!'}], en:[{n:'baldric',t:'The Dragon falls! The realm is saved. You are a legend, my Lord!'}], de:[{n:'baldric',t:'Der Drache fällt! Das Reich ist gerettet. Du bist eine Legende, mein Lord!'}], fr:[{n:'baldric',t:'Le dragon tombe ! Le royaume est sauvé. Tu es une légende, mon Seigneur !'}], zh:[{n:'baldric',t:'巨龙倒下了！王国得救了。您就是传奇，主公！'}]} }
     ];
 
+    // ── Bölüme özel dalga diyalogları ──────────────────────────────────
+    // Sorun: her dalga başında I18N[lang].wave_intro[num] oynuyordu; bu genel
+    // hikâye modu metniydi, yani 1. bölümün 1. dalgasıyla 8. bölümünki aynıydı.
+    // Artık kampanyada her bölümün kendi dalga replikleri var.
+    const CH_WAVE_TALK = {
+     0:{ // Sınır Karakolu
+      1:{tr:[{n:'baldric',t:'İlk dalga. Altı goblin. Bunu bile kaybederseniz raporu ben yazmam.'}],
+         en:[{n:'baldric',t:'First wave. Six goblins. Lose this and I refuse to write the report.'}]},
+      2:{tr:[{n:'roric',t:'Sekiz tane! Kılıcımın yarısı hâlâ iş görüyor Lordum.'},{n:'elara',t:'Yarısı fazla iyimser bir tarif.'}],
+         en:[{n:'roric',t:'Eight of them! Half my blade still works, my Lord.'},{n:'elara',t:'"Half" is a generous description.'}]},
+      3:{tr:[{n:'quill',t:'On goblin geliyor. Bütçe açısından her biri bize 3 altına mal oluyor. Ölmelerini tercih ederim.'}],
+         en:[{n:'quill',t:'Ten incoming. Budget-wise each costs us 3 gold. I would prefer they die.'}]},
+      4:{tr:[{n:'baldric',t:'Son dalga. Karakol düşerse sınır düşer, sınır düşerse ben işsiz kalırım.'},{n:'elara',t:'Motivasyon konuşman hep kendinle bitiyor.'}],
+         en:[{n:'baldric',t:'Final wave. The outpost falls, the border falls, and I lose my job.'},{n:'elara',t:'Your pep talks always end with you.'}]}},
+
+     1:{ // Goblin Baskını
+      1:{tr:[{n:'lyra',t:'Şef geri döndü ve bu sefer yanında sayı var. Ağaç hattını izle Lordum.'}],
+         en:[{n:'lyra',t:'The chief returned, and this time he brought numbers. Watch the treeline.'}]},
+      2:{tr:[{n:'roric',t:'On iki! Bu benim rekorum Lordum. Önceki rekorum üçtü.'}],
+         en:[{n:'roric',t:'Twelve! A personal record, my Lord. The previous one was three.'}]},
+      3:{tr:[{n:'elara',t:'Davul sesi duyuyorum. Goblinler davul çalmaz — biri onlara öğretmiş.'}],
+         en:[{n:'elara',t:'I hear drums. Goblins do not drum. Someone taught them.'}]},
+      4:{tr:[{n:'baldric',t:'Dördüncü dalga. Şef arkada bekliyor, kendi askerini önden yolluyor.'},{n:'quill',t:'Yönetici zihniyeti. Saygı duydum.'}],
+         en:[{n:'baldric',t:'Fourth wave. The chief waits behind, sending his own men first.'},{n:'quill',t:'Management mindset. I respect it.'}]},
+      5:{tr:[{n:'roric',t:'ŞEF GELİYOR! Lordum, izninizle onu ben karşılayayım!'},{n:'elara',t:'İzin verilmedi. Kılıcın yarısı yok.'}],
+         en:[{n:'roric',t:'THE CHIEF COMES! My Lord, allow me to greet him!'},{n:'elara',t:'Permission denied. Half your sword is missing.'}]}},
+
+     2:{ // Donmuş Geçit
+      1:{tr:[{n:'baldric',t:'Buz iblisleri sessiz yürür. Ayak sesi duyarsanız, o siz değilsiniz.'}],
+         en:[{n:'baldric',t:'Ice fiends walk silently. If you hear footsteps, they are not yours.'}]},
+      2:{tr:[{n:'elara',t:'Ateş kuleleri burada iki kat işe yarar. Buz, ateşi sevmez.'}],
+         en:[{n:'elara',t:'Fire towers do double duty here. Ice dislikes flame.'}]},
+      3:{tr:[{n:'quill',t:'Isıtma masrafı bütçeyi ikiye katladı. Lütfen hızlı kazanın.'}],
+         en:[{n:'quill',t:'Heating costs doubled the budget. Please win quickly.'}]},
+      4:{tr:[{n:'lyra',t:'Geçidin öbür ucunda bir şey uyanıyor. Nefesi buharlı.'}],
+         en:[{n:'lyra',t:'Something wakes at the far end of the pass. Its breath steams.'}]},
+      5:{tr:[{n:'roric',t:'Buz devi! Lordum, donmuş bir düşman kırılır — bunu biliyorum çünkü denedim.'},{n:'baldric',t:'Neyi denedin Roric?'}],
+         en:[{n:'roric',t:'An ice giant! My Lord, a frozen foe shatters — I know, I tried it.'},{n:'baldric',t:'You tried what, Roric?'}]}},
+
+     3:{ // Kar Fırtınası (dayan)
+      1:{tr:[{n:'lyra',t:'Fırtına başladı. Kazanmak yok Lordum, sadece ayakta kalmak var.'}],
+         en:[{n:'lyra',t:'The storm begins. There is no winning here — only standing.'}]},
+      2:{tr:[{n:'baldric',t:'Görüş sıfıra indi. Kuleleriniz sizden iyi görüyor; onlara güvenin.'}],
+         en:[{n:'baldric',t:'Visibility is gone. Your towers see better than you do; trust them.'}]},
+      3:{tr:[{n:'elara',t:'Sayaç işliyor. Onları yenmek zorunda değilsin, sadece sıkılmalarını bekle.'}],
+         en:[{n:'elara',t:'The timer runs. You need not beat them — just outlast their patience.'}]},
+      4:{tr:[{n:'quill',t:'Son bölüm. Fırtına dinerse ısıtma faturası da diner.'},{n:'roric',t:'Quill, biz ölmemeye çalışıyoruz.'}],
+         en:[{n:'quill',t:'Final stretch. If the storm ends, so does the heating bill.'},{n:'roric',t:'Quill, we are trying not to die.'}]}},
+
+     4:{ // Kervan Yolu
+      1:{tr:[{n:'quill',t:'Bu yol krallığın kan damarı Lordum. Kapanırsa hazine üç ayda kurur.'}],
+         en:[{n:'quill',t:'This road is the realm\'s bloodline. Close it and the treasury dries in three months.'}]},
+      2:{tr:[{n:'baldric',t:'Çöl haydutları goblinlerden akıllı. Bu bir iltifat değil, uyarı.'}],
+         en:[{n:'baldric',t:'Desert raiders are smarter than goblins. That is a warning, not a compliment.'}]},
+      3:{tr:[{n:'roric',t:'Sıcak! Zırhım fırın oldu Lordum!'},{n:'elara',t:'Zırhını çıkarma Roric. Geçen sefer olanları hatırlıyoruz.'}],
+         en:[{n:'roric',t:'The heat! My armor is an oven, my Lord!'},{n:'elara',t:'Do not remove it, Roric. We remember last time.'}]},
+      4:{tr:[{n:'lyra',t:'Kum altında hareket var. Yerden çıkanlar için hazırlıklı ol.'}],
+         en:[{n:'lyra',t:'Movement beneath the sand. Be ready for what comes up from below.'}]},
+      5:{tr:[{n:'quill',t:'Beşinci dalga. Kervan hâlâ bekliyor ve bekleme ücreti işliyor.'}],
+         en:[{n:'quill',t:'Fifth wave. The caravan still waits, and waiting has a fee.'}]},
+      6:{tr:[{n:'baldric',t:'Haydut reisi geliyor. Onu yenersek yol bir yıl açık kalır.'},{n:'roric',t:'Bir yıl mı? O zaman iki kere yenelim!'}],
+         en:[{n:'baldric',t:'Their chieftain approaches. Beat him and the road stays open a year.'},{n:'roric',t:'A year? Then let us beat him twice!'}]}},
+
+     5:{ // Kum Kuşatması (kaleyi koru)
+      1:{tr:[{n:'roric',t:'Bu sefer hedef kale Lordum! Canı yarının altına düşmesin.'}],
+         en:[{n:'roric',t:'The keep is the target this time! Do not let it fall below half.'}]},
+      2:{tr:[{n:'baldric',t:'Duvar tamiri altına mal olur ama kale onarımı taca mal olur.'}],
+         en:[{n:'baldric',t:'Repairing walls costs gold. Repairing the keep costs the crown.'}]},
+      3:{tr:[{n:'elara',t:'Kapıya yükleniyorlar. Kalabalığı kapıdan uzak tut.'}],
+         en:[{n:'elara',t:'They press the gate. Keep the crowd away from it.'}]},
+      4:{tr:[{n:'quill',t:'Kale canı düşerse sigorta ödemiyor. Sigortamız da yok zaten.'}],
+         en:[{n:'quill',t:'If the keep drops, insurance will not pay. We also have no insurance.'}]},
+      5:{tr:[{n:'lyra',t:'Kuşatma kuleleri getirdiler. Uzaktan vurmalısın.'}],
+         en:[{n:'lyra',t:'They brought siege towers. You must strike from range.'}]},
+      6:{tr:[{n:'baldric',t:'Son hücum. Kale ayakta kalırsa onur bizim, düşerse suç benim olacak.'}],
+         en:[{n:'baldric',t:'Final assault. If the keep stands, the honor is ours. If not, the blame is mine.'}]}},
+
+     6:{ // Ateş Kapısı
+      1:{tr:[{n:'baldric',t:'Lav vadisi. Sıcaklık askerin canını yavaş yavaş alır — hızlı bitirin.'}],
+         en:[{n:'baldric',t:'The lava valley. Heat drains your men slowly — end this fast.'}]},
+      2:{tr:[{n:'elara',t:'Buz kuleleri burada altın değerinde. Ateşe ateşle karşılık verme.'}],
+         en:[{n:'elara',t:'Frost towers are worth their weight here. Do not answer fire with fire.'}]},
+      3:{tr:[{n:'roric',t:'Kılıcım kızardı Lordum! Artık daha korkutucu görünüyor!'},{n:'quill',t:'Eriyor Roric. Kelimesi "eriyor".'}],
+         en:[{n:'roric',t:'My blade glows, my Lord! Far more intimidating now!'},{n:'quill',t:'It is melting, Roric. The word is "melting".'}]},
+      4:{tr:[{n:'lyra',t:'Kapının ardından zincir sesi geliyor. Bir şey bağlıymış.'}],
+         en:[{n:'lyra',t:'Chains rattle beyond the gate. Something was kept bound.'}]},
+      5:{tr:[{n:'baldric',t:'Beşinci dalga. Karanlığın lordları bizi tartıyor Lordum.'}],
+         en:[{n:'baldric',t:'Fifth wave. The lords of darkness are measuring us, my Lord.'}]},
+      6:{tr:[{n:'quill',t:'Altı dalga oldu. Muhasebeci olarak söylüyorum: bu bir eğilim değil, saldırı.'}],
+         en:[{n:'quill',t:'Six waves now. As an accountant: this is not a trend, it is an invasion.'}]},
+      7:{tr:[{n:'roric',t:'KAPI MUHAFIZI! Lordum, bu sefer gerçekten hazırım!'},{n:'elara',t:'Yeni kılıç aldı. Tamamı var.'}],
+         en:[{n:'roric',t:'THE GATE WARDEN! My Lord, this time I am truly ready!'},{n:'elara',t:'He bought a new sword. All of it.'}]}},
+
+     7:{ // Alev Lordu (boss)
+      1:{tr:[{n:'baldric',t:'Alev Lordu uyandı. Maiyeti önce gelir; asıl mesele arkada.'}],
+         en:[{n:'baldric',t:'The Flame Lord wakes. His retinue comes first; the real matter follows.'}]},
+      2:{tr:[{n:'lyra',t:'İşte geliyor. Ateşi söndüremezsin Lordum — sadece nefesini kesebilirsin.'},{n:'roric',t:'Bunu ben yaparım!'},{n:'baldric',t:'Roric, sen kapıyı tut. Lütfen.'}],
+         en:[{n:'lyra',t:'Here he comes. You cannot quench his fire — only take his breath.'},{n:'roric',t:'I shall do it!'},{n:'baldric',t:'Roric, hold the gate. Please.'}]}},
+
+     8:{ // Son Nöbet
+      1:{tr:[{n:'baldric',t:'Eve döndük Lordum. Savunduğumuz yer artık kendi topraklarımız.'}],
+         en:[{n:'baldric',t:'We are home, my Lord. What we defend now is our own soil.'}]},
+      2:{tr:[{n:'elara',t:'Bu kapıyı çocukken görmüştüm. Düşmesini görmek istemiyorum.'}],
+         en:[{n:'elara',t:'I saw this gate as a child. I do not wish to see it fall.'}]},
+      3:{tr:[{n:'quill',t:'Hazine boşaldı Lordum. Kalan tek kaynağımız inat.'}],
+         en:[{n:'quill',t:'The treasury is empty, my Lord. Our only remaining resource is stubbornness.'}]},
+      4:{tr:[{n:'roric',t:'Lordum, bugün geri adım yok. Kılıcım tam ve elim titremiyor.'},{n:'baldric',t:'İlk kez ciddi konuştu.'}],
+         en:[{n:'roric',t:'No step back today, my Lord. My blade is whole and my hand is steady.'},{n:'baldric',t:'He is serious for once.'}]},
+      5:{tr:[{n:'lyra',t:'Son dalga. Ardından gökyüzü kararacak — hazırlan Lordum.'}],
+         en:[{n:'lyra',t:'The last wave. After it, the sky will darken. Be ready.'}]}},
+
+     9:{ // Kara Ejderha (final)
+      1:{tr:[{n:'lyra',t:'Gölgesi tarlaları örttü. Kara Ejderha geldi Lordum.'},{n:'baldric',t:'Bütün kulelerinizi kullanın. Hepsini.'}],
+         en:[{n:'lyra',t:'Its shadow covers the fields. The Black Dragon has come.'},{n:'baldric',t:'Use every tower you have. Every one.'}]},
+      2:{tr:[{n:'elara',t:'Alçalıyor! Yere indiğinde vurabilirsin — havadayken boşuna harcama.'}],
+         en:[{n:'elara',t:'It descends! Strike when it lands — do not waste shots in the air.'}]},
+      3:{tr:[{n:'roric',t:'Lordum. Üç yıldır bu anı bekliyorum.'},{n:'baldric',t:'Ben de. Farklı sebeplerle.'},{n:'quill',t:'Ejderha derisinin piyasa değeri çok yüksek. Sadece söylüyorum.'}],
+         en:[{n:'roric',t:'My Lord. I have waited three years for this.'},{n:'baldric',t:'So have I. For different reasons.'},{n:'quill',t:'Dragon hide fetches a fine price. Just saying.'}]}},
+    };
+    CAMPAIGN.forEach((ch, i) => { ch.waveTalk = CH_WAVE_TALK[i] || null; });
+
     function chapterWaves(ch){ return [null].concat(ch.waves); }
 
     function initObjective(ch){
@@ -4719,7 +4840,14 @@
         waveActive = true;
         waveBossSpawned = !cfg.boss;
         // Pre-wave dialog
-        const intro = I18N[lang].wave_intro[num] || [];
+        // Kampanyada bölüme özel dalga diyaloğu; klasik hikayede genel metin
+        let intro;
+        if (campaignActive) {
+            const chW = CAMPAIGN[currentChapterIdx];
+            intro = (chW && chW.waveTalk && chW.waveTalk[num]) ? (LT(chW.waveTalk[num]) || []) : [];
+        } else {
+            intro = I18N[lang].wave_intro[num] || [];
+        }
         showAdvisor(intro, () => {
             showWaveBanner(num, I18N[lang].wave_banner_ready);
             updateWaveHud();
