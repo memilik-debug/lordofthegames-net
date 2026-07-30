@@ -974,6 +974,7 @@
             <div class="build-btn" id="btn-stone" onclick="setBuild('stone')"><span class="build-icon">⛏️</span><span>Taş</span><span class="cost-label">30A</span></div>
             <div class="build-btn" id="btn-gold" onclick="setBuild('gold')"><span class="build-icon">🪙</span><span>Altın</span><span class="cost-label">20O</span></div>
             <div class="build-btn" id="btn-barracks" onclick="setBuild('barracks')"><span class="build-icon">⚔️</span><span>Kışla</span><span class="cost-label">50A</span></div>
+            <div class="build-btn" id="btn-archery" onclick="setBuild('archery')"><span class="build-icon">🏹</span><span>Okçu Kışlası</span><span class="cost-label">70A·20O</span></div>
             <div class="build-btn" id="btn-temple" onclick="setBuild('temple')"><span class="build-icon">⛪</span><span>Mabet</span><span class="cost-label">60A</span></div>
             <div class="build-btn" id="btn-wall" onclick="setBuild('wall')"><span class="build-icon">🧱</span><span>Duvar</span><span class="cost-label">10T</span></div>
             <div class="build-btn" id="btn-archer" onclick="setBuild('archer')"><span class="build-icon">🏹</span><span>Okçu</span><span class="cost-label">40A</span></div>
@@ -1183,7 +1184,7 @@
     const unlocksByLevel = {
         1: ['wood','stone','gold','wall','archer'],
         2: ['barracks'],
-        3: ['temple'],
+        3: ['temple','archery'],
         4: ['tower','hospital','frost'],
         5: ['mage','poison'],
         6: ['cannon','lightning'],
@@ -1264,7 +1265,7 @@
         const t = document.getElementById('levelup-toast');
         if (!t) return;
         const unlockedNow = unlocksByLevel[playerLevel] || [];
-        const trNames = { wood:'Odun', stone:'Taş', gold:'Altın', wall:'Duvar', archer:'Okçu', barracks:'Kışla', temple:'Mabet', tower:'Kule', mage:'Büyücü', cannon:'Topçu', hospital:'Şifahane', lightning:'Şimşek Kulesi', catapult:'Mancınık', frost:'Buz Kulesi', poison:'Zehir Kulesi', laser:'Lazer Kulesi' };
+        const trNames = { wood:'Odun', stone:'Taş', gold:'Altın', wall:'Duvar', archer:'Okçu', barracks:'Kışla', archery:'Okçu Kışlası', temple:'Mabet', tower:'Kule', mage:'Büyücü', cannon:'Topçu', hospital:'Şifahane', lightning:'Şimşek Kulesi', catapult:'Mancınık', frost:'Buz Kulesi', poison:'Zehir Kulesi', laser:'Lazer Kulesi' };
         const list = unlockedNow.map(u => trNames[u] || u).join(', ');
         t.innerHTML = '⭐ SEVİYE ' + playerLevel + (list ? '<br><span style="font-size:11px;color:#fbbf24">Açıldı: ' + list + '</span>' : '');
         t.style.opacity = '1';
@@ -1341,7 +1342,7 @@
 
     const costs = {
         wood: { gold: 20 }, stone: { gold: 30 }, gold: { wood: 20 },
-        barracks: { gold: 50 }, temple: { gold: 60 }, wall: { stone: 10 },
+        barracks: { gold: 50 }, archery: { gold: 70, wood: 20 }, temple: { gold: 60 }, wall: { stone: 10 },
         archer: { gold: 40 }, tower: { stone: 30 }, mage: { gold: 100 }, cannon: { gold: 150 },
         hospital: { gold: 80 }, lightning: { gold: 200, stone: 40 }, catapult: { gold: 250, stone: 60 },
         frost: { gold: 120, stone: 30 }, poison: { gold: 140, wood: 50 }, laser: { gold: 300, stone: 80 }
@@ -1352,6 +1353,7 @@
             this.x = x; this.y = y; this.type = type;
             this.level = 1;
             this.path = null;
+            this.trainMode = 'regular';       // kışla/okçu kışlası eğitim modu
             this.hp = type === 'wall' ? 2000 : 600;
             this.maxHp = this.hp;
             this.radius = type === 'wall' ? 24 : 30;
@@ -1367,9 +1369,17 @@
                 if (this.type === 'stone') stats.stone += Math.floor((this.path === 'alloy' ? 45 : 20) * mult);
                 if (this.type === 'gold') stats.gold += Math.floor((this.path === 'wealth' ? 90 : 35) * mult);
                 if (this.type === 'temple') stats.hp = Math.min(100, stats.hp + Math.floor((this.path === 'blessing' ? 12 : 5) * mult));
-                if (this.type === 'barracks') {
-                    let maxS = this.path === 'swarm' ? 35 : 18;
-                    if (soldiers.length < maxS) soldiers.push(new Soldier(this.x, this.y, this.path === 'knights'));
+            }
+
+            // Kışla / Okçu Kışlası — üretim hızı eğitim moduna bağlı
+            if (this.type === 'barracks' || this.type === 'archery') {
+                const tm = TRAIN_MODES[this.trainMode] || TRAIN_MODES.regular;
+                const her = Math.max(18, Math.round(100 / tm.rate));
+                if (this.timer % her === 0) {
+                    const kind = (this.type === 'archery') ? 'archer' : 'melee';
+                    const maxS = Math.round((this.path === 'swarm' ? 35 : 18) * tm.cap);
+                    const kendi = soldiers.filter(s => s.kind === kind).length;
+                    if (kendi < maxS) soldiers.push(new Soldier(this.x, this.y, this.path === 'knights', kind, this.trainMode));
                 }
             }
 
@@ -1596,6 +1606,7 @@
                     ctx.beginPath(); ctx.arc(6, -8, 1.5, 0, Math.PI*2); ctx.fill();
                     break;
                 }
+                case 'archery':
                 case 'barracks': {
                     // Military barracks - stone walls + red roof
                     ctx.fillStyle = '#0f172a';
@@ -2236,24 +2247,59 @@
         }
     }
 
+    // Kışla eğitim modları — aynı kışla istediğin an mod değiştirebilir
+    const TRAIN_MODES = {
+        regular: {ico:'🎖️', tr:'Nitelikli', en:'Regular',  rate:1.0, cap:1.0, q:1.00, spd:1.00,
+                  descTr:'Dengeli asker. Standart hız ve güç.', descEn:'Balanced troops.'},
+        levy:    {ico:'👥', tr:'Acemi Yığını', en:'Levy',   rate:2.0, cap:2.0, q:0.55, spd:0.92,
+                  descTr:'2 kat asker, ama canı ve vuruşu yarı yarıya.', descEn:'2x troops, half the punch.'},
+        elite:   {ico:'🛡️', tr:'Seçkin', en:'Elite',        rate:0.5, cap:0.55, q:1.85, spd:1.12,
+                  descTr:'Yarı sayıda, ama çok daha güçlü ve hızlı.', descEn:'Half the count, far tougher.'},
+    };
     class Soldier {
-        constructor(x, y, isKnight) {
+        constructor(x, y, isKnight, kind, mode) {
             this.x = x; this.y = y;
             this.vx = (Math.random()-0.5)*3.5; this.vy = (Math.random()-0.5)*3.5;
-            this.hp = isKnight ? 500 : 250;
-            this.dmg = isKnight ? 25 : 12;
+            this.kind = kind || 'melee';           // melee | archer
+            this.mode = mode || 'regular';
+            const m = TRAIN_MODES[this.mode] || TRAIN_MODES.regular;
+            const baseHp  = isKnight ? 500 : (this.kind === 'archer' ? 170 : 250);
+            const baseDmg = isKnight ? 25  : (this.kind === 'archer' ? 16  : 12);
+            this.hp = Math.round(baseHp * m.q);
+            this.dmg = Math.round(baseDmg * m.q * 10) / 10;
             this.isKnight = isKnight;
+            this.shootCd = 0;
             this.facing = 1;
             this.frame = Math.random() * 100; // staggered animation
             this.attackFrame = 0;
             this.moving = false;
             this.rallyX = x; this.rallyY = y;   // "savun" emrinin nöbet noktası
-            this.speedMul = 1;
+            this.speedMul = (TRAIN_MODES[this.mode] || TRAIN_MODES.regular).spd;
         }
-        // Hedefe dogru yuru; menzile girince vur
+        // Hedefe dogru yuru; menzile girince vur.
+        // Okcular yaklasmaz: ~150px'te durup ok atar.
         _seek(tx, ty, spd, hitR, target) {
+            if (this.shootCd > 0) this.shootCd--;
+            const archer = this.kind === 'archer';
+            const keep = archer ? 150 : 0;
             const dx = tx - this.x, dy = ty - this.y;
             const d = Math.hypot(dx, dy);
+            if (archer && target) {
+                // Menzili koru: cok yakinsa geri cekil, uzaksa yaklas
+                if (d > keep + 12 || d < keep - 45) {
+                    const yon = (d < keep - 45) ? -1 : 1;
+                    const ndx = dx/(d||1), ndy = dy/(d||1);
+                    this.x += ndx*spd*yon; this.y += ndy*spd*yon;
+                    if (Math.abs(ndx) > 0.05) this.facing = (ndx*yon) > 0 ? 1 : -1;
+                    this.moving = true;
+                } else if (Math.abs(dx) > 1) this.facing = dx > 0 ? 1 : -1;
+                if (d < keep + 40 && this.shootCd <= 0) {
+                    projectiles.push(new Projectile(this.x, this.y - 6, target, false, this.dmg * 2.2, '#d6c08a'));
+                    this.shootCd = 46;
+                    this.attackFrame = 8;
+                }
+                return;
+            }
             if (d > 1) {
                 const ndx = dx/d, ndy = dy/d;
                 this.x += ndx*spd; this.y += ndy*spd;
@@ -5130,6 +5176,12 @@
             [{id:'bank', t:{tr:'🏛️ Banka', en:'🏛️ Bank'}, d:{tr:'çevre +%30', en:'nearby +30%'}}, {id:'taxman', t:{tr:'📜 Vergi', en:'📜 Tax'}, d:{tr:'+altın/öldürme', en:'+gold on kill'}}],
             [{id:'legend_gold', t:{tr:'👑 Midas', en:'👑 Midas'}, d:{tr:'efsane', en:'legend'}}, {id:'dragon_hoard', t:{tr:'🐉 Ejder Hazinesi', en:'🐉 Dragon Hoard'}, d:{tr:'devasa altın', en:'huge gold'}}]
         ],
+        archery: [
+            [{id:'knights', t:{tr:'🎯 Nişancı', en:'🎯 Marksman'}, d:{tr:'+güçlü ok', en:'+strong shot'}}, {id:'swarm', t:{tr:'👥 Okçu Ordusu', en:'👥 Archer Host'}, d:{tr:'+çok okçu', en:'+many archers'}}],
+            [{id:'longbow', t:{tr:'🏹 Uzun Yay', en:'🏹 Longbow'}, d:{tr:'+menzil', en:'+range'}}, {id:'volley', t:{tr:'☄️ Yaylım Ateşi', en:'☄️ Volley'}, d:{tr:'+atış hızı', en:'+fire rate'}}],
+            [{id:'fireArrow', t:{tr:'🔥 Ateşli Ok', en:'🔥 Fire Arrow'}, d:{tr:'yakıcı', en:'burns'}}, {id:'sniper', t:{tr:'🎯 Keskin Nişancı', en:'🎯 Sniper'}, d:{tr:'kritik', en:'crits'}}],
+            [{id:'legend_archery', t:{tr:'👑 Efsane Okçular', en:'👑 Legendary Archers'}, d:{tr:'efsane', en:'legend'}}, {id:'rain', t:{tr:'🌧️ Ok Yağmuru', en:'🌧️ Arrow Rain'}, d:{tr:'alan hasarı', en:'area damage'}}]
+        ],
         barracks: [
             [{id:'knights', t:{tr:'⚔️ Şövalye', en:'⚔️ Knights'}, d:{tr:'+güçlü', en:'+strong'}}, {id:'swarm', t:{tr:'👥 Ordu', en:'👥 Swarm'}, d:{tr:'+çok asker', en:'+many'}}],
             [{id:'elite', t:{tr:'🎖️ Elit', en:'🎖️ Elite'}, d:{tr:'2x hasar', en:'2x dmg'}}, {id:'phalanx', t:{tr:'🛡️ Falanks', en:'🛡️ Phalanx'}, d:{tr:'+savunma', en:'+defense'}}],
@@ -5215,10 +5267,51 @@
         upgradePanel.style.display = 'flex';
         upgradePanel.style.left = Math.min(window.innerWidth - 200, Math.max(10, screenX - 90)) + 'px';
         upgradePanel.style.top = Math.max(10, screenY - 120) + 'px';
-        document.getElementById('upgrade-building-name').innerText = b.type.toUpperCase();
+        const BINA_AD = {wood:{tr:'Odun Kampı',en:'Lumber Camp'},stone:{tr:'Taş Ocağı',en:'Quarry'},gold:{tr:'Altın Madeni',en:'Gold Mine'},
+            wall:{tr:'Duvar',en:'Wall'},archer:{tr:'Okçu Kulesi',en:'Archer Tower'},barracks:{tr:'Kışla',en:'Barracks'},
+            archery:{tr:'Okçu Kışlası',en:'Archery Range'},temple:{tr:'Mabet',en:'Temple'},tower:{tr:'Kule',en:'Tower'},
+            mage:{tr:'Büyücü Kulesi',en:'Mage Tower'},cannon:{tr:'Topçu',en:'Cannon'},hospital:{tr:'Şifahane',en:'Hospital'},
+            lightning:{tr:'Şimşek Kulesi',en:'Lightning Tower'},catapult:{tr:'Mancınık',en:'Catapult'},
+            frost:{tr:'Buz Kulesi',en:'Frost Tower'},poison:{tr:'Zehir Kulesi',en:'Poison Tower'},laser:{tr:'Lazer Kulesi',en:'Laser Tower'}};
+        document.getElementById('upgrade-building-name').innerText =
+            (BINA_AD[b.type] ? LT(BINA_AD[b.type]) : b.type).toUpperCase();
         document.getElementById('upgrade-building-level').innerText = LT({tr:'Seviye ',en:'Level ',de:'Stufe ',fr:'Niveau ',zh:'等级 '}) + b.level;
         const actions = document.getElementById('upgrade-actions');
         actions.innerHTML = '';
+
+        // ── Kışla / Okçu Kışlası: eğitim modu (istediğin an değiştirilebilir) ──
+        if (b.type === 'barracks' || b.type === 'archery') {
+            const kind = (b.type === 'archery') ? 'archer' : 'melee';
+            const sayi = soldiers.filter(x => x.kind === kind).length;
+            const h = document.createElement('div');
+            h.style.cssText = 'font-size:11px;margin-bottom:6px;font-weight:bold;color:#93c5fd;text-align:center;letter-spacing:1px;';
+            h.innerText = (lang === 'tr' ? 'EĞİTİM MODU' : 'TRAINING MODE') + ' · ' + sayi;
+            actions.appendChild(h);
+            Object.keys(TRAIN_MODES).forEach(id => {
+                const m = TRAIN_MODES[id];
+                const on = (b.trainMode || 'regular') === id;
+                const d = document.createElement('div');
+                d.style.cssText = 'background:' + (on ? 'rgba(59,130,246,.18)' : 'rgba(15,23,42,0.7)') +
+                    ';border:2px solid ' + (on ? '#3b82f6' : '#475569') +
+                    ';border-radius:8px;padding:8px 9px;margin-bottom:5px;cursor:pointer;transition:.15s;';
+                const ad = (lang === 'tr') ? m.tr : m.en;
+                const ac = (lang === 'tr') ? m.descTr : m.descEn;
+                d.innerHTML = '<div style="font-weight:bold;color:#e0f2fe;font-size:12.5px">' + m.ico + ' ' + ad +
+                    (on ? ' <span style="color:#60a5fa;font-size:10px">✓</span>' : '') + '</div>' +
+                    '<div style="font-size:9.5px;color:#cbd5e1;margin-top:2px">' + ac + '</div>' +
+                    '<div style="font-size:9px;color:#94a3b8;margin-top:3px">üretim ×' + m.rate + ' · sınır ×' + m.cap + ' · güç ×' + m.q + '</div>';
+                d.onclick = (e) => {
+                    e.stopPropagation();
+                    b.trainMode = id;
+                    try { sfx.upgrade(); } catch(err) {}
+                    openUpgrade(b, screenX, screenY);
+                };
+                actions.appendChild(d);
+            });
+            const ayr = document.createElement('div');
+            ayr.style.cssText = 'height:1px;background:#334155;margin:8px 0;';
+            actions.appendChild(ayr);
+        }
 
         if (b.level < 5) {
             const tree = evolutionTree[b.type];
