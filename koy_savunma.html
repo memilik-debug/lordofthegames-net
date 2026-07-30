@@ -1412,10 +1412,11 @@
             const mult = 1 + (this.level - 1) * 0.6;
             
             if (this.timer % 100 === 0) {
-                if (this.type === 'wood') stats.wood += Math.floor((this.path === 'turbo' ? 70 : 25) * mult);
-                if (this.type === 'stone') stats.stone += Math.floor((this.path === 'alloy' ? 45 : 20) * mult);
-                if (this.type === 'gold') stats.gold += Math.floor((this.path === 'wealth' ? 90 : 35) * mult);
-                if (this.type === 'temple') stats.hp = Math.min(100, stats.hp + Math.floor((this.path === 'blessing' ? 12 : 5) * mult));
+                const pMul = evoMul(this, 'prod'), gMul = evoMul(this, 'gold'), hMul = evoMul(this, 'heal');
+                if (this.type === 'wood') stats.wood += Math.floor(25 * mult * pMul);
+                if (this.type === 'stone') stats.stone += Math.floor(20 * mult * pMul);
+                if (this.type === 'gold') stats.gold += Math.floor(35 * mult * pMul * gMul);
+                if (this.type === 'temple') stats.hp = Math.min(100, stats.hp + Math.floor(5 * mult * hMul));
             }
 
             // Kışla / Okçu Kışlası — üretim hızı eğitim moduna bağlı
@@ -1431,30 +1432,37 @@
             }
 
             if (enemies.length > 0) {
-                let target = getNearestEnemy(this.x, this.y, 500);
-                // Hero aura: +25% damage if within 180 of hero
-                const auraMult = (hero && Math.hypot(this.x - hero.x, this.y - hero.y) < 180) ? 1.25 : 1.0;
+                // Evrimlerden gelen birikimli çarpanlar
+                const eD = evoMul(this, 'dmg'), eR = evoMul(this, 'rate'),
+                      eRng = evoMul(this, 'rng'), eAoe = evoMul(this, 'aoe'),
+                      eSlow = evoMul(this, 'slow');
+                this._eD = eD; this._eAoe = eAoe; this._eSlow = eSlow;
+                let target = getNearestEnemy(this.x, this.y, 500 * eRng);
+                // Hero aura: +25% damage if within 180 of hero (+ evrim aura bonusu)
+                const auraMult = ((hero && Math.hypot(this.x - hero.x, this.y - hero.y) < 180) ? 1.25 : 1.0)
+                               + evoAdd(this, 'auraBonus');
+                const per = (base) => Math.max(4, Math.floor(base * eR));
                 if (target) {
-                    if (this.type === 'tower' && this.timer % Math.floor(40/this.level) === 0) {
-                        projectiles.push(new Projectile(this.x, this.y, target, false, 70 * mult * auraMult));
+                    if (this.type === 'tower' && this.timer % per(Math.floor(40/this.level)) === 0) {
+                        projectiles.push(new Projectile(this.x, this.y, target, false, 70 * mult * auraMult * eD));
                         sfx.shoot();
                     }
-                    if (this.type === 'archer' && this.timer % Math.floor(25/this.level) === 0) {
-                        projectiles.push(new Projectile(this.x, this.y, target, true, 30 * mult * auraMult));
+                    if (this.type === 'archer' && this.timer % per(Math.floor(25/this.level)) === 0) {
+                        projectiles.push(new Projectile(this.x, this.y, target, true, 30 * mult * auraMult * eD));
                         sfx.shoot();
                     }
                     if (this.type === 'mage' && this.timer % 60 === 0) {
                         enemies.forEach(e => {
                             if (Math.hypot(target.x - e.x, target.y - e.y) < 100) {
-                                e.hp -= 40 * mult * auraMult;
+                                e.hp -= 40 * mult * auraMult * eD;
                                 e.speedMult = 0.3;
                             }
                         });
-                        projectiles.push(new Projectile(this.x, this.y, target, false, 20, '#a855f7'));
+                        projectiles.push(new Projectile(this.x, this.y, target, false, 20 * eD, '#a855f7'));
                         sfx.shoot();
                     }
                     if (this.type === 'cannon' && this.timer % 100 === 0) {
-                        projectiles.push(new Projectile(this.x, this.y, target, false, 250 * mult * auraMult, '#1f2937'));
+                        projectiles.push(new Projectile(this.x, this.y, target, false, 250 * mult * auraMult * eD, '#1f2937'));
                         sfx.explosion();
                     }
                     if (this.type === 'lightning' && this.timer % Math.floor(50/this.level) === 0) {
@@ -1472,7 +1480,7 @@
                             chain.push(nxt);
                             last = nxt;
                         }
-                        const dmg = 55 * mult * auraMult;
+                        const dmg = 55 * mult * auraMult * eD;
                         chain.forEach(en => { en.hp -= dmg; en.speedMult = 0.45; });
                         // Visual: store lightning chain for one frame
                         this._lightChain = { points: chain.map(c => ({x: c.x, y: c.y})), src: {x: this.x, y: this.y}, life: 8 };
@@ -1480,7 +1488,7 @@
                     }
                     if (this.type === 'catapult' && this.timer % 130 === 0) {
                         // Lobbed boulder with big AoE radius
-                        projectiles.push(new Projectile(this.x, this.y, target, false, 350 * mult * auraMult, '#78350f'));
+                        projectiles.push(new Projectile(this.x, this.y, target, false, 350 * mult * auraMult * eD, '#78350f'));
                         sfx.explosion();
                         // AoE on hit
                         setTimeout(() => {
@@ -1491,9 +1499,9 @@
                     }
                     // ❄️ FROST KULESİ — yavaşlatma + alan donma (GÜÇLÜ versiyon)
                     if (this.type === 'frost' && this.timer % Math.floor(35/this.level) === 0) {
-                        const slowAmt = this.path === 'deepfreeze' ? 0.10 : 0.25;
+                        const slowAmt = (this.path === 'deepfreeze' ? 0.10 : 0.25) / Math.max(1, eSlow);
                         const slowDur = this.path === 'deepfreeze' ? 280 : 180;
-                        const radius = this.path === 'blizzard' ? 240 : 175;
+                        const radius = (this.path === 'blizzard' ? 240 : 175) * eAoe;
                         enemies.forEach(en => {
                             if (Math.hypot(target.x - en.x, target.y - en.y) < radius) {
                                 const dmg = 35 * mult * auraMult;
@@ -1508,9 +1516,9 @@
                     }
                     // ☠️ ZEHİR KULESİ — zaman içinde hasar (DoT)
                     if (this.type === 'poison' && this.timer % Math.floor(55/this.level) === 0) {
-                        const dotDmg = (this.path === 'plague' ? 4.5 : 2.8) * mult * auraMult;
+                        const dotDmg = (this.path === 'plague' ? 4.5 : 2.8) * mult * auraMult * eD;
                         const dotDur = this.path === 'plague' ? 360 : 220;
-                        const radius = this.path === 'cloud' ? 100 : 60;
+                        const radius = (this.path === 'cloud' ? 100 : 60) * eAoe;
                         enemies.forEach(en => {
                             if (Math.hypot(target.x - en.x, target.y - en.y) < radius) {
                                 en.poisonDmg = Math.max(en.poisonDmg || 0, dotDmg);
@@ -1522,7 +1530,7 @@
                     }
                     // 🔆 LAZER KULESİ — sürekli ışın (her frame)
                     if (this.type === 'laser') {
-                        const beamDmg = (this.path === 'death' ? 9 : 5) * mult * auraMult / 4;
+                        const beamDmg = (this.path === 'death' ? 9 : 5) * mult * auraMult * eD / 4;
                         // Beam locks onto closest target; pierces if 'pierce' path
                         target.hp -= beamDmg;
                         if (this.path === 'pierce') {
@@ -1545,7 +1553,7 @@
                 }
                 // Healer doesn't need a target — heals nearby allies
                 if (this.type === 'hospital' && this.timer % 60 === 0) {
-                    const heal = 8 * mult * (this.path === 'medics' ? 1.5 : 1);
+                    const heal = 8 * mult * (this.path === 'medics' ? 1.5 : 1) * evoMul(this, 'heal');
                     buildings.forEach(b => {
                         if (b !== this && Math.hypot(b.x - this.x, b.y - this.y) < 230) {
                             b.hp = Math.min(b.maxHp, b.hp + heal);
@@ -5310,6 +5318,123 @@
     // === EVOLUTION TREE (per-level branching) ===
     // Each building has 4 evolution choices (one per upgrade level 2,3,4,5).
     // b.evolutions stores the picked id at each level.
+    // ═══════════════ EVRİM İSTATİSTİK TABLOSU ═══════════════
+    // Önceki sistemde ağaçta 136 evrim vardı ama sadece 14'ünün etkisi vardı;
+    // kalan 113'ü altın alıp hiçbir şey yapmıyordu. Üstelik b.path her seviyede
+    // üzerine yazıldığı için çalışanların da yalnızca sonuncusu geçerliydi.
+    // Artık her evrim somut çarpanlar taşıyor ve seçimler ÜST ÜSTE BİNİYOR.
+    //   dmg  = hasar çarpanı      rate = atış aralığı (küçük = hızlı)
+    //   rng  = menzil çarpanı     hp   = bina canı çarpanı
+    //   prod = üretim çarpanı     aoe  = alan etkisi çarpanı
+    //   slow = yavaşlatma gücü    heal = iyileştirme çarpanı
+    const EVO = {
+        // ── Kaynak binaları ──
+        turbo:{prod:2.8}, guard:{dmg:1.6, rng:1.15},
+        bigsaw:{prod:2.0}, forester:{prod:1.35, gold:1.5},
+        magicwood:{heal:1.6, prod:1.2}, ironbark:{hp:2.6, prod:1.1},
+        legend_wood:{prod:2.2, hp:1.6, gold:1.4}, inferno_wood:{dmg:2.2, aoe:1.5, prod:1.2},
+
+        alloy:{prod:2.25}, tank:{hp:3.0},
+        deepmine:{prod:1.5, gold:1.6}, crystal:{prod:1.2, auraBonus:0.15},
+        fortress:{hp:2.2, auraBonus:0.10}, meteorite:{dmg:2.4, aoe:1.8},
+        legend_stone:{prod:2.1, hp:2.0}, voidstone:{auraBonus:0.28, rng:1.3},
+
+        wealth:{prod:2.6}, interest:{gold:1.8},
+        mint:{prod:2.0}, jeweler:{heal:1.5, gold:1.3},
+        bank:{prod:1.5, auraBonus:0.30}, taxman:{gold:2.2},
+        legend_gold:{prod:2.4, gold:1.8}, dragon_hoard:{prod:3.2},
+
+        // ── Asker binaları ──
+        knights:{dmg:1.0}, swarm:{dmg:1.0},
+        cavalry:{sldSpd:1.35, dmg:1.15}, phalanx:{sldHp:1.5, dmg:1.1},
+        elite:{sldHp:1.4, dmg:1.45}, crusader:{sldHp:1.25, dmg:1.3, heal:1.3},
+        legend_barr:{sldHp:1.8, dmg:1.8, sldSpd:1.2}, immortal:{sldHp:2.6, dmg:1.4},
+
+        longbow:{rng:1.45}, volley:{rate:0.62},
+        fireArrow:{dmg:1.5, aoe:1.3}, sniper:{dmg:1.9, rng:1.2},
+        legend_archery:{dmg:1.8, rng:1.3, rate:0.75}, rain:{aoe:2.0, dmg:1.3},
+
+        // ── Mabet / duvar / şifahane ──
+        blessing:{heal:2.4}, priest:{heal:1.5, auraBonus:0.12},
+        cathedral:{heal:1.8, hp:1.5}, sanctuary:{heal:1.4, auraBonus:0.22},
+        holy:{dmg:1.8, aoe:1.4}, aura:{auraBonus:0.35},
+        legend_temple:{heal:2.2, auraBonus:0.30}, archangel:{heal:2.0, dmg:2.0, rng:1.4},
+
+        spikes:{dmg:1.0}, iron:{hp:2.2},
+        thorns:{dmg:2.0}, fortify:{hp:1.8, auraBonus:0.08},
+        reinforced:{hp:2.4}, rune:{hp:1.6, auraBonus:0.18},
+        legend_wall:{hp:3.2, dmg:1.5}, soulwall:{hp:2.4, heal:1.4},
+
+        medics:{heal:1.9}, surgeon:{heal:1.5, rng:1.25},
+        apothecary:{heal:1.4, auraBonus:0.15}, sanitarium:{heal:1.7, rng:1.2},
+        plague_doc:{heal:1.5, dmg:1.6}, regen:{heal:2.1},
+        legend_hosp:{heal:2.4, rng:1.4}, lightbringer:{heal:2.0, auraBonus:0.25},
+
+        // ── Saldırı kuleleri ──
+        rapid:{rate:0.6}, sniper_a:{dmg:1.7, rng:1.35},
+        multishot:{dmg:1.75}, piercing:{dmg:1.4, aoe:1.3},
+        crossbow:{dmg:2.0}, fire_arrow:{dmg:1.45, aoe:1.35},
+        legend_archer:{dmg:1.9, rate:0.75, rng:1.25}, toxic_rain:{dmg:1.5, aoe:1.9},
+
+        fire:{dmg:1.5, aoe:1.35}, ice_t:{slow:1.6, dmg:1.15},
+        reinforced_t:{hp:2.0}, doublebarrel:{rate:0.52},
+        siege:{dmg:1.4, aoe:1.8}, tactical:{dmg:1.3, slow:1.3},
+        legend_tower:{dmg:1.9, rate:0.75, rng:1.3}, overlord:{dmg:1.6, aoe:2.0, rng:1.2},
+
+        power:{dmg:1.8}, range:{rng:1.5},
+        arcane:{dmg:1.6, aoe:1.3}, chronomage:{slow:2.0, rate:0.8},
+        necro:{dmg:1.4, sldHp:1.3}, elemental:{dmg:1.5, aoe:1.4, slow:1.3},
+        legend_mage:{dmg:2.0, aoe:1.5, rng:1.3}, avatar:{dmg:1.7, aoe:1.8, slow:1.5},
+
+        shrapnel:{aoe:1.7, dmg:1.2}, mortar:{dmg:1.6, rng:1.35},
+        cluster:{aoe:2.0, dmg:1.3}, thermite:{dmg:1.8, aoe:1.3},
+        doubleshot:{rate:0.55}, shockwave:{aoe:1.9, slow:1.4},
+        legend_cannon:{dmg:2.1, aoe:1.6}, apocalypse:{dmg:1.8, aoe:2.4},
+
+        voltage:{dmg:1.7}, tesla:{rate:0.62},
+        ionstorm:{dmg:1.4, aoe:1.6}, overcharge:{dmg:2.0, rate:0.85},
+        disruptor:{slow:1.8, dmg:1.3}, storm:{aoe:1.8, dmg:1.4},
+        legend_light:{dmg:2.0, rate:0.7, aoe:1.4}, world_shock:{dmg:1.6, aoe:2.2},
+
+        piercing_c:{dmg:1.5}, meteor_strike:{dmg:2.0, aoe:1.7}, fireball:{dmg:1.6, aoe:1.5},
+        rapid_c:{rate:0.6}, corrosive:{dmg:1.5, slow:1.4},
+        legend_cat:{dmg:2.0, aoe:1.7, rng:1.25}, inferno_c:{dmg:1.7, aoe:1.9},
+
+        deepfreeze:{slow:1.0}, blizzard:{aoe:1.0},
+        permafrost:{slow:1.7}, icestorm:{aoe:1.7, slow:1.3},
+        icecube:{slow:1.5, dmg:1.4}, frost_giant:{dmg:1.7, aoe:1.5},
+        legend_frost:{slow:1.8, aoe:1.6, dmg:1.4}, absolute_zero:{slow:2.4, dmg:1.3},
+        eternal_winter:{slow:2.0, aoe:1.8},
+
+        plague:{dmg:1.0}, cloud:{aoe:1.0},
+        venom:{dmg:1.8}, pandemic:{aoe:1.9},
+        death_touch:{dmg:2.2}, toxic:{dmg:1.5, slow:1.4},
+        legend_poison:{dmg:1.9, aoe:1.7}, apocalypse_p:{dmg:1.7, aoe:2.2},
+
+        death:{dmg:1.0}, pierce:{dmg:1.0},
+        plasma:{dmg:1.9}, rapid_beam:{rate:0.55},
+        wide_beam:{aoe:1.8, rng:1.2}, death_ray:{dmg:2.3},
+        legend_laser:{dmg:2.1, rate:0.7, rng:1.35}, paladin:{dmg:1.6, heal:1.5},
+    };
+    // Bir binanın tüm evrimlerinden gelen birikimli çarpan
+    function evoMul(b, key){
+        let m = 1;
+        if (b && b.evolutions) for (const id of b.evolutions){
+            const e = EVO[id];
+            if (e && typeof e[key] === 'number') m *= e[key];
+        }
+        return m;
+    }
+    // Toplamsal alanlar (aura bonusu gibi)
+    function evoAdd(b, key){
+        let a = 0;
+        if (b && b.evolutions) for (const id of b.evolutions){
+            const e = EVO[id];
+            if (e && typeof e[key] === 'number') a += e[key];
+        }
+        return a;
+    }
+
     const evolutionTree = {
         wood: [
             [{id:'turbo', t:{tr:'⚡ Turbo Hasat', en:'⚡ Turbo Harvest'}, d:{tr:'%180 hız', en:'+180% speed'}}, {id:'guard', t:{tr:'🛡️ Gözcü Kulübesi', en:'🛡️ Watch Hut'}, d:{tr:'+saldırı', en:'+attack'}}],
@@ -5466,6 +5591,46 @@
             actions.appendChild(ayr);
         }
 
+        // ── Binanın güncel gücü (evrimlerden gelen birikimli çarpanlarla) ──
+        (function(){
+            const lvMul = 1 + (b.level - 1) * 0.6;
+            const satir = [];
+            const ekle = (ad, val, iyiBuyuk) => satir.push(
+                '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;">' +
+                '<span style="color:#94a3b8">' + ad + '</span>' +
+                '<span style="color:#e2e8f0;font-weight:700">' + val + '</span></div>');
+            const d = evoMul(b,'dmg'), r = evoMul(b,'rate'), rg = evoMul(b,'rng'),
+                  ao = evoMul(b,'aoe'), sl = evoMul(b,'slow'), pr = evoMul(b,'prod'),
+                  hl = evoMul(b,'heal'), hpM = evoMul(b,'hp'), au = evoAdd(b,'auraBonus');
+            const KAYNAK = {wood:'🪵 Odun/tur', stone:'🪨 Taş/tur', gold:'🪙 Altın/tur'};
+            if (KAYNAK[b.type]) ekle(KAYNAK[b.type], Math.floor((b.type==='wood'?25:b.type==='stone'?20:35) * lvMul * pr * (b.type==='gold'?evoMul(b,'gold'):1)));
+            if (b.type === 'temple') ekle('✨ Kale onarımı/tur', Math.floor(5 * lvMul * hl));
+            if (b.type === 'hospital') ekle('⛑️ İyileştirme', Math.round(8 * lvMul * hl * 10)/10);
+            const TABAN = {tower:70, archer:30, mage:40, cannon:250, lightning:55, catapult:350, poison:4.5, laser:5};
+            if (TABAN[b.type]) ekle('⚔️ Hasar', Math.round(TABAN[b.type] * lvMul * d));
+            if (r !== 1) ekle('💨 Atış hızı', '×' + (1/r).toFixed(2));
+            if (rg !== 1) ekle('🔭 Menzil', Math.round(500 * rg));
+            if (ao !== 1) ekle('💥 Alan etkisi', '×' + ao.toFixed(2));
+            if (sl !== 1) ekle('🧊 Yavaşlatma', '×' + sl.toFixed(2));
+            if (hpM !== 1) ekle('🛡️ Dayanıklılık', '×' + hpM.toFixed(2));
+            if (au) ekle('🌟 Aura bonusu', '+%' + Math.round(au*100));
+            if (!satir.length) return;
+            const box = document.createElement('div');
+            box.style.cssText = 'background:rgba(15,23,42,.55);border:1px solid #334155;border-radius:8px;padding:7px 9px;margin-bottom:8px;';
+            box.innerHTML = '<div style="font-size:10px;color:#64748b;letter-spacing:1px;margin-bottom:3px;">GÜNCEL GÜÇ</div>' + satir.join('');
+            actions.appendChild(box);
+            if (b.evolutions && b.evolutions.length){
+                const ev = document.createElement('div');
+                ev.style.cssText = 'font-size:10px;color:#7dd3fc;margin:-3px 0 8px;line-height:1.6;';
+                ev.innerHTML = '🧬 ' + b.evolutions.map(id => {
+                    for (const k in evolutionTree) for (const lv of evolutionTree[k]) for (const o of lv)
+                        if (o.id === id) return (typeof o.t === 'object' ? LT(o.t) : o.t);
+                    return id;
+                }).join(' · ');
+                actions.appendChild(ev);
+            }
+        })();
+
         if (b.level < 5) {
             const tree = evolutionTree[b.type];
             const opts = tree ? tree[b.level - 1] : null;
@@ -5482,15 +5647,29 @@
                     div.onmouseleave = () => { div.style.borderColor = '#475569'; div.style.background = 'rgba(15,23,42,0.7)'; };
                     const tt = (typeof opt.t === 'object') ? LT(opt.t) : opt.t;
                     const dd = (typeof opt.d === 'object') ? LT(opt.d) : opt.d;
-                    div.innerHTML = `<div style="font-weight:bold;color:#fde68a;font-size:13px">${tt}</div><div style="font-size:10px;color:#cbd5e1;margin-top:3px">${dd}</div>`;
+                    const E = EVO[opt.id] || {};
+                    const ROZET = {dmg:'⚔️ hasar', rate:'💨 hız', rng:'🔭 menzil', hp:'🛡️ can',
+                                   prod:'📦 üretim', gold:'🪙 altın', aoe:'💥 alan', slow:'🧊 yavaş',
+                                   heal:'✨ şifa', sldHp:'🪖 asker canı', sldSpd:'🏃 asker hızı'};
+                    const rozetler = Object.keys(ROZET).filter(k => E[k] && E[k] !== 1).map(k => {
+                        const v = E[k];
+                        const yuzde = (k === 'rate') ? Math.round((1/v - 1) * 100) : Math.round((v - 1) * 100);
+                        return '<span style="background:rgba(34,197,94,.15);border:1px solid #22c55e55;color:#86efac;' +
+                               'border-radius:5px;padding:1px 5px;font-size:9.5px;margin-right:3px;white-space:nowrap;">' +
+                               ROZET[k] + ' +%' + yuzde + '</span>';
+                    });
+                    if (E.auraBonus) rozetler.push('<span style="background:rgba(251,191,36,.15);border:1px solid #fbbf2455;color:#fde68a;border-radius:5px;padding:1px 5px;font-size:9.5px;">🌟 aura +%' + Math.round(E.auraBonus*100) + '</span>');
+                    div.innerHTML = `<div style="font-weight:bold;color:#fde68a;font-size:13px">${tt}</div>` +
+                        `<div style="font-size:10px;color:#cbd5e1;margin-top:3px">${dd}</div>` +
+                        (rozetler.length ? `<div style="margin-top:5px;line-height:1.9">${rozetler.join('')}</div>` : '');
                     div.onclick = (e) => {
                         e.stopPropagation();
                         if (stats.gold >= cost) {
                             stats.gold -= cost;
                             b.level++;
                             b.evolutions = b.evolutions || [];
-                            b.evolutions.push(opt.id);
-                            b.path = opt.id;
+                            b.evolutions.push(opt.id);   // birikimli: önceki seçimler silinmiyor
+                            b.path = opt.id;             // eski özel davranışlar için son yol
                             // visual scale up to show evolution
                             b.evolved = true;
                             sfx.upgrade();
@@ -5501,7 +5680,11 @@
                 });
             }
         } else {
-            actions.innerHTML = '<div style="text-align:center; color:var(--gold); font-size:14px;font-weight:bold;letter-spacing:2px;">⭐ EFSANEVİ ⭐</div>';
+            // innerHTML kullanmıyoruz: yukarıdaki "GÜNCEL GÜÇ" kutusunu silmesin
+            const efs = document.createElement('div');
+            efs.style.cssText = 'text-align:center;color:var(--gold);font-size:14px;font-weight:bold;letter-spacing:2px;margin-top:4px;';
+            efs.innerText = '⭐ EFSANEVİ ⭐';
+            actions.appendChild(efs);
         }
     }
 
