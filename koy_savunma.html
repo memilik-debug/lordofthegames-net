@@ -1335,7 +1335,6 @@
     // Haritaya çizilen emir işareti
     function drawOrderMark(){
         if (!orderMark || window.RENDER3D) return;
-        orderMark.life++;
         const mx = orderMark.x + camera.x, my = orderMark.y + camera.y;
         const col = orderMark.type === 'defend' ? '#22c55e' : '#ef4444';
         const puls = 1 + Math.sin(orderMark.life * 0.06) * 0.04;
@@ -5812,6 +5811,7 @@
         } // end !RENDER3D scenery/castle block
 
         buildings.forEach((b, i) => { if(b.hp <= 0) buildings.splice(i, 1); else b.update(), b.draw(); });
+        if (orderMark) orderMark.life++;
         drawOrderMark();
         soldiers.forEach(s => { s.update(); s.draw(); });
         if (cycle % 20 === 0) updateOrderBar();
@@ -6446,6 +6446,41 @@
         g.userData.h = hipY + 26;
         return g;
     }
+    // 3D okçu: yeşil kapüşonlu, yay + sırt oklugu — piyadeden bakışta ayrılır
+    function makeArcher(){
+        const g = new THREE.Group();
+        const cloth = M.green, skin = M.wood;
+        const hipY = 12, legLen = 12;
+        const legL = makeLeg(cloth, 5, legLen, 6); legL.position.set(-4, hipY, 0);
+        const legR = makeLeg(cloth, 5, legLen, 6); legR.position.set( 4, hipY, 0);
+        g.add(legL); g.add(legR); g.userData.legL = legL; g.userData.legR = legR;
+        g.add(mesh(G.box, cloth, 14, 15, 8, 0, hipY+9, 0));                    // gövde (yeşil tunik)
+        g.add(mesh(G.box, M.woodD, 15, 3, 9, 0, hipY+6, 0));                   // kemer
+        g.add(mesh(G.sph, cloth, 5.5, 5.5, 5.5, -8.5, hipY+15, 0));            // omuzlar
+        g.add(mesh(G.sph, cloth, 5.5, 5.5, 5.5,  8.5, hipY+15, 0));
+        const armLen = 13;
+        const armL = makeArm(cloth, 4.2, armLen, 5); armL.position.set(-8.5, hipY+15, 0);
+        const armR = makeArm(cloth, 4.2, armLen, 5); armR.position.set( 8.5, hipY+15, 0);
+        armR.rotation.x = -0.9;                                                // yayı tutan kol ileri
+        g.add(armL); g.add(armR); g.userData.armL = armL; g.userData.armR = armR;
+        g.add(mesh(G.sph, skin, 6, 6.5, 6, 0, hipY+21, 0));                    // baş
+        const hood = mesh(G.sph, cloth, 7.4, 7, 7.4, 0, hipY+22, -0.8);        // kapüşon
+        g.add(hood);
+        g.add(mesh(G.cone, cloth, 6, 7, 6, 0, hipY+20, -5));                   // kapüşon arkası
+        // Yay: dikey ince torus dilimi yerine iki eğik çubuk + kiriş
+        const bow = new THREE.Group();
+        const up = mesh(G.box, M.wood, 1.8, 15, 1.8, 0, 7, 0); up.rotation.z = 0.22; bow.add(up);
+        const dn = mesh(G.box, M.wood, 1.8, 15, 1.8, 0, -7, 0); dn.rotation.z = -0.22; bow.add(dn);
+        bow.add(mesh(G.box, M.hero, 0.7, 28, 0.7, -2.6, 0, 0));                // kiriş
+        bow.position.set(10, hipY+13, 5); bow.rotation.y = Math.PI/2; g.add(bow);
+        // Sırttaki okluk + oklar
+        const quiver = mesh(G.cyl, M.woodD, 5, 16, 5, -5, hipY+14, -6);
+        quiver.rotation.x = 0.35; g.add(quiver);
+        for (let i = -1; i <= 1; i++)
+            g.add(mesh(G.box, M.hero, 0.9, 9, 0.9, -5 + i*1.7, hipY+22, -7.5));
+        g.userData.h = hipY + 27;
+        return g;
+    }
     function makeProjectile(color){
         const c = new THREE.Color(color || '#facc15');
         const mat = new THREE.MeshStandardMaterial({ color:c, emissive:c, emissiveIntensity:1.5, roughness:0.3 });
@@ -6617,6 +6652,38 @@
                 g.add(mesh(G.sph, M.stoneD, 9, 9, 9, 0, 55, -16));                   // sepetteki kaya
                 g.add(mesh(G.box, M.stoneD, 13, 12, 13, 0, 20, 9));                  // karşı ağırlık
                 g.userData.h = 64; break;
+            }
+            case 'archery': {
+                g.add(mesh(G.box, M.woodD, 62, 4, 50, 0, 2, 0));                     // talim sahası zemini
+                // Açık sundurma: 4 direk + yeşil çatı
+                for(const [x,z] of [[-24,-16],[-24,16],[6,-16],[6,16]])
+                    g.add(mesh(G.box, M.wood, 4, 30, 4, x, 17, z));
+                g.add(mesh(G.box, M.green, 42, 5, 44, -9, 34, 0));                   // çatı
+                g.add(mesh(G.box, M.green, 30, 5, 32, -9, 39, 0));                   // çatı tepesi
+                // Asılı yaylar (duvar standı)
+                for(const z of [-9, 0, 9]){
+                    const up = mesh(G.box, M.wood, 1.8, 13, 1.8, -22, 22, z); up.rotation.z = 0.25; g.add(up);
+                    const dn = mesh(G.box, M.wood, 1.8, 13, 1.8, -22, 10, z); dn.rotation.z = -0.25; g.add(dn);
+                }
+                // Saman balyaları (arka sıra)
+                for(const z of [-15, 0, 15])
+                    g.add(mesh(G.box, M.gold, 12, 12, 12, -30, 8, z));
+                // Hedef tahtası: iç içe halkalar + ayak
+                g.add(mesh(G.box, M.woodD, 3, 22, 3, 24, 11, 0));                    // ayak
+                const t1 = mesh(G.cyl, M.hero,   17, 3, 17, 24, 26, 0); t1.rotation.x = Math.PI/2; g.add(t1);
+                const t2 = mesh(G.cyl, M.roof,   11, 3.6, 11, 24, 26, 0); t2.rotation.x = Math.PI/2; g.add(t2);
+                const t3 = mesh(G.cyl, M.hero,    6, 4.2, 6, 24, 26, 0); t3.rotation.x = Math.PI/2; g.add(t3);
+                const t4 = mesh(G.cyl, M.roof,  2.6, 4.6, 2.6, 24, 26, 0); t4.rotation.x = Math.PI/2; g.add(t4);
+                // Hedefe saplı oklar
+                const ok1 = mesh(G.box, M.hero, 0.9, 12, 0.9, 27, 29, 4); ok1.rotation.x = 1.2; g.add(ok1);
+                const ok2 = mesh(G.box, M.hero, 0.9, 12, 0.9, 21, 24, 4); ok2.rotation.x = 1.35; g.add(ok2);
+                // Ok kovanı
+                const kv = mesh(G.cyl, M.woodD, 7, 14, 7, -2, 9, 20); kv.rotation.x = 0.3; g.add(kv);
+                for(let i=-1;i<=1;i++) g.add(mesh(G.box, M.hero, 0.9, 10, 0.9, -2+i*2, 19, 21));
+                // Yeşil sancak
+                g.add(mesh(G.box, M.wood, 3, 38, 3, 26, 22, -20));
+                g.add(mesh(G.box, M.green, 16, 11, 1, 34, 36, -20));
+                g.userData.h = 46; break;
             }
             case 'barracks': {
                 g.add(mesh(G.box, M.stoneD, 60, 6, 48, 0, 3, 0));                    // taban
@@ -6915,10 +6982,32 @@
 
         // Askerler
         if (typeof soldiers !== 'undefined') for (const s of soldiers){
-            const rec = ensure(s, makeSoldier);
+            const rec = ensure(s, (s.kind === 'archer') ? makeArcher : makeSoldier);
             place(rec.m, s, 0);
             yawTo(rec.m, s.vx || 0, s.vy || 0);
             animGait(rec.m, 0.26, true);
+        }
+
+        // Emir işareti (savun/saldır halkası) — 3D'de yerde duran halka
+        if (typeof orderMark !== 'undefined' && orderMark){
+            if (!R3.scene.userData.__ordRing){
+                const ring = new THREE.Mesh(
+                    new THREE.RingGeometry(0.86, 1, 48),
+                    new THREE.MeshBasicMaterial({color:0x22c55e, transparent:true, opacity:0.75, side:THREE.DoubleSide, depthWrite:false})
+                );
+                ring.rotation.x = -Math.PI/2;
+                R3.scene.add(ring); R3.scene.userData.__ordRing = ring;
+            }
+            const ring = R3.scene.userData.__ordRing;
+            ring.visible = true;
+            ring.material.color.set(orderMark.type === 'defend' ? 0x22c55e : 0xef4444);
+            const rr = orderMark.r * 1.0;
+            ring.scale.set(rr, rr, 1);
+            ring.position.set(SX(orderMark.x), 1.6, SZ(orderMark.y));
+            const pl = 1 + Math.sin((orderMark.life||0) * 0.06) * 0.05;
+            ring.scale.set(rr*pl, rr*pl, 1);
+        } else if (R3.scene.userData && R3.scene.userData.__ordRing){
+            R3.scene.userData.__ordRing.visible = false;
         }
 
         // Mermiler
