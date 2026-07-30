@@ -193,6 +193,22 @@
 
         #build-menu { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; width: 100%; }
         
+        .ord-btn {
+            min-width: 62px; padding: 5px 7px; background:#1e293b; border:2px solid #334155;
+            border-radius:9px; display:flex; flex-direction:column; align-items:center; gap:1px;
+            cursor:pointer; user-select:none; transition:all .12s; position:relative; color:#94a3b8;
+        }
+        .ord-btn:hover { transform:translateY(-2px); border-color:#64748b; }
+        .ord-btn .ord-label { font-size:8.5px; font-weight:600; letter-spacing:.2px; white-space:nowrap; }
+        .ord-btn .ord-key {
+            position:absolute; top:-6px; right:-5px; background:#0f172a; border:1px solid #334155;
+            border-radius:5px; font-size:8px; padding:0 3px; color:#cbd5e1;
+        }
+        @media (max-width: 760px) {
+            #order-bar { bottom: 104px; gap:4px; padding:5px 6px; }
+            .ord-btn { min-width:48px; padding:4px 5px; }
+            .ord-btn .ord-label { font-size:7px; }
+        }
         .build-btn {
             width: 80px;
             padding: 8px 2px;
@@ -944,6 +960,15 @@
     </div>
 
     <div class="build-section">
+    <!-- Asker emir çubuğu (1-5 tuşları / dokunmatik) -->
+    <div id="order-bar" style="display:none;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;margin:0 auto 7px;padding:5px 8px;border-radius:12px;background:rgba(2,6,23,.55);border:1px solid #1e293b;width:fit-content;max-width:100%;">
+        <span style="font-size:9px;color:#64748b;letter-spacing:1px;padding:0 4px;">ASKERLER</span>
+        <div class="ord-btn" id="ord-follow"  onclick="setSoldierOrder('follow')"><span style="font-size:15px">🧍</span><span class="ord-label">Beni Takip Et</span><span class="ord-key">1</span></div>
+        <div class="ord-btn" id="ord-attack"  onclick="setSoldierOrder('attack')"><span style="font-size:15px">⚔️</span><span class="ord-label">Saldır</span><span class="ord-key">2</span></div>
+        <div class="ord-btn" id="ord-defend"  onclick="setSoldierOrder('defend')"><span style="font-size:15px">🛡️</span><span class="ord-label">Savun</span><span class="ord-key">3</span></div>
+        <div class="ord-btn" id="ord-retreat" onclick="setSoldierOrder('retreat')"><span style="font-size:15px">🏰</span><span class="ord-label">Geri Çekil</span><span class="ord-key">4</span></div>
+        <div class="ord-btn" id="ord-free"    onclick="setSoldierOrder('free')"><span style="font-size:15px">🎲</span><span class="ord-label">Serbest</span><span class="ord-key">5</span></div>
+    </div>
         <div id="build-menu">
             <div class="build-btn" id="btn-wood" onclick="setBuild('wood')"><span class="build-icon">🪵</span><span>Odun</span><span class="cost-label">20A</span></div>
             <div class="build-btn" id="btn-stone" onclick="setBuild('stone')"><span class="build-icon">⛏️</span><span>Taş</span><span class="cost-label">30A</span></div>
@@ -1260,6 +1285,48 @@
     const enemies = [];
     const projectiles = [];
     const soldiers = [];
+    // ─── Asker emir sistemi (1-5 tuşları) ───
+    const CASTLE_X = 700, CASTLE_Y = 500;
+    let soldierOrder = 'free';
+    const SOLDIER_ORDERS = [
+        {id:'follow',  key:'1', ico:'🧍', tr:'Beni Takip Et', en:'Follow Me',  col:'#38bdf8'},
+        {id:'attack',  key:'2', ico:'⚔️', tr:'Saldır',        en:'Attack',     col:'#ef4444'},
+        {id:'defend',  key:'3', ico:'🛡️', tr:'Savun',         en:'Defend',     col:'#22c55e'},
+        {id:'retreat', key:'4', ico:'🏰', tr:'Geri Çekil',    en:'Retreat',    col:'#f59e0b'},
+        {id:'free',    key:'5', ico:'🎲', tr:'Serbest',       en:'Free',       col:'#94a3b8'},
+    ];
+    function setSoldierOrder(id){
+        const o = SOLDIER_ORDERS.find(x=>x.id===id); if(!o) return;
+        soldierOrder = id;
+        // "Savun" emrinde nöbet noktası = askerin o anki yeri (kahraman varsa etrafı)
+        if (id === 'defend') {
+            soldiers.forEach(s => {
+                if (hero) {
+                    const a = Math.random()*Math.PI*2, r = 40 + Math.random()*70;
+                    s.rallyX = Math.max(60, Math.min(1340, hero.x + Math.cos(a)*r));
+                    s.rallyY = Math.max(60, Math.min(940, hero.y + Math.sin(a)*r));
+                } else { s.rallyX = s.x; s.rallyY = s.y; }
+            });
+        }
+        if (id === 'attack') soldiers.forEach(s => { s.rallyX = s.x; s.rallyY = s.y; });
+        updateOrderBar();
+        const label = (lang === 'tr') ? o.tr : o.en;
+        try { showSpellToast(o.ico + ' ' + label + ' (' + soldiers.length + ')', o.col); } catch(e){}
+    }
+    function updateOrderBar(){
+        const bar = document.getElementById('order-bar'); if(!bar) return;
+        bar.style.display = (soldiers.length > 0 && gameActive) ? 'flex' : 'none';
+        SOLDIER_ORDERS.forEach(o=>{
+            const b = document.getElementById('ord-'+o.id); if(!b) return;
+            const on = soldierOrder === o.id;
+            b.style.borderColor = on ? o.col : '#334155';
+            b.style.background  = on ? o.col+'33' : '#1e293b';
+            b.style.color       = on ? '#fff' : '#94a3b8';
+            const lbl = b.querySelector('.ord-label');
+            if (lbl) lbl.textContent = (lang === 'tr') ? o.tr : o.en;
+        });
+    }
+    window.setSoldierOrder = setSoldierOrder;
 
     // Keyboard state for hero
     const keys = { w:false, a:false, s:false, d:false, ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
@@ -2180,28 +2247,73 @@
             this.frame = Math.random() * 100; // staggered animation
             this.attackFrame = 0;
             this.moving = false;
+            this.rallyX = x; this.rallyY = y;   // "savun" emrinin nöbet noktası
+            this.speedMul = 1;
+        }
+        // Hedefe dogru yuru; menzile girince vur
+        _seek(tx, ty, spd, hitR, target) {
+            const dx = tx - this.x, dy = ty - this.y;
+            const d = Math.hypot(dx, dy);
+            if (d > 1) {
+                const ndx = dx/d, ndy = dy/d;
+                this.x += ndx*spd; this.y += ndy*spd;
+                if (Math.abs(ndx) > 0.05) this.facing = ndx > 0 ? 1 : -1;
+                this.moving = true;
+            }
+            if (target && Math.hypot(target.x-this.x, target.y-this.y) < hitR) {
+                target.hp -= this.dmg;
+                this.attackFrame = 8;
+            }
         }
         update() {
             this.frame++;
             this.moving = false;
-            let target = getNearestEnemy(this.x, this.y, 450);
-            if (target) {
-                let a = Math.atan2(target.y - this.y, target.x - this.x);
-                const ndx = Math.cos(a), ndy = Math.sin(a);
-                this.x += ndx*4.5; this.y += ndy*4.5;
-                if (Math.abs(ndx) > 0.05) this.facing = ndx > 0 ? 1 : -1;
-                this.moving = true;
-                if (Math.hypot(target.x-this.x, target.y-this.y) < 25) {
-                    target.hp -= this.dmg;
-                    this.attackFrame = 8; // swing sword
+            const spd = 4.5 * (this.speedMul || 1);
+            const order = soldierOrder;
+
+            if (order === 'follow' && hero) {
+                // Kahramanin yaninda kal, yakindaki dusmani temizle
+                const near = getNearestEnemy(this.x, this.y, 110);
+                if (near) this._seek(near.x, near.y, spd, 25, near);
+                else {
+                    const d = Math.hypot(hero.x-this.x, hero.y-this.y);
+                    if (d > 70) this._seek(hero.x, hero.y, spd, 0, null);
+                }
+            } else if (order === 'attack') {
+                // Haritanin her yerinde dusman ara, uzerine git
+                const t = getNearestEnemy(this.x, this.y, 1200);
+                if (t) this._seek(t.x, t.y, spd*1.12, 25, t);
+                else this._seek(this.rallyX, this.rallyY, spd, 0, null);
+            } else if (order === 'defend') {
+                // Nobet noktasindan uzaklasma, sadece yaklasani vur
+                const t = getNearestEnemy(this.rallyX, this.rallyY, 170);
+                if (t) this._seek(t.x, t.y, spd, 25, t);
+                else {
+                    const d = Math.hypot(this.rallyX-this.x, this.rallyY-this.y);
+                    if (d > 26) this._seek(this.rallyX, this.rallyY, spd, 0, null);
+                }
+            } else if (order === 'retreat') {
+                // Kaleye don, sadece dibindekine vur
+                const d = Math.hypot(CASTLE_X-this.x, CASTLE_Y-this.y);
+                if (d > 110) this._seek(CASTLE_X, CASTLE_Y, spd*1.15, 0, null);
+                else {
+                    const t = getNearestEnemy(this.x, this.y, 60);
+                    if (t) this._seek(t.x, t.y, spd, 25, t);
                 }
             } else {
-                this.x += this.vx; this.y += this.vy;
-                if (this.x < 50 || this.x > 1350) this.vx *= -1;
-                if (this.y < 50 || this.y > 950) this.vy *= -1;
-                if (Math.abs(this.vx) > 0.05) this.facing = this.vx > 0 ? 1 : -1;
-                this.moving = Math.hypot(this.vx, this.vy) > 0.5;
+                // Serbest: eski davranis
+                let target = getNearestEnemy(this.x, this.y, 450);
+                if (target) this._seek(target.x, target.y, spd, 25, target);
+                else {
+                    this.x += this.vx; this.y += this.vy;
+                    if (this.x < 50 || this.x > 1350) this.vx *= -1;
+                    if (this.y < 50 || this.y > 950) this.vy *= -1;
+                    if (Math.abs(this.vx) > 0.05) this.facing = this.vx > 0 ? 1 : -1;
+                    this.moving = Math.hypot(this.vx, this.vy) > 0.5;
+                }
             }
+            if (this.x < 40) this.x = 40; if (this.x > 1360) this.x = 1360;
+            if (this.y < 40) this.y = 40; if (this.y > 960) this.y = 960;
             if (this.attackFrame > 0) this.attackFrame--;
         }
         draw() {
@@ -4937,6 +5049,7 @@
     function startGame(map) {
         currentMap = (map && mapSettings[map]) ? map : 'kingdom';
         gameActive = true;
+        soldierOrder = 'free';
         document.getElementById('start-screen').style.display = 'none';
         // Lav haritasında ekstra zorluk
         const ms = mapSettings[currentMap];
@@ -5458,6 +5571,7 @@
 
         buildings.forEach((b, i) => { if(b.hp <= 0) buildings.splice(i, 1); else b.update(), b.draw(); });
         soldiers.forEach(s => { s.update(); s.draw(); });
+        if (cycle % 20 === 0) updateOrderBar();
         // Hero update/draw (between soldiers and enemies for layering)
         if (hero) {
             hero.update();
@@ -5737,6 +5851,8 @@
     window.addEventListener('keydown', (e) => {
         const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
         if (k in keys) keys[k] = true;
+        const ord = SOLDIER_ORDERS.find(o => o.key === k);
+        if (ord) { setSoldierOrder(ord.id); return; }
         if (k === 'q') useHeroRally();
         if (k === 'e') useHeroHeal();
         if (k === 'r') castMeteor();
