@@ -1382,9 +1382,9 @@
     let hero = null;
 
     const diffSettings = {
-        easy:   { spawnRate: 0.02,  hpMult: 0.7,  speedMult: 0.85, goldMult: 1.8, dayMult: 0.0,  castleDmg: 1, dmgToBuilding: 0.5 },
-        mid:    { spawnRate: 0.055, hpMult: 1.2,  speedMult: 1.1,  goldMult: 1.0, dayMult: 0.15, castleDmg: 2, dmgToBuilding: 0.7 },
-        hard:   { spawnRate: 0.18,  hpMult: 3.5,  speedMult: 1.7,  goldMult: 0.4, dayMult: 0.5,  castleDmg: 5, dmgToBuilding: 1.4 }
+        easy:   { spawnRate: 0.017, hpMult: 0.7,  speedMult: 0.85, goldMult: 1.9, dayMult: 0.05, castleDmg: 1, dmgToBuilding: 0.5 },
+        mid:    { spawnRate: 0.042, hpMult: 1.05, speedMult: 1.05, goldMult: 1.15, dayMult: 0.22, castleDmg: 2, dmgToBuilding: 0.7 },
+        hard:   { spawnRate: 0.11,  hpMult: 2.3,  speedMult: 1.45, goldMult: 0.6, dayMult: 0.42, castleDmg: 4, dmgToBuilding: 1.2 }
     };
 
     const costs = {
@@ -2599,7 +2599,12 @@
             // Düşman türleri - skora göre çeşitlilik artar
             this.kind = forcedKind || this.pickKind();
             const baseSpeed = (1.6 + (stats.score/18000)) * (diffSettings[difficulty].speedMult || 1);
-            const baseHp = (40 + (stats.score/100)) * (diffSettings[difficulty].hpMult || 1);
+            // Eskiden HP skorla doğrusal ve sınırsız büyüyordu (40 + score/100).
+            // Artık hızlı başlayıp doyuma giden bir eğri + çok yavaş kuyruk.
+            const _sc = stats.score;
+            const baseHp = (gameMode === 'endless'
+                ? (38 + 132 * (1 - Math.exp(-_sc / 8500)) + _sc / 2600)
+                : (40 + _sc / 100)) * (diffSettings[difficulty].hpMult || 1);
             this.speedMult = 1.0;
             this.vx = Math.cos(a); this.vy = Math.sin(a);
             this.poisonDmg = 0; this.poisonTimer = 0;
@@ -5097,7 +5102,7 @@
         campaignActive = true; currentChapterIdx = idx;
         const ch = CAMPAIGN[idx];
         activeWaves = chapterWaves(ch);
-        chapterScale = 1 + idx * 0.11;
+        chapterScale = 1 + idx * 0.15;   // eskiden 0.11 — kampanya sonuna doğru yeterince zorlaşmıyordu
         difficulty = 'mid';
         gameMode = 'story';
         const cs = document.getElementById('campaign-screen'); if (cs) cs.style.display='none';
@@ -5847,8 +5852,11 @@
                     const mHp = currentModifier ? currentModifier.hp : 1;
                     const mSpd = currentModifier ? currentModifier.spd : 1;
                     const e = new Enemy();
-                    if (typeof e.maxHp === 'number') { e.maxHp *= cfg.hpMult * mHp * cScale; e.hp = e.maxHp; }
-                    else if (typeof e.hp === 'number') e.hp *= cfg.hpMult * mHp * cScale;
+                    // Hikaye modu fazla kolaydı: taban çarpan eklendi
+                    const STORY_HP = 1.35;
+                    const _m = cfg.hpMult * mHp * cScale * STORY_HP;
+                    if (typeof e.maxHp === 'number') { e.maxHp *= _m; e.hp = e.maxHp; }
+                    else if (typeof e.hp === 'number') e.hp *= _m;
                     if (typeof e.speed === 'number') e.speed *= cfg.spd * mSpd;
                     if (currentModifier && currentModifier.gold !== 1) e.goldBonus = currentModifier.gold;
                     enemies.push(e);
@@ -5874,7 +5882,9 @@
         } else {
             // Endless / classic spawn behavior
             const spawnChance = isNight ? ds.spawnRate : ds.spawnRate * (ds.dayMult || 0);
-            const scaling = 1 + Math.min(2.5, stats.score / 4000);
+            // Yumuşatıldı: eskiden score/4000, tavan 2.5 idi — 15. dakikada oyun
+            // kampanya finalinin 5.5 katına çıkıyordu.
+            const scaling = 1 + Math.min(1.7, stats.score / 7500);
             if (!storyPaused && Math.random() < spawnChance * scaling) enemies.push(new Enemy());
 
             // Boss trigger: every milestone score
