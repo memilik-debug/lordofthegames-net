@@ -5451,7 +5451,6 @@
         currentMap = (map && mapSettings[map]) ? map : 'kingdom';
         gameActive = true;
         soldierOrder = 'free'; orderPick = null; orderMark = null;
-        if (typeof initResearch === 'function') initResearch();
         document.getElementById('start-screen').style.display = 'none';
         // Lav haritasında ekstra zorluk
         const ms = mapSettings[currentMap];
@@ -5862,37 +5861,6 @@
         };
     }
     function partUpkeep(id){ return Math.max(1, Math.round(partPower(id) * 5 + (PART_TIER[id] || 1) * 2)); }
-    function researchCost(id){
-        const g = partPower(id), t = PART_TIER[id] || 1;
-        return { gold: Math.round(80 + g * 70 + t * 60), sure: Math.round(360 + g * 180 + t * 200) };
-    }
-
-    // ── Araştırma durumu ──
-    let researched = {};          // id -> true
-    let research = null;          // {id, left, total}
-    function initResearch(){
-        researched = {}; research = null;
-        // 1. kademe parçalar baştan açık ki oyun kilitlenmesin
-        for (const id in PART_TIER) if (PART_TIER[id] === 1) researched[id] = true;
-    }
-    function startResearch(id){
-        if (research || researched[id]) return false;
-        const c = researchCost(id);
-        if (stats.gold < c.gold) { try{ showSpellToast('Yetersiz altın', '#ef4444'); }catch(e){} return false; }
-        stats.gold -= c.gold;
-        research = { id: id, left: c.sure, total: c.sure };
-        try { showSpellToast('🔬 Araştırma başladı: ' + partName(id), '#38bdf8'); } catch(e){}
-        return true;
-    }
-    function tickResearch(){
-        if (!research) return;
-        research.left--;
-        if (research.left <= 0){
-            researched[research.id] = true;
-            try { showSpellToast('✅ Araştırma tamam: ' + partName(research.id), '#22c55e'); } catch(e){}
-            research = null;
-        }
-    }
     function partName(id){
         for (const k in evolutionTree) for (const row of evolutionTree[k]) for (const o of row)
             if (o.id === id) return (typeof o.t === 'object') ? LT(o.t) : o.t;
@@ -5915,7 +5883,6 @@
         b.evolutions = b.evolutions || [];
         if (b.evolutions.includes(id)) return false;
         if (b.evolutions.length >= slotCount(b)) { try{ showSpellToast('Boş yuva yok', '#ef4444'); }catch(e){} return false; }
-        if (!researched[id]) { try{ showSpellToast('Önce araştırman gerek', '#f59e0b'); }catch(e){} return false; }
         const c = partCost(id);
         if (stats.gold < c.gold || stats.wood < (c.wood||0) || stats.stone < (c.stone||0)){
             try{ showSpellToast('Yetersiz kaynak', '#ef4444'); }catch(e){} return false;
@@ -6091,8 +6058,8 @@
             actions.appendChild(h);
 
             hepsi.forEach(id => {
-                const c = partCost(id), arastirildi = !!researched[id];
-                const alinabilir = arastirildi && !dolu &&
+                const c = partCost(id);
+                const alinabilir = !dolu &&
                     stats.gold >= c.gold && stats.wood >= (c.wood||0) && stats.stone >= (c.stone||0);
                 const d = document.createElement('div');
                 d.style.cssText = 'background:rgba(15,23,42,.7);border:1px solid ' +
@@ -6124,29 +6091,15 @@
                       ' · 🔩 bakım ' + partUpkeep(id) + '/tur</div>' +
                     (iyi.length ? '<div style="margin-top:4px;line-height:1.8">' + iyi.join('') + '</div>' : '') +
                     (kotu.length ? '<div style="margin-top:2px;line-height:1.8">' + kotu.join('') + '</div>' : '') +
-                    (!arastirildi ? '<div style="margin-top:4px;font-size:9.5px;color:#38bdf8">🔬 Araştırılmadı — ' +
-                        researchCost(id).gold + '🪙 · ' + Math.round(researchCost(id).sure/60) + ' sn' +
-                        (research ? ' (başka araştırma sürüyor)' : '') + '</div>' : '');
+                    '';
 
                 d.onclick = (e) => {
                     e.stopPropagation();
-                    if (!arastirildi){ if (startResearch(id)) openUpgrade(b, screenX, screenY); return; }
                     if (installPart(b, id)) openUpgrade(b, screenX, screenY);
                 };
                 actions.appendChild(d);
             });
         })();
-
-        // ── SÜREN ARAŞTIRMA ──
-        if (research){
-            const r = document.createElement('div');
-            const yuzde = Math.round((1 - research.left / research.total) * 100);
-            r.style.cssText = 'margin-top:7px;padding:6px 8px;background:rgba(56,189,248,.1);border:1px solid #38bdf855;border-radius:8px;';
-            r.innerHTML = '<div style="font-size:10px;color:#7dd3fc">🔬 ' + partName(research.id) + ' — %' + yuzde + '</div>' +
-                '<div style="height:5px;background:#0f172a;border-radius:3px;margin-top:4px;overflow:hidden">' +
-                '<div style="height:100%;width:' + yuzde + '%;background:linear-gradient(90deg,#0ea5e9,#7dd3fc)"></div></div>';
-            actions.appendChild(r);
-        }
 
         // ── SEVİYE YÜKSELTME (yuva açar) ──
         if (b.level < 5){
@@ -6502,7 +6455,6 @@
         });
         soldiers.forEach(s => { s.update(); s.draw(); });
         if (cycle % 20 === 0) updateOrderBar();
-        if (typeof tickResearch === 'function') tickResearch();
         // Hero update/draw (between soldiers and enemies for layering)
         if (hero) {
             hero.update();
