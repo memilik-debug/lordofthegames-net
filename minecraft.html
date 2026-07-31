@@ -2432,21 +2432,32 @@ function buildFrozenCastle(originX, surfaceY) {
     kule(left);
     kule(right - 4);
 
-    // ── Kapı: SOL kulenin hemen yanında (giriş), iç mekân açık kalsın ──
-    const gx = left + 7;
-    for (let y = surfaceY - 6; y <= surfaceY - 1; y++) {       // kapı sövesi
-        set(gx - 2, y, BLOCKS.COBBLESTONE);
-        set(gx + 2, y, BLOCKS.COBBLESTONE);
+    // ── GİRİŞ KAPISI: sol kulenin dış ve iç duvarını delerek geçit aç ──
+    // (Kule duvarları tepeden zemine dolu olduğu için kaleye girilemiyordu.)
+    for (let y = surfaceY - 2; y <= surfaceY - 1; y++) {
+        set(left, y, BLOCKS.AIR);          // dış duvar
+        set(left + 4, y, BLOCKS.AIR);      // iç duvar
     }
-    for (let x = gx - 2; x <= gx + 2; x++) set(x, surfaceY - 6, BLOCKS.COBBLESTONE);
-    set(gx, surfaceY - 6, BLOCKS.SNOW);                        // kapı üstü kar
-    set(gx - 2, surfaceY - 5, BLOCKS.GLOWSTONE);               // kapı fenerleri
-    set(gx + 2, surfaceY - 5, BLOCKS.GLOWSTONE);
+    set(left, surfaceY - 3, BLOCKS.PLANKS);       // kapı lentosu
+    set(left + 4, surfaceY - 3, BLOCKS.PLANKS);
+    set(left - 1, surfaceY - 3, BLOCKS.GLOWSTONE);// dış fener
+    set(left + 1, surfaceY - 3, BLOCKS.GLOWSTONE);// geçit ışığı
 
-    // ── İç sütunlar: sur üstünü taşır, boşluğu kırar ──
+    // ── Giriş holü: sur üstünden sarkan kemer (yürüyüş yolunu KAPATMAZ) ──
+    const gx = left + 7;
+    for (let x = gx - 2; x <= gx + 2; x++) set(x, wallTop + 1, BLOCKS.COBBLESTONE);
+    set(gx - 2, wallTop + 2, BLOCKS.COBBLESTONE);              // kemer omuzları
+    set(gx + 2, wallTop + 2, BLOCKS.COBBLESTONE);
+    set(gx, wallTop + 1, BLOCKS.SNOW);
+    set(gx - 1, wallTop + 2, BLOCKS.GLOWSTONE);                // hol fenerleri
+    set(gx + 1, wallTop + 2, BLOCKS.GLOWSTONE);
+
+    // ── İç sütunlar: tavandan sarkar, baş hizasının ÜSTÜNDE biter
+    //    (tabana kadar inince 2D'de yürüyüş yolunu tıkıyordu) ──
     [left + 13, right - 8].forEach(px => {
-        for (let y = wallTop + 1; y <= surfaceY - 1; y++) set(px, y, BLOCKS.STONE);
+        for (let y = wallTop + 1; y <= surfaceY - 4; y++) set(px, y, BLOCKS.STONE);
         set(px, wallTop + 1, BLOCKS.GLOWSTONE);
+        set(px, surfaceY - 3, BLOCKS.COBBLESTONE);   // sütun başlığı
     });
 
     // ── Sancaklar: tahtın iki yanında, sur üstünden sarkar ──
