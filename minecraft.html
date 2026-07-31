@@ -982,7 +982,14 @@ function generateWorld() {
         if (Math.random() < 0.015) { 
             let isFlat = true;
             for(let i=0; i<15; i++) { let sy=0; while(world[x+i] && world[x+i][sy] === BLOCKS.AIR) sy++; if(Math.abs(sy - surfaceY) > 2) isFlat = false; }
-            if (isFlat) { generateVillage(x, surfaceY - 1, biome); x += 20; continue; }
+            if (isFlat) {
+                // ESKİ HATA: surfaceY-1 (hava satırı) gönderiliyordu → köy zeminden
+                // bir blok yukarıda duruyordu; ayrıca şerit hiç düzleştirilmiyordu.
+                const yer = (biome === 'desert') ? BLOCKS.SAND : (biome === 'snow' ? BLOCKS.SNOW : BLOCKS.GRASS);
+                flattenGround(x - 1, x + 16, surfaceY, yer, BLOCKS.DIRT);
+                generateVillage(x, surfaceY, biome);
+                x += 20; continue;
+            }
         }
 
         if (world[x][surfaceY] === BLOCKS.GRASS || world[x][surfaceY] === BLOCKS.SNOW) {
@@ -1077,8 +1084,19 @@ function spawnPlayerSafely() {
     player.x = spawnX; player.y = spawnY; player.vx = 0; player.vy = 0; player.hp = player.maxHp; player.highestY = player.y; player.iframe = 0;
     updateHealthUI();
     
-    // Garantili ilk köy ve moblar
-    generateVillage(startX + 5, spawnY/BLOCK_SIZE + 1, 'forest');
+    // Hikâye modunda kale ve müttefik köyü zaten kuruluyor; burada ikinci köy kurma
+    if (!storyMode) {
+        // Köyün kendi sütunundaki yüzeyi bul (eskiden oyuncunun yüksekliği
+        // kullanılıyordu; arazi alçaksa köy havada kalıyordu)
+        const vx = startX + 5;
+        let vy = spawnY / BLOCK_SIZE + 1;
+        for (let y = 0; y < WORLD_HEIGHT; y++) {
+            const b = world[vx]?.[y];
+            if (b !== undefined && b !== BLOCKS.AIR && b !== BLOCKS.WATER && b !== BLOCKS.LAVA) { vy = y; break; }
+        }
+        flattenGround(vx - 1, vx + 16, vy, BLOCKS.GRASS, BLOCKS.DIRT);
+        generateVillage(vx, vy, 'forest');
+    }
     entities.push({ type: 'sheep', x: (startX+15) * BLOCK_SIZE, y: spawnY, w: 24, h: 24, vx: 0, vy: 0, hp: 10, dir: 1, timer: 0 });
 }
 
@@ -2350,62 +2368,137 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Build the frozen castle at given X (block coords)
-function buildFrozenCastle(originX, surfaceY) {
-    // Surface Y is ground row. Place castle from surface up to surface-7.
-    const w = 28, h = 9;
-    const left = originX, right = originX + w;
-    const top = surfaceY - h;
-    // Clear interior and place walls
-    for (let x = left; x <= right; x++) {
-        for (let y = top; y <= surfaceY; y++) {
-            if (!world[x]) continue;
-            if (x === left || x === right || y === top || y === surfaceY) {
-                // Walls of cobblestone/snow with crenellations at top
-                if (y === top && x % 2 === 0) world[x][y] = BLOCKS.SNOW;
-                else world[x][y] = BLOCKS.COBBLESTONE;
-            } else {
-                world[x][y] = BLOCKS.AIR;
-            }
+// Zemini düzleştir: üstünü temizle, ALTINI doldur.
+// ESKİ HATA: eski kod yalnızca surfaceY üstünü siliyor ve surfaceY'ye tek blok
+// koyuyordu; arazi orada daha alçaksa altı boş kalıyor ve yapı havada duruyordu.
+function flattenGround(x0, x1, surfaceY, topBlock, fillBlock) {
+    for (let x = x0; x <= x1; x++) {
+        if (!world[x]) continue;
+        // Üstünü aç
+        for (let y = Math.max(0, surfaceY - 24); y < surfaceY; y++) {
+            const b = world[x][y];
+            if (b !== BLOCKS.AIR && b !== BLOCKS.WATER) world[x][y] = BLOCKS.AIR;
+        }
+        // Yüzey
+        world[x][surfaceY] = topBlock;
+        // ALTINI DOLDUR — doğal zemine ulaşana kadar (boşlukta kalmasın)
+        for (let y = surfaceY + 1; y < Math.min(WORLD_HEIGHT, surfaceY + 40); y++) {
+            const b = world[x][y];
+            if (b === BLOCKS.AIR || b === BLOCKS.WATER || b === undefined) {
+                world[x][y] = (y <= surfaceY + 3) ? fillBlock : BLOCKS.STONE;
+            } else break;   // doğal zemine değdik
         }
     }
-    // Floor a row of stone bricks
-    for (let x = left+1; x < right; x++) {
-        if (!world[x]) continue;
-        world[x][surfaceY] = BLOCKS.COBBLESTONE;
-        world[x][surfaceY+1] = BLOCKS.STONE; // mine-able stone below
-        world[x][surfaceY+2] = BLOCKS.STONE;
-        world[x][surfaceY+3] = BLOCKS.STONE;
+}
+
+// Build the frozen castle at given X (block coords)
+function buildFrozenCastle(originX, surfaceY) {
+    const W = 34;                       // toplam genişlik
+    const left = originX, right = originX + W;
+    const set = (x, y, b) => { if (world[x] && y >= 0 && y < WORLD_HEIGHT) world[x][y] = b; };
+    const H  = 8;                       // ana sur yüksekliği
+    const TH = 13;                      // kule yüksekliği
+    const top = surfaceY - H;
+
+    // ── Avlu boşluğu ──
+    for (let x = left; x <= right; x++)
+        for (let y = surfaceY - TH - 2; y <= surfaceY - 1; y++) set(x, y, BLOCKS.AIR);
+
+    // ── Zemin: taş tuğla döşeme + altında kazılabilir taş ──
+    for (let x = left; x <= right; x++) {
+        set(x, surfaceY, BLOCKS.COBBLESTONE);
+        for (let d = 1; d <= 4; d++) set(x, surfaceY + d, BLOCKS.STONE);
     }
-    // Door (left and right openings)
-    if (world[left+2]) { world[left+2][surfaceY-1] = BLOCKS.AIR; world[left+2][surfaceY-2] = BLOCKS.AIR; }
-    if (world[right-2]) { world[right-2][surfaceY-1] = BLOCKS.AIR; world[right-2][surfaceY-2] = BLOCKS.AIR; }
-    // Windows (glass)
-    for (let i = 6; i < w; i += 6) {
-        if (world[left+i]) world[left+i][top+3] = BLOCKS.GLASS;
+
+    // ── Yan surlar (mazgallı) ──
+    const surDuvar = (x) => {
+        for (let y = top; y <= surfaceY - 1; y++) set(x, y, BLOCKS.COBBLESTONE);
+    };
+    for (let x = left; x <= right; x++) {
+        if (x === left || x === right) surDuvar(x);
     }
-    // Glowstone for light
-    if (world[left+5]) world[left+5][top+1] = BLOCKS.GLOWSTONE;
-    if (world[left+20]) world[left+20][top+1] = BLOCKS.GLOWSTONE;
-    // Throne (gold block + nearby decoration)
-    const throneX = left + Math.floor(w/2);
-    if (world[throneX]) {
-        world[throneX][surfaceY-1] = BLOCKS.GOLD_BLOCK;
-        world[throneX][surfaceY-2] = BLOCKS.GOLD_BLOCK;
+    // Üst mazgal dişleri (bir dolu bir boş)
+    for (let x = left; x <= right; x++) {
+        if (x % 2 === 0) { set(x, top - 1, BLOCKS.COBBLESTONE); set(x, top, BLOCKS.COBBLESTONE); }
+        else set(x, top, BLOCKS.SNOW);
     }
-    if (world[throneX-1]) world[throneX-1][surfaceY-1] = BLOCKS.IRON_BLOCK;
-    if (world[throneX+1]) world[throneX+1][surfaceY-1] = BLOCKS.IRON_BLOCK;
-    // Crafting table for player
-    if (world[left+4]) world[left+4][surfaceY-1] = BLOCKS.CRAFTING_TABLE;
-    // Furnace
-    if (world[left+6]) world[left+6][surfaceY-1] = BLOCKS.FURNACE;
-    // King entity at throne (sits in front)
+
+    // ── Dört köşe kulesi ──
+    const kule = (kx) => {
+        for (let x = kx; x < kx + 4; x++) {
+            for (let y = surfaceY - TH; y <= surfaceY - 1; y++) {
+                const kenar = (x === kx || x === kx + 3);
+                set(x, y, kenar ? BLOCKS.COBBLESTONE : BLOCKS.AIR);
+            }
+            // kule tabanı dolu
+            set(x, surfaceY, BLOCKS.COBBLESTONE);
+            // mazgal
+            set(x, surfaceY - TH - 1, (x % 2 === 0) ? BLOCKS.COBBLESTONE : BLOCKS.AIR);
+            set(x, surfaceY - TH, BLOCKS.COBBLESTONE);
+        }
+        // kule penceresi + ışık
+        set(kx + 1, surfaceY - TH + 3, BLOCKS.GLASS);
+        set(kx + 2, surfaceY - TH + 3, BLOCKS.GLASS);
+        set(kx + 1, surfaceY - TH + 6, BLOCKS.GLOWSTONE);
+        // kar külahı
+        for (let x = kx - 1; x <= kx + 4; x++) set(x, surfaceY - TH - 2, BLOCKS.SNOW);
+    };
+    kule(left);
+    kule(right - 3);
+
+    // ── Kapı evi (ortada, kemerli giriş) ──
+    const kapi = left + Math.floor(W / 2) - 2;
+    for (let x = kapi; x <= kapi + 3; x++) {
+        for (let y = surfaceY - 6; y <= surfaceY - 1; y++) set(x, y, BLOCKS.COBBLESTONE);
+    }
+    // kemer boşluğu
+    for (let x = kapi + 1; x <= kapi + 2; x++)
+        for (let y = surfaceY - 4; y <= surfaceY - 1; y++) set(x, y, BLOCKS.AIR);
+    set(kapi + 1, surfaceY - 5, BLOCKS.AIR); set(kapi + 2, surfaceY - 5, BLOCKS.AIR);
+    // kapı fenerleri
+    set(kapi, surfaceY - 5, BLOCKS.GLOWSTONE);
+    set(kapi + 3, surfaceY - 5, BLOCKS.GLOWSTONE);
+
+    // ── Sur boyunca pencereler ──
+    for (let x = left + 6; x < right - 6; x += 5) {
+        if (x >= kapi - 1 && x <= kapi + 4) continue;
+        set(x, surfaceY - 4, BLOCKS.GLASS);
+        set(x, surfaceY - 3, BLOCKS.GLASS);
+    }
+
+    // ── Taht salonu: kaide, taht, sancaklar, sütunlar ──
+    const cx = left + Math.floor(W / 2);
+    // üç basamaklı kaide
+    for (let i = -3; i <= 3; i++) set(cx + i, surfaceY - 1, BLOCKS.COBBLESTONE);
+    for (let i = -2; i <= 2; i++) set(cx + i, surfaceY - 2, BLOCKS.COBBLESTONE);
+    // taht
+    set(cx, surfaceY - 3, BLOCKS.GOLD_BLOCK);
+    set(cx, surfaceY - 4, BLOCKS.GOLD_BLOCK);
+    set(cx - 1, surfaceY - 3, BLOCKS.IRON_BLOCK);
+    set(cx + 1, surfaceY - 3, BLOCKS.IRON_BLOCK);
+    // arkada sancak (yün) ve ışık
+    for (let y = surfaceY - 7; y <= surfaceY - 5; y++) {
+        set(cx - 4, y, BLOCKS.WHITE_WOOL);
+        set(cx + 4, y, BLOCKS.WHITE_WOOL);
+    }
+    set(cx, surfaceY - 7, BLOCKS.GLOWSTONE);
+    // iç sütunlar
+    [left + 7, right - 7].forEach(px => {
+        for (let y = surfaceY - 6; y <= surfaceY - 1; y++) set(px, y, BLOCKS.STONE);
+        set(px, surfaceY - 7, BLOCKS.GLOWSTONE);
+    });
+
+    // ── Oyuncu için tezgâhlar ──
+    set(left + 4, surfaceY - 1, BLOCKS.CRAFTING_TABLE);
+    set(left + 6, surfaceY - 1, BLOCKS.FURNACE);
+
+    // ── Kralın tahtı önünde durması ──
     kingEntity = {
         type: 'king',
-        x: (throneX - 1) * BLOCK_SIZE,
-        y: (surfaceY - 2) * BLOCK_SIZE,
+        x: (cx - 1) * BLOCK_SIZE,
+        y: (surfaceY - 4) * BLOCK_SIZE,
         w: 24, h: 48, vx: 0, vy: 0, hp: 9999, dir: 1, timer: 0,
-        anchorX: (throneX - 1) * BLOCK_SIZE
+        anchorX: (cx - 1) * BLOCK_SIZE
     };
     entities.push(kingEntity);
     frozenCastleX = left * BLOCK_SIZE;
@@ -2611,34 +2704,80 @@ const STORY = {
 
 // ===== Kanka (Theron) köyü — Buz Kalesi'nin hemen yanında =====
 function buildAllyVillage(startX, surfaceY) {
-    const v = startX; // sol kenar
-    // İki küçük kar evi
-    for (let h = 0; h < 2; h++) {
-        const hx = v + h * 9;
-        const w = 7, ht = 5, top = surfaceY - ht;
+    const v = startX;
+    const set = (x, y, b) => { if (world[x] && y >= 0 && y < WORLD_HEIGHT) world[x][y] = b; };
+
+    // ── Köy meydanı zemini ──
+    for (let x = v - 2; x < v + 26; x++) {
+        set(x, surfaceY, BLOCKS.SNOW);
+        for (let d = 1; d <= 3; d++) set(x, surfaceY + d, BLOCKS.DIRT);
+    }
+    // taş yol
+    for (let x = v + 2; x < v + 22; x++) set(x, surfaceY, BLOCKS.COBBLESTONE);
+
+    // ── Üçgen çatılı ev (kütük iskelet + kalas duvar + kar çatı) ──
+    const ev = (hx, gen) => {
+        const w = gen, ht = 4, top = surfaceY - ht;
         for (let x = hx; x < hx + w; x++) {
-            if (!world[x]) continue;
-            for (let y = top; y <= surfaceY; y++) {
-                if (x === hx || x === hx + w - 1 || y === top || y === surfaceY)
-                    world[x][y] = (y === top) ? BLOCKS.SNOW : BLOCKS.PLANKS;
-                else world[x][y] = BLOCKS.AIR;
+            for (let y = top; y <= surfaceY - 1; y++) {
+                const kenar = (x === hx || x === hx + w - 1);
+                set(x, y, kenar ? BLOCKS.LOG : BLOCKS.PLANKS);
             }
         }
-        // kapı + cam
-        if (world[hx + 3]) { world[hx + 3][surfaceY - 1] = BLOCKS.AIR; world[hx + 3][surfaceY - 2] = BLOCKS.AIR; }
-        if (world[hx + 1]) world[hx + 1][top + 2] = BLOCKS.GLASS;
-        if (world[hx + 5]) world[hx + 5][top + 2] = BLOCKS.GLOWSTONE;
-    }
-    // Köy meydanı zemini ve bir çalışma masası
-    for (let x = v - 1; x < v + 18; x++) if (world[x]) world[x][surfaceY] = BLOCKS.SNOW;
-    if (world[v + 8]) world[v + 8][surfaceY - 1] = BLOCKS.CRAFTING_TABLE;
-    // Sıradan bir köylü (atmosfer)
-    entities.push({ type:'villager', x:(v+13)*BLOCK_SIZE, y:(surfaceY-2)*BLOCK_SIZE, w:24, h:48, vx:0, vy:0, hp:20, dir:-1, timer:0 });
-    // Kanka Theron — meydanın ortasında, sabit dur
-    const bx = v + 4;
+        // içini boşalt
+        for (let x = hx + 1; x < hx + w - 1; x++)
+            for (let y = top + 1; y <= surfaceY - 1; y++) set(x, y, BLOCKS.AIR);
+        // kapı
+        const kx = hx + Math.floor(w / 2);
+        set(kx, surfaceY - 1, BLOCKS.AIR); set(kx, surfaceY - 2, BLOCKS.AIR);
+        // pencereler
+        set(hx + 1, surfaceY - 2, BLOCKS.GLASS);
+        set(hx + w - 2, surfaceY - 2, BLOCKS.GLASS);
+        // içeride ışık
+        set(kx - 1, top + 1, BLOCKS.GLOWSTONE);
+        // ÜÇGEN ÇATI — her kat bir blok içeri
+        let kat = 0;
+        for (let y = top; y >= top - Math.ceil(w / 2); y--) {
+            const x0 = hx + kat, x1 = hx + w - 1 - kat;
+            if (x0 > x1) break;
+            for (let x = x0; x <= x1; x++) set(x, y, BLOCKS.SNOW);
+            // çatı altı kalas
+            if (kat === 0) for (let x = x0 + 1; x < x1; x++) set(x, y + 1, BLOCKS.PLANKS);
+            kat++;
+        }
+        // baca
+        set(hx + 1, top - 2, BLOCKS.COBBLESTONE);
+        set(hx + 1, top - 3, BLOCKS.COBBLESTONE);
+    };
+    ev(v + 1, 7);
+    ev(v + 15, 7);
+
+    // ── Kuyu (meydanın ortası) ──
+    const ku = v + 10;
+    for (let x = ku; x <= ku + 2; x++) set(x, surfaceY - 1, BLOCKS.COBBLESTONE);
+    set(ku + 1, surfaceY - 1, BLOCKS.WATER);
+    set(ku, surfaceY - 2, BLOCKS.LOG); set(ku + 2, surfaceY - 2, BLOCKS.LOG);
+    set(ku, surfaceY - 3, BLOCKS.LOG); set(ku + 2, surfaceY - 3, BLOCKS.LOG);
+    for (let x = ku - 1; x <= ku + 3; x++) set(x, surfaceY - 4, BLOCKS.PLANKS);
+
+    // ── Fener direkleri ──
+    [v - 1, v + 24].forEach(fx => {
+        set(fx, surfaceY - 1, BLOCKS.LOG);
+        set(fx, surfaceY - 2, BLOCKS.LOG);
+        set(fx, surfaceY - 3, BLOCKS.GLOWSTONE);
+    });
+
+    // ── Çalışma masası + fırın (meydanda) ──
+    set(v + 8, surfaceY - 1, BLOCKS.CRAFTING_TABLE);
+    set(v + 13, surfaceY - 1, BLOCKS.FURNACE);
+
+    // ── Köylü + Kanka Theron ──
+    entities.push({ type: 'villager', x: (v + 19) * BLOCK_SIZE, y: (surfaceY - 2) * BLOCK_SIZE,
+                    w: 24, h: 48, vx: 0, vy: 0, hp: 20, dir: -1, timer: 0 });
+    const bx = v + 6;
     buddyEntity = {
-        type:'buddy', x:(bx)*BLOCK_SIZE, y:(surfaceY-2)*BLOCK_SIZE, w:24, h:48,
-        vx:0, vy:0, hp:9999, dir:-1, timer:0, anchorX:(bx)*BLOCK_SIZE
+        type: 'buddy', x: bx * BLOCK_SIZE, y: (surfaceY - 2) * BLOCK_SIZE, w: 24, h: 48,
+        vx: 0, vy: 0, hp: 9999, dir: -1, timer: 0, anchorX: bx * BLOCK_SIZE
     };
     entities.push(buddyEntity);
 }
@@ -2781,13 +2920,8 @@ function startMinecraft(mode) {
             const b = world[castleStart]?.[y];
             if (b !== BLOCKS.AIR && b !== BLOCKS.WATER && b !== BLOCKS.LAVA) { surfaceY = y - 1; break; }
         }
-        // Flatten the ground for the castle + adjacent village width
-        for (let x = castleStart; x < castleStart + 52; x++) {
-            for (let y = 0; y < surfaceY; y++) {
-                if (world[x] && (world[x][y] === BLOCKS.SNOW || world[x][y] === BLOCKS.STONE || world[x][y] === BLOCKS.DIRT || world[x][y] === BLOCKS.LOG || world[x][y] === BLOCKS.LEAVES)) world[x][y] = BLOCKS.AIR;
-            }
-            if (world[x]) world[x][surfaceY] = BLOCKS.SNOW;
-        }
+        // Kale + yanındaki köy için zemini düzleştir (altı da dolar)
+        flattenGround(castleStart - 4, castleStart + 56, surfaceY, BLOCKS.SNOW, BLOCKS.DIRT);
         // Build castle on top of surface
         buildFrozenCastle(castleStart, surfaceY);
         // Build the ally village RIGHT NEXT TO the castle (east side)
@@ -2800,12 +2934,7 @@ function startMinecraft(mode) {
             const b = world[fortressStart]?.[y];
             if (b !== undefined && b !== BLOCKS.AIR && b !== BLOCKS.WATER && b !== BLOCKS.LAVA) { fSurfaceY = y - 1; break; }
         }
-        for (let x = fortressStart - 2; x < fortressStart + 34; x++) {
-            for (let y = 0; y < fSurfaceY; y++) {
-                if (world[x] && (world[x][y] === BLOCKS.GRASS || world[x][y] === BLOCKS.STONE || world[x][y] === BLOCKS.DIRT || world[x][y] === BLOCKS.LOG || world[x][y] === BLOCKS.LEAVES)) world[x][y] = BLOCKS.AIR;
-            }
-            if (world[x]) world[x][fSurfaceY] = BLOCKS.GRASS;
-        }
+        flattenGround(fortressStart - 4, fortressStart + 36, fSurfaceY, BLOCKS.GRASS, BLOCKS.DIRT);
         buildBaldricFortress(fortressStart, fSurfaceY);
         // killZombies görevi için kale önüne birkaç keşif zombisi doğur
         for (let i = 0; i < 4; i++) {
