@@ -506,42 +506,37 @@ Tüm butonlar haptik basınç animasyonlu, ekran ölçeklenir.
 - 🏎️ **Araç viraj yatışı:** Hem senin araban hem AI araçlar virajda hafifçe yana yatıyor, hareket çok daha gerçekçi.`
             },
             minecraft: {
-                title: "⛏️ Lord of the Blocks v3.0",
+                title: "⛏️ Lord of the Blocks v4.0",
                 mobile: true,
-                desc: "İki oyun modu (Hikaye + Serbest), tam mobil dokunmatik destek, Kral Varran ile hikaye, görev sistemi ve Baldric anlatısı eklendi. Klasik blok kırma, inşa, madencilik, mob savaşı ve crafting korunur.",
-                tactic: `Lord of the Blocks v3.0 artık iki modlu bir oyun dostum. İşte tüm yenilikler:
+                desc: "İki oyun modu (Hikaye + Serbest). v4.0 ile hikaye 16 bölüme çıktı, oyundaki her sistemi (eritme, ticaret, elmas, Nether portalı, glowstone) kullanıyor ve sonunda 3 fazlı Baldric boss dövüşü var. Spawn kalesi ve köy yeniden inşa edildi. Klasik blok kırma, inşa, madencilik, mob savaşı ve crafting korunur.",
+                tactic: `Lord of the Blocks v4.0'da hikaye baştan yazıldı dostum. En önemlisi: artık gerçekten bir SONU var ve o son bir boss dövüşü.
 
-**1) Başlangıç Mod Seçimi (YENİ):** Oyun açıldığında bir ekran çıkar:
-- **📖 HİKAYE MODU:** Soğuk Kuzey biyomundaki Buz Kalesi'nde uyanırsın. İçeride Kral Varran (👑) seninle konuşur. Hikaye anlatır, görev verir. Açık dünya — istersen görevi atla.
-- **🌍 SERBEST MOD:** Klasik açık dünya. Hikaye yok, sadece keşif ve hayatta kalma.
+**1) Mod Seçimi:** Oyun açıldığında iki seçenek çıkar:
+- **📖 HİKAYE MODU:** Buz Kalesi'nde Kral Varran ile uyanırsın, 16 bölümlük hikaye başlar.
+- **🌍 SERBEST MOD:** Klasik açık dünya, hikaye yok.
 
-**2) Hikaye İçeriği:** Kral Varran halkının 100 yıl önce yeşil ovalarda yaşadığını anlatır. **BALDRIC** isimli bir "danışman" ordu kurarak halkı kuzeye sürmüştür (Köy Savunma'daki Baldric karakterine bir gönderme!). Kral şimdi senden yardım ister:
-- 1. Görev: Kral ile konuş (otomatik)
-- 2. Görev: 10 Taş kır (Kalenin altında bol)
-- 3. Görev: 1 Tahta Kılıç yap (Crafting Table)
-- 4. Görev: 3 Zombi yen (Baldric'in askerleri)
-- 5. Görev: Batıya yürü, Baldric karargahına ulaş (x < 300)
-- 6. Görev: Krala geri dön
+**2) 16 Bölüm (v4.0 — yeni):** Eski sürümde 9 bölüm vardı ve ortası sıkıcı bir eşya toplama işiydi. Artık sıra şöyle:
+1. Kral ile konuş → 2. **5 taş** kır (eskiden 10) → 3. Tahta kılıç yap → 4. 3 zombi yen → 5. Köyde Theron'u bul → 6. **Fırında 2 demir külçe erit** → 7. **3 asker topla** → 8. **Köylüyle ticaret yap** → 9. **Elmas bul** → 10. **Demir/elmas kılıç dövüp** kuşan → 11. **4 obsidyenle Nether portalı** yap ve içine gir → 12. **Nether'dan 3 glowstone** getir → 13. Yolu **3 glowstone yerleştirerek aydınlat** → 14. Batıya, kara kaleye yürü → 15. **BOSS: Baldric** → 16. Krala dön, zaferi bildir.
+Her bölümün sonunda kendi sahnesi oynar — toplam 43 diyalog satırı.
 
-**3) Görev Paneli:** Sol üstte (HP barının altında) küçük bir panel. Aktif görevi, ilerlemeyi (örn. "2 / 10") ve barı gösterir. Görevler hikaye modunda aktiftir; serbest modda görünmez.
+**3) Asker maliyeti çok ucuzladı:** Theron'a asker başına **3 odun + 1 demir külçe** götürüyorsun (eskiden 8 odun + 4 demirdi). 3 asker için 9 odun + 3 külçe yetiyor — eskiden 24 odun + 12 külçe gerekiyordu, oyunun en sıkıcı yeri burasıydı.
 
-**4) Buz Kalesi:** Hikaye modunda spawn yeri. Cobblestone duvarlar, kar üstü krenele, glowstone aydınlatma, altın taht ve demir blok süslemeler. Kralın yanında çalışma masası ve fırın hazır. İçeri zombi spawn etmez.
+**4) BOSS DÖVÜŞÜ — Baldric (v4.0, en önemli yenilik):** 900 canı ve **3 fazı** var. Üstte faz sınırlarını gösteren bir can barı çıkar.
+- **Faz 1 (%100–66):** Normal kılıç dövüşü. Askerlerin de saldırır.
+- **Faz 2 (%66'da):** Tahtına çekilir, **kalkan açar** — bu sırada vuruşların seker, boşa kılıç sallama. 5 garnizon askeri çağırır ve kendini iyileştirir. **Yapman gereken: kalkan inene kadar askerlerini temizle.** Ayrıca **yere vurmaya** başlar (12 hasar, alan etkili).
+- **Faz 3 (%33'te):** Nether'dan 4 zombi gelir, öfkesi 1,6 katına çıkar (hasarı ~35'e, hızı artar). Yere vurma daha sık ve 18 hasar.
+- **🔑 EN KRİTİK TAKTİK:** Baldric yere vurduğunda ekranda mor bir dalga halkası çıkar ve "YERE VURUŞ! Zıpla!" yazar. **Tam o anda zıplarsan dalga altından geçer, hiç hasar almazsın.** Yerde durursan tam hasar yersin. Bu dövüşün en önemli mekaniği.
+- Kalkan açıkken üstüne gitme, askerlerini kes; kalkan inince "Baldric kalkanını indirdi — ŞİMDİ!" yazısı çıkar, saldırıya o zaman geç.
 
-**5) Diyalog Seçenekleri:** Kral ile konuşurken birkaç noktada seçim çıkar — "Tabii, yardım ederim" / "Özgürce dolaşmayı tercih ederim" / "Baldric mi? Bu isim tanıdık geliyor..." gibi. Her seçim farklı tepki üretir.
+**5) Hazırlık — boss'a tahta kılıçla gitme:** Elmas kılıç 50 hasar, demir 25, tahta sadece 10. 900 canlık boss'a tahta kılıçla ~90 vuruş gerekir. Hikaye zaten seni elmas aramaya yolluyor, **atlama.** Yanına yiyecek ve mümkünse fazladan asker al (Theron'dan istediğin kadar alabilirsin).
 
-**6) Mobil Kontroller (YENİ):** Ekran 900px'den dar ise otomatik açılır, ya da sağ alt köşedeki 📱/🖱️ butonuyla manuel toggle.
-- Sol alt: ◀ ▶ (yürü), üstte ▲ (zıpla)
-- Sağ alt: ⛏️ (kır, basılı tut), 📦 (yerleştir), 🍖 (ye)
-- Sağ üst: 🎒 (envanter), hotbar ◀ ▶ (slot değiştir)
-- Hotbara dokunarak direkt slot seçimi
-- Canvas dokunuşu mineTarget'ı günceller
-Mine ve place butonları karakterin baktığı yöndeki bloka odaklar (player.facing kullanır).
+**6) Buz Kalesi ve köy (v4.0'da yeniden yapıldı):** Eskiden ikisi de havada duruyordu ve kaleye giriş yoktu. Artık zemine oturuyorlar, kalenin **giriş kapısı** var, köyde eğimli çatılı evler, kuyu, taş yol ve fenerler var. Kalede çalışma masası ve fırın hazır bekliyor.
 
-**7) Klasik Mekanikler:** Köy üretimi (orman/çöl), Nether portalı, redstone sistemi (kablo, meşale, lamba), 64 yığın envanter, 27 slot ana envanter + 9 slot hotbar, 3 tier kazma/balta/kılıç (tahta/taş/demir/altın/elmas), fırın eritme, koyun avı, mob savaş, gece zombi/slime spawn.
+**7) Klasik Mekanikler:** Köy üretimi, Nether portalı, redstone (kablo/meşale/lamba), 64 yığın envanter, 27 slot envanter + 9 slot hotbar, tahta/taş/demir/altın/elmas kazma-balta-kılıç, fırın eritme, koyun avı, gece zombi/slime spawn.
 
-**Strateji:**
-- Hikaye modunda en hızlı yol: Kral ile konuş → kalenin altına in, 10 taş çıkar → odun bulup tahta kılıç yap → gece geleceğini bekle, zombileri öldür → batıya yürü.
-- Görevi atlayıp serbest takılmak istersen: kapıdan çık, klasik survival oyna.`
+**8) Mobil Kontroller:** Ekran 900px'den darsa otomatik açılır, ya da sağ alttaki 📱 butonuyla. Sol alt ◀▶ yürü + ▲ zıpla, sağ alt ⛏️ kır / 📦 yerleştir / 🍖 ye, sağ üst 🎒 envanter + hotbar okları.
+
+**Hızlı yol haritası:** Kral ile konuş → 5 taş → tahta kılıç → 3 zombi → Theron → demir cevheri bul, fırında erit → 3 asker al → köylüyle ticaret → derine in, elmas bul → elmas kılıç yap → obsidyen bul, portal aç → Nether'dan glowstone → yolu aydınlat → batıya yürü → Baldric'i 3 fazda yen (**yere vurunca ZIPLA**) → krala dön.`
             },
             lordofnations: {
                 title: "👑 Lord of Nations 3D — Ülke Yönetme & Savaş v1.10",
@@ -700,7 +695,7 @@ Her kanunun mutluluk, moral, altın gideri, sanayi, bilim, yolsuzluk ve itibar �
             turkio: ['turk', 'turkio', 'turk io', '.io', 'alan', 'alan kazanma', 'yasama', 'oluyo', 'olum', 'cizgi', 'kuyruk', 'paper', 'paperio', 'splix'],
             war: ['war of countries', 'countries', 'ulkeler', 'gazete', 'mansetleri', 'manset', 'ulke savasi', 'wofc', 'wof'],
             turborush: ['turbo', 'rush', 'turborush', 'turbo rush', 'yaris', 'araba', 'pist', 'f1', 'formula', 'kariyer', 'pit', 'pit stop', 'drift', 'viraj', 'lastik'],
-            minecraft: ['lord of the blocks', 'blocks', 'bloks', 'minecraft', 'mine', 'mnct', 'minecraf', 'mincraft', 'maynkraft', '2d', 'blok', 'kazma', 'mob', 'crafting', 'maden', 'zombie', 'iskelet', 'aclik'],
+            minecraft: ['lord of the blocks', 'blocks', 'bloks', 'minecraft', 'mine', 'mnct', 'minecraf', 'mincraft', 'maynkraft', '2d', 'blok', 'kazma', 'mob', 'crafting', 'maden', 'zombie', 'iskelet', 'aclik', 'baldric', 'boss', 'nether', 'glowstone', 'elmas', 'theron', 'varran', 'portal'],
             lordofnations: ['lord of nations', 'lordofnations', 'nations', 'ulke yonetme', 'ulke yonetimi', 'ulke yonet', 'ulke kur', 'ulke sec', 'grand strateji', 'grandstrateji', 'imparatorluk yonetme', 'butce', 'ekonomi yonetme', 'kabine', 'rejim', 'diplomasi', 'casusluk', 'operasyon', 'deniz savasi', 'amiral', 'sira tabanli', 'victoria', 'lon'],
             towerdefense3d: ['tower defense 3d', 'towerdefense', 'td', '3d kule', 'kule savunma 3d', 'unity kule', 'ok kulesi', 'top kulesi', 'buz kulesi', 'simsek kulesi', 'zehir kulesi', 'nisanci kulesi', 'dalga', 'wave', 'megaboss', 'grunt', 'runner', 'splitter', 'shielded', 'healer', 'zigzag'],
             borsa: ['borsa', 'borsa krali', 'hisse', 'hisse senedi', 'bitcoin', 'btc', 'kripto', 'kaldirac', 'temettu', 'portfoy', 'yatirim', 'al sat', 'alsat', 'trade', 'trading', 'mum grafik', 'grafik', 'short', 'aciga satis', 'piyasa', 'stock', 'market'],
@@ -940,7 +935,7 @@ Bana *"mobilde hızlı bir şey öner"* veya *"sakin bir strateji istiyorum"* gi
 8. 🇹🇷 TÜRK.IO
 9. ⚔️ War of Countries
 10. 🏎️ TURBO RUSH — Kariyer
-11. ⛏️ Lord of the Blocks (v3.0 — Hikaye + Mobil + Kral Varran)
+11. ⛏️ Lord of the Blocks (v4.0 — 16 bölümlük hikaye + 3 fazlı Baldric boss dövüşü)
 
 Hangisini öğrenmek istersin?`;
             }
@@ -953,7 +948,7 @@ Hangisini öğrenmek istersin?`;
 
 🆕 **Lord of Nations 3D — Ülke Yönetme & Savaş (v1.10 — SON GÜNCELLEME):** Nova Europa haritasından 15 ülkeden birini seç ve yönetmeye başla. Ekonomi, detaylı bütçe, kaynaklar, halklar, ordu, teknoloji, din & kültür, kabine, kanunlar, rejim, ticaret, casusluk ve diplomasi sekmeleriyle ülkeni büyüt; Three.js destekli kara ve deniz savaşlarıyla haritaya hükmet. Başkentini birinci şahıs gezersin: ofis, genelkurmay, hukuk odası, diplomasi odası ve **Ulusal Meclis**. **v1.9** ile kanunlar tek tıkla geçmiyor — teklifi meclise sunup kürsüye çıkıyor, 120 vekilin önünde bizzat savunuyorsun; oylar canlı renkleniyor, ret gelirse Baldrick rüşvet öneriyor. **v1.10** ile Diplomasi Odası'na **🕮 Kül Defteri Yolu** eklendi: her ülkenin kendi geçmişiyle hesaplaştığı, çatallı bir odak ağacı. Odaklar bonus listesi değil hikâye düğümü — bitince Baldrick gelip ne olduğunu anlatıyor ve seçim sunuyor, seçtiğin yol rakip yolu kalıcı kapatıyor. 15 ülke için 165 odak ve 353 seçenek var. Tam mobil + PC uyumlu.
 
-1. **Lord of the Blocks (v3.0 + crafting fix):** İki oyun modu eklendi — 📖 Hikaye Modu (Buz Kalesi'nde Kral Varran ile başla, Baldric'in işgaline karşı görevleri tamamla, açık dünya — istersen görev yapma) ve 🌍 Serbest Mod (klasik). Tam mobil dokunmatik destek (sol alt yürüme, sağ alt kır/yerleştir/ye, sağ üst envanter + hotbar). **Crafting table artık çalışıyor:** sağ tıklayınca envanter + 3x3 üretim grid'i açılıyor (eskiden işlevsizdi, sadece E ile açılıyordu). Tahta kılıç görevi de düzgün algılanıyor.
+1. **Lord of the Blocks (v4.0 — SON GÜNCELLEME):** Hikaye baştan yazıldı ve artık gerçek bir sonu var. ⚔️ **Baldric 3 fazlı bir boss oldu:** 400 can → **900 can**, tek faz → **3 faz**. %66'da tahtına çekilip **kalkan açıyor** (vuruşların seker), garnizonunu çağırıyor ve iyileşiyor; %33'te **Nether'dan destek** geliyor ve öfkesi 1,6 katına çıkıyor. İki fazda da **yere vuruyor** — tam o anda **zıplarsan dalga altından geçer, hiç hasar almazsın**. Üstte faz sınırlarını gösteren boss can barı var. ⏱️ **Sıkıcı toplama işi bitti:** asker maliyeti 8 odun + 4 demirden **3 odun + 1 demire**, taş hedefi 10'dan 5'e indi. 📖 **Hikaye 9 bölümden 16 bölüme çıktı** ve oyundaki her sistemi kullanıyor: fırında demir eritme, köylüyle ticaret, elmas madenciliği, gerçek kılıç dövme, obsidyenle **Nether portalı**, Nether'dan glowstone getirip kara kaleye giden yolu aydınlatma. Her bölümün kendi sahnesi var (43 diyalog). 🏰 **Spawn kalesi ve köy yeniden inşa edildi** — artık havada durmuyorlar, kalenin **giriş kapısı** var, köyde eğimli çatılı evler, kuyu, taş yol ve fenerler var. 🔧 Askerleri topladığın hâlde görevin bitmemesi hatası düzeltildi.
 
 0. **Futbol Manager Elite Pro (v2.8 SON):** Maç ekranındaki **kararma bugu çözüldü** (animate-fade-in her render'da tetikleniyordu). **Canlı maç istatistik paneli** eklendi: topla oynama %'si, şut, isabet, kurtarış, korner, faul, 🟨/🟥 sayaçları gerçek zamanlı güncellenir. **Yeni olay tipleri**: sarı kart (yüksek presle artar), ikinci sarıdan kırmızı (oyuncu sahadan atılır), sakatlık (enerji -30, form -10), korner, taktiksel faul, kaleci kurtarışı, kayarak müdahale. Spikerin senaryo havuzu ~40 farklı cümleye çıktı — aynı maç iki kez aynı görünmüyor. Goller artık atan oyuncunun formunu +4 yükseltiyor.
 
