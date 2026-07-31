@@ -297,12 +297,22 @@ Yeni gelen dev v2.0 güncellemesiyle oyuna harika yeni uzay seviyeleri, yenilene
 **📖 v3.0 — BÖLÜM 3: YENİ KANATLAR:** Yeni hikaye bölümü geldi. Grunk, Altın Yumurta'yı çalıp bir uzay gemisiyle kaçar; sürü peşine düşer. Bölümü aç, hikayeyi takip et ve yeni seviyeleri sırayla geç. **Taktik:** uzay seviyelerinde gezegen yörüngelerini sapan gibi kullanma mantığı burada da geçerli — kaçan hedefe doğrudan değil, yerçekimi kavisiyle nişan al.`
             },
             kale: {
-                title: "🏰 Kale Savunma (Köy Savunma): Krallık Çağı v4.0 (3D)",
+                title: "🏰 Kale Savunma (Köy Savunma): Krallık Çağı v5.0",
                 mobile: true,
-                desc: "v4.0 ile oyun 3D oldu (Three.js WebGL katmanı). Kampanya (bölüm seçimli) + Sonsuz mod, oyunlar arası kaybolmayan Kalıcı Yükseltmeler dükkanı, 5 dil desteği (TR/EN/DE/FR/ZH), 5 karakterli komik diyalog sistemi, her seviyede dallanan evrim ağacı ve yeniden çizilmiş goblin/boss grafikleriyle bambaşka bir savunma oyunu.",
+                desc: "3D savunma oyunu (Three.js). Kampanya + Sonsuz mod, 5 dil, 5 karakterli komik diyalog kadrosu. v5.0 ile askerlere komut verebiliyorsun (1-5 tuşları, haritada hedef seçme), kışlada eğitim modu seçiyorsun, yükseltmeler yuvalı parça sistemine döndü (her parçanın bedeli var) ve 5 yeni bina geldi: Okçu Kışlası, Mancınık Atölyesi, Mayın Tarlası, Çan Kulesi, Fener Kulesi.",
                 tactic: `Köy Savunma v4.0 artık ciddi anlamda büyüdü dostum — hem 3D oldu hem de kampanya + kalıcı yükseltme sistemi geldi. Tüm yenilikler ve nasıl oynaman gerektiği:
 
-**🎮 v4.0 — 3D GRAFİK (DEV YENİLİK):** Savaş alanı artık Three.js WebGL katmanıyla 3 boyutlu, derinlikli ve ışıklı render ediliyor. Oynanış aynı üstten-strateji mantığında ama görsel his tamamen yeni.
+**🪖 v5.0 — ASKERLERE KOMUT VER (YENİ):** Askerler artık kafasına göre koşmuyor. **1** Beni Takip Et (kahramanın etrafında kalır), **2** Saldır (haritanın her yerinde düşman arar), **3** Savun (verdiğin noktayı tutar), **4** Geri Çekil (kaleye döner), **5** Serbest. Savun ve Saldır'a basınca **haritada nokta seçiyorsun** — seçtiğin yer yeşil/kırmızı halkayla çiziliyor ve askerler oraya dağılıyor. Mobilde de butonlar var. Taktik: kalabalık dalgada "3 Savun"u kapı önüne bas, boss gelince "4 Geri Çekil" ile askerlerini kurtar, sonra "2 Saldır" ile bitir.
+
+**⚔️ v5.0 — KIŞLA EĞİTİM MODU:** Kışla ve Okçu Kışlası'nda istediğin an mod değiştir: **Nitelikli** (dengeli), **Acemi Yığını** (2 kat asker ama canı ve vuruşu yarı yarıya), **Seçkin** (yarı sayıda ama çok daha güçlü ve hızlı). Erken dalgalarda Acemi Yığını ile sayı bas, boss'a karşı Seçkin'e geç.
+
+**🔧 v5.0 — YÜKSELTME ARTIK BİR SİSTEM:** Eski sürümde ağaçtaki 136 evrimin 113'ü hiçbir şey yapmıyordu — düzeltildi, hepsi çalışıyor. Yükseltmeler artık **yuvaya takılan parça**: her binanın seviyesine göre 1-4 yuvası var, parçalar **üst üste biniyor** (eskiden sadece son seçim sayılıyordu), sökebiliyorsun (kaynağın yarısı geri gelir). **Her parçanın bir bedeli var** — Tatar Yayı hasar +%100 ama hız −%31, menzil −%15. Parçalar altın + odun + taş istiyor ve **tur başına bakım** yiyor; her şeyi yükseltirsen hazine erir. Kolay modda cezalar %60 hafifler.
+
+**🏗️ v5.0 — 5 YENİ BİNA:** 🏹 **Okçu Kışlası** (menzilli asker üretir, 150px mesafeden ok atar) · 🪨 **Mancınık Atölyesi** (hareketli kuşatma birliği üretir, 265px'ten alan hasarlı gülle atar) · 💣 **Mayın Tarlası** (çevresine mayın döşer, basan patlar) · 🔔 **Çan Kulesi** (nabız atar, çevredeki kuleleri %35 hızlandırır, askerleri iyileştirir) · 🗼 **Fener Kulesi** (en güçlü düşmanı işaretler, ona gelen hasar %45 artar — boss avı için).
+
+**⚖️ v5.0 — DENGE:** Hikaye modu çok kolay, sonsuz mod çok zordu. Sonsuzda düşman canı sınırsız büyüyordu, düzeltildi (artık doyuma giden eğri). Hikaye zorlaştırıldı, sonsuz yumuşatıldı; iki mod artık aynı eğri üzerinde. Kampanyada her bölüm artık **kendi hikayesini** anlatıyor (eskiden tüm bölümlerde aynı replikler oynuyordu).
+
+**🎮 v4.0 — 3D GRAFİK:** Savaş alanı artık Three.js WebGL katmanıyla 3 boyutlu, derinlikli ve ışıklı render ediliyor. Oynanış aynı üstten-strateji mantığında ama görsel his tamamen yeni.
 
 **📖 v4.0 — KAMPANYA MODU:** Artık bölüm seçim ekranından ilerliyorsun; her bölüm sonunda hikaye devam ediyor. Bölümleri sırayla aç, ilerledikçe zorluk artar. (Klasik ♾️ Sonsuz Mod da yerinde.)
 
@@ -923,7 +933,7 @@ Bana *"mobilde hızlı bir şey öner"* veya *"sakin bir strateji istiyorum"* gi
 1. 👑 Lord of Nations 3D — Ülke Yönetme & Savaş (v1.10 — YENİ! gezilebilir 3D meclis, Kül Defteri Yolu odak ağacı)
 2. ⚽ Futbol Manager Elite (v2.8 — canlı maç istatistikleri, sarı/kırmızı kart, sakatlık, korner, kurtarış)
 3. 🚀 Lord of the Birds — Uzay & Kum Havuzu (v2.0)
-4. 🏰 Kale Savunma: Krallık Çağı (v3.0 — Hikaye + Sonsuz + 5 karakter)
+4. 🏰 Kale Savunma: Krallık Çağı (v5.0 — asker komutları, yuvalı parça sistemi, 5 yeni bina)
 5. 🧮 Matematik Tarihi: Zaman Çizelgesi
 6. 🌍 Strateji İmparatorluğu — 1936 (v2.2 — YENİ! Ekonomi/Sanayi/Politika/Diplomasi + yenilenen harita)
 7. 🧬 Evrim Simülasyonu v3
@@ -951,7 +961,7 @@ Hangisini öğrenmek istersin?`;
 
 3. **Futbol Manager Elite Pro (v2.7 — DEV GÜNCELLEME):** Oyun tamamen yenilendi! 🌱 **Altyapı & Akademi sistemi** eklendi — kendi gençlik tesislerini 5 seviyeye kadar yükseltebiliyor, 3 farklı kalitede **scout (gözlemci)** kiralayabiliyor (Yusuf Demir/Marmara, Garry Parker/İngiltere, Zico Santos/Brezilya), yetenekli gençleri 0.8M €'ya özel olarak eğitip 1.5M € imza ücretiyle A takıma yükseltebiliyorsun. Oyuncuların artık **enerji ve form mekanikleri** var, ayrıca her oyuncunun bir **karakter özelliği** (Hırslı/Çalışkan/Dengeli/Dahi/Disiplinsiz/Cam Adam) bulunuyor — bu özellikler antrenmandan ne kadar fayda göreceğini direkt etkiliyor. **5 farklı antrenman rejimi** geldi: Hücum & Şut, Savunma & Pres, Taktik & Pas, Kondisyon ve Dinlenme. Taktik tarafında **4 hazır sistem şablonu** (Tiki-Taka, Gegenpressing, Otobüsü Çek, Hızlı Kontra) tek tıkla uygulanabiliyor; pas tarzı, hücum odağı ve savunma stili dropdown'larıyla daha detaylı kurgu yapabiliyorsun. Maç sırasında saha üzerindeki oyuncuya tıklayarak **canlı oyuncu değişikliği** yapabiliyorsun. Ayrıca artık 🔊 **arka plan müziği** ve gollerde sentezlenmiş **stadyum tezahürat sesi** var!
 
-4. **Kale Savunma: Krallık Çağı (v3.0 — DEV Güncelleme):** İki oyun modu eklendi — 📖 **Hikaye Modu** (10 dalgalık senaryo + saray intro) ve ♾️ **Sonsuz Mod**. 5 karakterli komik diyalog kadrosu (Baldric, Sör Roric, Prenses Elara, Soytarı Quill, Büyücü Lyra) seninle konuşur, bazı diyaloglarda seçim hakkın var. **Evrim ağacı** her seviyede (LV2-5) dallanır — toplam her bina için 8 evrim. Goblin, hızlı goblin, zırhlı ork, yarasa ve bossların (Ork Şefi, Yarasa Lordu, İskelet Kral, Ejder) tamamı yeniden çizildi — detaylı sprite'lar, animasyonlar, parlayan gözler. Bina grafikleri level rozeti, yıldız pip'leri ve LV4-5'te zemin halkası + glow ile zenginleştirildi. Ana menüde **TR/ENG dil seçimi** eklendi. Tüm eski mekanikler (Lord aurası, Q-E-R-F-T büyüleri, XP perkleri, 4 harita, TOP 10 skor tablosu) korunuyor.
+4. **Kale Savunma: Krallık Çağı (v5.0 — DEV Güncelleme):** 🪖 Askerlere artık **komut verebiliyorsun**: 1 Beni Takip Et, 2 Saldır, 3 Savun, 4 Geri Çekil, 5 Serbest. Savun ve Saldır'da haritada nokta seçiyorsun, seçtiğin yer halkayla çiziliyor ve askerler oraya mevzileniyor. ⚔️ Kışlada **eğitim modu** var: Acemi Yığını (2 kat asker, yarı güç), Nitelikli, Seçkin (yarı sayı, çok güçlü). 🏗️ **5 yeni bina**: Okçu Kışlası (menzilli asker), Mancınık Atölyesi (hareketli kuşatma birliği), Mayın Tarlası, Çan Kulesi (kuleleri hızlandırır), Fener Kulesi (en güçlü düşmanı işaretler, ona gelen hasar artar). 🔧 **Yükseltme sistemi baştan yazıldı**: ağaçtaki 136 evrimin 113'ü aslında hiçbir şey yapmıyordu, hepsi çalışır hâle geldi. Yükseltmeler artık yuvaya takılan parça — üst üste biniyor, sökülebiliyor (yarı iade), her parçanın bir bedeli var (hasar artarsa hız düşer), altın+odun+taş istiyor ve tur başına bakım yiyor. ⚖️ **Denge**: hikaye çok kolay / sonsuz çok zordu; sonsuzda düşman canı sınırsız büyüyordu, doyuma giden eğriye çevrildi. Kampanyada her bölüm artık kendi hikayesini anlatıyor. Tüm eski mekanikler (3D katman, kampanya, kalıcı yükseltmeler, 5 dil, Q-E-R-F-T büyüleri, 4 harita) korunuyor.
 
 5. **War of Countries (v1.6 Güncellemesi):** Stratejiyi derinleştiren teknoloji araştırma sistemi, 6 farklı ülke seçeneği, fabrikalar kurma, askeri sevkiyatlar ve en önemlisi dünyadaki tüm dengeleri takip edebileceğin Gazete Haberleri sistemi oyuna eklendi!
 
