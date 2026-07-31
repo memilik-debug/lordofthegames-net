@@ -2503,7 +2503,9 @@ function drawBossOverlay() {
 function showMcDialog(messages, onComplete) {
     mcDialogQueue = (messages || []).slice();
     mcDialogIndex = 0;
-    mcDialogOnComplete = onComplete || null;
+    // Onceki diyalog kapanmadan uzerine yazildiysa bekleyen geri cagriyi dusurme,
+    // yoksa gorevi ilerleten callback kaybolur (asker alma menusu bunu yapiyordu).
+    mcDialogOnComplete = onComplete || mcDialogOnComplete || null;
     if (!mcDialogQueue.length) { if (mcDialogOnComplete) mcDialogOnComplete(); return; }
     document.getElementById('mc-dialog').classList.add('show');
     renderMcDialog();
@@ -2541,6 +2543,7 @@ function renderMcDialog() {
     } else {
         mcDialogChoiceActive = false;
         choicesEl.style.display = 'none';
+        choicesEl.innerHTML = '';   // eski secenek dugmelerini DOM'da birakma
         nextBtn.style.display = '';
     }
 }
@@ -2880,7 +2883,7 @@ const STORY = {
         { c:'👑', n:'Kral Varran', t:'Ama yalnız değilsin. Kalenin yanındaki köyde eski bir savaş dostum yaşıyor — THERON. Sana asker toplar. Yeter ki ona odun ve demir götür.' },
         { c:'👑', n:'Kral Varran', t:'Şimdi buradayız. Donmuş, aç, ama hayatta. Bana yardım eder misin?', choices:[
             { a:'Tabii, ne yapmamı istersin?', r:[
-                { c:'👑', n:'Kral Varran', t:'Önce dayan. Aşağıda taş var, 10 tane kır. Sonra bir kılıç yap. Baldric\'in keşif zombileri geldiğinde 3 tanesini yen.' },
+                { c:'👑', n:'Kral Varran', t:'Önce dayan. Aşağıda taş var, 5 tane kır. Sonra bir kılıç yap. Baldric\'in keşif zombileri geldiğinde 3 tanesini yen.' },
                 { c:'👑', n:'Kral Varran', t:'Sonra köye git, Theron\'la ordunu kur, batıya yürü ve Baldric\'i alt et. Görev panosu yolunu gösterecek.' },
                 { c:'👑', n:'Kral Varran', t:'Bu macera SENİN. Sana zorlanmıyorum. İstersen takip et, istersen kendi yolunu kur.' }
             ]},
@@ -3043,8 +3046,14 @@ function recruitSoldier() {
     const spawnX = player.x + (Math.random() > 0.5 ? 1 : -1) * BLOCK_SIZE;
     entities.push({ type:'ally', x:spawnX, y:player.y - BLOCK_SIZE,
         w:24, h:48, vx:0, vy:0, hp:70, maxHp:70, dir:1, timer:0, atkCd:0 });
+    // Bolumun bitisi diyalog kapaninca islendigi icin activeQuestIdx burada
+    // henuz degismez; bu yuzden "hedefi bu asker doldurdu mu" diye bakiyoruz.
+    const gorev = QUESTS.find(x => x.id === 'recruitArmy');
+    const aktifti = storyMode && QUESTS[activeQuestIdx]?.id === 'recruitArmy';
+    const oncekiIlerleme = gorev ? gorev.progress : 0;
     questProgress('recruitArmy', 1);
     if (storyMode && QUESTS[activeQuestIdx]?.id !== 'recruitArmy') updateQuestPanel();
+    return !!(aktifti && gorev && oncekiIlerleme < gorev.goal && gorev.progress >= gorev.goal);
 }
 
 // Kankayla konuşma menüsü
@@ -3070,7 +3079,11 @@ function tryTalkToBuddy(mx, my) {
 }
 function buddyMenuMsg() {
     return { c:'🛡️', n:'Theron', t:'Ne diyorsun kanka? ('+RECRUIT_WOOD+' odun + '+RECRUIT_IRON+' demir = 1 asker. Şu an: '+allyCount+' asker)', choices:[
-        { a:'Asker al ('+RECRUIT_WOOD+' odun + '+RECRUIT_IRON+' demir)', act:()=>{ recruitSoldier(); setTimeout(()=>{ if(buddyEntity) showMcDialog([buddyMenuMsg()]); }, 350); } },
+        { a:'Asker al ('+RECRUIT_WOOD+' odun + '+RECRUIT_IRON+' demir)', act:()=>{
+            const bolumBitti = recruitSoldier();
+            // Gorev tamamlandiysa sahnesi oynasin — menuyu tekrar acip uzerine yazma
+            setTimeout(()=>{ if (buddyEntity && !bolumBitti) showMcDialog([buddyMenuMsg()]); }, 350);
+        } },
         { a:'Şimdilik bu kadar.', r:[ { c:'🛡️', n:'Theron', t:'Hazır olunca gel. Baldric beklemez.' } ] }
     ]};
 }
@@ -3171,7 +3184,7 @@ function tryTalkToKing(mx, my) {
     if (QUESTS[activeQuestIdx]?.id === 'talkKing') {
         showMcDialog(STORY.intro, () => questProgress('talkKing', 1));
     } else if (QUESTS[activeQuestIdx]?.id === 'mineStone') {
-        showMcDialog([{ c:'👑', n:'Kral Varran', t:'Önce 10 taş topla yabancı. Kalenin altında bol var.' }]);
+        showMcDialog([{ c:'👑', n:'Kral Varran', t:'Önce 5 taş topla yabancı. Kalenin altında bol var.' }]);
     } else if (QUESTS[activeQuestIdx]?.id === 'craftSword') {
         showMcDialog([{ c:'👑', n:'Kral Varran', t:'Bir tahta kılıç yap. Çalışma masasını kullan.' }]);
     } else if (QUESTS[activeQuestIdx]?.id === 'killZombies') {
