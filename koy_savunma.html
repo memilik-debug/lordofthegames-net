@@ -982,6 +982,10 @@
             <div class="build-btn" id="btn-gold" onclick="setBuild('gold')"><span class="build-icon">🪙</span><span>Altın</span><span class="cost-label">20O</span></div>
             <div class="build-btn" id="btn-barracks" onclick="setBuild('barracks')"><span class="build-icon">⚔️</span><span>Kışla</span><span class="cost-label">50A</span></div>
             <div class="build-btn" id="btn-archery" onclick="setBuild('archery')"><span class="build-icon">🏹</span><span>Okçu Kışlası</span><span class="cost-label">70A·20O</span></div>
+            <div class="build-btn" id="btn-siegeworks" onclick="setBuild('siegeworks')"><span class="build-icon">🪨</span><span>Mancınık Atölyesi</span><span class="cost-label">180A·80O</span></div>
+            <div class="build-btn" id="btn-minefield" onclick="setBuild('minefield')"><span class="build-icon">💣</span><span>Mayın Tarlası</span><span class="cost-label">130A·45T</span></div>
+            <div class="build-btn" id="btn-bell" onclick="setBuild('bell')"><span class="build-icon">🔔</span><span>Çan Kulesi</span><span class="cost-label">160A·40O</span></div>
+            <div class="build-btn" id="btn-beacon" onclick="setBuild('beacon')"><span class="build-icon">🗼</span><span>Fener Kulesi</span><span class="cost-label">190A·50T</span></div>
             <div class="build-btn" id="btn-temple" onclick="setBuild('temple')"><span class="build-icon">⛪</span><span>Mabet</span><span class="cost-label">60A</span></div>
             <div class="build-btn" id="btn-wall" onclick="setBuild('wall')"><span class="build-icon">🧱</span><span>Duvar</span><span class="cost-label">10T</span></div>
             <div class="build-btn" id="btn-archer" onclick="setBuild('archer')"><span class="build-icon">🏹</span><span>Okçu</span><span class="cost-label">40A</span></div>
@@ -1194,8 +1198,9 @@
         3: ['temple','archery'],
         4: ['tower','hospital','frost'],
         5: ['mage','poison'],
-        6: ['cannon','lightning'],
-        7: ['catapult','laser']
+        5: ['minefield'],
+        6: ['cannon','lightning','bell'],
+        7: ['catapult','laser','siegeworks','beacon']
     };
     function isUnlocked(type) {
         for (let lv = 1; lv <= playerLevel; lv++) {
@@ -1272,7 +1277,7 @@
         const t = document.getElementById('levelup-toast');
         if (!t) return;
         const unlockedNow = unlocksByLevel[playerLevel] || [];
-        const trNames = { wood:'Odun', stone:'Taş', gold:'Altın', wall:'Duvar', archer:'Okçu', barracks:'Kışla', archery:'Okçu Kışlası', temple:'Mabet', tower:'Kule', mage:'Büyücü', cannon:'Topçu', hospital:'Şifahane', lightning:'Şimşek Kulesi', catapult:'Mancınık', frost:'Buz Kulesi', poison:'Zehir Kulesi', laser:'Lazer Kulesi' };
+        const trNames = { wood:'Odun', stone:'Taş', gold:'Altın', wall:'Duvar', archer:'Okçu', barracks:'Kışla', archery:'Okçu Kışlası', siegeworks:'Mancınık Atölyesi', minefield:'Mayın Tarlası', bell:'Çan Kulesi', beacon:'Fener Kulesi', temple:'Mabet', tower:'Kule', mage:'Büyücü', cannon:'Topçu', hospital:'Şifahane', lightning:'Şimşek Kulesi', catapult:'Mancınık', frost:'Buz Kulesi', poison:'Zehir Kulesi', laser:'Lazer Kulesi' };
         const list = unlockedNow.map(u => trNames[u] || u).join(', ');
         t.innerHTML = '⭐ SEVİYE ' + playerLevel + (list ? '<br><span style="font-size:11px;color:#fbbf24">Açıldı: ' + list + '</span>' : '');
         t.style.opacity = '1';
@@ -1398,7 +1403,9 @@
         barracks: { gold: 50 }, archery: { gold: 70, wood: 20 }, temple: { gold: 60 }, wall: { stone: 10 },
         archer: { gold: 40 }, tower: { stone: 30 }, mage: { gold: 100 }, cannon: { gold: 150 },
         hospital: { gold: 80 }, lightning: { gold: 200, stone: 40 }, catapult: { gold: 250, stone: 60 },
-        frost: { gold: 120, stone: 30 }, poison: { gold: 140, wood: 50 }, laser: { gold: 300, stone: 80 }
+        frost: { gold: 120, stone: 30 }, poison: { gold: 140, wood: 50 }, laser: { gold: 300, stone: 80 },
+        siegeworks: { gold: 180, wood: 80 }, minefield: { gold: 130, stone: 45 },
+        bell: { gold: 160, wood: 40 }, beacon: { gold: 190, stone: 50 }
     };
 
     class Building {
@@ -1437,15 +1444,82 @@
             }
 
             // Kışla / Okçu Kışlası — üretim hızı eğitim moduna bağlı
-            if (this.type === 'barracks' || this.type === 'archery') {
+            if (this.type === 'barracks' || this.type === 'archery' || this.type === 'siegeworks') {
                 const tm = TRAIN_MODES[this.trainMode] || TRAIN_MODES.regular;
-                const her = Math.max(18, Math.round(100 / tm.rate));
+                const her = Math.max(18, Math.round((this.type === 'siegeworks' ? 240 : 100) / tm.rate));
                 if (this.timer % her === 0) {
-                    const kind = (this.type === 'archery') ? 'archer' : 'melee';
-                    const maxS = Math.round((this.path === 'swarm' ? 35 : 18) * tm.cap);
+                    const kind = (this.type === 'archery') ? 'archer' : (this.type === 'siegeworks' ? 'siege' : 'melee');
+                    const taban = (this.type === 'siegeworks') ? 6 : (this.path === 'swarm' ? 35 : 18);
+                    const maxS = Math.max(1, Math.round(taban * tm.cap));
                     const kendi = soldiers.filter(s => s.kind === kind).length;
                     if (kendi < maxS) soldiers.push(new Soldier(this.x, this.y, this.path === 'knights', kind, this.trainMode));
                 }
+            }
+
+            // ── 💣 MAYIN TARLASI: çevreye mayın döşer, basan patlar ──
+            if (this.type === 'minefield') {
+                this.mines = this.mines || [];
+                const kap = Math.round((3 + this.level) * evoMul(this, 'aoe'));
+                const araE = Math.max(40, Math.round(150 * evoMul(this, 'rate')));
+                if (this.timer % araE === 0 && this.mines.length < kap) {
+                    const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * (110 * evoMul(this, 'rng'));
+                    this.mines.push({ x: this.x + Math.cos(a) * r, y: this.y + Math.sin(a) * r, arm: 0 });
+                }
+                const patDmg = 130 * (1 + (this.level - 1) * 0.6) * evoMul(this, 'dmg');
+                const patR = 70 * evoMul(this, 'aoe');
+                for (let mi = this.mines.length - 1; mi >= 0; mi--) {
+                    const m = this.mines[mi]; m.arm++;
+                    if (m.arm < 30) continue;
+                    const kurban = enemies.find(e => Math.hypot(e.x - m.x, e.y - m.y) < 26);
+                    if (kurban) {
+                        enemies.forEach(o => {
+                            const d = Math.hypot(o.x - m.x, o.y - m.y);
+                            if (d < patR) { const pay = patDmg * (1 - d / patR * 0.55);
+                                if (o.takeProjectile) o.takeProjectile(pay); else o.hp -= pay; }
+                        });
+                        try { visualEffects.push({type:'boom', x:m.x, y:m.y, r:patR, life:18, maxLife:18}); } catch(e){}
+                        try { sfx.explosion(); } catch(e){}
+                        this.mines.splice(mi, 1);
+                    }
+                }
+            }
+
+            // ── 🔔 ÇAN KULESİ: nabız — çevredeki kuleleri hızlandırır, askerleri iyileştirir ──
+            if (this.type === 'bell') {
+                const ara = Math.max(90, Math.round(300 * evoMul(this, 'rate')));
+                if (this.timer % ara === 0) {
+                    const R = 230 * evoMul(this, 'rng');
+                    this._pulse = 22;
+                    buildings.forEach(o => {
+                        if (o === this) return;
+                        if (Math.hypot(o.x - this.x, o.y - this.y) < R) {
+                            o._bellUntil = (o.timer || 0) + 200;   // 200 kare boyunca hızlı
+                        }
+                    });
+                    const iy = 26 * evoMul(this, 'heal');
+                    soldiers.forEach(sd => {
+                        if (Math.hypot(sd.x - this.x, sd.y - this.y) < R) sd.hp += iy;
+                    });
+                    try { sfx.upgrade(); } catch(e){}
+                }
+                if (this._pulse > 0) this._pulse--;
+            }
+
+            // ── 🗼 FENER KULESİ: en güçlü düşmanı işaretler, ona gelen hasar artar ──
+            if (this.type === 'beacon') {
+                const ara = Math.max(60, Math.round(180 * evoMul(this, 'rate')));
+                if (this.timer % ara === 0) {
+                    const R = 420 * evoMul(this, 'rng');
+                    let en = null, ehp = 0;
+                    enemies.forEach(e => {
+                        if (Math.hypot(e.x - this.x, e.y - this.y) > R) return;
+                        const h = e.maxHp || e.hp;
+                        if (h > ehp) { ehp = h; en = e; }
+                    });
+                    if (this._mark && this._mark.marked) this._mark.marked = 0;
+                    if (en) { en.marked = 1 + 0.45 * evoMul(this, 'dmg'); this._mark = en; }
+                }
+                if (this._mark && (this._mark.hp <= 0 || enemies.indexOf(this._mark) < 0)) this._mark = null;
             }
 
             if (enemies.length > 0) {
@@ -1458,7 +1532,8 @@
                 // Hero aura: +25% damage if within 180 of hero (+ evrim aura bonusu)
                 const auraMult = ((hero && Math.hypot(this.x - hero.x, this.y - hero.y) < 180) ? 1.25 : 1.0)
                                + evoAdd(this, 'auraBonus');
-                const per = (base) => Math.max(4, Math.floor(base * eR));
+                const canHizli = (this._bellUntil && this.timer < this._bellUntil) ? 0.65 : 1;
+                const per = (base) => Math.max(4, Math.floor(base * eR * canHizli));
                 if (target) {
                     if (this.type === 'tower' && this.timer % per(Math.floor(40/this.level)) === 0) {
                         projectiles.push(new Projectile(this.x, this.y, target, false, 70 * mult * auraMult * eD));
@@ -1676,6 +1751,89 @@
                     ctx.fillStyle = '#fff';
                     ctx.beginPath(); ctx.arc(-7, -12, 2.5, 0, Math.PI*2); ctx.fill();
                     ctx.beginPath(); ctx.arc(6, -8, 1.5, 0, Math.PI*2); ctx.fill();
+                    break;
+                }
+                case 'siegeworks': {
+                    // Mancınık Atölyesi — açık marangozhane: kalaslar, çark, yarım mancınık
+                    ctx.fillStyle = '#6b5535';
+                    ctx.beginPath(); ctx.ellipse(0, 18, 40, 15, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#463621'; ctx.lineWidth = 1.5; ctx.stroke();
+                    ctx.fillStyle = '#5b3d1d'; ctx.fillRect(-34, -26, 4, 24); ctx.fillRect(2, -26, 4, 24);
+                    ctx.fillStyle = '#78350f';
+                    ctx.beginPath(); ctx.moveTo(-40, -26); ctx.lineTo(-14, -38); ctx.lineTo(12, -26); ctx.closePath(); ctx.fill();
+                    ctx.strokeStyle = '#3b1d08'; ctx.lineWidth = 1.5; ctx.stroke();
+                    // yapım hâlindeki mancınık kolu
+                    ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(-6, 8); ctx.lineTo(20, -14); ctx.stroke();
+                    ctx.fillStyle = '#57534e';
+                    ctx.beginPath(); ctx.arc(22, -16, 6, 0, Math.PI*2); ctx.fill();
+                    // çark
+                    ctx.strokeStyle = '#5b3a1a'; ctx.lineWidth = 2.5;
+                    ctx.beginPath(); ctx.arc(-20, 6, 9, 0, Math.PI*2); ctx.stroke();
+                    for (let i=0;i<4;i++){ const a=i*Math.PI/4;
+                        ctx.beginPath(); ctx.moveTo(-20-Math.cos(a)*9, 6-Math.sin(a)*9); ctx.lineTo(-20+Math.cos(a)*9, 6+Math.sin(a)*9); ctx.stroke(); }
+                    // kaya yığını
+                    ctx.fillStyle = '#78716c';
+                    [[26,10,6],[34,14,5],[28,18,4]].forEach(([x,y,r])=>{ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); });
+                    break;
+                }
+                case 'minefield': {
+                    // Mayın Tarlası — kum torbası çevrili küçük depo + yerdeki mayınlar
+                    ctx.fillStyle = '#4a4a3a';
+                    ctx.beginPath(); ctx.ellipse(0, 16, 32, 12, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#8a7f5c';
+                    for (let i=-2;i<=2;i++){ ctx.beginPath(); ctx.ellipse(i*11, 8, 7, 5, 0, 0, Math.PI*2); ctx.fill(); }
+                    ctx.strokeStyle = '#5b5233'; ctx.lineWidth = 1; ctx.stroke();
+                    ctx.fillStyle = '#3f3f46'; ctx.fillRect(-16, -18, 32, 24);
+                    ctx.strokeStyle = '#18181b'; ctx.lineWidth = 1.5; ctx.strokeRect(-16, -18, 32, 24);
+                    ctx.fillStyle = '#dc2626'; ctx.fillRect(-13, -15, 26, 5);
+                    ctx.fillStyle = '#facc15'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign='center';
+                    ctx.fillText('☠', 0, -1); ctx.textAlign='left';
+                    ctx.fillStyle = '#27272a';
+                    [[-24,-4],[24,-2],[-8,-24],[14,-24]].forEach(([x,y])=>{
+                        ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+                        ctx.strokeStyle='#ef4444'; ctx.lineWidth=1;
+                        ctx.beginPath(); ctx.moveTo(x,y-4); ctx.lineTo(x,y-7); ctx.stroke(); });
+                    break;
+                }
+                case 'bell': {
+                    // Çan Kulesi — taş kaide, ahşap çatkı, altın çan
+                    ctx.fillStyle = '#8b93a1'; ctx.fillRect(-16, -6, 32, 22);
+                    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.strokeRect(-16, -6, 32, 22);
+                    ctx.fillStyle = '#5b3a1a';
+                    ctx.fillRect(-14, -30, 4, 26); ctx.fillRect(10, -30, 4, 26);
+                    ctx.fillRect(-16, -34, 32, 5);
+                    ctx.fillStyle = '#7f1d1d';
+                    ctx.beginPath(); ctx.moveTo(-20, -34); ctx.lineTo(0, -46); ctx.lineTo(20, -34); ctx.closePath(); ctx.fill();
+                    // çan
+                    const sal = Math.sin(Date.now()/260) * (this && this._pulse ? 0.35 : 0.08);
+                    ctx.save(); ctx.translate(0, -30); ctx.rotate(sal);
+                    ctx.fillStyle = '#d4a017';
+                    ctx.beginPath(); ctx.moveTo(-9, 12); ctx.quadraticCurveTo(-9, -6, 0, -8);
+                    ctx.quadraticCurveTo(9, -6, 9, 12); ctx.closePath(); ctx.fill();
+                    ctx.strokeStyle = '#7a5f12'; ctx.lineWidth = 1.2; ctx.stroke();
+                    ctx.fillStyle = '#7a5f12'; ctx.beginPath(); ctx.arc(0, 14, 2.4, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                    break;
+                }
+                case 'beacon': {
+                    // Fener Kulesi — dar taş kule, tepede yanan fener
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.beginPath(); ctx.moveTo(-14, 16); ctx.lineTo(-8, -26); ctx.lineTo(8, -26); ctx.lineTo(14, 16); ctx.closePath(); ctx.fill();
+                    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+                    for (let y=-20;y<12;y+=9){ ctx.strokeStyle='#64748b'; ctx.lineWidth=1;
+                        ctx.beginPath(); ctx.moveTo(-12+ (y+26)*0.02, y); ctx.lineTo(12-(y+26)*0.02, y); ctx.stroke(); }
+                    ctx.fillStyle = '#1e293b'; ctx.fillRect(-10, -34, 20, 9);
+                    // ışık
+                    const par = 0.6 + Math.sin(Date.now()/180) * 0.4;
+                    ctx.save(); ctx.globalAlpha = par;
+                    const lg = ctx.createRadialGradient(0, -30, 2, 0, -30, 20);
+                    lg.addColorStop(0, '#fff7d6'); lg.addColorStop(0.5, '#fbbf24'); lg.addColorStop(1, 'rgba(251,191,36,0)');
+                    ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(0, -30, 20, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                    ctx.fillStyle = '#fde68a'; ctx.beginPath(); ctx.arc(0, -30, 5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#7f1d1d';
+                    ctx.beginPath(); ctx.moveTo(-12, -38); ctx.lineTo(0, -46); ctx.lineTo(12, -38); ctx.closePath(); ctx.fill();
                     break;
                 }
                 case 'archery': {
@@ -2388,8 +2546,8 @@
             this.kind = kind || 'melee';           // melee | archer
             this.mode = mode || 'regular';
             const m = TRAIN_MODES[this.mode] || TRAIN_MODES.regular;
-            const baseHp  = isKnight ? 500 : (this.kind === 'archer' ? 170 : 250);
-            const baseDmg = isKnight ? 25  : (this.kind === 'archer' ? 16  : 12);
+            const baseHp  = isKnight ? 500 : (this.kind === 'archer' ? 170 : (this.kind === 'siege' ? 200 : 250));
+            const baseDmg = isKnight ? 25  : (this.kind === 'archer' ? 16  : (this.kind === 'siege' ? 34  : 12));
             this.hp = Math.round(baseHp * m.q);
             this.dmg = Math.round(baseDmg * m.q * 10) / 10;
             this.isKnight = isKnight;
@@ -2399,14 +2557,15 @@
             this.attackFrame = 0;
             this.moving = false;
             this.rallyX = x; this.rallyY = y;   // "savun" emrinin nöbet noktası
-            this.speedMul = (TRAIN_MODES[this.mode] || TRAIN_MODES.regular).spd;
+            this.speedMul = (TRAIN_MODES[this.mode] || TRAIN_MODES.regular).spd * (this.kind === 'siege' ? 0.62 : 1);
         }
         // Hedefe dogru yuru; menzile girince vur.
         // Okcular yaklasmaz: ~150px'te durup ok atar.
         _seek(tx, ty, spd, hitR, target) {
             if (this.shootCd > 0) this.shootCd--;
-            const archer = this.kind === 'archer';
-            const keep = archer ? 150 : 0;
+            const archer = this.kind === 'archer' || this.kind === 'siege';
+            const kusatma = this.kind === 'siege';
+            const keep = kusatma ? 265 : (archer ? 150 : 0);
             const dx = tx - this.x, dy = ty - this.y;
             const d = Math.hypot(dx, dy);
             if (archer && target) {
@@ -2419,8 +2578,13 @@
                     this.moving = true;
                 } else if (Math.abs(dx) > 1) this.facing = dx > 0 ? 1 : -1;
                 if (d < keep + 40 && this.shootCd <= 0) {
-                    projectiles.push(new Projectile(this.x, this.y - 6, target, false, this.dmg * 2.2, '#d6c08a'));
-                    this.shootCd = 46;
+                    if (kusatma) {
+                        projectiles.push(new Projectile(this.x, this.y - 8, target, false, this.dmg * 3.4, '#8a6a3a', 78));
+                        this.shootCd = 128;       // ağır ve yavaş
+                    } else {
+                        projectiles.push(new Projectile(this.x, this.y - 6, target, false, this.dmg * 2.2, '#d6c08a'));
+                        this.shootCd = 46;
+                    }
                     this.attackFrame = 8;
                 }
                 return;
@@ -2989,11 +3153,12 @@
     }
 
     class Projectile {
-        constructor(x, y, target, isArrow, dmg, color = null) {
+        constructor(x, y, target, isArrow, dmg, color = null, aoe = 0) {
             this.x = x; this.y = y; this.dmg = dmg;
             let a = Math.atan2(target.y-y, target.x-x);
             this.vx = Math.cos(a)*20; this.vy = Math.sin(a)*20;
             this.isArrow = isArrow;
+            this.aoe = aoe;                       // >0 ise çarpınca çevreye de vurur
             this.color = color || (isArrow ? '#fbbf24' : '#f43f5e');
         }
         update() { this.x += this.vx; this.y += this.vy; }
@@ -4072,7 +4237,19 @@
             const sy = fx.y + camera.y;
             const t = fx.life / fx.maxLife;
             if (!window.RENDER3D) {
-            if (fx.type === 'meteorFall') {
+            if (fx.type === 'boom') {
+                // Kuşatma / mancınık patlaması: genişleyen toz halkası
+                const g = 1 - t;
+                ctx.save();
+                ctx.globalAlpha = 0.45 * t;
+                ctx.fillStyle = '#c9a227';
+                ctx.beginPath(); ctx.arc(sx, sy, fx.r * (0.35 + g * 0.75), 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 0.9 * t;
+                ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(sx, sy, fx.r * (0.4 + g * 0.8), 0, Math.PI*2); ctx.stroke();
+                ctx.restore();
+            }
+            else if (fx.type === 'meteorFall') {
                 // Düşen ateş topu - yukarıdan gelir
                 const yOff = -600 * t;
                 ctx.save();
@@ -5415,6 +5592,27 @@
         legend_light:{dmg:2.0, rate:0.7, aoe:1.4}, world_shock:{dmg:1.6, aoe:2.2},
 
         piercing_c:{dmg:1.5}, meteor_strike:{dmg:2.0, aoe:1.7}, fireball:{dmg:1.6, aoe:1.5},
+
+        // ── Yeni binalar ──
+        sw_heavy:{dmg:1.8}, sw_crew:{sldHp:1.3, prod:1.6},
+        sw_range:{rng:1.4}, sw_fast:{rate:0.65},
+        sw_shrap:{aoe:1.8}, sw_pitch:{dmg:1.5, aoe:1.3},
+        sw_legend:{dmg:1.9, aoe:1.5, rng:1.25}, sw_quake:{aoe:2.4, dmg:1.3},
+
+        mf_power:{dmg:1.9}, mf_many:{aoe:1.5, prod:1.4},
+        mf_fast:{rate:0.6}, mf_wide:{rng:1.7},
+        mf_frag:{aoe:1.7, dmg:1.2}, mf_toxic:{slow:1.7, dmg:1.3},
+        mf_legend:{dmg:2.0, aoe:1.6}, mf_chain:{aoe:2.3, dmg:1.4},
+
+        bl_loud:{rng:1.5}, bl_fast:{rate:0.6},
+        bl_heal:{heal:1.9}, bl_moral:{sldSpd:1.35, heal:1.2},
+        bl_aura:{auraBonus:0.30}, bl_iron:{hp:2.2},
+        bl_legend:{heal:1.9, auraBonus:0.25, rng:1.3}, bl_thunder:{dmg:1.9, aoe:1.5},
+
+        bc_bright:{dmg:1.7}, bc_far:{rng:1.5},
+        bc_quick:{rate:0.6}, bc_aura:{auraBonus:0.28},
+        bc_burn:{dmg:1.8, aoe:1.3}, bc_slow:{slow:1.7},
+        bc_legend:{dmg:2.0, rng:1.35, auraBonus:0.2}, bc_all:{aoe:2.0, rng:1.3},
         rapid_c:{rate:0.6}, corrosive:{dmg:1.5, slow:1.4},
         legend_cat:{dmg:2.0, aoe:1.7, rng:1.25}, inferno_c:{dmg:1.7, aoe:1.9},
 
@@ -5472,6 +5670,30 @@
             [{id:'mint', t:{tr:'🪙 Darphane', en:'🪙 Mint'}, d:{tr:'+altın 2x', en:'+gold 2x'}}, {id:'jeweler', t:{tr:'💍 Kuyumcu', en:'💍 Jeweler'}, d:{tr:'kale +HP', en:'castle +HP'}}],
             [{id:'bank', t:{tr:'🏛️ Banka', en:'🏛️ Bank'}, d:{tr:'çevre +%30', en:'nearby +30%'}}, {id:'taxman', t:{tr:'📜 Vergi', en:'📜 Tax'}, d:{tr:'+altın/öldürme', en:'+gold on kill'}}],
             [{id:'legend_gold', t:{tr:'👑 Midas', en:'👑 Midas'}, d:{tr:'efsane', en:'legend'}}, {id:'dragon_hoard', t:{tr:'🐉 Ejder Hazinesi', en:'🐉 Dragon Hoard'}, d:{tr:'devasa altın', en:'huge gold'}}]
+        ],
+        siegeworks: [
+            [{id:'sw_heavy', t:{tr:'🪨 Ağır Gülle', en:'🪨 Heavy Shot'}, d:{tr:'+hasar', en:'+damage'}}, {id:'sw_crew', t:{tr:'👷 Kalabalık Ekip', en:'👷 Big Crew'}, d:{tr:'+birlik', en:'+units'}}],
+            [{id:'sw_range', t:{tr:'📐 Uzun Kol', en:'📐 Long Arm'}, d:{tr:'+menzil', en:'+range'}}, {id:'sw_fast', t:{tr:'⚙️ Vinç Sistemi', en:'⚙️ Winch'}, d:{tr:'+atış hızı', en:'+fire rate'}}],
+            [{id:'sw_shrap', t:{tr:'💥 Şarapnel', en:'💥 Shrapnel'}, d:{tr:'+alan', en:'+area'}}, {id:'sw_pitch', t:{tr:'🔥 Zift Güllesi', en:'🔥 Pitch Shot'}, d:{tr:'yakar', en:'burns'}}],
+            [{id:'sw_legend', t:{tr:'👑 Kuşatma Ustası', en:'👑 Siege Master'}, d:{tr:'efsane', en:'legend'}}, {id:'sw_quake', t:{tr:'🌋 Sarsıntı', en:'🌋 Quake'}, d:{tr:'devasa alan', en:'huge area'}}]
+        ],
+        minefield: [
+            [{id:'mf_power', t:{tr:'💣 Güçlü Barut', en:'💣 Strong Powder'}, d:{tr:'+patlama hasarı', en:'+blast damage'}}, {id:'mf_many', t:{tr:'🧰 Seri Üretim', en:'🧰 Mass Production'}, d:{tr:'+mayın sayısı', en:'+mine count'}}],
+            [{id:'mf_fast', t:{tr:'⏱️ Hızlı Döşeme', en:'⏱️ Quick Lay'}, d:{tr:'+döşeme hızı', en:'+lay speed'}}, {id:'mf_wide', t:{tr:'🗺️ Geniş Saha', en:'🗺️ Wide Field'}, d:{tr:'+yayılma', en:'+spread'}}],
+            [{id:'mf_frag', t:{tr:'🔩 Çivili Mayın', en:'🔩 Nail Mine'}, d:{tr:'+alan', en:'+area'}}, {id:'mf_toxic', t:{tr:'☠️ Zehirli Duman', en:'☠️ Toxic Fume'}, d:{tr:'yavaşlatır', en:'slows'}}],
+            [{id:'mf_legend', t:{tr:'👑 Ölüm Tarlası', en:'👑 Death Field'}, d:{tr:'efsane', en:'legend'}}, {id:'mf_chain', t:{tr:'⛓️ Zincirleme', en:'⛓️ Chain Blast'}, d:{tr:'devasa patlama', en:'huge blast'}}]
+        ],
+        bell: [
+            [{id:'bl_loud', t:{tr:'📣 Gür Ses', en:'📣 Loud Toll'}, d:{tr:'+menzil', en:'+range'}}, {id:'bl_fast', t:{tr:'⏱️ Sık Çalış', en:'⏱️ Rapid Toll'}, d:{tr:'+nabız hızı', en:'+pulse rate'}}],
+            [{id:'bl_heal', t:{tr:'✨ Şifalı Ezgi', en:'✨ Healing Chime'}, d:{tr:'+iyileştirme', en:'+healing'}}, {id:'bl_moral', t:{tr:'🎖️ Savaş Marşı', en:'🎖️ War March'}, d:{tr:'+asker hızı', en:'+soldier speed'}}],
+            [{id:'bl_aura', t:{tr:'🌟 Kutsal Yankı', en:'🌟 Holy Echo'}, d:{tr:'+aura', en:'+aura'}}, {id:'bl_iron', t:{tr:'🛡️ Demir Çan', en:'🛡️ Iron Bell'}, d:{tr:'+dayanıklılık', en:'+durability'}}],
+            [{id:'bl_legend', t:{tr:'👑 Zafer Çanı', en:'👑 Victory Bell'}, d:{tr:'efsane', en:'legend'}}, {id:'bl_thunder', t:{tr:'⛈️ Gök Gürültüsü', en:'⛈️ Thunder Toll'}, d:{tr:'hasar verir', en:'deals damage'}}]
+        ],
+        beacon: [
+            [{id:'bc_bright', t:{tr:'🔆 Parlak Işık', en:'🔆 Bright Light'}, d:{tr:'+işaret gücü', en:'+mark power'}}, {id:'bc_far', t:{tr:'🔭 Uzak Görüş', en:'🔭 Far Sight'}, d:{tr:'+menzil', en:'+range'}}],
+            [{id:'bc_quick', t:{tr:'⏱️ Hızlı Tarama', en:'⏱️ Quick Scan'}, d:{tr:'+işaretleme hızı', en:'+mark rate'}}, {id:'bc_aura', t:{tr:'🌟 Kılavuz Ateşi', en:'🌟 Guiding Fire'}, d:{tr:'+aura', en:'+aura'}}],
+            [{id:'bc_burn', t:{tr:'🔥 Yakıcı Hüzme', en:'🔥 Searing Beam'}, d:{tr:'+hasar', en:'+damage'}}, {id:'bc_slow', t:{tr:'🧊 Kör Edici', en:'🧊 Blinding'}, d:{tr:'yavaşlatır', en:'slows'}}],
+            [{id:'bc_legend', t:{tr:'👑 Kıyamet Feneri', en:'👑 Doom Beacon'}, d:{tr:'efsane', en:'legend'}}, {id:'bc_all', t:{tr:'🌐 Toplu İşaret', en:'🌐 Mass Mark'}, d:{tr:'geniş etki', en:'wide effect'}}]
         ],
         archery: [
             [{id:'knights', t:{tr:'🎯 Nişancı', en:'🎯 Marksman'}, d:{tr:'+güçlü ok', en:'+strong shot'}}, {id:'swarm', t:{tr:'👥 Okçu Ordusu', en:'👥 Archer Host'}, d:{tr:'+çok okçu', en:'+many archers'}}],
@@ -5734,7 +5956,9 @@
             archery:{tr:'Okçu Kışlası',en:'Archery Range'},temple:{tr:'Mabet',en:'Temple'},tower:{tr:'Kule',en:'Tower'},
             mage:{tr:'Büyücü Kulesi',en:'Mage Tower'},cannon:{tr:'Topçu',en:'Cannon'},hospital:{tr:'Şifahane',en:'Hospital'},
             lightning:{tr:'Şimşek Kulesi',en:'Lightning Tower'},catapult:{tr:'Mancınık',en:'Catapult'},
-            frost:{tr:'Buz Kulesi',en:'Frost Tower'},poison:{tr:'Zehir Kulesi',en:'Poison Tower'},laser:{tr:'Lazer Kulesi',en:'Laser Tower'}};
+            frost:{tr:'Buz Kulesi',en:'Frost Tower'},poison:{tr:'Zehir Kulesi',en:'Poison Tower'},laser:{tr:'Lazer Kulesi',en:'Laser Tower'},
+            siegeworks:{tr:'Mancınık Atölyesi',en:'Siege Workshop'},minefield:{tr:'Mayın Tarlası',en:'Minefield'},
+            bell:{tr:'Çan Kulesi',en:'Bell Tower'},beacon:{tr:'Fener Kulesi',en:'Beacon'}};
         document.getElementById('upgrade-building-name').innerText =
             (BINA_AD[b.type] ? LT(BINA_AD[b.type]) : b.type).toUpperCase();
         document.getElementById('upgrade-building-level').innerText = LT({tr:'Seviye ',en:'Level ',de:'Stufe ',fr:'Niveau ',zh:'等级 '}) + b.level;
@@ -6265,6 +6489,17 @@
         buildings.forEach((b, i) => { if(b.hp <= 0) buildings.splice(i, 1); else b.update(), b.draw(); });
         if (orderMark) orderMark.life++;
         drawOrderMark();
+        // Döşenmiş mayınlar (2D)
+        if (!window.RENDER3D) buildings.forEach(b => {
+            if (b.type !== 'minefield' || !b.mines) return;
+            b.mines.forEach(m => {
+                const mx = m.x + camera.x, my = m.y + camera.y;
+                ctx.fillStyle = '#27272a';
+                ctx.beginPath(); ctx.ellipse(mx, my, 6, 4, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = (m.arm > 30 && Math.floor(Date.now()/400) % 2) ? '#ef4444' : '#7f1d1d';
+                ctx.beginPath(); ctx.arc(mx, my - 1.5, 2, 0, Math.PI*2); ctx.fill();
+            });
+        });
         soldiers.forEach(s => { s.update(); s.draw(); });
         if (cycle % 20 === 0) updateOrderBar();
         if (typeof tickResearch === 'function') tickResearch();
@@ -6382,8 +6617,22 @@
             p.update(); p.draw();
             enemies.forEach(e => {
                 if(Math.hypot(p.x-e.x, p.y-e.y) < 25) {
-                    if (e.takeProjectile) e.takeProjectile(p.dmg);
-                    else e.hp -= p.dmg;
+                    const iz = e.marked || 1;      // 🗼 Fener işareti hasarı artırır
+                    if (e.takeProjectile) e.takeProjectile(p.dmg * iz);
+                    else e.hp -= p.dmg * iz;
+                    // Alan hasarı (mancınık / kuşatma birliği)
+                    if (p.aoe > 0){
+                        const ex = p.x, ey = p.y;
+                        enemies.forEach(o => {
+                            if (o === e) return;
+                            const d = Math.hypot(o.x-ex, o.y-ey);
+                            if (d < p.aoe){
+                                const pay = p.dmg * 0.6 * (1 - d/p.aoe);
+                                if (o.takeProjectile) o.takeProjectile(pay); else o.hp -= pay;
+                            }
+                        });
+                        try { visualEffects.push({type:'boom', x:ex, y:ey, r:p.aoe, life:16, maxLife:16}); } catch(err){}
+                    }
                     projectiles.splice(pi, 1);
                     sfx.hit();
                 }
@@ -7110,6 +7359,51 @@
                 g.add(mesh(G.sph, M.stoneD, 9, 9, 9, 0, 55, -16));                   // sepetteki kaya
                 g.add(mesh(G.box, M.stoneD, 13, 12, 13, 0, 20, 9));                  // karşı ağırlık
                 g.userData.h = 64; break;
+            }
+            case 'siegeworks': {
+                g.add(mesh(G.box, M.woodD, 60, 4, 48, 0, 2, 0));                     // zemin
+                for(const [x,z] of [[-22,-16],[-22,16],[8,-16],[8,16]])
+                    g.add(mesh(G.box, M.wood, 4, 26, 4, x, 15, z));                  // direkler
+                g.add(mesh(G.box, M.woodD, 40, 5, 42, -7, 30, 0));                   // çatı
+                const kol = mesh(G.box, M.wood, 5, 40, 5, 12, 22, 0); kol.rotation.x = -0.7; g.add(kol);
+                g.add(mesh(G.cyl, M.woodD, 11, 6, 11, 12, 40, -12));                 // sepet
+                g.add(mesh(G.sph, M.stoneD, 8, 8, 8, 12, 44, -12));                  // kaya
+                const cark = mesh(G.cyl, M.woodD, 16, 4, 16, -20, 9, 14); cark.rotation.x = Math.PI/2; g.add(cark);
+                for(const [x,z] of [[24,10],[30,16],[26,20]])
+                    g.add(mesh(G.sph, M.stone, 8, 8, 8, x, 5, z));                   // kaya yığını
+                g.userData.h = 44; break;
+            }
+            case 'minefield': {
+                g.add(mesh(G.box, M.dark, 34, 22, 30, 0, 11, 0));                    // cephanelik
+                g.add(mesh(G.box, M.glowR, 24, 5, 1.5, 0, 18, 15.5));                // kırmızı bant
+                for(const [x,z] of [[-26,-18],[26,-14],[-16,22],[20,20],[0,28]]){    // kum torbaları
+                    g.add(mesh(G.sph, M.wood, 12, 8, 12, x, 4, z));
+                }
+                for(const [x,z] of [[-34,4],[34,8],[-10,-30],[16,-30]]){             // döşenmiş mayınlar
+                    g.add(mesh(G.cyl, M.dark, 8, 3, 8, x, 2, z));
+                    g.add(mesh(G.sph, M.glowR, 3, 3, 3, x, 4, z));
+                }
+                g.userData.h = 26; break;
+            }
+            case 'bell': {
+                g.add(mesh(G.box, M.stone, 34, 22, 34, 0, 11, 0));                   // kaide
+                for(const [x,z] of [[-12,-12],[-12,12],[12,-12],[12,12]])
+                    g.add(mesh(G.box, M.wood, 4, 30, 4, x, 37, z));                  // çatkı
+                g.add(mesh(G.box, M.wood, 34, 4, 34, 0, 53, 0));
+                g.add(mesh(G.cone, M.roof, 42, 18, 42, 0, 64, 0));                   // çatı
+                const can = mesh(G.cyl, M.gold, 20, 20, 20, 0, 40, 0);
+                g.add(can); g.userData.pulse = can;                                  // çan (nabızda parlar)
+                g.add(mesh(G.sph, M.gold, 7, 7, 7, 0, 29, 0));                       // tokmak
+                g.userData.h = 74; break;
+            }
+            case 'beacon': {
+                g.add(mesh(G.box, M.stone, 26, 20, 26, 0, 10, 0));                   // taban
+                g.add(mesh(G.cyl, M.stone, 20, 46, 20, 0, 43, 0));                   // gövde
+                g.add(mesh(G.cyl, M.stoneD, 26, 5, 26, 0, 68, 0));                   // korkuluk
+                const lamba = mesh(G.sph, M.glowY, 15, 15, 15, 0, 78, 0);
+                g.add(lamba); g.userData.pulse = lamba;                              // fener
+                g.add(mesh(G.cone, M.roof, 26, 14, 26, 0, 90, 0));                   // külah
+                g.userData.h = 96; break;
             }
             case 'archery': {
                 g.add(mesh(G.box, M.woodD, 62, 4, 50, 0, 2, 0));                     // talim sahası zemini
