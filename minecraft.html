@@ -1101,6 +1101,7 @@ function spawnPlayerSafely() {
 }
 
 function switchDimension() {
+    if (typeof questProgress === 'function') questProgress('buildPortal', 1);
     worlds[currentDimension] = world;
     currentDimension = currentDimension === 0 ? 1 : 0;
     if (!worlds[currentDimension]) worlds[currentDimension] = currentDimension === 1 ? generateNether() : generateWorld();
@@ -1194,8 +1195,13 @@ function consumeCraftingMaterials() {
 }
 
 function addToInventory(type, count) {
-    // Quest hook: crafting/obtaining a wooden sword
-    if (typeof questProgress === 'function' && type === BLOCKS.WOODEN_SWORD) questProgress('craftSword', 1);
+    // Görev kancaları — eşya eline geçtiği anda tetiklenir
+    if (typeof questProgress === 'function') {
+        if (type === BLOCKS.WOODEN_SWORD) questProgress('craftSword', 1);
+        if (type === BLOCKS.DIAMOND) questProgress('findDiamond', count);
+        if (type === BLOCKS.IRON_SWORD || type === BLOCKS.DIAMOND_SWORD) questProgress('strongSword', 1);
+        if (type === BLOCKS.GLOWSTONE) questProgress('netherGlow', count);
+    }
     for(let i=0; i<HOTBAR_SIZE; i++) { if(hotbar[i] && hotbar[i].type === type && hotbar[i].count < 64) { let add = Math.min(64 - hotbar[i].count, count); hotbar[i].count += add; count -= add; if(count <= 0) return true; } }
     for(let i=0; i<HOTBAR_SIZE; i++) { if(!hotbar[i]) { hotbar[i] = {type, count}; return true; } }
     for(let i=0; i<INVENTORY_SIZE; i++) { if(!inventory[i]) { inventory[i] = {type, count}; return true; } }
@@ -1326,8 +1332,15 @@ window.addEventListener('mousedown', e => {
                         else if (hItem.type === BLOCKS.IRON_SWORD) dmg = 25; else if (hItem.type === BLOCKS.GOLDEN_SWORD) dmg = 35;
                         else if (hItem.type === BLOCKS.DIAMOND_SWORD) dmg = 50; else if (hItem.type >= 11 && hItem.type <= 14 || hItem.type >= 43 && hItem.type <= 48) dmg = 8;
                     }
+                    if (ent.type === 'baldric' && ent.invuln > 0) {
+                        // Faz geçişinde kalkanı var — vuruş sekiyor
+                        playSound('hit'); hitEntity = true;
+                        showBossToast('Kalkan aktif! Önce garnizonu temizle.');
+                        continue;
+                    }
                     ent.hp -= dmg;
-                    ent.vx = (ent.x > player.x ? 1 : -1) * 8; ent.vy = -4; // Geri tepme (Knockback)
+                    if (ent.type === 'baldric') baldricPhaseCheck(ent);
+                    ent.vx = (ent.x > player.x ? 1 : -1) * (ent.type === 'baldric' ? 4 : 8); ent.vy = -4; // Geri tepme
                     playSound('hit'); hitEntity = true;
 
                     if (ent.hp <= 0) {
@@ -1355,6 +1368,7 @@ window.addEventListener('mousedown', e => {
             for (let ent of entities) {
                 if (ent.type === 'villager' && Math.abs(mx - (ent.x + ent.w/2)) < ent.w && Math.abs(my - (ent.y + ent.h/2)) < ent.h && Math.hypot(pCenterX - ent.x, pCenterY - ent.y) < BLOCK_SIZE * 4) {
                     uiState.isOpen = true; uiState.mode = 'trade'; uiState.targetEntity = ent;
+                    if (typeof questProgress === 'function') questProgress('tradeVillager', 1);
                     hitEntity = true; break;
                 }
             }
@@ -1386,6 +1400,7 @@ window.addEventListener('mousedown', e => {
                             let placeType = hItem.type;
                             if (placeType === BLOCKS.REDSTONE_DUST) placeType = BLOCKS.REDSTONE_WIRE_OFF; 
                             world[bx][by] = placeType;
+                            if (placeType === BLOCKS.GLOWSTONE && currentDimension === 0 && typeof questProgress === 'function') questProgress('lightTheWay', 1);
                             needsRedstoneUpdate = true; 
                             hItem.count--; if(hItem.count <= 0) hotbar[selectedHotbar] = null;
                             playSound('place', placeType);
@@ -1500,6 +1515,7 @@ function updatePhysics() {
                     furnaceSlots.input.count--; if (furnaceSlots.input.count <= 0) furnaceSlots.input = null;
                     furnaceSlots.fuel.count--; if (furnaceSlots.fuel.count <= 0) furnaceSlots.fuel = null;
                     if (!furnaceSlots.result) furnaceSlots.result = { type: resultType, count: 1 }; else furnaceSlots.result.count++;
+                    if (resultType === BLOCKS.IRON_INGOT && typeof questProgress === 'function') questProgress('smeltIron', 1);
                 }
             } else smeltProgress = 0;
         } else smeltProgress = 0;
@@ -1605,16 +1621,25 @@ function updatePhysics() {
                 const boss = ent.type === 'baldric';
                 const reach = boss ? 18 : 16;
                 if (!ent.active) { ent.vx = 0; }
+                else if (boss && ent.retreatT > 0) {
+                    // Faz geçişi: tahtına çekilip iyileşiyor, kalkanı açık
+                    ent.retreatT--;
+                    const hedef = ent.anchorX;
+                    ent.vx = Math.abs(hedef - ent.x) > 6 ? (hedef > ent.x ? 1 : -1) * 3.4 : 0;
+                    if (ent.retreatT % 12 === 0) ent.hp = Math.min(ent.maxHp, ent.hp + 4);
+                    if (ent.retreatT === 0) { ent.invuln = 0; showBossToast('Baldric kalkanını indirdi — ŞİMDİ!'); }
+                }
                 else {
+                    if (boss) baldricAbilities(ent);
                     const foe = nearestTarget(ent, ['ally'], BLOCK_SIZE * reach);
                     let tx, ty, tref;
                     const pd = Math.hypot(player.x - ent.x, player.y - ent.y);
                     if (foe) { const fd = Math.hypot(foe.x - ent.x, foe.y - ent.y); if (fd < pd) { tx = foe.x; ty = foe.y; tref = foe; } }
                     if (tref === undefined) { tx = player.x; ty = player.y; tref = 'player'; }
-                    const spd = boss ? 1.9 : 2.3;
+                    const spd = boss ? 1.9 * (ent.rage || 1) : 2.3;
                     ent.vx = (tx > ent.x ? 1 : -1) * spd;
                     if (Math.abs(tx - ent.x) < BLOCK_SIZE*1.3 && Math.abs(ty - ent.y) < BLOCK_SIZE*1.7 && ent.atkCd <= 0) {
-                        const dmg = boss ? 22 : 12;
+                        const dmg = boss ? Math.round(22 * (ent.rage || 1)) : 12;
                         if (tref === 'player') {
                             if (player.iframe <= 0) { player.hp -= dmg; player.iframe = boss ? 32 : 26; playSound('hurt'); updateHealthUI(); player.vx = (player.x > ent.x ? 1 : -1) * (boss?12:8); player.vy = -4; }
                         } else { tref.hp -= dmg; tref.vx = (tref.x > ent.x ? 1 : -1) * 5; tref.vy = -3; }
@@ -2185,6 +2210,7 @@ function draw() {
         // Oyuncuyu Çiz
         drawPlayer();
 
+        if (typeof drawBossOverlay === 'function') drawBossOverlay();
         drawUI();
     } catch(err) { console.error("Çizim hatası: ", err); }
 }
@@ -2200,8 +2226,8 @@ let baldricFortressX = 0;     // Baldric kalesinin sol kenarı (blok)
 let battleStarted = false;    // Epik savaş tetiklendi mi
 let battleWon = false;
 let allyCount = 0;            // Toplanan müttefik asker sayısı
-const RECRUIT_WOOD = 8;       // Asker başına odun
-const RECRUIT_IRON = 4;       // Asker başına demir külçe
+const RECRUIT_WOOD = 3;       // Asker başına odun (eskiden 8 — çok uzundu)
+const RECRUIT_IRON = 1;       // Asker başına demir külçe (eskiden 4)
 let mcDialogQueue = [];
 let mcDialogIndex = 0;
 let mcDialogOnComplete = null;
@@ -2209,15 +2235,22 @@ let mcDialogChoiceActive = false;
 
 // Quests
 const QUESTS = [
-    { id:'talkKing', title:'Kral ile Konuş', desc:'Buz Kalesi\'ndeki Kral Varran\'a yaklaş ve sağ tık ile konuş.', goal:1, progress:0 },
-    { id:'mineStone', title:'Taş Topla', desc:'Hayatta kalmak için 10 Taş kır. Kale\'nin altına bak — buz altında taş vardır.', goal:10, progress:0 },
-    { id:'craftSword', title:'Bir Kılıç Yap', desc:'Çalışma masasında bir Tahta Kılıç yap. Önce odun bul (kalenin doğusunda ağaç var).', goal:1, progress:0 },
-    { id:'killZombies', title:'3 Zombi Yen', desc:'Baldric\'in keşif kolundan (zombi) 3 tane öldür.', goal:3, progress:0 },
-    { id:'meetBuddy', title:'Kanka Theron\'u Bul', desc:'Kalenin hemen YANINDAKİ köye git. Eski dostun Theron orada. Sağ tık ile konuş.', goal:1, progress:0 },
-    { id:'recruitArmy', title:'Ordunu Topla', desc:'Theron\'dan en az 3 asker al. Her asker: '+RECRUIT_WOOD+' Odun + '+RECRUIT_IRON+' Demir Külçe. Madenden demir, ağaçtan odun topla.', goal:3, progress:0 },
-    { id:'reachBaldric', title:'Baldric\'in Kalesine Yürü', desc:'Askerlerinle batıya yürü (orman bölgesi). Baldric\'in kara kalesini bul.', goal:1, progress:0 },
-    { id:'epicBattle', title:'EPİK SAVAŞ: Baldric\'i Yık', desc:'Baldric ve ordusunu yok et! Askerlerin yanında savaş, Baldric\'i öldür.', goal:1, progress:0 },
-    { id:'storyEnd', title:'Krala Zaferi Bildir', desc:'Buz Kalesi\'ne dön ve Kral Varran\'a zaferi müjdele.', goal:1, progress:0 }
+    { id:'talkKing',     title:'Kral ile Konuş',        desc:'Buz Kalesi\'nde Kral Varran\'a sağ tık ile konuş.', goal:1, progress:0 },
+    { id:'mineStone',    title:'Taş Kır',               desc:'Kalenin zemininde 5 taş kır. (Sol tık)', goal:5, progress:0 },
+    { id:'craftSword',   title:'Tahta Kılıç Yap',       desc:'Kaledeki çalışma masasında bir Tahta Kılıç yap.', goal:1, progress:0 },
+    { id:'killZombies',  title:'Keşif Kolunu Püskürt',  desc:'Kale önündeki 3 zombiyi öldür.', goal:3, progress:0 },
+    { id:'meetBuddy',    title:'Theron\'u Bul',         desc:'Kalenin doğusundaki köye git, Theron ile konuş.', goal:1, progress:0 },
+    { id:'smeltIron',    title:'Demir Erit',            desc:'Madende demir cevheri bul, fırında 2 Demir Külçe erit.', goal:2, progress:0 },
+    { id:'recruitArmy',  title:'Ordunu Topla',          desc:'Theron\'dan 3 asker al. Her asker: '+RECRUIT_WOOD+' Odun + '+RECRUIT_IRON+' Demir Külçe.', goal:3, progress:0 },
+    { id:'tradeVillager',title:'Köylüyle Ticaret Yap',  desc:'Köydeki köylüye sağ tık ile ticaret yap — cepheye erzak lazım.', goal:1, progress:0 },
+    { id:'findDiamond',  title:'Elmas Bul',             desc:'Derine in ve 1 Elmas çıkar. Baldric\'e tahta kılıçla gidilmez.', goal:1, progress:0 },
+    { id:'strongSword',  title:'Gerçek Bir Kılıç',      desc:'Demir ya da Elmas Kılıç yap.', goal:1, progress:0 },
+    { id:'buildPortal',  title:'Kadim Geçit',           desc:'4 Obsidyen ile Portal yap, yerleştir ve içine gir.', goal:1, progress:0 },
+    { id:'netherGlow',   title:'Alevden Taş',           desc:'Nether\'dan 3 Glowstone getir — Baldric karanlıkta güçleniyor.', goal:3, progress:0 },
+    { id:'lightTheWay',  title:'Yolu Aydınlat',         desc:'Baldric\'in kalesine giderken 3 Glowstone yerleştir.', goal:3, progress:0 },
+    { id:'reachBaldric', title:'Kara Kaleye Yürü',      desc:'Askerlerinle batıya yürü. Baldric\'in kara kalesini bul.', goal:1, progress:0 },
+    { id:'epicBattle',   title:'SON SAVAŞ: Baldric',    desc:'Baldric\'i yen. Üç aşaması var — kolay ölmeyecek.', goal:1, progress:0 },
+    { id:'storyEnd',     title:'Zaferi Bildir',         desc:'Buz Kalesi\'ne dön ve Kral Varran\'a müjdeyi ver.', goal:1, progress:0 }
 ];
 let activeQuestIdx = -1;
 
@@ -2229,6 +2262,11 @@ function setActiveQuest(idx) {
     }
     updateQuestPanel();
     document.getElementById('mc-quest-panel').classList.add('show');
+    // Oyuncu bu görevi sırası gelmeden tamamladıysa burada kapat, yoksa hikâye kilitlenir
+    const q = QUESTS[idx];
+    if (q && q.progress >= q.goal && q.id !== 'epicBattle') {
+        setTimeout(() => { if (activeQuestIdx === idx) onQuestComplete(q.id); }, 60);
+    }
 }
 function updateQuestPanel() {
     if (activeQuestIdx < 0) return;
@@ -2239,61 +2277,225 @@ function updateQuestPanel() {
     document.getElementById('mc-quest-bar').style.width = pct + '%';
     document.getElementById('mc-quest-progress').innerText = q.progress + ' / ' + q.goal;
 }
+const SIRALI_GOREVLER = ['talkKing', 'meetBuddy', 'reachBaldric', 'epicBattle', 'storyEnd', 'lightTheWay'];
 function questProgress(id, amount) {
     if (!storyMode) return;
     const q = QUESTS.find(x => x.id === id);
     if (!q) return;
+    // Sıralı görevler yalnızca aktifken sayılır
+    if (SIRALI_GOREVLER.includes(id) && (!QUESTS[activeQuestIdx] || QUESTS[activeQuestIdx].id !== id)) return;
     q.progress = Math.min(q.goal, q.progress + amount);
     updateQuestPanel();
     if (q.progress >= q.goal && QUESTS[activeQuestIdx] && QUESTS[activeQuestIdx].id === id) {
         onQuestComplete(id);
     }
 }
+// Her bölümün bitişinde oynanan sahne. Anahtar = biten görevin id'si.
+const QUEST_SCENES = {
+    talkKing: [
+        { c:'\u{1F451}', n:'Kral Varran', t:'Bu kalede yüz yıldır kış bitmedi. Sebebi hava değil — Baldric.' },
+        { c:'\u{1F451}', n:'Kral Varran', t:'Ama silahsız adamı cepheye süremem. Şu zemindeki taşları kır, seni bir işe yarar hale getirelim.' }
+    ],
+    mineStone: [
+        { c:'\u{1F451}', n:'Kral Varran', t:'Eli taş tutuyor demek. Şimdi çalışma masasına geç, kendine bir kılıç yap.' },
+        { c:'\u{1F4DC}', n:'Anlatıcı', t:'(E tuşu envanteri açar. Tahta kılıç: 2 tahta + 1 çubuk.)' }
+    ],
+    craftSword: [
+        { c:'\u{1F451}', n:'Kral Varran', t:'Tahta. Tahta kılıç. Neyse... başlangıç budur.' },
+        { c:'\u{1F9DF}', n:'???', t:'*Kapının dışından hırıltılar geliyor.*' },
+        { c:'\u{1F451}', n:'Kral Varran', t:'Geldiler! Baldric keşif kolunu yollamış. Çık ve göster kendini!' }
+    ],
+    killZombies: [
+        { c:'\u{1F451}', n:'Kral Varran', t:'Aferin. Ama bu sadece keşif koluydu. Baldric\'in ordusu binlerce.' },
+        { c:'\u{1F451}', n:'Kral Varran', t:'Doğudaki köye git. Orada eski bir dostun var: THERON. Sana adam toplar.' }
+    ],
+    meetBuddy: [
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Kanka! Yaşıyorsun demek. Kral yolladı, değil mi? Yüzünden belli.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Asker istiyorsan demir lazım. Kaz, demir cevheri bul, fırında erit. 2 külçe yeter — gerisini ben hallederim.' }
+    ],
+    smeltIron: [
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'İşte bu! Sıcak demir. Şimdi getir bana odunu, sana adam vereyim.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Asker başına 3 odun + 1 külçe. Ucuz, biliyorum — savaşta ölenin fiyatı hep ucuz görünür.' }
+    ],
+    recruitArmy: [
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Ordun hazır! Peşinden gelecekler. Ama aç asker savaşmaz kanka.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Köylüye uğra, ticaret yap. Zümrüt neyse, erzak neyse — cepheye giden yol mideden geçer.' }
+    ],
+    tradeVillager: [
+        { c:'\u{1F9D1}\u200D\u{1F33E}', n:'Köylü', t:'Hmmm! *Zümrütleri sayıyor.* Hmmm.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Erzak tamam. Şimdi kötü haber: Baldric\'in zırhını tahta kılıç kesmiyor. Denedim. Kılıç kırıldı, ben kaçtım.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Derine inmen lazım. Taşın altında, lavın yanında — elmas.' }
+    ],
+    findDiamond: [
+        { c:'\u{1F4DC}', n:'Anlatıcı', t:'Kazmanın ucunda mavi bir ışık parlıyor. Yüz yıldır bu taşı kimse görmemişti.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'ELMAS! Kanka bunu masaya götür ve gerçek bir kılıç yap. Demir de olur ama... elmas varken neden?' }
+    ],
+    strongSword: [
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Tamam. ŞİMDİ ciddiye alınırsın.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Son bir şey. Baldric karanlıkta güçleniyor — kalesinin çevresi hep gece. Işık lazım, bizim dünyada yok.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'4 obsidyen bul, portal yap, öteki tarafa geç. Adı NETHER. Dönebilirsen konuşuruz.' }
+    ],
+    buildPortal: [
+        { c:'\u{1F4DC}', n:'Anlatıcı', t:'Mor ışık seni yutuyor. Kırmızı taş, ateş kokusu, ufukta lav denizleri. Burası Nether.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'*Uzaktan, boğuk* Tavanlarda sarı taşlar var — GLOWSTONE! 3 tane getir, yeter!' }
+    ],
+    netherGlow: [
+        { c:'\u{1F4DC}', n:'Anlatıcı', t:'Elinde ateşten taşlar. Portal geride, sıcaklık ensende. Geri dön.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Getirdin ha! Şimdi batıya yürürken bunları YERE KOY (sağ tık). Karanlıkta yürüyen ordu, ordu olmaz.' }
+    ],
+    lightTheWay: [
+        { c:'\u{1F4DC}', n:'Anlatıcı', t:'Işıklar arkanda bir iz bırakıyor. Kara kaleye giden yol ilk kez görünüyor.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Hazırız kanka. Batıya. Bu sefer kaçmıyorum.' }
+    ],
+    reachBaldric: null,   // triggerEpicBattle kendi sahnesini oynatır
+    epicBattle: [
+        { c:'\u{1F4DC}', n:'Anlatıcı', t:'Baldric dizlerinin üstüne çöküyor. Kara ordusu dağılıyor. Savaş alanı sustu.' },
+        { c:'\u{1F5E1}\uFE0F', n:'Baldric', t:'Yüz yıl... kimse bu kadar yaklaşamadı. Çayım soğudu. Belki de bu kadarı yetti.' },
+        { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Başardık kanka! Hadi Kral Varran\'a müjdeyi verelim.' }
+    ],
+    storyEnd: [
+        { c:'\u{1F451}', n:'Kral Varran', t:'Sağ döndün! Ve Baldric yıkıldı... Yüz yıllık karabasan bitti.' },
+        { c:'\u{1F451}', n:'Kral Varran', t:'Bugünden itibaren sen bir Lord\'sun. Buz Kalesi, köy, askerler — hepsi senin.' },
+        { c:'\u{1F4DC}', n:'Anlatıcı', t:'Kar duruyor. İlk kez, yüz yıl sonra, gökyüzü açılıyor. Dünya artık senin — özgürce keşfet.' }
+    ]
+};
+
 function onQuestComplete(id) {
     const idx = QUESTS.findIndex(x => x.id === id);
     if (idx < 0) return;
-    // Brief toast
     const panel = document.getElementById('mc-quest-panel');
-    panel.style.borderColor = '#10b981';
-    setTimeout(() => panel.style.borderColor = '#3b82f6', 1200);
-    // Advance to next quest, or trigger end dialog if this was the last
-    if (id === 'talkKing')      setActiveQuest(1);
-    else if (id === 'mineStone') setActiveQuest(2);
-    else if (id === 'craftSword') setActiveQuest(3);
-    else if (id === 'killZombies') {
-        setActiveQuest(4);
+    if (panel) { panel.style.borderColor = '#10b981'; setTimeout(() => panel.style.borderColor = '#3b82f6', 1200); }
+
+    if (id === 'epicBattle') battleWon = true;
+
+    const sahne = QUEST_SCENES[id];
+    // Son bölümden sonra paneli kapat — dünya artık serbest
+    const sonraki = () => { setActiveQuest(idx + 1 < QUESTS.length ? idx + 1 : -1); };
+
+    if (id === 'reachBaldric') { sonraki(); triggerEpicBattle(); return; }
+
+    if (sahne) showMcDialog(sahne, sonraki); else sonraki();
+}
+
+// ═══════════════ BALDRIC: ÜÇ FAZLI BOSS ═══════════════
+// Faz 1 (>%66 can): normal kılıç dövüşü.
+// Faz 2 (%66 altı): tahtına çekilir, kalkan açar, garnizon çağırır, hızlanır.
+// Faz 3 (%33 altı): Nether'dan destek gelir, yere vurma (alan hasarı), öfke artar.
+let bossToastT = 0, bossToastMsg = '';
+function showBossToast(msg) { bossToastMsg = msg; bossToastT = 150; }
+
+function baldricPhaseCheck(ent) {
+    if (ent.invuln > 0 || ent.retreatT > 0) return;
+    const oran = ent.hp / ent.maxHp;
+    if (ent.phase === 1 && oran <= 0.66) {
+        ent.phase = 2; ent.rage = 1.25; ent.invuln = 1; ent.retreatT = 300;
+        baldricSummon(ent, 5, 'enemySoldier');
+        showBossToast('FAZ 2 — Baldric garnizonu çağırdı!');
         showMcDialog([
-            { c:'👑', n:'Kral Varran', t:'Aferin! Keşif kolunu püskürttün. Ama Baldric\'in asıl ordusu çok daha büyük. Tek başına gidemezsin.' },
-            { c:'👑', n:'Kral Varran', t:'Kalenin hemen yanındaki köye git. Orada eski bir dostun var: THERON. O sana adam toplar.' }
+            { c:'\u{1F5E1}\uFE0F', n:'Baldric', t:'Fena değil. Ama bu kalede yalnız değilim. GARNİZON! KALKIN!' },
+            { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Kalkanı var, vuruşlar sekiyor! Önce askerlerini biç, sonra ona dön!' }
+        ]);
+    } else if (ent.phase === 2 && oran <= 0.33) {
+        ent.phase = 3; ent.rage = 1.6; ent.invuln = 1; ent.retreatT = 240;
+        baldricSummon(ent, 4, 'zombie');
+        showBossToast('FAZ 3 — Nether\'dan destek geliyor!');
+        showMcDialog([
+            { c:'\u{1F5E1}\uFE0F', n:'Baldric', t:'Yüz yıllık kışı ben getirmedim... ONU getirdim. Öteki taraf bana borçlu!' },
+            { c:'\u{1F4DC}', n:'Anlatıcı', t:'Zeminde mor yarıklar açılıyor. Nether kokusu savaş alanını dolduruyor.' },
+            { c:'\u{1F6E1}\uFE0F', n:'Theron', t:'Son faz kanka! Yere vurduğunda ZIPLA, yoksa dalga seni alır!' }
         ]);
     }
-    else if (id === 'meetBuddy') setActiveQuest(5);
-    else if (id === 'recruitArmy') {
-        setActiveQuest(6);
-        showMcDialog([
-            { c:'🛡️', n:'Theron', t:'İşte ordun hazır! Askerler peşinden gelecek. Şimdi batıya, Baldric\'in kara kalesine yürüyelim.' },
-            { c:'🛡️', n:'Theron', t:'Daha fazla asker istersen geri gel, odun ve demir getir. Ben buradayım kanka.' }
-        ]);
+}
+
+// Boss'un çevresine takviye çıkarır
+function baldricSummon(ent, adet, tip) {
+    const bx = ent.x / BLOCK_SIZE;
+    for (let i = 0; i < adet; i++) {
+        const sx = Math.floor(bx - 6 + i * 3);
+        let sy = 0;
+        for (let y = 0; y < WORLD_HEIGHT; y++) {
+            const b = world[sx]?.[y];
+            if (b !== undefined && b !== BLOCKS.AIR && b !== BLOCKS.WATER && b !== BLOCKS.LAVA) { sy = y - 1; break; }
+        }
+        if (!sy) continue;
+        if (tip === 'zombie') {
+            entities.push({ type:'zombie', x:sx*BLOCK_SIZE, y:(sy-2)*BLOCK_SIZE, w:24, h:48,
+                vx:0, vy:0, hp:35, maxHp:35, dir:1, timer:0, active:true });
+        } else {
+            entities.push({ type:'enemySoldier', x:sx*BLOCK_SIZE, y:(sy-2)*BLOCK_SIZE, w:24, h:48,
+                vx:0, vy:0, hp:50, maxHp:50, dir:1, timer:0, active:true, atkCd:0 });
+        }
     }
-    else if (id === 'reachBaldric') {
-        setActiveQuest(7);
-        triggerEpicBattle();
+    playSound('hit');
+}
+
+// Faz 2+: aralıklı yere vurma (alan hasarı). Zıplayan kurtulur.
+function baldricAbilities(ent) {
+    if (ent.slamCd > 0) { ent.slamCd--; return; }
+    if (ent.phase < 2) return;
+    const menzil = BLOCK_SIZE * (ent.phase === 3 ? 7 : 5);
+    const pd = Math.hypot(player.x - ent.x, player.y - ent.y);
+    const yakinDost = entities.some(e => e.type === 'ally' && Math.hypot(e.x - ent.x, e.y - ent.y) < menzil);
+    if (pd > menzil && !yakinDost) return;
+
+    ent.slamCd = ent.phase === 3 ? 200 : 300;
+    slamFx = { x: ent.x, y: ent.y + ent.h, r: menzil, t: 24 };
+    playSound('hit');
+    const hasar = ent.phase === 3 ? 18 : 12;
+    // Havadaki hedefler dalgadan kurtulur
+    if (pd < menzil && player.vy === 0 && player.iframe <= 0) {
+        player.hp -= hasar; player.iframe = 30; playSound('hurt'); updateHealthUI();
+        player.vy = -7; player.vx = (player.x > ent.x ? 1 : -1) * 10;
     }
-    else if (id === 'epicBattle') {
-        setActiveQuest(8);
-        battleWon = true;
-        showMcDialog([
-            { c:'📜', n:'Anlatıcı', t:'Baldric dizlerinin üstüne çöküyor. Kara ordusu dağılıyor. Savaş alanı sustu.' },
-            { c:'🗡️', n:'Baldric', t:'Demek... yüz yıl sonra biri durdurdu beni. Çayım soğudu. Belki de... bu kadarı yetti.' },
-            { c:'🛡️', n:'Theron', t:'Başardık kanka! Krallık kurtuldu. Hadi Kral Varran\'a müjdeyi verelim.' }
-        ]);
+    entities.forEach(e => {
+        if (e.type === 'ally' && Math.hypot(e.x - ent.x, e.y - ent.y) < menzil) {
+            e.hp -= hasar; e.vy = -5; e.vx = (e.x > ent.x ? 1 : -1) * 7;
+        }
+    });
+    showBossToast('YERE VURUŞ! Zıpla!');
+}
+
+// Yere vurma dalgası + boss can barı çizimi
+let slamFx = null;
+function drawBossOverlay() {
+    if (slamFx) {
+        slamFx.t--;
+        const a = Math.max(0, slamFx.t / 24);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(168,85,247,' + a + ')';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(slamFx.x - camera.x, slamFx.y - camera.y, slamFx.r * (1.1 - a), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        if (slamFx.t <= 0) slamFx = null;
     }
-    else if (id === 'storyEnd') {
-        showMcDialog([
-            { c:'👑', n:'Kral Varran', t:'Sağ döndün! Ve Baldric yıkıldı... Tanrılara şükür. Yüz yıllık karabasan bitti.' },
-            { c:'👑', n:'Kral Varran', t:'Bugünden itibaren sen bir Lord\'sun. Buz Kalesi, köy, askerler — hepsi senin. Krallığını kur.' },
-            { c:'📜', n:'Anlatıcı', t:'Hikaye burada biter. Dünya artık senin. (Görev panosu kapandı — özgürce keşfet.)' }
-        ]);
+    if (baldricEntity && baldricEntity.active) {
+        const b = baldricEntity;
+        const W = Math.min(520, canvas.width - 80), X = (canvas.width - W) / 2, Y = 24;
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(X - 4, Y - 20, W + 8, 44);
+        ctx.fillStyle = '#3f1d38'; ctx.fillRect(X, Y, W, 16);
+        const oran = Math.max(0, b.hp / b.maxHp);
+        ctx.fillStyle = b.invuln > 0 ? '#94a3b8' : (b.phase === 3 ? '#ef4444' : b.phase === 2 ? '#f59e0b' : '#a855f7');
+        ctx.fillRect(X, Y, W * oran, 16);
+        // Faz sınırlarını göster
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2;
+        [0.66, 0.33].forEach(f => { ctx.beginPath(); ctx.moveTo(X + W * f, Y); ctx.lineTo(X + W * f, Y + 16); ctx.stroke(); });
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(X, Y, W, 16);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('BALDRIC — Faz ' + b.phase + (b.invuln > 0 ? '  \u{1F6E1} KALKAN' : '') + '   ' + Math.max(0, Math.ceil(b.hp)) + ' / ' + b.maxHp, X + W / 2, Y - 5);
+        ctx.restore();
+    }
+    if (bossToastT > 0) {
+        bossToastT--;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, bossToastT / 40);
+        ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'center';
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+        ctx.strokeText(bossToastMsg, canvas.width / 2, 96);
+        ctx.fillText(bossToastMsg, canvas.width / 2, 96);
+        ctx.restore();
     }
 }
 
@@ -2813,8 +3015,9 @@ function buildBaldricFortress(originX, surfaceY) {
     // Baldric boss (savaş başlayana kadar pasif: anchorX'te bekler)
     baldricEntity = {
         type:'baldric', x:(throneX)*BLOCK_SIZE, y:(surfaceY-3)*BLOCK_SIZE, w:30, h:54,
-        vx:0, vy:0, hp:400, maxHp:400, dir:-1, timer:0, active:false, atkCd:0,
-        anchorX:(throneX)*BLOCK_SIZE
+        vx:0, vy:0, hp:900, maxHp:900, dir:-1, timer:0, active:false, atkCd:0,
+        anchorX:(throneX)*BLOCK_SIZE,
+        phase:1, invuln:0, summonCd:0, slamCd:0, retreatT:0, rage:1
     };
     entities.push(baldricEntity);
 
