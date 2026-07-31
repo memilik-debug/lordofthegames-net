@@ -193,6 +193,9 @@
 
         #build-menu { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; width: 100%; }
         
+        @media (max-width: 560px) {
+            #lotg-nav { top: 80px !important; right: 8px !important; padding: 4px 8px !important; font-size: 11px !important; }
+        }
         .ord-btn {
             min-width: 62px; padding: 5px 7px; background:#1e293b; border:2px solid #334155;
             border-radius:9px; display:flex; flex-direction:column; align-items:center; gap:1px;
@@ -758,7 +761,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-<div id="lotg-nav" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);border-radius:8px;padding:7px 14px;font-family:sans-serif;font-size:13px;border:1px solid rgba(255,255,255,0.18);"><a href="index.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">&#8592;</span><span class="lotg-tr"> Ana Sayfa</span><span class="lotg-en" style="display:none"> Home</span></a></div><script>(function(){var L=localStorage.getItem('lotg_lang');if(L&&L!=='tr'){var t=document.querySelector('#lotg-nav .lotg-tr'),e=document.querySelector('#lotg-nav .lotg-en');if(t)t.style.display='none';if(e)e.style.display='';}})();</script>
+<div id="lotg-nav" style="position:fixed;top:82px;right:12px;z-index:9999;background:rgba(0,0,0,0.62);backdrop-filter:blur(8px);border-radius:8px;padding:5px 11px;font-family:sans-serif;font-size:12px;border:1px solid rgba(255,255,255,0.18);"><a href="index.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">&#8592;</span><span class="lotg-tr"> Ana Sayfa</span><span class="lotg-en" style="display:none"> Home</span></a></div><script>(function(){var L=localStorage.getItem('lotg_lang');if(L&&L!=='tr'){var t=document.querySelector('#lotg-nav .lotg-tr'),e=document.querySelector('#lotg-nav .lotg-en');if(t)t.style.display='none';if(e)e.style.display='';}})();</script>
 
     <div id="start-screen">
         <div id="lang-toggle">
