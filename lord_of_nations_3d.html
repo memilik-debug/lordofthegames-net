@@ -1850,10 +1850,141 @@ const COUNTRY_LORE={
   'Kıta bunu fark etti. Bize "SESSİZ YILLAR ÜLKESİ" diyorlar ve bu bir iltifat değil.',
   'Ormanda ve karda savaşmayı biliriz. Bütün siyasetimiz tek cümleye dayanır: bir daha kimse bize bakmasın.'],
 };
+// Her dönemin kendi açılış anlatımı var: Baldrick kıtayı, oyuncunun bulunduğu
+// ANDAN anlatıyor. Kül Yıllarında "yüz elli yıl önce" demek anlamsız olurdu.
+const SEN_LORE={
+ oncesi:{
+  intro:[
+   'Sayın Başkan, koltuğa oturmadan önce şunu bilin: bugün kıta tarihinin en zengin yılını yaşıyor.',
+   'Dört yıldır üst üste rekor hasat alınıyor. Tahıl o kadar ucuz ki çiftçiler şikâyet ediyor.',
+   'On beş devlet var, hepsi büyüyor, hiçbiri savaşmıyor. Yaşlılar "böylesini görmedik" diyor.',
+   'Alpenhof\'ta TAHIL MECLİSİ toplanıyor — kıtanın ilk ortak kurumu. Şimdilik sadece fiyat konuşuyorlar.',
+   'Egeya\'da kâtipler var efendim, her şeyi yazarlar. Ne yazacak bir şey oluyor ne de kimse okuyor.',
+  ],
+  outro:[
+   'Ama bir şey var efendim ve masaya koymam gerek: Alpenya\'daki KELBARAN DAĞI üç yıldır tütüyor.',
+   'Eteğindeki kaynaklar ısınmış, sürüler yaylaya çıkmıyor, kuşlar dağı terk etmiş.',
+   'Alpenya bunu konuşmayı yasakladı — onlar için Kelbaran bir dağ değil, ata ocağı.',
+   'Ölçümcüler bir rapor yazdı ve kimse okumak istemedi. Ben okudum efendim.',
+   'Bu kıta bugün çok zengin. Zenginliğin ne kadar hızlı biteceğini kimse hesaplamıyor.',
+  ]},
+ kul1:{
+  intro:[
+   'Sayın Başkan, göreve savaş zamanı gelmediniz. Daha kötüsü: KIRK ÜÇÜNCÜ GÜN.',
+   'Kırk üç gün önce Alpenya\'daki Kelbaran Dağı patladı. Gökyüzü o günden beri gri.',
+   'Güneşi en son ne zaman gördüğümüzü hatırlamıyorum. Ölçümcüler "üç yıl sürebilir" diyor.',
+   'Hasat gitti efendim — kıtanın tamamında, tek bir mevsimde. Ambarlarda ne varsa o var.',
+   'Sarmatya ovalarından yüz binlerce insan yürümeye başladı. Buna AÇ YÜRÜYÜŞ diyorlar.',
+   'Alpenhof\'taki Tahıl Meclisi ilk kez gerçek bir işe yarıyor: kim kime ne verecek, orada tartışılıyor.',
+  ],
+  outro:[
+   'Ve şunu bilmenizi isterim efendim: Egeyalı kâtipler her şeyi yazıyor.',
+   'Kim kime tahıl verdi, kim ambarını kapattı, kim kaça sattı — hepsi kayda geçiyor.',
+   'O defterlere KÜL DEFTERLERİ diyorlar. Bugün kimse umursamıyor.',
+   'Ama yüz elli yıl sonra bu kıtadaki her husumet, her anlaşma, her kavga o defterlerden okunacak.',
+   'Bugün vereceğiniz her karar, torunlarınızın okuyacağı bir cümle efendim.',
+  ]},
+ varsayilan:{intro:null,outro:null},   // eski anlatım aynen kalıyor
+ kul2:{
+  intro:[
+   'Sayın Başkan, kötü haberi vereyim: Kelbaran <b>ikinci kez</b> patladı.',
+   'Yüz elli yıl önce de patlamıştı. Gökyüzü üç yıl kapanmış, üç hasat tutmamış, eski düzen açlıkla çökmüştü.',
+   'Buna KÜL YILLARI dediler. Bugünkü on beş devletin hepsi o külden çıktı.',
+   'Ve şimdi aynı gökyüzü, aynı gri renk, aynı boş ambarlar. Yirmi yıldır tütüyordu, kimse ciddiye almadı.',
+   'Ama bu sefer bir farkımız var efendim — ve bu fark her şeyi değiştirebilir: HAFIZA.',
+  ],
+  outro:[
+   'Egeyalı kâtiplerin tuttuğu KÜL DEFTERLERİ hâlâ Athelos\'ta duruyor.',
+   'Kim ilk felakette ne yaptı, kim verdi, kim kapıyı kapattı, kim kaça sattı — hepsi yazılı.',
+   'Yani bu sefer kimse "bilmiyorduk" diyemez. Ve kimse geçmişinden kaçamaz.',
+   'Bir de acı bir keşif var efendim: Kül Yıllarını bitiren EISENBURG FORMÜLÜ kayıp.',
+   'Yüz elli yıl kimse ihtiyaç duymadı, ustalar öldü, defterler dağıldı. Toprağı nasıl kurtaracağımızı bilmiyoruz.',
+   'İşte devraldığınız kıta bu efendim: aynı felaket, ama bu sefer seyirci var.',
+  ]},
+ toparlanma:{
+  intro:[
+   'Sayın Başkan, bu sabah bir şey oldu ve bütün ülke sokağa çıktı: gökyüzü açıldı.',
+   'Kelbaran iki kez patladı bu kıtada. Birincisi yüz elli yıl önce, ikincisi bir kuşak önce.',
+   'İkisi arasında geçen zamanda kıta hep aynı şeyi yaptı: külün arkasını topladı.',
+   'Şimdi ölçümcüler onayladı — dağ tamamen sustu. Ne duman, ne titreme, ne ısınan kaynak.',
+   'Toprak temiz efendim. İki yüz yılın en verimli hâlinde.',
+  ],
+  outro:[
+   'Ama şunu söylemem gerek: bu, göreve gelinebilecek en zor dönem olabilir.',
+   'Kıtlıkta bir ülkenin ne yapacağı bellidir — ya verir ya vermez, ya açar ya kapatır.',
+   'Bollukta böyle bir mecburiyet yok efendim. Bahane de yok.',
+   'Kül Defterleri hâlâ Athelos\'ta ve iki felaketin de kaydı içinde. Şimdi üçüncü bir sayfa açılıyor:',
+   'felaketsiz bir dönemin sayfası. Kıta tarihinde ilk kez.',
+   'Kâtip bana sordu efendim: "Bir ülke, kriz olmadan da bir şey olabilir mi?"',
+  ]}
+};
+
+// Ülkenin kendi sayfası. Patlamadan önce ve kıtlığın içinde, ülkenin geçmişi
+// henüz yazılmamış — o yüzden bu iki dönemde arketipe göre anlatıyoruz.
+const SEN_ULKE_LORE={
+ oncesi:{
+  veren:['Şimdi ülkemize gelelim efendim. Küçüğüz, fakiriz ve elimizde pek bir şey yok.',
+   'Ama kıtada bir şeyle tanınıyoruz: kimseyi kapıda bırakmayız. Bu bir politika değil, bir alışkanlık.',
+   'Ordumuz yok, hazinemiz zayıf, ambarımız küçük. Sözümüz ise ağırdır — çünkü hiç kimseye borcumuz yok.',
+   'Bir gün gerçekten zor bir gün gelirse efendim, elimizdekiyle ne yapacağımız bizi tanımlayacak.'],
+  kapanan:['Şimdi ülkemize gelelim efendim. Coğrafyamız bizi koruyor: denizimiz, dağımız ya da geçidimiz.',
+   'Yüzyıllardır kimse bu topraklara zorla giremedi. Bu bize güven verdi ve biraz da kibir.',
+   'Zenginiz, güçlüyüz ve kıtanın işlerine pek karışmayız. Karışmadığımız için de sevilmeyiz.',
+   'Bir kriz çıkarsa efendim, kapımızı açıp açmayacağımız tamamen bizim elimizde olacak. İşte tehlike de burada.'],
+  kazanan:['Şimdi ülkemize gelelim efendim. Kıtanın en zengin devletlerindeniz.',
+   'Ambarımız dolu, kasamız dolu, alacak defterimiz daha da dolu — kıtanın yarısı bize borçlu.',
+   'Zenginliğimizin kaynağı üretim kadar pazarlık: doğru zamanda alıp doğru zamanda satmayı biliriz.',
+   'Bir kıtlık çıkarsa efendim, kıtanın tahılının fiyatını biz belirleriz. Bu, sahip olabileceğimiz en tehlikeli güç.'],
+  yuklenen:['Şimdi ülkemize gelelim efendim. Coğrafyamız cömert ama korumasız: açık ovalar, işlek geçitler.',
+   'Bu topraklardan tarih boyunca ne geçtiyse — ordu, göç, hastalık — hep buradan geçti.',
+   'Verimli topraklarımız var ve kıtanın en büyük hasadını alıyoruz. Ambarlarımız da hep dolu.',
+   'Ama bir felaket olursa efendim, ilk vurulan biz oluruz. Bunu genelkurmay değil, tarihçilerimiz söylüyor.'],
+  kalem:['Şimdi ülkemize gelelim efendim. Bizde işler duayla değil, kayıtla ve laboratuvarla çözülür.',
+   'Kıtanın en derin arşivi ve en iyi bilginleri bizde. Ne var ne yok, hepsi yazılı.',
+   'Ordumuz orta hâlli, hazinemiz idare eder. Asıl gücümüz kimsenin ciddiye almadığı şeyleri ölçmemiz.',
+   'Ölçümcülerimiz şu sıralar Kelbaran hakkında bir rapor yazdı efendim. Okumanızı çok isterim.']},
+ kul1:{
+  veren:['Şimdi ülkemize gelelim efendim. Küçük ve fakiriz — ve elimizde bir yıllık tohumluk buğday var.',
+   'Kıtadan üç ülke bu tohumluğu istiyor. Verirsek onlar eker, biz ekemeyiz.',
+   'Halkımız zaten aç efendim. Ama kapımızda bekleyenlerin durumu daha kötü.',
+   'Bu ülkenin ordusu yok, altını yok. Verecek tek şeyi var ve o şey de son şeyi.'],
+  kapanan:['Şimdi ülkemize gelelim efendim. Coğrafyamız sayesinde kıtlık bize en son ulaştı.',
+   'Ambarlarımız dolu, halkımız henüz aç değil, sınırlarımız savunulabilir durumda.',
+   'Kapımızda bekleyenler var efendim — her gün daha kalabalık.',
+   'Kapıyı kapatırsak halkımız kurtulur. Ve o kapının ardında ne olduğunu ömrümüzün sonuna kadar düşünürüz.'],
+  kazanan:['Şimdi ülkemize gelelim efendim. Kıtlığa kıtanın en dolu ambarlarıyla girdik.',
+   'Tahıl fiyatı üç ayda yedi kat arttı ve en büyük stok bizde.',
+   'Tüccarlarımız tarihin en büyük kârının eşiğinde. Hazine bakanı gülümsüyor.',
+   'Şunu bilin efendim: bugün koyacağımız fiyat, yüz elli yıl boyunca adımızın nasıl anılacağını belirleyecek.'],
+  yuklenen:['Şimdi ülkemize gelelim efendim. Kül bize ilk gün ulaştı — hasadın tamamı gitti.',
+   'Kıtanın geri kalanı henüz gri bir gökyüzü görüyor sadece; ne olduğunu anlamalarına haftalar var.',
+   'Bizim anlamamıza gerek yok efendim, biz içindeyiz. Halkımız çoktan yürümeye başladı.',
+   'Yardım isteyebiliriz. Ama isteyeceğimiz ülkeler daha başlarına ne geleceğini bilmiyor.'],
+  kalem:['Şimdi ülkemize gelelim efendim. Yiyeceğimiz yok ama kâtiplerimiz ve bilginlerimiz var.',
+   'Kıtada olan biteni kayıt altına alabilecek tek kurum bizde ve bunu herkes biliyor.',
+   'Laboratuvarımız külü çözecek bir karışımın peşinde. Belki bir yıl, belki üç.',
+   'Kalemi tutan tarihi tutar efendim. Sahip olduğumuz en değerli ve en tehlikeli şey bu.']}
+};
+
 function loreLines(){
  const id=G.player?G.player.id:null;
- const own=(id&&COUNTRY_LORE[id])?COUNTRY_LORE[id]:['Ülkemizin Kül Defterleri\'ndeki sayfası kayıp efendim. Belki de böylesi iyidir.'];
- return ASH_INTRO.concat(ASH_OUTRO,own,['Kıtanın hikâyesi bu efendim. Şimdi sıra sizde: bu sayfaya ne yazacaksınız?']);
+ const sid=G.senaryo||'varsayilan';
+ const sl=SEN_LORE[sid]||SEN_LORE.varsayilan;
+ const intro=(sl&&sl.intro)?sl.intro:ASH_INTRO;
+ const outro=(sl&&sl.outro)?sl.outro:ASH_OUTRO;
+ // Ülke sayfası: patlamadan önce ve kıtlığın içinde arketip anlatısı,
+ // diğer dönemlerde ülkenin gerçek tarihi (o tarih artık yaşanmış oluyor).
+ let own;
+ const ark=ARKETIP[id]||'veren';
+ if(SEN_ULKE_LORE[sid]&&SEN_ULKE_LORE[sid][ark]) own=SEN_ULKE_LORE[sid][ark];
+ else own=(id&&COUNTRY_LORE[id])?COUNTRY_LORE[id]:['Ülkemizin Kül Defterleri\'ndeki sayfası kayıp efendim. Belki de böylesi iyidir.'];
+ const kapanis={
+  oncesi:'Kıtanın hâli bu efendim. Sizden önceki hiçbir başkan bu kadar rahat bir masaya oturmadı — ve belki de sizden sonraki hiçbiri oturmayacak.',
+  kul1:'Kıtanın hâli bu efendim. Şimdi sıra sizde: bu sayfaya ne yazacaksınız?',
+  kul2:'Kıtanın hâli bu efendim. Aynı sınavı ikinci kez veriyoruz. İkinci seferinde ne yaptığınız, birincisini de yeniden yazar.',
+  toparlanma:'Kıtanın hâli bu efendim. Felaket yok, bahane yok. Şimdi göreceğiz bu ülke gerçekte neymiş.'
+ }[sid]||'Kıtanın hikâyesi bu efendim. Şimdi sıra sizde: bu sayfaya ne yazacaksınız?';
+ return intro.concat(outro,own,[kapanis]);
 }
 function tellLore(after){
  if(document.pointerLockElement)document.exitPointerLock();
@@ -4176,6 +4307,22 @@ function _mkTex(key,w,h,draw,rep){
 }
 function texGrass(rep){return _mkTex('grass'+rep,128,128,(c,w,h)=>{c.fillStyle='#4f7a38';c.fillRect(0,0,w,h);for(let i=0;i<900;i++){const g=irand(0,40);c.fillStyle=`rgb(${60+g},${100+g},${45+g})`;c.fillRect(rand(0,w),rand(0,h),2,3);}},rep);}
 function texDirt(rep){return _mkTex('dirt'+rep,128,128,(c,w,h)=>{c.fillStyle='#6e5538';c.fillRect(0,0,w,h);for(let i=0;i<700;i++){const g=irand(-25,25);c.fillStyle=`rgb(${110+g},${85+g},${56+g})`;c.fillRect(rand(0,w),rand(0,h),3,3);}},rep);}
+// Kaldırım karosu — şehir zemininin çoğu artık çim değil, döşeme
+function texPave(rep){return _mkTex('pave'+rep,128,128,(c,w,h)=>{
+ c.fillStyle='#9b978e';c.fillRect(0,0,w,h);
+ for(let y=0;y<h;y+=32)for(let x=0;x<w;x+=32){
+  const g=irand(-10,10);c.fillStyle=`rgb(${150+g},${146+g},${137+g})`;c.fillRect(x+1,y+1,30,30);
+  c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=1.5;c.strokeRect(x+1,y+1,30,30);}
+ for(let i=0;i<260;i++){const g=irand(-18,12);c.fillStyle=`rgba(${120+g},${118+g},${112+g},.5)`;c.fillRect(rand(0,w),rand(0,h),2,2);}
+},rep);}
+// Beton meydan/plaza
+function texConcrete(rep){return _mkTex('conc'+rep,128,128,(c,w,h)=>{
+ c.fillStyle='#a8a49b';c.fillRect(0,0,w,h);
+ for(let i=0;i<700;i++){const g=irand(-16,14);c.fillStyle=`rgb(${164+g},${160+g},${152+g})`;c.fillRect(rand(0,w),rand(0,h),3,3);}
+ c.strokeStyle='rgba(0,0,0,.12)';c.lineWidth=2;
+ for(let x=0;x<=w;x+=64){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke();}
+ for(let y=0;y<=h;y+=64){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();}
+},rep);}
 function texAsphalt(rep){return _mkTex('asph'+rep,128,128,(c,w,h)=>{c.fillStyle='#3a3c42';c.fillRect(0,0,w,h);for(let i=0;i<600;i++){const g=irand(-12,18);c.fillStyle=`rgb(${58+g},${60+g},${66+g})`;c.fillRect(rand(0,w),rand(0,h),2,2);}},rep);}
 function texMarble(rep){return _mkTex('marble'+(rep||1),256,256,(c,w,h)=>{
   // cilalı mermer taban
@@ -4208,7 +4355,25 @@ function texParquet(rep){return _mkTex('parq2'+rep,128,128,(c,w,h)=>{
 },rep);}
 function texWall(rep){return _mkTex('wall'+rep,128,128,(c,w,h)=>{c.fillStyle='#9a8d76';c.fillRect(0,0,w,h);for(let i=0;i<300;i++){const g=irand(-14,14);c.fillStyle=`rgba(${130+g},${120+g},${100+g},.5)`;c.fillRect(rand(0,w),rand(0,h),3,3);}},rep);}
 function texWater(rep){return _mkTex('water'+rep,128,128,(c,w,h)=>{c.fillStyle='#1d5d96';c.fillRect(0,0,w,h);for(let i=0;i<300;i++){c.fillStyle=`rgba(140,200,240,${rand(.05,.18)})`;c.fillRect(rand(0,w),rand(0,h),rand(2,6),1);}},rep);}
-function texBuilding(col){return _mkTex('bld'+col,64,128,(c,w,h)=>{c.fillStyle=col;c.fillRect(0,0,w,h);for(let y=8;y<h-6;y+=16)for(let x=6;x<w-6;x+=14){c.fillStyle=Math.random()<.6?'#ffe9a8':'#2a3038';c.fillRect(x,y,8,9);c.fillStyle='rgba(0,0,0,.25)';c.strokeRect(x,y,8,9);}});}
+function texBuilding(col){return _mkTex('bld'+col,64,128,(c,w,h)=>{
+ c.fillStyle=col;c.fillRect(0,0,w,h);
+ // hafif dikey gölge — düz kutu hissini kırar
+ const grd=c.createLinearGradient(0,0,w,0);
+ grd.addColorStop(0,'rgba(0,0,0,.20)');grd.addColorStop(.42,'rgba(255,255,255,.06)');grd.addColorStop(1,'rgba(0,0,0,.16)');
+ c.fillStyle=grd;c.fillRect(0,0,w,h);
+ for(let y=8;y<h-6;y+=16){
+  // kat arası bant
+  c.fillStyle='rgba(0,0,0,.16)';c.fillRect(0,y+11,w,3);
+  for(let x=6;x<w-6;x+=14){
+   const isik=Math.random();
+   c.fillStyle = isik<.34?'#ffe9a8' : isik<.52?'#cfe4f2' : '#2b323c';
+   c.fillRect(x,y,9,10);
+   // cam yansıması
+   c.fillStyle='rgba(255,255,255,.22)';c.fillRect(x,y,9,3);
+   c.strokeStyle='rgba(0,0,0,.30)';c.lineWidth=1;c.strokeRect(x+.5,y+.5,9,10);
+  }
+ }
+});}
 // ---- Oda dekor dokuları ----
 function texChart(){return _mkTex('chart',256,160,(c,w,h)=>{
  c.fillStyle='#0e1826';c.fillRect(0,0,w,h);
@@ -4746,7 +4911,7 @@ function baldrickTalk(){
  if(c._consume&&!c._consume.grainOK)tips.push('Tahıl ambarları boş efendim! Halk aç kalmadan çiftlik kurun ya da borsadan tahıl alın.');
  if(tips.length===0)tips.push('Her şey yolunda görünüyor efendim. Şüpheli derecede yolunda...');
  G.dialog={lines:['Kurnaz bir planım var efendim!',pick(tips),'Ülkemizin hikâyesini ya da eğitimi tekrar dinlemek isterseniz, aşağıdan seçebilirsiniz.','Bir de... maaş zammı mümkün mü efendim? (değil mi... peki.)'],idx:0,name:'🥔 Danışman Baldrick',after:()=>{
-  if(confirm('Ülkemizin ve Kül Yılları\'nın hikâyesini tekrar dinlemek ister misin?')){tellLore(null);return;}
+  if(confirm('Ülkemizin ve kıtanın hikâyesini tekrar dinlemek ister misin?')){tellLore(null);return;}
   if(confirm('Peki Baldrick eğitimini baştan görmek ister misin?'))startTutorial(true);
  }};
  showDialogLine();
@@ -4856,9 +5021,12 @@ function buildCity(){
  sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-160;sun.shadow.camera.right=160;sun.shadow.camera.top=160;sun.shadow.camera.bottom=-160;sun.shadow.camera.far=400;cityScene.add(sun);
  const sunOrb=new THREE.Mesh(new THREE.SphereGeometry(14,16,16),new THREE.MeshBasicMaterial({color:0xfff2cc}));sunOrb.position.set(180,150,-180);cityScene.add(sunOrb);
  cityColliders=[];
- // Ground (çim dokusu)
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshLambertMaterial({map:texGrass(60)}));
+ // Zemin: şehir bir çim tarlası değil. Taban döşeme, çim sadece park bloklarında.
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshLambertMaterial({map:texPave(110)}));
  ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;cityScene.add(ground);
+ // Şehrin dışı yeşil kalsın (uzak çevre)
+ const cevre=new THREE.Mesh(new THREE.RingGeometry(240,700,48),new THREE.MeshLambertMaterial({map:texGrass(90)}));
+ cevre.rotation.x=-Math.PI/2;cevre.position.y=.01;cityScene.add(cevre);
  // Roads (asfalt + şerit çizgisi + kaldırım)
  for(let i=-2;i<=2;i++){
   [[true],[false]].forEach(([horiz])=>{
@@ -5045,23 +5213,11 @@ function buildCity(){
   h.rotation.y=rand(0,Math.PI*2);
   cityScene.add(h);
  }
- // Trees
+ // Ağaçlar
  for(let i=0;i<55;i++){
-  let t;
-  if(hasModel('tree')){t=getModel('tree',{yaw:rand(0,Math.PI*2)});t.scale.setScalar(rand(.8,1.5));}
-  else{
-   t=new THREE.Group();
-   const tr=new THREE.Mesh(new THREE.CylinderGeometry(.25,.35,2.4),new THREE.MeshLambertMaterial({color:0x5a3a20}));
-   tr.position.y=1.2;t.add(tr);
-   const le=new THREE.Mesh(new THREE.SphereGeometry(rand(1.4,2.2),8,7),new THREE.MeshLambertMaterial({color:0x3a7a2a}));
-   le.position.y=3.2;le.castShadow=true;t.add(le);
-   const le2=new THREE.Mesh(new THREE.SphereGeometry(rand(1.0,1.6),8,7),new THREE.MeshLambertMaterial({color:0x4a8a36}));
-   le2.position.set(rand(-.6,.6),4.2,rand(-.6,.6));t.add(le2);
-  }
   let x=0,z=0,tries=0;
   do{ const ang=rand(0,Math.PI*2),rr=rand(40,230); x=Math.cos(ang)*rr; z=Math.sin(ang)*rr; tries++; }while(onRoad(x,z,7)&&tries<10);
-  t.position.set(x,0,z);
-  cityScene.add(t);
+  cityScene.add(sehirAgaci(x,z,rand(.85,1.4)));
  }
  // Hareketli arabalar (yollarda)
  cityCars=[];
@@ -5079,6 +5235,27 @@ function buildCity(){
  buildPlazaFountain();
  G.cityDirty=false;
 }
+// Katmanlı şehir ağacı: tek küre "lolipop" yerine üç kademeli taç ve ton farkı
+const AGAC_YESIL=[0x35702c,0x3f7a34,0x4d8a3a,0x589a44,0x2f6b30,0x628f3e];
+function sehirAgaci(x,z,olcek){
+ if(hasModel('tree')){const t=getModel('tree',{yaw:rand(0,Math.PI*2)});t.scale.setScalar(olcek*1.2);t.position.set(x,0,z);return t;}
+ const g=new THREE.Group();
+ const lam2=c=>new THREE.MeshLambertMaterial({color:c});
+ const h=rand(2.6,3.8)*olcek;
+ const gov=new THREE.Mesh(new THREE.CylinderGeometry(.18*olcek,.34*olcek,h,7),lam2(0x5a3f28));
+ gov.position.y=h/2;gov.castShadow=true;g.add(gov);
+ const ana=AGAC_YESIL[irand(0,AGAC_YESIL.length-1)];
+ const acik=AGAC_YESIL[irand(0,AGAC_YESIL.length-1)];
+ const t1=new THREE.Mesh(new THREE.SphereGeometry(1.9*olcek,9,7),lam2(ana));
+ t1.position.y=h+.9*olcek;t1.scale.y=.82;t1.castShadow=true;g.add(t1);
+ const t2=new THREE.Mesh(new THREE.SphereGeometry(1.45*olcek,8,6),lam2(acik));
+ t2.position.set(rand(-.7,.7)*olcek,h+1.9*olcek,rand(-.7,.7)*olcek);t2.scale.y=.86;g.add(t2);
+ const t3=new THREE.Mesh(new THREE.SphereGeometry(1.05*olcek,8,6),lam2(ana));
+ t3.position.set(rand(-.8,.8)*olcek,h+2.7*olcek,rand(-.8,.8)*olcek);g.add(t3);
+ g.position.set(x,0,z);
+ g.rotation.y=rand(0,Math.PI*2);
+ return g;
+}
 // Gökdelen dokusu önbelleği (renk+tekrar başına tek doku → düşük GPU yükü)
 const _towerTexCache={};
 function towerTex(colStr,rx,ry){
@@ -5088,11 +5265,69 @@ function towerTex(colStr,rx,ry){
  _towerTexCache[key]=tex;return tex;
 }
 function makeTower(w,d,h,colStr){
- const tex=towerTex(colStr,Math.max(1,Math.round(w/5)),Math.max(2,Math.round(h/6)));
  const g=new THREE.Group();
- const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({map:tex}));m.position.y=h/2;m.castShadow=true;g.add(m);
- const roof=new THREE.Mesh(new THREE.BoxGeometry(w*.7,1.5,d*.7),new THREE.MeshLambertMaterial({color:0x3a3f48}));roof.position.y=h+.75;g.add(roof);
+ const lam2=c=>new THREE.MeshLambertMaterial({color:c});
+ const zemin=2.8;                       // zemin kat (dükkân cephesi)
+ const govdeH=Math.max(4,h-zemin);
+ // ── Zemin kat: koyu, camekânlı; kule artık çimenden bitmiyor
+ const taban=new THREE.Mesh(new THREE.BoxGeometry(w*1.06,zemin,d*1.06),lam2(0x4b4f57));
+ taban.position.y=zemin/2;taban.castShadow=true;g.add(taban);
+ const vitrin=new THREE.Mesh(new THREE.BoxGeometry(w*1.07,1.5,d*1.07),
+   new THREE.MeshLambertMaterial({color:0x9fd0e6}));
+ vitrin.position.y=1.5;g.add(vitrin);
+ // saçak
+ const sacak=new THREE.Mesh(new THREE.BoxGeometry(w*1.18,.28,d*1.18),lam2(0x33363d));
+ sacak.position.y=zemin;g.add(sacak);
+ // ── Gövde: yüksek binalarda kademe (setback) — düz prizma hissini kırar
+ const kademeli = h>34 && Math.random()<.6;
+ if(kademeli){
+  const h1=govdeH*.62, h2=govdeH-h1;
+  const t1=towerTex(colStr,Math.max(1,Math.round(w/5)),Math.max(2,Math.round(h1/6)));
+  const m1=new THREE.Mesh(new THREE.BoxGeometry(w,h1,d),new THREE.MeshLambertMaterial({map:t1}));
+  m1.position.y=zemin+h1/2;m1.castShadow=true;g.add(m1);
+  const kb=new THREE.Mesh(new THREE.BoxGeometry(w*1.05,.5,d*1.05),lam2(0x3f434b));
+  kb.position.y=zemin+h1;g.add(kb);
+  const w2=w*.72,d2=d*.72;
+  const t2=towerTex(colStr,Math.max(1,Math.round(w2/5)),Math.max(2,Math.round(h2/6)));
+  const m2=new THREE.Mesh(new THREE.BoxGeometry(w2,h2,d2),new THREE.MeshLambertMaterial({map:t2}));
+  m2.position.y=zemin+h1+h2/2;m2.castShadow=true;g.add(m2);
+  ustDon(g,w2,d2,zemin+h1+h2,colStr);
+ }else{
+  const t1=towerTex(colStr,Math.max(1,Math.round(w/5)),Math.max(2,Math.round(govdeH/6)));
+  const m1=new THREE.Mesh(new THREE.BoxGeometry(w,govdeH,d),new THREE.MeshLambertMaterial({map:t1}));
+  m1.position.y=zemin+govdeH/2;m1.castShadow=true;g.add(m1);
+  ustDon(g,w,d,zemin+govdeH,colStr);
+ }
  return g;
+}
+// Çatı donanımı: korkuluk, klima üniteleri, anten, su deposu
+function ustDon(g,w,d,y,colStr){
+ const lam2=c=>new THREE.MeshLambertMaterial({color:c});
+ // parapet (korkuluk) — dört kenar
+ const kal=.35, ph=.9;
+ [[0,d/2-kal/2,w,kal],[0,-d/2+kal/2,w,kal],[w/2-kal/2,0,kal,d],[-w/2+kal/2,0,kal,d]].forEach(([px,pz,pw,pd])=>{
+  const pr=new THREE.Mesh(new THREE.BoxGeometry(pw,ph,pd),lam2(0x4a4e56));
+  pr.position.set(px,y+ph/2,pz);g.add(pr);});
+ // çatı yüzeyi
+ const cat=new THREE.Mesh(new THREE.BoxGeometry(w*.98,.2,d*.98),lam2(0x54585f));
+ cat.position.y=y+.1;g.add(cat);
+ // klima üniteleri
+ const say=1+Math.floor(Math.random()*3);
+ for(let i=0;i<say;i++){
+  const kw=Math.min(w,d)*rand(.16,.3);
+  const kl=new THREE.Mesh(new THREE.BoxGeometry(kw,rand(.7,1.4),kw),lam2(0x8d9199));
+  kl.position.set(rand(-w*.28,w*.28),y+.9,rand(-d*.28,d*.28));kl.castShadow=true;g.add(kl);
+ }
+ // su deposu ya da anten
+ if(Math.random()<.45){
+  const dep=new THREE.Mesh(new THREE.CylinderGeometry(Math.min(w,d)*.15,Math.min(w,d)*.17,2.2,10),lam2(0x7a6a58));
+  dep.position.set(w*.2,y+2.1,-d*.2);g.add(dep);
+ } else if(Math.random()<.5){
+  const ant=new THREE.Mesh(new THREE.CylinderGeometry(.09,.14,rand(4,9),6),lam2(0x9aa0a8));
+  ant.position.set(0,y+rand(2,4.5),0);g.add(ant);
+  const kir=new THREE.Mesh(new THREE.SphereGeometry(.28,7,6),new THREE.MeshBasicMaterial({color:0xff5a4a}));
+  kir.position.set(0,y+rand(4,8),0);g.add(kir);
+ }
 }
 // Yol kontrolü: yol çizgileri 45'in katlarında (-90..90), yarım genişlik+kaldırım ~8
 const ROAD_LINES=[-90,-45,0,45,90];
@@ -5102,29 +5337,62 @@ function onRoad(x,z,margin){
  return false;
 }
 function buildDowntown(){
- const cols=['#8894a8','#9aa0ac','#b0a894','#7e8a9c','#a89c88','#6f7d90','#7d8ba0','#94a0b4'];
+ // Daha geniş palet: cam kuleler, tuğla, kumtaşı, beton — hepsi aynı maviydi
+ const cols=['#8894a8','#9aa0ac','#b0a894','#7e8a9c','#a89c88','#6f7d90','#7d8ba0','#94a0b4',
+   '#6d7f8e','#a4785e','#8f6b56','#c2b49a','#5f7486','#9c8f7d','#7b8f86','#b09a86'];
  // Kuleleri yolların ARASINDAKİ bloklara diz (blok merkezi = k*45 + 22.5)
  const centers=[];for(let k=-4;k<=3;k++)centers.push(k*45+22.5);
  centers.forEach(bx=>centers.forEach(bz=>{
   if(Math.hypot(bx,bz+30)<42||Math.hypot(bx,bz-12)<40)return; // saray & başlangıç boş
   const dist=Math.hypot(bx,bz);
   if(Math.random()>(dist>95?0.75:0.45))return;                // merkez seyrek, dış yoğun
-  // kaldırım/beton pad (blok tabanı)
-  const pad=new THREE.Mesh(new THREE.PlaneGeometry(32,32),new THREE.MeshLambertMaterial({color:0x9a958c}));
+  // blok tabanı: dokulu beton avlu
+  const pad=new THREE.Mesh(new THREE.PlaneGeometry(32,32),new THREE.MeshLambertMaterial({map:texConcrete(7)}));
   pad.rotation.x=-Math.PI/2;pad.position.set(bx,.03,bz);pad.receiveShadow=true;cityScene.add(pad);
-  const n=irand(1,2);
+  const n=irand(1,3);
+  const yerler=[];
   for(let i=0;i<n;i++){
-   const ox=rand(-11,11),oz=rand(-11,11);
+   const ox=rand(-10,10),oz=rand(-10,10);
+   if(yerler.some(([a,b2])=>Math.hypot(a-ox,b2-oz)<12))continue;   // üst üste binmesin
+   yerler.push([ox,oz]);
    const h=dist>95?rand(24,62):rand(14,34);
    const t=makeTower(rand(7,13),rand(7,13),h,pick(cols));
    t.position.set(bx+ox,0,bz+oz);t.rotation.y=irand(0,3)*Math.PI/2;cityScene.add(t);
    addCityCollider(bx+ox,bz+oz,9,9);
   }
+  // blok içi yeşillik ve saksılar — beton avlu tek başına çıplak duruyordu
+  for(let q=0;q<3;q++){
+   const qx=bx+rand(-14,14),qz=bz+rand(-14,14);
+   if(yerler.some(([a,b2])=>Math.hypot(bx+a-qx,bz+b2-qz)<9))continue;
+   const sak=new THREE.Mesh(new THREE.CylinderGeometry(.9,.75,.8,8),new THREE.MeshLambertMaterial({color:0x8a8378}));
+   sak.position.set(qx,.4,qz);cityScene.add(sak);
+   const yes=new THREE.Mesh(new THREE.SphereGeometry(1.1,7,6),new THREE.MeshLambertMaterial({color:q%2?0x3f7a34:0x4d8a3a}));
+   yes.position.set(qx,1.5,qz);yes.scale.y=.8;cityScene.add(yes);
+  }
  }));
- // uzak arka silüet (yol şebekesinin dışında, |z|>250)
- for(let i=0;i<14;i++){
-  const t=makeTower(rand(10,18),rand(10,18),rand(30,72),pick(cols));
-  t.position.set(rand(-220,220),0,-rand(255,360));cityScene.add(t);
+ // Boş kalan bloklardan bazıları yeşil meydan olsun (her yer beton olmasın)
+ centers.forEach(bx=>centers.forEach(bz=>{
+  if(Math.hypot(bx,bz+30)<42||Math.hypot(bx,bz-12)<40)return;
+  if(Math.random()>0.16)return;
+  const cim=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshLambertMaterial({map:texGrass(6)}));
+  cim.rotation.x=-Math.PI/2;cim.position.set(bx,.04,bz);cityScene.add(cim);
+  const yol=new THREE.Mesh(new THREE.PlaneGeometry(30,3.5),new THREE.MeshLambertMaterial({map:texConcrete(3)}));
+  yol.rotation.x=-Math.PI/2;yol.position.set(bx,.06,bz);cityScene.add(yol);
+  for(let t=0;t<4;t++){
+   const tx=bx+rand(-12,12),tz=bz+rand(-12,12);
+   if(Math.abs(tz-bz)<3)continue;
+   cityScene.add(sehirAgaci(tx,tz,rand(.85,1.25)));
+  }
+ }));
+ // Uzak siluet: eskiden yalnızca kuzeydeydi, ufkun kalanı boş görünüyordu.
+ // Artık şehri çevreleyen bir halka — kent büyük hissettiriyor.
+ for(let i=0;i<54;i++){
+  const ac=(i/54)*Math.PI*2+rand(-.05,.05);
+  const yc=rand(250,400);
+  const t=makeTower(rand(10,20),rand(10,20),rand(28,78),pick(cols));
+  t.position.set(Math.cos(ac)*yc,0,Math.sin(ac)*yc);
+  t.rotation.y=rand(0,Math.PI*2);
+  cityScene.add(t);
  }
 }
 function buildPlazaFountain(){
