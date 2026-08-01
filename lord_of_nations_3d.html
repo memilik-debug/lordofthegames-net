@@ -38,6 +38,18 @@
   #pickArma { width:52px; height:64px; flex-shrink:0; }
   #pickMeta { font-size:12px; color:#b8c8e0; line-height:1.7; }
   #countryPicker h3 { color:#ffd86b; margin-bottom:12px; }
+  #senaryoKutu { margin-bottom:14px; }
+  #senaryoKutu .sbaslik { font-size:10px; letter-spacing:1.2px; color:#e8b86f; margin-bottom:7px; }
+  .senKart { display:flex; gap:10px; align-items:flex-start; text-align:left; width:100%; padding:9px 11px; margin-bottom:6px;
+    border:1px solid #33415c; background:rgba(255,255,255,.02); border-radius:9px; cursor:pointer; transition:.15s; color:#e6ecf5; }
+  .senKart:hover { border-color:#6a7a9c; background:rgba(255,255,255,.05); }
+  .senKart.sec { border-color:var(--sr,#ffd86b); background:rgba(255,216,107,.09); }
+  .senKart .sico { font-size:22px; line-height:1.1; flex-shrink:0; }
+  .senKart .sad { font-weight:700; font-size:13px; }
+  .senKart .sdon { font-size:10.5px; color:#8fa4c4; margin-top:1px; }
+  .senKart .sozet { font-size:11px; color:#a8b6cc; margin-top:4px; line-height:1.5; display:none; }
+  .senKart.sec .sozet { display:block; }
+  .senKart .scizgi { font-size:10px; color:var(--sr,#ffd86b); margin-top:4px; letter-spacing:.4px; }
   #countryPicker input { width:100%; padding:11px; border-radius:5px; border:1px solid #445; background:#0a1224; color:#fff; font-size:16px; margin-bottom:14px; }
   .btnrow { display:flex; gap:10px; justify-content:flex-end; }
   .btn { padding:10px 18px; border-radius:5px; background:linear-gradient(180deg,#3a6090,#2a4868); color:#fff; cursor:pointer; font-size:13px; font-weight:600; border:1px solid #4a7cb5; transition:all .15s; }
@@ -247,6 +259,7 @@
       <h3 id="pickTitle">Bu ülkeyi yönet</h3>
       <div id="pickInfo"><img id="pickArma" alt=""><div id="pickMeta"></div></div>
       <input id="countryNameInput" type="text" placeholder="Ülkene isim ver...">
+      <div id="senaryoKutu"></div>
       <div class="btnrow">
         <button class="btn" onclick="cancelPick()">İptal</button>
         <button class="btn primary" onclick="startGame()">▶ Ofise Geç</button>
@@ -268,7 +281,7 @@
     <div id="hudDate">Yıl 1, Ay 1</div>
     <button id="endTurnBtn" onclick="endTurn()">Sıradaki Ay ▶</button>
   </div>
-  <div id="buildTag">LoN v1.9 · MECLİS-3D</div>
+  <div id="buildTag">LoN v1.11 · MECLİS-3D</div>
   <div id="lawPending"></div>
   <div id="sceneLabel"></div>
   <div id="crosshairDot"></div>
@@ -855,7 +868,7 @@ const BUILD_TYPES=[
 ];
 
 // ============================ STATE ============================
-const G={scene:'map',year:1,month:1,selectedCountryId:null,player:null,countries:[],events:[],hoveredCountry:null,research:null,ministers:[],war:null,naval:null,notif:0,dialog:null,activePanelTabs:null,currentTab:null,worldTick:0,pendingWarTargetId:null,pendingLawId:null,driving:false,campaign:null,warHistory:[],market:null};
+const G={scene:'map',year:1,month:1,senaryo:'varsayilan',selectedCountryId:null,player:null,countries:[],events:[],hoveredCountry:null,research:null,ministers:[],war:null,naval:null,notif:0,dialog:null,activePanelTabs:null,currentTab:null,worldTick:0,pendingWarTargetId:null,pendingLawId:null,driving:false,campaign:null,warHistory:[],market:null};
 
 function makeCountry(tpl){
  return {id:tpl.name.toLowerCase(),name:tpl.name,customName:tpl.name,color:tpl.color,capital:tpl.cap,biome:tpl.biome,polygon:tpl.polygon,isPlayer:false,
@@ -1133,6 +1146,7 @@ function endTurn(){
    setTimeout(()=>startWar(c,ai,true),600);
   }});
  tickFocus();
+ tickMiras();   // v1.11: odak agaci bitince gec oyun mirasi
  G.month++;if(G.month>12){G.month=1;G.year++;}
  if(c.gold<-15000||c.happiness<5||(c.revoltRisk||0)>=95){
   showModal(c.gold<-15000?'💀 İFLAS!':(c.revoltRisk||0)>=95?'🔥 HALK AYAKLANMASI!':'🔥 DEVRİM!',`<b>${c.customName}</b> yönetimi düştü. Oyun bitti.`,[{text:'Tekrar Oyna',cls:'primary',onClick:()=>location.reload()}]);return;}
@@ -1855,6 +1869,701 @@ function tellLore(after){
 // eff alanları: gold, rep(itibar), hap(mutluluk), mil(ordu), ind(sanayi), tech, edu,
 //   corr(yolsuzluk), mor(moral), food, pop, sold(asker), stab(isyan riski, ters işaret),
 //   rel:{ulkeId:delta}, relAll:delta
+
+// ═══════════════════════ 🕰️ SENARYOLAR (v1.11) ═══════════════════════
+// Kıtanın hikâyesi tek bir ana kırılma etrafında dönüyor: Kelbaran'ın patlaması.
+// Artık o kırılmanın FARKLI ANLARINDAN başlayabiliyorsun ve her an kendi odak
+// ağacını getiriyor. Aynı ülke, aynı harita — ama önünde duran soru bambaşka.
+const SEN_SPINE={};
+
+// ── 1) KELBARAN'DAN ÖNCE ─────────────────────────────────────────────
+// Kıta zengin. Ambarlar dolu. Dağ tütüyor ama kimse bakmıyor. Sen bakıyorsun.
+SEN_SPINE.oncesi=[
+ {id:'on_dinle', ico:'🏔️', n:'Dağı Dinle', ay:3, req:[], xor:['on_bereket'], grup:'kok',
+  desc:'Alpenya\'daki ölçümcüler doğru söylüyorsa vaktimiz az. Onları ciddiye alalım.',
+  ev:{txt:`Efendim, ölçümcülerin raporunu masaya koydum ve kimse okumak istemedi.<br><br>Kelbaran'ın eteğindeki kaynaklar üç yıldır ısınıyor, sürüler yaylaya çıkmıyor, kuşlar dağı terk etmiş. Alpenhof bunu <b>dinî bir mesele</b> sayıp konuşulmasını yasaklamış.<br><br>Bizim ölçümcümüz tek cümle yazmış efendim: "Dağ konuşuyor, biz dinlemiyoruz."`,
+   ops:[
+    {t:'📐 Ölçüm ağını kur', eff:{tech:10, edu:8, gold:-3500, rep:4}, res:`Ağı kurduk efendim. Kıtanın hiçbir ülkesinde olmayan bir şey var artık bizde: dağın ne zaman patlayacağını tahmin edebilecek insanlar. Pahalıydı ve kimse anlamadı.`},
+    {t:'🤫 Bilgiyi kendimize saklayalım', eff:{gold:2500, food:6, rep:-5, corr:5}, res:`Raporu kasaya kilitledik efendim. Tahıl alımlarına sessizce başladık — fiyat henüz ucuz. Kıta hiçbir şey bilmiyor ve biz bundan kazanıyoruz.`}]}},
+
+ {id:'on_bereket', ico:'🌾', n:'Bereketi Büyüt', ay:3, req:[], xor:['on_dinle'], grup:'kok',
+  desc:'Kıta yüz yıldır bu kadar zengin olmadı. Korku değil, büyüme zamanı.',
+  ev:{txt:`Efendim, karar verdiniz: dağ masalı değil, bereket gerçek.<br><br>Ve haklısınız — hasat üst üste dördüncü yıl rekor kırdı, limanlar dolu, tahıl ucuz. Halk sizi seviyor, tüccarlar sizi seviyor, kıta sizi ciddiye alıyor.<br><br>Alpenya elçisi bugün geldi efendim, teşekkür etti. "Dağımızı rahat bıraktığınız için" dedi. Garip bir teşekkürdü.`,
+   ops:[
+    {t:'🏭 Sanayiye yatır', eff:{ind:14, gold:-4000, hap:8, mor:6}, res:`Fabrikalar kuruldu efendim. Kıtanın en hızlı büyüyen ekonomisiyiz. Ambarlar boş ama ambar niye dolsun ki — tahıl her yıl ucuzluyor.`},
+    {t:'🌍 Ticaret ağını genişlet', eff:{gold:7000, rep:8, relAll:7, food:-4}, res:`Anlaşmalar imzalandı efendim. On dört ülkeyle ticaretimiz var. Herkes bizden alıyor, biz herkesten alıyoruz. Bağımlıyız ama zenginiz.`}]}},
+
+ {id:'on_ambar', ico:'🏚️', n:'Ambarları Doldur', ay:4, req:[], reqAny:['on_dinle','on_bereket'], xor:['on_altin'], grup:'orta',
+  desc:'Ne olursa olsun dolu ambar kötü fikir değildir. Pahalı ama akıllıca.',
+  ev:{txt:`Ambarlar doldu efendim. Üç yıllık tahıl stoku — kıtada başka kimsede yok.<br><br>Ama bir sorun var: hazine bunu hissetti, tüccarlar homurdanıyor, muhalefet "korkak yönetim" diyor. Bir gazete "Başkan hayalet bir felakete hazırlanıyor" diye yazdı.<br><br>Bugün bir çiftçi elimi öptü efendim. "Babam da böyle yapardı" dedi. Sonra ekledi: "Babam iflas etti."`,
+   ops:[
+    {t:'🔒 Stoku kimseye açıklama', eff:{food:16, stab:2, rep:-4, gold:-2000}, res:`Stok gizli kaldı efendim. Kimse ne kadarımız olduğunu bilmiyor. Bir gün gelirse, o gün pazarlık gücümüz olacak.`},
+    {t:'📣 Kıtaya ilan et, örnek ol', eff:{food:12, rep:14, relAll:6, gold:-3000, hap:-4}, res:`İlan ettik efendim. İki ülke bizi taklit etti, dokuzu güldü. Egeya kâtibi not aldı — "kim hazırlandı" diye bir sayfa açmışlar.`}]}},
+
+ {id:'on_altin', ico:'💰', n:'Altına Çevir', ay:4, req:[], reqAny:['on_dinle','on_bereket'], xor:['on_ambar'], grup:'orta',
+  desc:'Tahıl çürür, altın çürümez. Bolluğu hazineye yazalım.',
+  ev:{txt:`Efendim, bolluk yılının fazlasını sattık ve hazine şişti. Kıtanın en likit devleti biziz.<br><br>Hazine bakanı çok memnun. Tarım bakanı çok memnun değil — "elimizde para var ama ekmek yok, para ekmek olmuyor efendim" dedi.<br><br>Ben de sordum kendime: kıtlıkta altınla ne alınır? Cevabı, satacak birinin olmasına bağlı efendim.`,
+   ops:[
+    {t:'🏦 Rezervi büyüt', eff:{gold:11000, ind:5, food:-8, rep:3}, res:`Rezerv büyüdü efendim. Kasalar dolu. Bir kriz gelirse her şeyi satın alabiliriz — tabii satan olursa.`},
+    {t:'⚓ Limanlara ve yollara harca', eff:{ind:12, gold:-1500, rep:7, relAll:5, food:4}, res:`Altyapıya döktük efendim. Limanlar derinleştirildi, yollar döşendi. Bir gün kıtada tahıl taşınması gerekirse, o yollar bizim olacak.`}]}},
+
+ {id:'on_alpenya', ico:'⛪', n:'Alpenya\'ya Haber Sal', ay:4, req:[], reqAny:['on_ambar','on_altin'],
+  desc:'Dağ onların ve kutsalları. Uyarmak dostluğa mı, hakarete mi girer?',
+  ev:{txt:`Efendim, Alpenhof'a elçi yolladık ve elçimiz kapıdan döndü.<br><br>Alpenya için Kelbaran bir dağ değil, <b>ata ocağı</b>. "Dağınız patlayacak" demek onlara "atanız ölecek" demek gibiymiş. Rahipler elçimizi dinlemeden kovmuş.<br><br>Ama efendim — Alpenya sarayından gizli bir mektup geldi. İmza yok. Tek satır: <i>"Biliyoruz. Nereye gidebiliriz?"</i>`,
+   ops:[
+    {t:'🚪 Sınırı onlara açacağımızı bildir', eff:{rep:16, relAll:6, rel:{alpenya:30}, food:-8, hap:-6}, res:`Sözü verdik efendim. Alpenya sarayı bunu unutmayacak. Halkımız "biz kendimizi mi doyuramıyoruz ki başkasını alıyoruz" diye soruyor ve haklılar.`},
+    {t:'🤐 Cevap yazma, hazırlığa devam et', eff:{food:8, gold:1500, rep:-6, rel:{alpenya:-10}}, res:`Mektuba cevap yazmadık efendim. Kendi işimize baktık. O tek satır masamda duruyor — imzasız, cevapsız.`},
+    {t:'📜 Mektubu kıtaya duyur', eff:{rep:10, relAll:-8, rel:{alpenya:-35}, edu:6, hap:4}, res:`Mektubu yayınladık efendim. Kıta ayağa kalktı, Alpenya rezil oldu ve bize düşman kesildi. Ama artık hiç kimse "bilmiyorduk" diyemez.`}]}},
+
+ {id:'on_yol', ico:'🛤️', n:'Tahıl Yolları', ay:5, req:['on_alpenya'],
+  desc:'Felaket gelirse tahıl yürüyerek gelmez. Yolları şimdi kuralım.',
+  ev:{txt:`Efendim, kıta boyunca tahıl güzergâhlarının haritasını çıkardık: hangi liman kaç gün, hangi geçit kaç araba, hangi köprü kaç ton.<br><br>Çalışırken fark ettik ki kıtanın <b>tek bir</b> gerçek tahıl geçidi var: Karpat vadileri. Kapanırsa kuzeyle güney birbirini besleyemez.<br><br>Karpatya bunu bizden önce fark etmiş efendim. Geçide yeni bir kapı yaptırıyorlar.`,
+   ops:[
+    {t:'🤝 Karpatya ile geçit anlaşması yap', eff:{gold:-5000, rep:10, rel:{karpatya:28}, food:10, relAll:4}, res:`Anlaşma imzalandı efendim. Kriz çıkarsa geçit bize açık kalacak — kâğıt üstünde. Kâğıdın kıtlıkta ne kadar dayandığını hep birlikte göreceğiz.`},
+    {t:'⚓ Deniz yolunu yedek olarak kur', eff:{gold:-6500, ind:10, rep:6, rel:{albiona:15, norvenna:12, venedra:14}}, res:`Deniz yedeğini kurduk efendim. Karpat geçidi kapanırsa gemilerimiz var. Pahalıydı ama kimseye muhtaç değiliz.`}]}},
+
+ {id:'on_patlama', ico:'🌋', n:'Ve Dağ Konuştu', ay:6, req:['on_yol','BRANCH_LAST'],
+  desc:'Kelbaran patladı. Bu dönemde ne yaptıysan, kıta onu yaşayacak.',
+  ev:{txt:`Efendim... oldu.<br><br>Kelbaran dün sabah patladı. Gökyüzü Alpenhof'tan Volzaria ovalarına kadar gri. Güneş üç gündür görünmüyor. Kıtanın dört bir yanından haberciler geliyor ve hepsi aynı şeyi soruyor: <b>elinizde ne var?</b><br><br>Bu dönemde ne biriktirdiyseniz, önümüzdeki yıllarda kıta onunla yaşayacak efendim. Kül Defterleri'nin ilk sayfası bugün açılıyor ve ilk cümleyi siz yazacaksınız.`,
+   ops:[
+    {t:'🍞 Ambarları kıtaya aç', eff:{rep:30, relAll:18, food:-20, gold:-6000, hap:-10, mor:8}, res:`Ambarlar açıldı efendim. Kıta bizim tahılımızla yaşadı. Halkımız aç kaldı, ama yüz elli yıl sonra defterlerde adımızın nasıl geçeceğini bugün belirledik.`},
+    {t:'🛡️ Önce kendi halkımız', eff:{hap:20, food:10, stab:4, rep:-18, relAll:-14}, res:`Kapıları kapattık efendim. Halkımız aç kalmadı, tek bir vatandaşımızı bile kaybetmedik. Kıta bunu unutmayacak — ve defterlerde "Kapalı" diye geçeceğiz.`},
+    {t:'⚖️ Satalım, ama adil fiyata', eff:{gold:9000, rep:6, relAll:2, food:-10, corr:6}, res:`Sattık efendim, hem de kimsenin sömürüldüğünü söyleyemeyeceği bir fiyata. Ne kahraman olduk ne cellat. Tarihin en sevmediği şey budur: ortada durmak.`}]}}
+];
+
+// ── 2) KÜL YILLARI ───────────────────────────────────────────────────
+// Gökyüzü gri. Hasat yok. Bu yıllarda ne yaptıysan, Kül Defterleri'ne o yazılıyor.
+SEN_SPINE.kul1=[
+ {id:'k1_ac', ico:'🚪', n:'Kapıları Aç', ay:3, req:[], xor:['k1_kapat'], grup:'kok',
+  desc:'Sınıra yığılan insanları içeri alalım. Elimizde ne varsa bölüşürüz.',
+  ev:{txt:`Efendim, sınır kapıları açıldı ve içeri giren sayısı ilk gün on bini geçti.<br><br>Aralarında Sarmatya ovalarından yürüyenler var — <b>Aç Yürüyüş</b> diyorlar. Aylardır yürüyorlar, çoğu bir daha gitmeyecek. Kentlerimizde çadır kentler kuruldu.<br><br>Ambar sorumlusu bugün ağladı efendim. "Herkese yeter" diye söz verdiniz. Yetmiyor.`,
+   ops:[
+    {t:'🍲 Tayını herkese eşit böl', eff:{rep:20, relAll:12, food:-14, hap:-12, mor:10, pop:2}, res:`Eşit böldük efendim — bizimki de onlarınki de aynı kâse. Halk homurdanıyor ama kimse aç ölmedi. Egeyalı kâtip bunu yazdı, iki kez sordu, iki kez yazdı.`},
+    {t:'🏠 Önce vatandaş, artan misafire', eff:{hap:6, food:-8, rep:6, relAll:3, stab:2}, res:`Sıralamayı böyle yaptık efendim. Kimse bizi acımasızlıkla suçlayamaz, kimse de kahraman diyemez. Çadır kentte "ikinci sınıf" diye bir tabir çıktı.`}]}},
+
+ {id:'k1_kapat', ico:'🔒', n:'Kapıları Kapat', ay:3, req:[], xor:['k1_ac'], grup:'kok',
+  desc:'Elimizdeki ancak kendimize yeter. Önce kendi halkımızı kurtaralım.',
+  ev:{txt:`Efendim, kapılar kapandı. Muhafızlar yerinde, geçitler tutuldu.<br><br>İlk gece sınırda bekleyenlerin sesi kente kadar geldi. İkinci gece daha azdı. Üçüncü gece hiç ses yoktu efendim ve bu en kötüsüydü.<br><br>Ama şunu da söylemeliyim: ambarımız üç ay daha dayanacak. Kapıyı açsaydık üç hafta dayanırdı.`,
+   ops:[
+    {t:'🤐 Sessiz kal, kimseye açıklama', eff:{food:14, hap:10, stab:3, rep:-16, relAll:-12}, res:`Açıklama yapmadık efendim. Halkımız doydu. Dışarıda bizim için ne söylendiğini bilmiyoruz — ve bilmemeyi tercih ediyoruz.`},
+    {t:'📄 Gerekçemizi kıtaya yazılı bildir', eff:{food:12, hap:6, rep:-8, relAll:-6, edu:6}, res:`Gerekçemizi yazdık efendim: "Elimizde şu kadar var, şu kadar kişiyiz, matematik bu." Kimse ikna olmadı ama kimse yalan söylediğimizi de söyleyemedi.`}]}},
+
+ {id:'k1_tohum', ico:'🌱', n:'Tohumluğu Ek', ay:4, req:[], reqAny:['k1_ac','k1_kapat'], xor:['k1_ye'], grup:'orta',
+  desc:'Bu yıl aç kalırız ama gelecek yıl hasat olur. Belki.',
+  ev:{txt:`Efendim, tohumluğu ektik. Kül basmış toprağa, tutar mı bilmeden.<br><br>Bu şu demek: elimizdeki son yenilebilir buğdayı toprağa gömdük. Halk bunu gördü. Bir kadın tarlada durup "oğlum açken siz toprağı doyuruyorsunuz" diye bağırdı efendim ve kimse ona cevap veremedi.<br><br>Eirlanda da aynısını yaptı — ama onlar tohumluğu <b>bize</b> gönderdi ve kendilerine hiç bırakmadı.`,
+   ops:[
+    {t:'🛡️ Tarlaları askerle koru', eff:{food:8, mil:6, hap:-14, mor:-6, stab:-2}, res:`Tarlaları asker korudu efendim. Kendi halkımıza karşı. Üç kişi tohum çalarken vuruldu. Hasat oldu ve o hasadın tadı kimsenin ağzında kalmadı.`},
+    {t:'🤲 Halka anlat, ikna etmeye çalış', eff:{food:5, hap:-6, edu:8, mor:6, rep:5}, res:`Meydan meydan dolaştık efendim, anlattık. Bazıları anladı, bazıları anlamadı ama çoğu bekledi. Hasat tuttu ve o gün halk kendi sabrıyla övündü.`}]}},
+
+ {id:'k1_ye', ico:'🍞', n:'Tohumluğu Yedir', ay:4, req:[], reqAny:['k1_ac','k1_kapat'], xor:['k1_tohum'], grup:'orta',
+  desc:'Gelecek yıl bir şey ifade etmiyor. İnsanlar bu kış ölüyor.',
+  ev:{txt:`Efendim, tohumluk ambarını açtık ve dağıttık. Bu kış kimse açlıktan ölmeyecek.<br><br>Tarım bakanı istifa etti. Giderken tek cümle söyledi: "Gelecek bahar ekecek bir şeyimiz olmayacak efendim, bunu size yazılı bıraktım."<br><br>Doğru söylüyor. Ama bu kış hayatta kalan on binlerce insan da doğru efendim. İkisi aynı anda doğru.`,
+   ops:[
+    {t:'🌍 Kıtadan tohum satın almaya çalış', eff:{gold:-9000, food:6, rep:-4, relAll:4}, res:`Tohum aradık efendim — Prusen'de var ama satmıyorlar, Turan'da var ama borç karşılığı veriyor. Hazineyi boşalttık, biraz bulduk. Yetmez ama sıfır değil.`},
+    {t:'🙏 Bu yılı kurtar, gerisine sonra bak', eff:{hap:16, mor:12, pop:3, food:-10, ind:-5}, res:`Bu kışı kurtardık efendim. Bahar geldiğinde tarlalar boş kaldı ve kimse şaşırmadı. Ama sokakta yürüyen insanlar var ve onlar bu kararla yürüyor.`}]}},
+
+ {id:'k1_yuruyus', ico:'👣', n:'Aç Yürüyüş Sınırda', ay:4, req:[], reqAny:['k1_tohum','k1_ye'],
+  desc:'Yüz binlerce insan geliyor. Karar bir günde verilecek.',
+  ev:{txt:`Efendim, Aç Yürüyüş bize ulaştı. Ufka bakınca insan görünüyor — kalabalık değil, <b>ufuk</b>.<br><br>Karpatya geçidi kapattı ve onları Balkarya'ya yolladı. Balkarya ormanlarını açtı ve şimdi taşamıyor. Sıra bizde efendim.<br><br>Ne yaparsanız yapın, bugün verdiğiniz karar bir cümleyle defterlere geçecek. Kâtip zaten burada, kapıda bekliyor.`,
+   ops:[
+    {t:'🏕️ Hepsini al, kentlere yerleştir', eff:{pop:5, rep:26, relAll:16, food:-18, hap:-16, stab:-4}, res:`Hepsini aldık efendim. Kentlerimiz taştı, tayın yarıya indi, halk isyanın eşiğine geldi. Ama kimse geri çevrilmedi ve defterde tek kelime yazıyor: "Açtı."`},
+    {t:'🚸 Sadece çocukları ve hastaları al', eff:{pop:2, rep:14, relAll:8, food:-9, hap:-6}, res:`Çocukları ve hastaları aldık efendim. Anneler kapıda kaldı, çocuklar içeride. O sahneyi gören muhafızların yarısı görevi bıraktı.`},
+    {t:'🛑 Geçirme, güneye yönlendir', eff:{food:8, hap:8, stab:3, rep:-20, relAll:-16, mor:-8}, res:`Güneye yönlendirdik efendim. Yolun güneyinde ne olduğunu ikimiz de biliyoruz. Ambarımız doldu, uykumuz kaçtı.`}]}},
+
+ {id:'k1_formul', ico:'⚗️', n:'Eisenburg\'a Ne Diyelim', ay:5, req:['k1_yuruyus'],
+  desc:'Prusen laboratuvarı külü çözecek bir karışım arıyor. Destek verelim mi?',
+  ev:{txt:`Efendim, Eisenburg'dan mektup geldi. Prusen'in laboratuvarı kül basmış toprağı yeniden verimli kılacak bir karışımın <b>eşiğinde</b> olduklarını yazıyor.<br><br>Para istiyorlar. Kimse vermiyor — herkesin derdi bu kış, kimse gelecek yılı düşünemiyor.<br><br>Prusen bunu bulursa Kül Yılları biter efendim. Bulamazsa, ya da geç bulursa, kıta bir kuşak daha bu gökyüzünün altında yaşar.`,
+   ops:[
+    {t:'💰 Açıktan finanse et', eff:{gold:-11000, tech:12, rep:20, rel:{prusen:32}, relAll:8, food:-4}, res:`Finanse ettik efendim. Hazine dibi gördü. Formül bulunduğunda Prusen ilk teşekkürü bize etti ve kıta bunu duydu. Aç kaldık ama Kül Yıllarını biz bitirdik.`},
+    {t:'🤝 Ortak patent karşılığı destekle', eff:{gold:-7000, tech:10, ind:8, rep:6, rel:{prusen:10}, relAll:-4}, res:`Ortaklık istedik efendim ve aldık. Formül bizim de adımızı taşıyor. Prusen bunu hiç sevmedi — "aç insanların üstünden pazarlık" dediler.`},
+    {t:'🚫 Bu kış hayatta kalmak öncelikli', eff:{food:10, hap:8, gold:2000, rep:-10, rel:{prusen:-16}}, res:`Reddettik efendim. Bu kışı düşündük ve haklıydık — halkımız doydu. Formül iki yıl geç bulundu. O iki yılın hesabını kimse bize sormadı, ama defterde duruyor.`}]}},
+
+ {id:'k1_katip', ico:'🕮', n:'Kâtip Kapıda', ay:6, req:['k1_formul','BRANCH_LAST'],
+  desc:'Egeyalı kâtip senin sayfanı yazacak. Yüz elli yıl okunacak.',
+  ev:{txt:`Efendim, Egeyalı kâtip geldi. Yiyecek istemiyor, para istemiyor — sadece <b>ne yaptığınızı</b> soruyor.<br><br>Egeya'nın Kül Yıllarında hiç yiyeceği olmadı ama kâtipleri vardı; kıtanın hafızasını onlar tuttu. Bu adamın yazdığı satır yüz elli yıl boyunca her masada, her anlaşmada, her kavgada okunacak.<br><br>Kalemi elinde efendim. Bekliyor.`,
+   ops:[
+    {t:'📖 Her şeyi yaz — iyisini de kötüsünü de', eff:{rep:18, edu:12, corr:-10, hap:-6, relAll:6}, res:`Her şeyi yazdırdık efendim. Kurtardıklarımızı da, kapıda bıraktıklarımızı da. Sayfamız kıtanın en dürüst sayfası oldu ve en çok okunanı.`},
+    {t:'✂️ Sadece yaptığımız iyilikleri yaz', eff:{rep:12, hap:10, mor:8, corr:8}, res:`Seçtiğimiz kısımları yazdırdık efendim. Sayfamız temiz görünüyor. Kâtip yazarken bir kez başını kaldırıp yüzünüze baktı, sonra yazmaya devam etti.`},
+    {t:'🚪 Kâtibi geri çevir', eff:{hap:6, stab:2, rep:-14, relAll:-10, mor:-4}, res:`Kâtibi geri çevirdik efendim. Sayfamız boş kaldı. Boş sayfa yüz elli yıl boyunca en kötü şekilde yorumlandı — çünkü boşluğu herkes kendi istediğiyle doldurdu.`}]}}
+];
+
+// ── 3) İKİNCİ KÜL YILLARI ────────────────────────────────────────────
+// Kelbaran ikinci kez patladı. Fark şu: bu sefer herkes kimin ne yaptığını biliyor.
+SEN_SPINE.kul2=[
+ {id:'k2_defter', ico:'📕', n:'Defterlere Göre Davran', ay:3, req:[], xor:['k2_yak'], grup:'kok',
+  desc:'Yüz elli yıl önce kim ne yaptıysa, bu sefer karşılığını alsın.',
+  ev:{txt:`Efendim, dağ ikinci kez patladı ve bu sefer kıtanın elinde bir şey var: <b>hafıza</b>.<br><br>Kararınızı ilan ettik: yardım, defterlere göre dağıtılacak. Kül Yıllarında veren alacak, kapatan bekleyecek.<br><br>Eirlanda elçisi ağladı efendim — yüz elli yıl sonra ilk kez birileri onların tohumluğunu hatırladı. Albiona elçisi ise salonu terk etti.`,
+   ops:[
+    {t:'⚖️ Sıkı uygula, istisna yok', eff:{rep:16, relAll:-6, rel:{eirlanda:30, norvenna:22, balkarya:20, albiona:-30, karpatya:-24}, mor:10}, res:`İstisnasız uyguladık efendim. Adalet dedik ve adaletin bedelini gördük: kıtanın yarısı bize minnettar, yarısı düşman. Aradaki gri alan yok oldu.`},
+    {t:'🕊️ Defteri ölçü al ama kapıyı kapatma', eff:{rep:12, relAll:6, rel:{eirlanda:18, norvenna:14}, gold:-4000, food:-6}, res:`Defteri ölçü aldık ama kimseyi aç bırakmadık efendim. Verenler önce aldı, kapatanlar sonra aldı — ama aldı. Bu, kimseyi tam memnun etmeyen türden bir doğruluk.`}]}},
+
+ {id:'k2_yak', ico:'🔥', n:'Defterleri Yak', ay:3, req:[], xor:['k2_defter'], grup:'kok',
+  desc:'Yüz elli yıllık hesap bu felakete engel. Sayfayı sıfırdan açalım.',
+  ev:{txt:`Efendim, teklifiniz kıtayı ikiye böldü: Kül Defterleri yakılsın, herkes bugünden başlasın.<br><br>Mantığınız açık — dede hesabıyla torun beslenmez. Ama Egeya kâtipler birliği "hafızayı yakan felaketi tekrar yaşar" diye cevap verdi ve o cevap her meydanda okundu.<br><br>Bir de şu var efendim: bizim sayfamızda ne yazıyorsa, artık kimse okuyamayacak. Bunun bize yarayıp yaramadığını ikimiz de biliyoruz.`,
+   ops:[
+    {t:'🔥 Gerçekten yak, töreni halka aç', eff:{hap:16, mor:12, relAll:8, rep:-12, edu:-10, rel:{egeya:-30}}, res:`Meydanda yaktık efendim. Kalabalık tezahürat etti, genç kuşak bunu bir kurtuluş saydı. Egeya bizimle konuşmuyor. Kâtipler kopyaların hepsini yakmadığımızı biliyor — bilmiyoruz ama biliyorlar.`},
+    {t:'📦 Yakma, mühürle ve bir kuşak kapat', eff:{rep:8, relAll:10, hap:8, edu:4, rel:{egeya:-8}}, res:`Yakmadık, mühürledik efendim. Otuz yıl kimse açamayacak. Hem geçmişi askıya aldık hem yok etmedik — kıta buna "korkakların bilgeliği" dedi ama kabul etti.`}]}},
+
+ {id:'k2_borc', ico:'📜', n:'Eski Borçları Çağır', ay:4, req:[], reqAny:['k2_defter','k2_yak'], xor:['k2_sil'], grup:'orta',
+  desc:'Reddiye\'den kalan alacaklar var. Kıtlık, tahsilat için en güçlü zamandır.',
+  ev:{txt:`Efendim, sandıkları açtık. Reddiye'den önce verilmiş, ödenmemiş, tanınmamış alacaklar — çoğu artık toprak olmuş insanların imzasını taşıyor.<br><br>Hukukçular "geçerli" diyor. Tarihçiler "ahlaksız" diyor. Aç insanlar hiçbir şey demiyor çünkü aç insanlar tartışmaz efendim, kabul eder.<br><br>Şimdi tahsil edersek alırız. Çünkü karşımızdakinin seçeneği yok.`,
+   ops:[
+    {t:'💰 Toprakla tahsil et', eff:{gold:14000, ind:8, rep:-24, relAll:-18, mor:6, hap:8}, res:`Toprakla tahsil ettik efendim. Sınırlarımız büyüdü, hazine doldu. Kıtada bir cümle dolaşıyor: "Reddiye'yi neden yaptıklarını şimdi anladık."`},
+    {t:'🌾 Tahılla tahsil et, toprağa dokunma', eff:{food:14, gold:5000, rep:-10, relAll:-8}, res:`Tahılla aldık efendim, toprağa dokunmadık. Ambarımız doldu. "En azından toprak almadılar" dendi — bu, bir devlet için övgü sayılmaz ama hakaret de değil.`}]}},
+
+ {id:'k2_sil', ico:'🕊️', n:'Borcu Sil', ay:4, req:[], reqAny:['k2_defter','k2_yak'], xor:['k2_borc'], grup:'orta',
+  desc:'Alacaklarımızın hepsini silelim. Bunun bedeli var ama karşılığı da olacak.',
+  ev:{txt:`Efendim, kıta tarihinde ilk kez bir devlet bütün alacaklarını tek celsede sildi ve o devlet biziz.<br><br>Hazine bakanı rakamı görünce oturdu. Ama şunu da gördük: silme kararını duyan dokuz ülkenin elçisi aynı hafta içinde kapımıza geldi.<br><br>Şimdi kimsenin bize borcu yok efendim. Ama herkesin bize <b>minneti</b> var ve minnet, borçtan daha uzun yaşar.`,
+   ops:[
+    {t:'📢 Karşılıksız sil, hiçbir şey isteme', eff:{gold:-8000, rep:30, relAll:22, mor:12, hap:-6}, res:`Hiçbir şey istemedik efendim. Kıta şaşkın. Bir Egeyalı kâtip "bu sayfayı yazarken elim titredi" dedi. İtibarımız kıtanın en yükseği — hazinemiz en düşüğü.`},
+    {t:'🤝 Sil ama ortak kurum kurulsun', eff:{gold:-5000, rep:20, relAll:14, ind:6, edu:8, tech:5}, res:`Sildik ve karşılığında bir masa istedik efendim: kıtanın ortak kıtlık fonu. Kurulacak ve başkanı biz olacağız. Cömertliğin en kârlı biçimi buymuş.`}]}},
+
+ {id:'k2_formul', ico:'⚗️', n:'Formül Hâlâ Elimizde mi?', ay:4, req:[], reqAny:['k2_borc','k2_sil'],
+  desc:'Eisenburg Formülü yüz elli yıl önce kıtayı kurtardı. Hâlâ biliyor muyuz?',
+  ev:{txt:`Efendim, kötü bir şey keşfettik: <b>Eisenburg Formülü kayıp.</b><br><br>Yüz elli yıl kimse ihtiyaç duymadı, kimse tekrarlamadı, ustalar öldü, defterler dağıldı. Prusen arşivinde sadece parçalar var ve parçalar tek başına işe yaramıyor.<br><br>Toprak yine kül altında efendim ve bu sefer onu nasıl çözeceğimizi bilmiyoruz. Prusen yardım istiyor — üstelik yüz elli yıl önce kimseden istememişlerdi.`,
+   ops:[
+    {t:'🔬 Kıta çapında ortak araştırma başlat', eff:{gold:-9000, tech:16, edu:12, rep:18, relAll:12}, res:`Ortak laboratuvar kuruldu efendim. On bir ülkenin bilgini Eisenburg'da. Formül on dört ayda yeniden bulundu ve bu sefer <b>kimsenin tekelinde değil</b>.`},
+    {t:'🏭 Kendimiz bulalım, tekelde kalsın', eff:{gold:-7000, tech:14, ind:10, rep:-14, relAll:-10, mor:8}, res:`Kendimiz bulduk efendim ve sattık. Zengin olduk. Kıta bize "ikinci Turan" demeye başladı — ve bu kıtada bir ülkeye söylenebilecek en ağır sözlerden biri.`},
+    {t:'📚 Egeya arşivini aç, hafızaya güven', eff:{edu:16, tech:8, rep:14, rel:{egeya:26, prusen:14}, relAll:6, gold:-3000}, res:`Egeya arşivi açıldı efendim ve formülün eksik parçası orada çıktı — bir kâtibin yüz elli yıl önce "belki lazım olur" diye kopyaladığı sayfada. Hafıza, bu kıtada bir kez daha hayat kurtardı.`}]}},
+
+ {id:'k2_kusak', ico:'👶', n:'İkinci Kül Kuşağı', ay:5, req:['k2_formul'],
+  desc:'Bu felakette doğan çocuklar güneşi hiç görmedi. Onlarla ne yapacağız?',
+  ev:{txt:`Efendim, okul müfettişi raporunu getirdi ve rapordaki bir cümle geceleri uyumama engel oluyor.<br><br>"Bu kuşak gökyüzünü gri biliyor. Mavi diye bir şeyin var olduğuna inanmıyorlar; büyüklerin uydurduğu bir teselli sanıyorlar."<br><br>Yüz elli yıl önce de aynı şey olmuş efendim. O kuşak büyüdü ve Reddiye'yi onlar yaptı. Kızgın bir kuşak, kızgın bir kıta bırakır.`,
+   ops:[
+    {t:'🏫 Okulları ayakta tut, ne pahasına olursa', eff:{gold:-7000, edu:20, hap:8, mor:10, rep:12, food:-5}, res:`Okulları kapatmadık efendim. Kıtlıkta öğretmen maaşı ödeyen tek ülkeyiz. Yirmi yıl sonra bu kuşak yönetime geldiğinde, ne yaptığımızı hatırlayacaklar.`},
+    {t:'🔨 Çocukları da üretime kat', eff:{ind:14, food:8, gold:3000, edu:-16, hap:-8, rep:-12}, res:`Çocuklar üretime katıldı efendim. Bu kışı atlattık, fabrikalar döndü. Bir kuşağın okuma yazması eksik kaldı ve bunun faturası bize değil, torunlarımıza gelecek.`},
+    {t:'🌤️ Onlara gerçeği anlat, umut vaat etme', eff:{edu:12, mor:14, hap:-4, rep:8, stab:2}, res:`Yalan söylemedik efendim. "Gökyüzü griydi, sizin sorumluluğunuz onu geri getirmek" dedik. O kuşak öfkeli değil, <b>görevli</b> büyüdü. Fark buradaymış.`}]}},
+
+ {id:'k2_sayfa', ico:'✒️', n:'İkinci Sayfa', ay:6, req:['k2_kusak','BRANCH_LAST'],
+  desc:'Kıta ikinci kez aynı sınavdan geçti. Bu sefer ne yazacağız?',
+  ev:{txt:`Efendim, kâtip yine geldi. Aynı aile, aynı unvan, aynı soru — sadece yüz elli yıl sonra.<br><br>Elinde iki defter var: eskisi ve yenisi. Eskisini açıp bizim sayfamızı okudu, sonra kapattı ve yenisini açtı.<br><br>"Aynı sınavı iki kez veren nadir olur" dedi efendim. "İkinci seferinde ne yaptığınız, birincisini de yeniden yazar."`,
+   ops:[
+    {t:'🔄 "Bu sefer farklı yaptı"', eff:{rep:24, relAll:14, edu:10, hap:6, gold:-4000}, res:`Kâtip yazdı efendim: "İkinci Kül Yıllarında bu ülke, birincisinde yapmadığını yaptı." Bu cümle kıtada en çok alıntılanan satır oldu. Geçmişimiz değişmedi ama anlamı değişti.`},
+    {t:'⚖️ "Aynı kaldı, çünkü doğru olan buydu"', eff:{mor:16, hap:12, mil:8, rep:4, relAll:-4}, res:`Kâtip yazdı efendim: "Aynı kaldı." Tutarlıyız — hem övenler hem sövenler yüz elli yıl önceki cümlelerini tekrar kullanabildi. Kimse bizden sürpriz beklemiyor artık.`},
+    {t:'🤝 "Defteri kapatmayı öğrendi"', eff:{rep:18, relAll:20, corr:-8, edu:8, mil:-6}, res:`Kâtip yazdı efendim: "Bu ülke defteri kapatmayı öğrendi." Kıtada silahlı çatışma sayısı üç yılda yarıya indi. Ordumuz küçüldü, sözümüz büyüdü.`}]}}
+];
+
+// ── 4) KÜLSÜZ TOPARLANMA ─────────────────────────────────────────────
+// Gökyüzü mavi. Felaket bitti. Bahane de bitti. Asıl zor kısım burası.
+SEN_SPINE.toparlanma=[
+ {id:'tp_bosalt', ico:'🏚️', n:'Ambarı Boşalt', ay:3, req:[], xor:['tp_tut'], grup:'kok',
+  desc:'Kriz bitti. Yıllardır tuttuğumuz stok artık kilitli durmasın.',
+  ev:{txt:`Efendim, ambarları açtık ve içinden çıkanı görünce sustuk: kıtlık boyunca hiç dokunulmamış, üç yıllık tahıl.<br><br>Halk bunu gördü. Bir gazeteci tek soru sordu ve o soru şehirde yankılandı: <b>"Bu, o kışlarda da burada mıydı?"</b><br><br>Evet efendim, buradaydı. Ve o kışlarda bazı insanlar aç yattı.`,
+   ops:[
+    {t:'📖 Doğruyu söyle, hesabını ver', eff:{rep:20, edu:10, corr:-12, hap:-10, mor:6}, res:`Doğruyu söyledik efendim. İki bakan istifa etti, biri yargılandı. Halk kızdı ama devletine güveni arttı — çünkü ilk kez devlet kendini şikâyet etti.`},
+    {t:'🍞 Sessizce dağıt, konuyu kapat', eff:{hap:14, food:-6, stab:3, corr:8, rep:-6}, res:`Sessizce dağıttık efendim. Kimse aç değil, kimse soru sormuyor. Arşivde o rakamlar duruyor ve bir gün birileri onları bulacak.`}]}},
+
+ {id:'tp_tut', ico:'🔐', n:'Ambarı Tut', ay:3, req:[], xor:['tp_bosalt'], grup:'kok',
+  desc:'Dağ iki kez patladı. Üçüncüsü olmayacağını kim söyleyebilir?',
+  ev:{txt:`Efendim, stoku dağıtmama kararınız kabineyi böldü.<br><br>Gerekçeniz sağlam: bu kıta iki kez aynı dağdan vuruldu ve ikisinde de hazırlıksız yakalandı. Üçüncüsünde hazırlıklı olmak akıl işidir.<br><br>Ama halk şunu görüyor efendim: gökyüzü mavi, ambar kilitli. "Ne zaman açılacak" diye soruyorlar ve verecek bir tarihimiz yok.`,
+   ops:[
+    {t:'📊 Kalıcı stok yasası çıkar', eff:{food:16, stab:4, edu:8, rep:10, hap:-8, gold:-3000}, res:`Yasa çıktı efendim: devlet daima üç yıllık stok tutacak, dokunulamayacak. Kıta bunu kopyaladı. Sıkıcı bir yasaydı ve muhtemelen yüz yıl sonra birilerinin hayatını kurtaracak.`},
+    {t:'💹 Fazlasını satıp fon kur', eff:{gold:9000, food:6, ind:6, rep:4, hap:-4}, res:`Fazlasını sattık, parasını kıtlık fonuna koyduk efendim. Tahıl yerine para tutuyoruz. Para, yolların açık olduğu zamanlarda tahıldan iyidir — kapandığında değil.`}]}},
+
+ {id:'tp_kurum', ico:'🏛️', n:'Ortak Kurum', ay:4, req:[], reqAny:['tp_bosalt','tp_tut'], xor:['tp_kendi'], grup:'orta',
+  desc:'Kıta iki felaketi de dağınık karşıladı. Bu sefer ortak bir çatı kuralım.',
+  ev:{txt:`Efendim, Alpenhof'ta kıtanın on beş ülkesi aynı salonda oturdu — yüz elli yıldır ilk kez savaş konuşmadan.<br><br>Teklifimiz masada: kalıcı bir Kıtlık Konseyi. Ortak stok, ortak erken uyarı, ortak geçit hakkı.<br><br>Ama şu soru cevapsız efendim: <b>kim karar verecek?</b> Herkes kurumu istiyor, kimse kurumun kendisine emretmesini istemiyor.`,
+   ops:[
+    {t:'⚖️ Eşit oy — küçük ülkeler de eşit', eff:{rep:24, relAll:18, edu:8, mil:-6, gold:-4000}, res:`Eşit oy kabul edildi efendim. Eirlanda ile Volzaria aynı ağırlıkta. Büyükler homurdandı ama imzaladı. Kurulan şey bir kurum değil, bir <b>alışkanlık</b> — ve alışkanlıklar kurumlardan uzun yaşar.`},
+    {t:'🏋️ Ağırlıklı oy — katkı kadar söz', eff:{rep:12, ind:10, gold:3000, relAll:4, rel:{eirlanda:-16, iberya:-12, suomia:-10}}, res:`Ağırlıklı oy geçti efendim. Biz çok katkı veriyoruz, çok söz alıyoruz. Adil mi? Verimli. Küçük ülkeler "yeni bir Tahıl Meclisi kurdunuz" diyor ve maalesef haklılar.`}]}},
+
+ {id:'tp_kendi', ico:'🛡️', n:'Kendi Devletimiz', ay:4, req:[], reqAny:['tp_bosalt','tp_tut'], xor:['tp_kurum'], grup:'orta',
+  desc:'Kıta kurumları iki felakette de işe yaramadı. Kendi evimizi sağlamlaştıralım.',
+  ev:{txt:`Efendim, Alpenhof'a gitmedik. Bunun yerine kendi kıtlık sistemimizi kurduk: kendi stok yasamız, kendi erken uyarı ağımız, kendi yollarımız.<br><br>Savunmanız net: "Tahıl Meclisi iki felakette de toplandı, iki felakette de geç kaldı."<br><br>Kıta bunu bencillik olarak okudu efendim. Halk ise ilk kez "bize bir şey olmaz" diyor ve bu cümleyi yüz elli yıldır kimse kuramamıştı.`,
+   ops:[
+    {t:'🏗️ Sistemi kur ve kimseye açma', eff:{food:14, ind:12, stab:5, gold:-5000, rep:-12, relAll:-10}, res:`Kurduk efendim. Kıtanın en dayanıklı devleti biziz. Ve en yalnızı. Üçüncü bir felakette ayakta kalacağız — çevremizde kimse kalmasa bile.`},
+    {t:'📖 Sistemi kur ve tarifini herkese ver', eff:{food:12, ind:8, rep:20, relAll:14, edu:12, gold:-6000}, res:`Kurduk ve tarifini bedava dağıttık efendim. "Kurumunuza girmiyoruz ama yöntemimizi alın" dedik. Dört ülke aynısını kurdu. Kurum olmadan da kıta güçlendi.`}]}},
+
+ {id:'tp_kelbaran', ico:'🌋', n:'Kelbaran Sustu', ay:4, req:[], reqAny:['tp_kurum','tp_kendi'],
+  desc:'Dağ ilk kez tamamen sessiz. Alpenya ne yapacağımızı soruyor.',
+  ev:{txt:`Efendim, ölçümcüler onayladı: Kelbaran <b>tamamen</b> sustu. Ne duman, ne titreme, ne ısınan kaynak.<br><br>Alpenya bir teklifle geldi. Dağın eteğine kıtanın ortak anıtını dikmek istiyorlar — iki felakette ölenler için. Ama Alpenya'nın kendi halkı buna karşı: "Dağımız mezar taşı değil, ata ocağı" diyorlar.<br><br>Ve karar bize soruluyor efendim, çünkü kıta artık bize soruyor.`,
+   ops:[
+    {t:'🕯️ Anıtı destekle, kıtayı topla', eff:{rep:22, relAll:16, hap:8, mor:10, gold:-4000, rel:{alpenya:-10}}, res:`Anıt dikildi efendim. Açılışta on beş ülkenin bayrağı yan yanaydı. Alpenya halkının bir kısmı törene gelmedi — ama gelenler ağladı ve o yeter.`},
+    {t:'⛪ Alpenya\'nın hakkına saygı göster', eff:{rep:14, rel:{alpenya:35}, relAll:4, hap:4, edu:4}, res:`"Dağ onların" dedik efendim ve tartışmayı kapattık. Alpenya bunu yüz elli yıllık yalnızlığının sonu saydı. Bazen en büyük diplomasi, bir şey yapmamaktır.`},
+    {t:'🔬 Dağı gözlemevine çevir', eff:{tech:18, edu:14, rep:12, relAll:6, gold:-5500, rel:{alpenya:8}}, res:`Kelbaran'ın eteğine kıtanın ilk yer bilimleri enstitüsü kuruldu efendim. Anıt değil, <b>nöbetçi</b>. Üçüncü bir patlama olursa kıta bu sefer önceden bilecek.`}]}},
+
+ {id:'tp_kusak', ico:'🌤️', n:'Mavi Gökyüzü Kuşağı', ay:5, req:['tp_kelbaran'],
+  desc:'İlk kez külsüz büyüyen bir kuşak var. Onlara ne bırakacağız?',
+  ev:{txt:`Efendim, bu yıl doğan çocuklar gökyüzünü mavi biliyor. Kıta tarihinde bunu diyebilen üçüncü kuşak sadece.<br><br>Ama tuhaf bir sorun çıktı: bu çocuklar Kül Yıllarını <b>umursamıyor</b>. Okulda anlatılınca sıkılıyorlar. Bir öğretmen "eski insanların dertleri" diye yazdıklarını gösterdi.<br><br>Hafızayı taşımak yorucu efendim. Ama unutmanın faturasını bu kıta iki kez ödedi.`,
+   ops:[
+    {t:'📚 Hafızayı zorunlu ders yap', eff:{edu:16, rep:12, mor:8, hap:-6, gold:-2500}, res:`Zorunlu ders oldu efendim. Çocuklar sıkılıyor, öğretmenler yoruluyor. Ama otuz yıl sonra bir kriz çıktığında, ne yapacağını bilen bir kuşak olacak. Sıkıcı olan genelde işe yarayandır.`},
+    {t:'🎭 Anlatıyı yenile — korku değil sorumluluk', eff:{edu:12, hap:8, mor:14, rep:14, relAll:6}, res:`Anlatıyı değiştirdik efendim: "atalarınız açlık çekti" yerine "atalarınız bir sistem kurdu, sıra sizde" dedik. Çocuklar dinledi. Bazıları enstitüye yazıldı.`},
+    {t:'🌱 Bırak unutsunlar, ileriye baksınlar', eff:{hap:16, ind:10, gold:3000, edu:-10, rep:-8}, res:`Bıraktık efendim. Kuşak hafif, mutlu ve üretken büyüyor. Kül Defterleri müzede tozlanıyor. Belki haklıyız. Belki de bu kıta üçüncü kez aynı dersi almak üzere.`}]}},
+
+ {id:'tp_sayfa', ico:'📗', n:'Külsüz Sayfa', ay:6, req:['tp_kusak','BRANCH_LAST'],
+  desc:'Kül Defterleri\'ne felaketsiz bir dönemin sayfası ilk kez yazılıyor.',
+  ev:{txt:`Efendim, kâtip son kez geldi ve bu kez elinde farklı bir defter var: kapağında kül lekesi yok.<br><br>"Yüz elli yıldır ilk kez felaket olmayan bir dönemi yazıyorum" dedi. "Ve zorlanıyorum — çünkü felaket olmadığında bir ülkenin ne olduğunu anlamak zor. Kıtlıkta herkes ya kahraman ya cellattır. Bollukta sadece <b>kendisidir</b>."<br><br>Sonra sordu efendim: bu dönemde siz kimdiniz?`,
+   ops:[
+    {t:'🏛️ "Kurumsallaştı"', eff:{rep:20, edu:14, stab:5, corr:-12, hap:-4}, res:`Kâtip yazdı efendim: "Bu dönemde ülke bir kişiye bağlı olmaktan çıktı." Yasalar, kurumlar, kayıtlar. Heyecansız bir sayfa oldu — kıtanın en çok imrenilen sayfası.`},
+    {t:'🌍 "Kıtayı birleştirdi"', eff:{rep:26, relAll:24, mil:-8, gold:-5000, mor:10}, res:`Kâtip yazdı efendim: "Bu dönemde ülke kendinden büyük bir şeye hizmet etti." Ordumuz küçüldü, sözümüz kıtanın her masasında. Zayıf değiliz — sadece silahsız güçlüyüz.`},
+    {t:'🏭 "Zenginleşti"', eff:{gold:12000, ind:16, hap:14, rep:-6, relAll:-6}, res:`Kâtip yazdı efendim: "Bu dönemde ülke zenginleşti." Halk memnun, hazine dolu, fabrikalar dönüyor. Kâtip yazarken durakladı ve "başka bir şey yok mu" diye sordu. Yoktu.`},
+    {t:'🕮 "Kendi sayfasını dürüstçe okudu"', eff:{rep:22, edu:16, corr:-14, relAll:10, hap:-8, mor:6}, res:`Kâtip yazdı efendim: "Bu dönemde ülke kendi sayfasını yüksek sesle okudu." Sakladığımız her şeyi açtık. Acı bir yıl oldu ve ardından kıtanın en güvenilen devleti olduk.`}]}}
+];
+
+// ── Ülke arketipleri ─────────────────────────────────────────────────
+// Yeni senaryolarda ülke dalı, o ülkenin kıtadaki ROLÜNDEN türüyor.
+// Varsayılan dönemde eski ülkeye özel dallar (FOCUS_BRANCHES) kullanılır.
+const ARKETIP={
+ eirlanda:'veren',  norvenna:'veren',   balkarya:'veren',  suomia:'veren',
+ albiona:'kapanan', karpatya:'kapanan', iberya:'kapanan',
+ turan:'kazanan',   venedra:'kazanan',  aurelia:'kazanan',
+ alpenya:'yuklenen',sarmatya:'yuklenen',volzaria:'yuklenen',
+ egeya:'kalem',     prusen:'kalem'
+};
+const ARK_AD={veren:'Verenler',kapanan:'Kapananlar',kazanan:'Kazananlar',yuklenen:'Yükü Taşıyanlar',kalem:'Kalem ve Formül'};
+const SEN_BRANCH={oncesi:{},kul1:{},kul2:{},toparlanma:{}};
+
+// ═══ 1) KELBARAN'DAN ÖNCE ═══
+SEN_BRANCH.oncesi.veren=[
+ {id:'b_on_v1', ico:'🌾', n:'Küçük Ambar', ay:3, req:[], reqAny:['on_dinle','on_bereket'],
+  desc:'Elimizde az var. Az olanı nasıl kullanacağımız bizi tanımlayacak.',
+  ev:{txt:`Efendim, ambar sayımı bitti ve rakam iç açıcı değil: kıtanın en küçük stoklarından biri bizimki.<br><br>Ama tarım müdürümüz ilginç bir şey söyledi: "Az stok kötü değil efendim, <b>ne yapacağını bilmemek</b> kötü."`,
+   ops:[
+    {t:'🌱 Tohumluğu ayrı kilitle', eff:{food:10, stab:3, hap:-4}, res:`Tohumluk ayrı ambara kilitlendi efendim, dokunulmayacak. Kıtlık gelirse ekecek bir şeyimiz olacak — yenecek bir şeyimiz olmasa bile.`},
+    {t:'🤝 Komşularla ortak ambar kur', eff:{rep:12, relAll:10, food:5, gold:-2500}, res:`Ortak ambar kuruldu efendim. Tek başımıza küçüğüz, birlikte orta boyuz. Kriz gelirse kimin ne alacağı henüz yazılmadı — bu, sonra kavga çıkaracak türden bir eksiklik.`}]}},
+ {id:'b_on_v2', ico:'🚢', n:'Elimizdekini Kim Görsün', ay:4, req:['b_on_v1'],
+  desc:'Az olanı gizlemek mi, ilan etmek mi daha güvenli?',
+  ev:{txt:`Efendim, kıtada bir söylenti dolaşıyor: bizim ambarımız boş. Doğru.<br><br>Tüccarlar bunu duyunca fiyat kırmaya başladı — zayıf görüneni herkes ezer. Ama zayıf görünmenin bir faydası da var: kimse zayıftan bir şey istemez.`,
+   ops:[
+    {t:'🎭 Zayıf görünmeye devam et', eff:{gold:3000, food:6, rep:-6}, res:`Zayıf göründük efendim. Kimse bizden yardım istemedi, kimse bize göz dikmedi. Ucuz aldık, sessiz durduk. Onurumuz biraz eksildi, ambarımız biraz doldu.`},
+    {t:'📣 Ne varsa açıkça göster', eff:{rep:14, relAll:8, edu:5, gold:-1500}, res:`Her şeyi açık ilan ettik efendim — elimizde ne varsa, ne kadar dayanacağı da dahil. Kıta şaşırdı. Dürüstlük bu kıtada hâlâ bir yenilik.`}]}},
+ {id:'b_on_v3', ico:'🤲', n:'Söz Verilir mi?', ay:5, req:['b_on_v2'],
+  desc:'Felaket olursa ne yapacağımıza dair şimdiden söz vermeli miyiz?',
+  ev:{txt:`Efendim, Tahıl Meclisi bir taahhüt metni dolaştırıyor: <i>"Felaket halinde elimdekini paylaşacağıma söz veririm."</i><br><br>İmzalayan üç ülke var, hepsi bizim gibi küçük ve fakir. Zenginler imzalamıyor — imzalamak, bir gün gerçekten vermek demek.`,
+   ops:[
+    {t:'✍️ İmzala', eff:{rep:20, relAll:14, mor:10, food:-6}, res:`İmzaladık efendim. Elimizde ne varsa söz verdik. Bir gün bu imza yüzünden aç kalacağız — ve o gün, yüz elli yıl sonra okunacak sayfamızı yazacak.`},
+    {t:'🚫 İmzalama, elimiz bağlanmasın', eff:{food:8, stab:3, rep:-10, relAll:-8}, res:`İmzalamadık efendim. "Önce kendi halkımız" dedik. Metni imzalayan Eirlanda temsilcisi bize bakmadan çıktı salondan.`}]}}
+];
+SEN_BRANCH.oncesi.kapanan=[
+ {id:'b_on_k1', ico:'🏔️', n:'Doğal Duvarımız', ay:3, req:[], reqAny:['on_dinle','on_bereket'],
+  desc:'Coğrafyamız bizi koruyor. Bu bir avantaj mı, yoksa tembellik mi?',
+  ev:{txt:`Efendim, genelkurmay raporu tek cümleyle özetlenebilir: "Bu ülkeye kara yoluyla girmek zordur."<br><br>Denizimiz, dağımız ya da geçidimiz — hangisiyse — bizi yüzyıllardır korudu. Ama koruma iki yönlü çalışır: dışarısı içeri giremiyorsa, içerisi de dışarı çıkamıyor.`,
+   ops:[
+    {t:'🧱 Duvarı güçlendir', eff:{mil:10, stab:4, food:5, rep:-6, relAll:-5}, res:`Geçitleri, limanları, kaleleri güçlendirdik efendim. Bize kimse dokunamaz. Kıtada "kendi kabuğuna çekildiler" deniyor ve doğru diyorlar.`},
+    {t:'🚪 Kapıları bilinçli olarak aç', eff:{gold:5000, relAll:10, rep:8, mil:-5}, res:`Kapıları açtık efendim — ticaret, yolcu, elçi. Zenginleştik ve tanındık. Savunma bakanı "bir gün bunun bedelini ödeyeceğiz" diye tutanağa yazdırdı.`}]}},
+ {id:'b_on_k2', ico:'⚓', n:'Kendi Kendine Yetmek', ay:4, req:['b_on_k1'],
+  desc:'Kıtaya muhtaç olmayan tek ülke olabiliriz. Bunun bir bedeli var.',
+  ev:{txt:`Efendim, tam bağımsızlık planı masada: kendi tahılımız, kendi demirimiz, kendi filomuz.<br><br>Maliyeti korkunç ve ekonomistler karşı çıkıyor — "ticaret her zaman ucuzdur efendim" diyorlar. Haklılar. Ta ki ticaret dursun.`,
+   ops:[
+    {t:'🏭 Tam kendine yeterlilik', eff:{ind:12, food:12, gold:-7000, rep:-4, relAll:-6}, res:`Kurduk efendim. Hiçbir şeye muhtaç değiliz. Pahalıydı, verimsiz ve kimse anlamıyor. Bir gün kıtada gemiler durduğunda anlaşılacak.`},
+    {t:'⚖️ Kritik kalemlerde yeterlilik', eff:{food:8, ind:6, gold:-3000, relAll:2}, res:`Sadece tahıl ve demirde kendine yeter olduk efendim, gerisini almaya devam ediyoruz. Ne tam kale ne tam liman — ama makul.`}]}},
+ {id:'b_on_k3', ico:'🗝️', n:'Kapı Kimin Elinde', ay:5, req:['b_on_k2'],
+  desc:'Bir kriz çıkarsa kapımızı açma kararını kim verecek?',
+  ev:{txt:`Efendim, hukuk odası tuhaf bir eksiklik buldu: <b>kapıyı kapatma yetkisi kimde belli değil.</b><br><br>Bugüne kadar gerek olmadı. Ama bir gün sınırda yüz bin insan olursa, o kararı kim verecek? Siz mi, meclis mi, sınır komutanı mı?`,
+   ops:[
+    {t:'👤 Karar tek elde toplansın', eff:{stab:5, mil:6, corr:8, edu:-5}, res:`Yetki tek elde toplandı efendim. Kriz anında tereddüt olmayacak. Tereddüt bazen iyi bir şeydir ama biz onu ortadan kaldırdık.`},
+    {t:'🏛️ Meclis karar versin', eff:{edu:10, rep:10, corr:-8, stab:-3}, res:`Yetki meclise verildi efendim. Kriz anında tartışacaklar, gecikecekler ve muhtemelen doğru kararı verecekler. Muhtemelen.`}]}}
+];
+SEN_BRANCH.oncesi.kazanan=[
+ {id:'b_on_z1', ico:'💰', n:'Bolluğun Matematiği', ay:3, req:[], reqAny:['on_dinle','on_bereket'],
+  desc:'Zenginiz. Peki bu zenginlik neye dayanıyor — üretime mi, alacağa mı?',
+  ev:{txt:`Efendim, hazine raporunu okudum ve bir şey dikkatimi çekti: servetimizin büyük kısmı <b>başkalarının borcu</b>.<br><br>Yani zenginliğimiz, karşımızdakinin ödeyebilmesine bağlı. Kıta zenginken bu bir güç. Kıta fakirleşirse, bu bir kâğıt yığını.`,
+   ops:[
+    {t:'🏭 Alacağı üretime çevir', eff:{ind:14, gold:-4000, rep:6, food:5}, res:`Alacakları tahsil edip fabrikaya döktük efendim. Artık zenginliğimiz kimsenin imzasına bağlı değil. Tüccarlar homurdandı ama sanayiciler bayram etti.`},
+    {t:'📈 Alacağı büyüt, faizi artır', eff:{gold:9000, corr:8, rep:-10, relAll:-8}, res:`Alacak defterimiz kabardı efendim. Kıtanın yarısı bize borçlu. Güçlüyüz — ve borçlu olan hiç kimse borçlusunu sevmez.`}]}},
+ {id:'b_on_z2', ico:'⚖️', n:'Fiyat Kimin Umurunda', ay:4, req:['b_on_z1'],
+  desc:'Tahıl ucuz. Ucuzken alıp stoklamak kazanç mı, spekülasyon mu?',
+  ev:{txt:`Efendim, tüccarlarımız yıllardır olmadığı kadar ucuz tahıl alıyor ve depoluyor.<br><br>Ekonomik olarak akıllıca. Ahlaki olarak... henüz bir sorun yok, çünkü kıtlık yok. Sorun kıtlık geldiğinde çıkacak, çünkü o gün elimizdeki tahılın fiyatını biz belirleyeceğiz.`,
+   ops:[
+    {t:'📜 Şimdiden tavan fiyat yasası çıkar', eff:{rep:18, relAll:10, hap:8, gold:-4000}, res:`Yasa çıktı efendim: kıtlık halinde tahıl fiyatı yasal tavanı aşamaz. Tüccarlar isyan etti. Bu yasa bir gün binlerce insanın hayatını kurtaracak ve kimse bunu bilmeyecek.`},
+    {t:'🤫 Piyasa piyasadır, karışma', eff:{gold:8000, ind:6, rep:-12, hap:-5}, res:`Karışmadık efendim. Depolar doluyor, fiyat düşük, kâr beklemede. Kıtlık gelirse zengin olacağız. Kâtipler bu tür kararları çok iyi hatırlar.`}]}},
+ {id:'b_on_z3', ico:'🏛️', n:'Zenginin Sorumluluğu', ay:5, req:['b_on_z2'],
+  desc:'Kıta bize bakıyor. Zenginlik bir yükümlülük doğurur mu?',
+  ev:{txt:`Efendim, Tahıl Meclisi'nde bir soru soruldu ve salon cevabı bekliyor: <i>"En çok olanın, en çok verme yükümlülüğü var mıdır?"</i><br><br>Soruyu soran Eirlanda temsilcisi. Bakışlar bizde efendim — çünkü en çok olan biziz.`,
+   ops:[
+    {t:'🤝 Evet — ve bunu yazılı taahhüt et', eff:{rep:24, relAll:18, gold:-6000, mor:8, hap:-6}, res:`"Evet" dedik ve imzaladık efendim. Kıtanın en zengin ülkesi, en büyük taahhüdü verdi. Tüccarlar öfkeli, tarih memnun olacak.`},
+    {t:'💼 Hayır — mülkiyet mülkiyettir', eff:{gold:6000, hap:8, stab:3, rep:-16, relAll:-14}, res:`"Hayır" dedik efendim, hem de gerekçeli. Hukuken kusursuzduk. Salondan çıkarken kimse elimizi sıkmadı ve hukuk bunu düzeltemez.`}]}}
+];
+SEN_BRANCH.oncesi.yuklenen=[
+ {id:'b_on_y1', ico:'🌋', n:'Dağın Gölgesi', ay:3, req:[], reqAny:['on_dinle','on_bereket'],
+  desc:'Coğrafyamız bizi ilk sıraya koyuyor. Felaket olursa önce biz.',
+  ev:{txt:`Efendim, coğrafya raporu net: bir felaket olursa ilk vurulan bölgeler bizim.<br><br>Ovalarımız açık, geçitlerimiz kalabalık, dağımız yakın. Yüzyıllardır bu topraklar üstünden ne geçtiyse — ordu, göç, hastalık — hepsi buradan geçti.`,
+   ops:[
+    {t:'🏗️ Sığınak ve tahliye planı kur', eff:{stab:6, food:8, gold:-4500, rep:8, hap:-4}, res:`Plan hazır efendim: hangi kasaba nereye, hangi yolla, kaç günde. Halk "boşuna telaş" diyor. Umarım haklıdırlar.`},
+    {t:'🌾 Toprağı en verimli hâline getir', eff:{food:14, ind:8, gold:-3000, hap:6}, res:`Toprağa yatırdık efendim. Rekor hasat alıyoruz. Felaket gelirse hepsi kül altında kalacak — ama gelmezse zengin olacağız.`}]}},
+ {id:'b_on_y2', ico:'👥', n:'Geçiş Yolu Olmak', ay:4, req:['b_on_y1'],
+  desc:'Kıta bir kriz yaşarsa insanlar bizim üstümüzden geçecek. Hazır mıyız?',
+  ev:{txt:`Efendim, tarihçimiz eski göç haritalarını getirdi ve hepsi aynı çizgiden geçiyor: bizden.<br><br>"Bir gün yine olacak efendim" dedi. "Ve o gün bu ülke ya bir geçit ya bir duvar olacak. Üçüncü seçenek yok."`,
+   ops:[
+    {t:'🛣️ Geçit olmaya hazırlan', eff:{rep:16, relAll:12, food:-8, gold:-3000, pop:2}, res:`Yollar genişletildi, geçici barınaklar planlandı efendim. Bir gün yüz binlerce insan buradan geçerse, hiç değilse yürüyecek yolları olacak.`},
+    {t:'🧱 Duvar olmaya hazırlan', eff:{mil:12, stab:5, food:6, rep:-12, relAll:-10}, res:`Sınır hattı güçlendirildi efendim. Bir gün yüz binlerce insan gelirse, duracakları yer belli. Bu kararı veren biziz ve sonucunu biz taşıyacağız.`}]}},
+ {id:'b_on_y3', ico:'📢', n:'Kimse Bizi Dinlemiyor', ay:5, req:['b_on_y2'],
+  desc:'Uyarılarımız kıtada ciddiye alınmıyor. Israr edecek miyiz?',
+  ev:{txt:`Efendim, üçüncü kez uyardık ve üçüncü kez güldüler.<br><br>Tahıl Meclisi'nde temsilcimiz konuşurken iki delege salonu terk etti. Dönüşte "bir daha gitmek istemiyorum efendim" dedi. Anlıyorum onu.<br><br>Ama şu var: haklıysak ve susarsak, hesabı bize soracaklar.`,
+   ops:[
+    {t:'🔁 Israr et, her toplantıda söyle', eff:{rep:14, relAll:-6, edu:8, mor:8}, res:`Israr ettik efendim. "Yine onlar" diyorlar. Ama tutanaklara geçti — tarih, kimin ne zaman uyardığını tutanaklardan okur.`},
+    {t:'🤐 Sus, kendi hazırlığına bak', eff:{food:10, stab:4, gold:-2000, rep:-8}, res:`Sustuk efendim, kendi işimize baktık. Kıtayı kurtarmak bizim görevimiz değil. Bu cümleyi kendimize birkaç kez tekrarladık.`}]}}
+];
+SEN_BRANCH.oncesi.kalem=[
+ {id:'b_on_l1', ico:'📚', n:'Bilgi Neye Yarar', ay:3, req:[], reqAny:['on_dinle','on_bereket'],
+  desc:'Kıtanın en iyi arşivi/laboratuvarı bizde. Kullanmayı biliyor muyuz?',
+  ev:{txt:`Efendim, kurumlarımızın envanterini çıkardık ve etkileyici: kıtanın en derin arşivi ve en iyi laboratuvarları bizde.<br><br>Ama bir müdür şunu sordu: "Efendim, bunca bilgiyi kim <b>kullanıyor</b>?" Cevabı arıyorum ve bulamıyorum.`,
+   ops:[
+    {t:'🔬 Bilgiyi devlet kararına bağla', eff:{edu:14, tech:10, rep:8, gold:-3000, corr:-6}, res:`Her büyük karar önce kurula gidecek efendim. Yavaşladık ve isabet oranımız yükseldi. Sıkıcı bir reform — en iyileri genelde öyledir.`},
+    {t:'💼 Bilgiyi satılabilir hale getir', eff:{gold:7000, tech:8, ind:6, rep:-6}, res:`Bilgiyi ürüne çevirdik efendim. Patentler, danışmanlık, satış. Zenginleştik. Bir bilgin istifa ederken "bilgi kilitlenirse çürür" diye yazdı.`}]}},
+ {id:'b_on_l2', ico:'📐', n:'Ölçümcülerin Raporu', ay:4, req:['b_on_l1'],
+  desc:'Kendi bilginlerimiz dağ için ne diyor? Ve biz onlara inanıyor muyuz?',
+  ev:{txt:`Efendim, kendi ölçümcülerimizin raporu masada ve dili çok net: Kelbaran'daki hareketlilik <b>normal değil</b>.<br><br>Raporu okuyan üç bakan da aynı tepkiyi verdi: "Bilim adamları hep abartır." Bu cümle, bu kıtada çok tekrarlanmış bir cümle efendim.`,
+   ops:[
+    {t:'📖 Raporu kıtaya bedava dağıt', eff:{rep:20, relAll:10, edu:12, gold:-2500, hap:-5}, res:`Raporu her başkente yolladık efendim, ücretsiz. Çoğu okumadı. Ama artık "bilmiyorduk" diyemezler ve bir gün bu fark yaratacak.`},
+    {t:'🔒 Rapor devlet sırrı olsun', eff:{tech:8, food:8, gold:2500, rep:-10, edu:-5}, res:`Rapor kasaya girdi efendim. Sessizce hazırlanıyoruz. Bildiğimizi kimse bilmiyor — ve bir gün bunu bildiğimiz ortaya çıkacak.`}]}},
+ {id:'b_on_l3', ico:'⚗️', n:'Çözümü Şimdiden Ara', ay:5, req:['b_on_l2'],
+  desc:'Külün toprağı öldürdüğünü biliyoruz. Panzehiri şimdiden arayalım mı?',
+  ev:{txt:`Efendim, bir genç bilgin tuhaf bir teklifle geldi: <i>"Felaket olmadan panzehirini arayalım."</i><br><br>Kül basmış toprağı çözecek bir karışım. Hiç kimse böyle bir şeye para vermez efendim, çünkü henüz ortada kül yok.<br><br>Ama ortada kül olduğunda, aramaya başlamak için çok geç olacak.`,
+   ops:[
+    {t:'💰 Fonla — felaket olmasa bile', eff:{tech:18, edu:12, gold:-8000, rep:10}, res:`Fonladık efendim. Kimse anlamadı, muhalefet "hayali projelere para" diye bağırdı. Bir gün bu laboratuvarın adı kıtanın kurtuluşuyla anılacak.`},
+    {t:'⏳ Erken — ihtiyaç olunca bakarız', eff:{gold:4000, ind:6, tech:-4, rep:-5}, res:`Erteledik efendim. Mantıklıydı: olmayan soruna para harcanmaz. Genç bilgin başka ülkeye gitti ve orada devam ediyor.`}]}}
+];
+
+// ═══ 2) KÜL YILLARI ═══
+SEN_BRANCH.kul1.veren=[
+ {id:'b_k1_v1', ico:'🌱', n:'Elimizdeki Son Tohum', ay:3, req:[], reqAny:['k1_ac','k1_kapat'],
+  desc:'Kıta tohum istiyor. Verirsek ertesi yıl ekecek bir şeyimiz kalmıyor.',
+  ev:{txt:`Efendim, üç ülkeden aynı gün mektup geldi: tohumluk istiyorlar.<br><br>Elimizde tam olarak bir yıllık ekim var. Verirsek onlar eker, biz ekemeyiz. Vermezsek biz ekeriz, onlar açlıktan ölür. Ambar müdürü "matematikte iki doğru cevap olmaz efendim" dedi. Bunda oluyor.`,
+   ops:[
+    {t:'🤲 Hepsini gönder', eff:{rep:30, relAll:22, food:-20, hap:-16, mor:12, pop:-2}, res:`Hepsini gönderdik efendim. Ertesi bahar tarlalarımız boş kaldı, halkımızın üçte biri aç yattı. Kâtip sayfamıza tek kelime yazdı: "Verdi." O kelime yüz elli yıl bize yetecek — ve bizi doyurmayacak.`},
+    {t:'⚖️ Yarısını gönder', eff:{rep:14, relAll:10, food:-9, hap:-6, mor:5}, res:`Yarısını gönderdik efendim. Onlar yarım ekti, biz yarım ektik. Kimse ölmedi, kimse doymadı. Defterde "kısmen verdi" yazıyor ve bu ifade kimseyi tatmin etmiyor.`}]}},
+ {id:'b_k1_v2', ico:'🍞', n:'Kendi Halkımız Soruyor', ay:4, req:['b_k1_v1'],
+  desc:'Halk "biz açken neden başkasını doyuruyoruz" diye soruyor. Haklılar.',
+  ev:{txt:`Efendim, bugün liman meydanında bir kalabalık toplandı. Öfkeli değillerdi — <b>yorgundular</b>, bu daha kötü.<br><br>Yaşlı bir kadın öne çıktı: "Oğlum gemiye tahıl yüklerken bayıldı. Yüklediği tahılı yiyemiyor. Bunu bana açıklayın."<br><br>Açıklayamadım efendim.`,
+   ops:[
+    {t:'🗣️ Meydana in, gerekçeni anlat', eff:{mor:14, hap:6, rep:8, edu:6, food:-4}, res:`Meydana indiniz efendim ve konuştunuz. "Bugün verdiğimiz, yarın bize dönecek — dönmezse bile, biz böyle bir ülkeyiz" dediniz. Kalabalık dağıldı. Bazıları ikna oldu, hepsi dinlendi.`},
+    {t:'🛡️ Sevkiyatı azalt, halkı doyur', eff:{hap:16, food:8, stab:4, rep:-12, relAll:-10}, res:`Sevkiyatı kestik efendim. Halkımız doydu ve size teşekkür etti. Kıtaya giden gemi sayısı yarıya indi ve o gemileri bekleyenler oldu.`}]}},
+ {id:'b_k1_v3', ico:'📜', n:'Karşılığını İsteyecek miyiz', ay:5, req:['b_k1_v2'],
+  desc:'Verdiklerimizi kayda geçirelim mi, yoksa karşılıksız mı kalsın?',
+  ev:{txt:`Efendim, Egeyalı kâtip verdiklerimizi tek tek yazdı ve sonra sordu: <i>"Bunları alacak olarak mı kaydedeyim, bağış olarak mı?"</i><br><br>Alacak yazarsak bir gün isteyebiliriz. Bağış yazarsak asla isteyemeyiz — ama sayfamız bambaşka okunur.`,
+   ops:[
+    {t:'🎁 Bağış olarak yaz', eff:{rep:26, relAll:18, mor:14, gold:-3000}, res:`"Bağış" yazdırdık efendim. Hiçbir şey isteyemeyeceğiz. Kâtip yazarken durdu ve "böylesini ilk kez yazıyorum" dedi. Fakir kaldık; kıtanın vicdanı olduk.`},
+    {t:'📒 Alacak olarak yaz', eff:{rep:8, gold:2000, relAll:2, corr:4}, res:`"Alacak" yazdırdık efendim. Hakkımız kayıt altında. Doksan beş yıl sonra birileri bu kayıtları reddedecek ve bu kıta buna Reddiye diyecek.`}]}}
+];
+SEN_BRANCH.kul1.kapanan=[
+ {id:'b_k1_k1', ico:'🔒', n:'Kapı Kapandı', ay:3, req:[], reqAny:['k1_ac','k1_kapat'],
+  desc:'Sınırlarımız kapalı. İçeride kimse aç değil. Dışarıda herkes.',
+  ev:{txt:`Efendim, üçüncü ay: içeride tek bir açlık vakası yok.<br><br>Bu bir başarı efendim ve bunu söylemekten utanıyorum. Çünkü aynı raporda ikinci bir rakam var: sınır boyunda bekleyip ölenlerin sayısı.<br><br>İki rakam da bizim kararımızın sonucu.`,
+   ops:[
+    {t:'👁️ Rakamları kayda geçir, sakla', eff:{hap:10, food:8, stab:3, corr:6, rep:-8}, res:`Rakamlar kayıt altına alındı ve kasaya kondu efendim. Halk sadece birinci rakamı biliyor. Arşivde bir gün birileri ikincisini bulacak.`},
+    {t:'📖 İkisini de halka açıkla', eff:{rep:12, edu:10, mor:-8, hap:-12, corr:-8}, res:`İkisini de açıkladık efendim. Halk sustu. Bazıları "doğru karardı" dedi, bazıları bir daha aynı gözle bakamadı devletine. Dürüstlüğün bedeli budur.`}]}},
+ {id:'b_k1_k2', ico:'🚢', n:'Bir Gemi Geliyor', ay:4, req:['b_k1_k1'],
+  desc:'Mülteci dolu bir gemi limanımıza yöneldi. Kapı kapalı — peki liman?',
+  ev:{txt:`Efendim, ufukta bir gemi var. Kayıtlara göre üç yüz kişi taşıyor, çoğu çocuk. Yakıtı bitmiş, dört gündür sürükleniyor.<br><br>Kapıları kapattık ama bu bir gemi; geri gönderirsek dönecekleri bir yer yok. Liman komutanı emir bekliyor ve emir sizden gelecek.`,
+   ops:[
+    {t:'⚓ Al, kimseye söyleme', eff:{pop:1, rep:6, hap:-6, food:-6, mor:8, corr:4}, res:`Gemiyi aldık efendim, gece, sessizce. Kimse duymadı. Politikamız kâğıt üstünde değişmedi — üç yüz insan yaşıyor ve bu ikisi aynı anda doğru.`},
+    {t:'🚫 Kural kuraldır, geri çevir', eff:{stab:5, hap:8, food:4, rep:-18, relAll:-14, mor:-10}, res:`Geri çevirdik efendim. Kural korundu, istisna açılmadı — bir istisna bin gemi getirir. Liman komutanı ertesi gün istifasını verdi ve gerekçe yazmadı.`},
+    {t:'🍲 Erzak ver, ama alma', eff:{rep:4, food:-3, hap:2, mor:-4, relAll:-4}, res:`Erzak verip yolladık efendim. Ne aldık ne aç bıraktık. Gemi ufukta kaybolurken kimse konuşmadı. Bu kararın adı yok — ne merhamet ne zulüm.`}]}},
+ {id:'b_k1_k3', ico:'🪞', n:'Kapalı Kapının Ardında', ay:5, req:['b_k1_k2'],
+  desc:'Kıtlık bitiyor. Şimdi kıtanın yüzüne nasıl bakacağız?',
+  ev:{txt:`Efendim, ambarlarımız dolu, halkımız sağlam, kayıplarımız kıtanın en düşüğü. Ve kıta bunu biliyor.<br><br>İlk elçi heyeti geldi. Konuşma boyunca kimse "kapı" kelimesini kullanmadı ama herkes onu düşündü.<br><br>Şimdi ne yapacağımız, bundan sonraki yüz elli yılı belirleyecek.`,
+   ops:[
+    {t:'🤝 Şimdi cömert ol, telafi etmeye çalış', eff:{rep:20, relAll:16, gold:-7000, food:-10, hap:-6}, res:`Ambarları şimdi açtık efendim. "Geç kaldık ama geldik" dedik. Kıta aldı — ve unutmadı. Telafi, silmez; hafifletir.`},
+    {t:'🛡️ Savun — doğru olanı yaptık', eff:{mor:14, hap:12, mil:8, rep:-14, relAll:-12}, res:`Savunduk efendim. "Her devletin ilk görevi kendi halkıdır" dediniz ve haklıydınız. Kıta bunu bir özür değil, bir meydan okuma olarak duydu.`}]}}
+];
+SEN_BRANCH.kul1.kazanan=[
+ {id:'b_k1_z1', ico:'📈', n:'Kıtlığın Fiyatı', ay:3, req:[], reqAny:['k1_ac','k1_kapat'],
+  desc:'Elimizde tahıl var ve fiyatı her gün artıyor. Ne yapacağız?',
+  ev:{txt:`Efendim, tahıl fiyatı üç ayda yedi kat arttı ve elimizde kıtanın en büyük stoku var.<br><br>Tüccarlarımız bugüne kadar görülmemiş bir kâr eşiğinde. Hazine bakanı gülümsüyor. Ben gülümseyemiyorum çünkü o fiyatı ödeyecek insanların listesi de masamda.`,
+   ops:[
+    {t:'🧾 Maliyetine sat', eff:{rep:26, relAll:20, gold:-5000, mor:10, hap:-6}, res:`Maliyetine sattık efendim. Kâr sıfır. Tüccarlar çığlık attı, iki tanesi ülkeyi terk etti. Kıtada bir cümle dolaşıyor: "Kazanabilirlerdi, kazanmadılar."`},
+    {t:'💹 Piyasa fiyatından sat', eff:{gold:16000, ind:8, rep:-22, relAll:-18, corr:8}, res:`Piyasa fiyatından sattık efendim. Hazine tarihinin en zengin yılını yaşadı. Aynı yıl kıtada açlıktan ölenlerin sayısı da rekor kırdı. İki rakam yan yana duruyor.`},
+    {t:'📜 Borçla ver — sonra ödesinler', eff:{gold:6000, rep:4, relAll:-4, corr:5}, res:`Borçla verdik efendim. Kimse aç kalmadı, kimse bedava almadı. Alacak defterimiz şişti. Doksan beş yıl sonra bu defterler yakılacak — ama bunu şimdi bilmiyoruz.`}]}},
+ {id:'b_k1_z2', ico:'🏞️', n:'Toprak Karşılığı', ay:4, req:['b_k1_z1'],
+  desc:'Ödeyemeyenler toprak öneriyor. Kabul etmek ne demek?',
+  ev:{txt:`Efendim, üç ülke borcunu ödeyemiyor ve toprak öneriyor. Hukukçular "tamamen yasal" diyor.<br><br>Ama şunu söylemem gerek: bir ülkeden kıtlıkta toprak almak, kıta tarihinde daha önce yapılmadı. Yaparsak biz ilk oluruz ve bu tür ilkler unutulmaz.`,
+   ops:[
+    {t:'🏰 Kabul et, toprakları al', eff:{gold:4000, ind:10, food:12, rep:-26, relAll:-20, mil:6}, res:`Toprakları aldık efendim. Sınırlarımız kıta tarihinin en büyük genişlemesini yaşadı — tek kurşun atmadan. Bir gün, yine tek kurşun atılmadan geri alınacak.`},
+    {t:'⏳ Erteleme ver, toprağa dokunma', eff:{rep:20, relAll:16, gold:-4000, mor:8}, res:`Erteledik efendim. "Toprak satılmaz, ödersiniz ödersiniz" dediniz. Üç ülke bunu unutmadı ve bir gün — Reddiye gününde — bizim adımız o listede olmayacak.`}]}},
+ {id:'b_k1_z3', ico:'🕮', n:'Bizim Sayfamız', ay:5, req:['b_k1_z2'],
+  desc:'Kâtip zengin ülkelerin sayfasını yazarken en çok zorlanıyor.',
+  ev:{txt:`Efendim, kâtip geldi ve dosyayı açtı. Elinde iki sütun var: bu yıllarda <b>ne kazandığımız</b> ve <b>ne verdiğimiz</b>.<br><br>"Zengin ülkeleri yazmak en zoru" dedi. "Çünkü fakir ülke ne yaptıysa mecburiyetten yaptı. Zengin ülke ne yaptıysa <b>seçerek</b> yaptı."`,
+   ops:[
+    {t:'📖 İki sütunu da yazdır', eff:{rep:18, edu:12, corr:-10, hap:-6, relAll:6}, res:`İki sütunu da yazdırdık efendim, kazandığımızı da verdiğimizi de. Sayfamız kıtanın en dürüst zengin sayfası oldu — ve en çok tartışılanı.`},
+    {t:'✂️ Sadece verdiklerimizi yazdır', eff:{rep:10, hap:8, corr:10, mor:6}, res:`Sadece verdiklerimizi yazdırdık efendim. Sayfamız temiz. Kâtip diğer sütunu kendi defterine not etti — kâtiplerin böyle bir alışkanlığı varmış.`}]}}
+];
+SEN_BRANCH.kul1.yuklenen=[
+ {id:'b_k1_y1', ico:'💀', n:'İlk Vurulan Biz Olduk', ay:3, req:[], reqAny:['k1_ac','k1_kapat'],
+  desc:'Kül önce bize düştü. Kıta hâlâ ne olduğunu anlamaya çalışıyor.',
+  ev:{txt:`Efendim, kül bize ilk gün ulaştı. Hasadın tamamı gitti — tamamı.<br><br>Kıtanın geri kalanı henüz gri bir gökyüzü görüyor sadece; ne olduğunu anlamalarına birkaç hafta var. Bizim anlamamıza gerek yok, biz içindeyiz.<br><br>Şimdi yardım isteyebiliriz efendim. Ama isteyeceğimiz ülkeler daha başlarına ne geleceğini bilmiyor.`,
+   ops:[
+    {t:'🆘 Hemen yardım iste, açık konuş', eff:{food:12, rep:10, relAll:6, gold:-2000, mor:-6}, res:`Hemen istedik efendim ve anlattık. Bize inanan az oldu ama inananlar erken yardım etti. Erken yardım, geç yardımın üç katı eder.`},
+    {t:'🤐 Kendi başımıza dayanmaya çalış', eff:{mor:12, stab:4, hap:-10, food:-8, rep:6}, res:`Kimseden bir şey istemedik efendim. Halk gurur duydu, ambar boşaldı. Yardım istemenin utanç olmadığını öğrenmemiz iki kış sürdü.`}]}},
+ {id:'b_k1_y2', ico:'👣', n:'Yürüyüş Buradan Başladı', ay:4, req:['b_k1_y1'],
+  desc:'Kendi halkımız yürümeye başladı. Durdurmalı mıyız, yol göstermeli miyiz?',
+  ev:{txt:`Efendim, halkımız yürüyor. Kimse emir vermedi, kimse organize etmedi — açlık kendi yönünü buluyor.<br><br>Yüz binlerce insan güneye ve batıya doğru hareket halinde. Tarih bu yürüyüşe bir isim verecek efendim ve o isim büyük ihtimalle güzel olmayacak.`,
+   ops:[
+    {t:'🗺️ Yürüyüşü organize et, yol göster', eff:{rep:18, relAll:10, mor:10, gold:-4000, pop:-2}, res:`Yürüyüşü organize ettik efendim: güzergâh, su noktaları, elçiler önden. Kayıplar yarıya indi. Aç Yürüyüş yine de tarihe geçti — ama daha az mezarla.`},
+    {t:'🛑 Durdur, halkı yerinde tut', eff:{stab:-6, hap:-14, mor:-10, food:-6, pop:-4, mil:6}, res:`Durdurmaya çalıştık efendim. Ordu kendi halkının önüne dikildi. Bir hafta sonra yürüyüş yine başladı — sadece bu sefer devlete güvenmeden.`}]}},
+ {id:'b_k1_y3', ico:'⚖️', n:'Suçlu Aranıyor', ay:5, req:['b_k1_y2'],
+  desc:'Kıta bir sorumlu arıyor ve gözler dağın sahibine, yola, ovaya çevriliyor.',
+  ev:{txt:`Efendim, kıtada bir suçlu arayışı başladı ve bu arayışlar hep en zayıfta biter.<br><br>Bize yöneltilen suçlamalar birbiriyle çelişiyor: hem "önlem almadınız" diyorlar hem "kendi halkınızı üstümüze saldınız". İkisi aynı anda doğru olamaz efendim, ama öfke tutarlılık aramaz.`,
+   ops:[
+    {t:'📜 Belgelerle cevap ver', eff:{rep:16, edu:12, relAll:6, gold:-2000}, res:`Her suçlamaya belge ile cevap verdik efendim: tarih, tutanak, uyarı yazısı. İkna olmayan çok oldu ama tarihçiler bu dosyayı kullanacak ve tarihçiler uzun yaşar.`},
+    {t:'🤫 Cevap verme, zaman geçsin', eff:{stab:3, hap:4, rep:-12, mor:-6}, res:`Cevap vermedik efendim. Suçlamalar cevapsız kaldı ve cevapsız suçlama, zamanla gerçeğe dönüşür. Yüz elli yıl sonra kimse bizim tarafımızı bilmeyecek.`}]}}
+];
+SEN_BRANCH.kul1.kalem=[
+ {id:'b_k1_l1', ico:'✒️', n:'Kim Yazacak', ay:3, req:[], reqAny:['k1_ac','k1_kapat'],
+  desc:'Bu felaketin kaydını tutmak bize düşüyor. Sorumluluk mu, güç mü?',
+  ev:{txt:`Efendim, kıtada yaşananları kayıt altına alacak tek kurum bizde ve bunu herkes biliyor.<br><br>Kâtipler çalışmaya başladı: kim ne verdi, kim kapıyı kapattı, kim fiyat yükseltti. Bu defterler bir gün <b>Kül Defterleri</b> diye anılacak.<br><br>Şunu da bilin efendim: kalemi tutan, tarihi tutar. Bu, sahip olduğumuz en tehlikeli şey.`,
+   ops:[
+    {t:'⚖️ Tarafsız yaz, kendimiz dahil', eff:{rep:26, edu:16, relAll:12, corr:-12, gold:-3000}, res:`Tarafsız yazdık efendim — kendi eksiklerimiz de dahil. Kâtiplerimizin sözü kıtada senet oldu. Bir şeyimiz yoktu; şimdi hafızamız var ve hafıza ordudan uzun yaşar.`},
+    {t:'🖋️ Yazarken kendimizi kolla', eff:{rep:8, hap:8, corr:14, edu:6, relAll:-6}, res:`Kendimizi kolladık efendim. Sayfamız temiz görünüyor. Ama defterlerin kopyaları başka ülkelerde de var ve bir gün karşılaştırılacaklar.`}]}},
+ {id:'b_k1_l2', ico:'🔬', n:'Formülün Eşiğinde', ay:4, req:['b_k1_l1'],
+  desc:'Külü çözecek karışım yakın. Ama laboratuvarın da yiyeceği yok.',
+  ev:{txt:`Efendim, laboratuvardan haber geldi: karışım <b>çok yakın</b>. Belki altı ay, belki bir yıl.<br><br>Ama bilginlerimiz de aç. İki tanesi bu ay çalışamayacak kadar halsiz. Baş bilgin "efendim bize tahıl değil zaman lazım, ama zaman için tahıl lazım" diye yazmış.`,
+   ops:[
+    {t:'🍞 Bilginlere öncelikli tayın', eff:{tech:16, edu:10, hap:-10, rep:6, food:-5}, res:`Bilginlere öncelikli tayın verdik efendim. Halk "aç halk varken bilgine ekmek" diye kızdı. Formül dokuz ay sonra bulundu ve o gün kimse kızgın değildi.`},
+    {t:'⚖️ Herkese eşit tayın, ayrıcalık yok', eff:{hap:12, mor:10, rep:8, tech:-6}, res:`Eşitlikten şaşmadık efendim. Bilginler herkes kadar aç kaldı, araştırma yavaşladı. Formül iki yıl geç bulundu. Adil bir karardı ve pahalıya mal oldu.`}]}},
+ {id:'b_k1_l3', ico:'🎁', n:'Formül Kimin Olacak', ay:5, req:['b_k1_l2'],
+  desc:'Karışım bulundu. Şimdi kıta tarihinin en değerli bilgisi elimizde.',
+  ev:{txt:`Efendim, bulundu. Kül basmış toprak, bu karışımla iki mevsimde yeniden ekilebiliyor.<br><br>Elimizde kıta tarihinin en değerli bilgisi var. Satarsak kıtanın en zengin ülkesi oluruz. Verirsek Kül Yılları biter.<br><br>Karar sizin efendim ve bu karar yüz elli yıl boyunca adınızla anılacak.`,
+   ops:[
+    {t:'🕊️ Karşılıksız ver, herkese', eff:{rep:34, relAll:26, edu:14, mor:16, gold:-4000}, res:`Karşılıksız verdik efendim. Tarifi her başkente yolladık, bedelsiz. Kül Yılları iki yıl içinde bitti. Kıtanın kurtuluşu bizim adımızla anılıyor ve hazinemiz boş.`},
+    {t:'💰 Sat — bu bilgi bize ait', eff:{gold:20000, ind:12, tech:8, rep:-24, relAll:-20}, res:`Sattık efendim. Ödeyebilenler kurtuldu, ödeyemeyenler bekledi. Kıtanın en zengin ülkesi olduk. Kâtipler bu sayfayı yazarken hiç yorum eklemedi — gerek yoktu.`},
+    {t:'🤝 Veren ülkelere önce, karşılıksız', eff:{rep:24, relAll:12, gold:2000, rel:{eirlanda:26, norvenna:20, prusen:14}, mor:10}, res:`Kül Yıllarında verenlere önce verdik efendim, karşılıksız. Kapatanlar sıraya girdi ve bekledi. İlk kez bu kıtada cömertliğin somut bir karşılığı oldu.`}]}}
+];
+
+// ═══ 3) İKİNCİ KÜL YILLARI ═══
+SEN_BRANCH.kul2.veren=[
+ {id:'b_k2_v1', ico:'🕮', n:'Sayfamız Okunuyor', ay:3, req:[], reqAny:['k2_defter','k2_yak'],
+  desc:'Yüz elli yıl önce her şeyimizi verdik. Şimdi sıra kıtada.',
+  ev:{txt:`Efendim, ikinci felaket başlar başlamaz bir şey oldu: kıtanın dört bir yanında <b>bizim sayfamız</b> okundu.<br><br>Yüz elli yıl önce tohumluğumuzu vermişiz ve karşılığında hiçbir şey almamışız. Şimdi altı ülke aynı anda "önce onlara" diyor.<br><br>Fakiriz efendim, hâlâ fakiriz. Ama bu kıtada ilk kez sırada önde duruyoruz.`,
+   ops:[
+    {t:'🙏 Kabul et, yardımı al', eff:{food:18, gold:6000, rep:8, relAll:10, mor:12}, res:`Kabul ettik efendim. Yüz elli yıl sonra borç ödendi. Yaşlı bir çiftçi "demek boşuna değilmiş" dedi ve o cümle bütün ülkede tekrarlandı.`},
+    {t:'🤲 Reddet, bize değil daha muhtaca', eff:{rep:32, relAll:22, mor:18, food:-8, hap:-8}, res:`Reddettik efendim. "Bizden daha kötü durumda olanlar var" dediniz. Kıta donup kaldı. Bir kez daha aynı şeyi yaptık ve bu sefer kimse şaşırmadı — sadece anladı.`}]}},
+ {id:'b_k2_v2', ico:'⚖️', n:'Aynı Şeyi Yine Yapacak mıyız', ay:4, req:['b_k2_v1'],
+  desc:'İkinci kez elimizdekini vermek erdem mi, aptallık mı?',
+  ev:{txt:`Efendim, mecliste sert bir tartışma yaşandı.<br><br>Genç vekiller: "Yüz elli yıl önce verdik ve yüz elli yıl fakir kaldık. Ders almayacak mıyız?"<br><br>Yaşlı vekiller: "Verdiğimiz için hâlâ ayaktayız. Kıta bizi verdiğimiz için hatırlıyor."<br><br>İkisi de haklı efendim ve ikisi de aynı anda uygulanamaz.`,
+   ops:[
+    {t:'🔁 Yine ver — kimliğimiz bu', eff:{rep:24, relAll:18, mor:16, food:-14, hap:-10}, res:`Yine verdik efendim. Aynı ülkeyiz. Kâtip "tutarlılık, bu kıtada en nadir erdem" diye yazdı. Fakir kaldık ve kim olduğumuzu bilerek fakir kaldık.`},
+    {t:'📊 Bu sefer karşılıklı — sözleşmeyle', eff:{rep:14, relAll:10, food:6, gold:4000, edu:8}, res:`Bu sefer sözleşme yaptık efendim: veriyoruz ama yazılı karşılığıyla. Cömertliği kurumsallaştırdık. Romantik değil — ama torunlarımız aç kalmayacak.`}]}},
+ {id:'b_k2_v3', ico:'🏛️', n:'Verenlerin Birliği', ay:5, req:['b_k2_v2'],
+  desc:'Kül Yıllarında veren ülkeler bir blok kurmak istiyor. Başında biz olacağız.',
+  ev:{txt:`Efendim, dört ülke temsilcisi geldi — hepsi yüz elli yıl önce veren, hepsi bugün hâlâ fakir.<br><br>Bir birlik kurmak istiyorlar ve başına bizi öneriyorlar. "Sayfası en temiz olan konuşsun" dediler.<br><br>Bu birlik kıtayı ikiye böler efendim. Ama kıta zaten ikiye bölünmüş — sadece kimse yüksek sesle söylemiyor.`,
+   ops:[
+    {t:'🤝 Birliği kur ve başına geç', eff:{rep:20, mor:14, mil:6, relAll:-8, rel:{eirlanda:26, norvenna:22, balkarya:20, albiona:-24, karpatya:-20}}, res:`Birlik kuruldu efendim. Kıta ikiye ayrıldı ve biz zayıf yarının başındayız. İlk kez sesimiz var. İlk kez korkuluyoruz — biraz.`},
+    {t:'🕊️ Kurma — kıtayı bölmeyelim', eff:{rep:22, relAll:16, edu:8, mor:-4}, res:`Reddettik efendim. "Bölünme bize de yaramaz" dediniz. Dört ülke hayal kırıklığına uğradı ama kıta bir savaştan döndü. Bazı liderlikler, liderlik etmemekle olur.`}]}}
+];
+SEN_BRANCH.kul2.kapanan=[
+ {id:'b_k2_k1', ico:'📕', n:'Bu Sefer Sayfamız Açık', ay:3, req:[], reqAny:['k2_defter','k2_yak'],
+  desc:'Yüz elli yıl önce kapıyı kapattık. Bu kez herkes bunu biliyor.',
+  ev:{txt:`Efendim, felaket başlar başlamaz kıtanın gündemine biz oturduk — ama iyi anlamda değil.<br><br>"Bakalım yine kapatacaklar mı?" Bu cümle her başkentte dolaşıyor. Yüz elli yıllık bir sınavı yeniden veriyoruz ve bu sefer sınav salonu dolu.<br><br>Ne yaparsak yapalım efendim, bu sefer <b>seyirci var</b>.`,
+   ops:[
+    {t:'🚪 Kapıları ilk gün aç, ilan et', eff:{rep:30, relAll:24, food:-14, hap:-10, mor:10}, res:`Kapıları ilk gün açtık ve ilan ettik efendim. Kıta buna hazır değildi. Albiona elçisi ağlayarak "yüz elli yıl bekledik bu cümleyi" dedi.`},
+    {t:'⚖️ Kontrollü aç — kota koy', eff:{rep:14, relAll:10, food:-7, hap:-3, stab:2}, res:`Kotayla açtık efendim: aylık belirli sayı, kayıtlı giriş. Ne kahraman olduk ne cellat. Kıta "en azından açtılar" dedi ve bu, alabileceğimiz en iyi cümleydi.`},
+    {t:'🔒 Yine kapat — kimliğimiz bu', eff:{food:14, hap:14, stab:5, rep:-26, relAll:-22}, res:`Yine kapattık efendim. Halkımız yine kurtuldu, sayfamız yine aynı. Kâtip yazarken hiç düşünmedi — cümleyi zaten yüz elli yıl önce yazmıştı.`}]}},
+ {id:'b_k2_k2', ico:'🗣️', n:'Özür Meselesi', ay:4, req:['b_k2_k1'],
+  desc:'Kıta yüz elli yıllık bir özür bekliyor. Vermeli miyiz?',
+  ev:{txt:`Efendim, Tahıl Meclisi'nde bir öneri sunuldu: geçmişte kapıyı kapatan ülkeler resmî özür dilesin.<br><br>Hukuk odası uyarıyor: özür, tazminat davalarının kapısını açabilir.<br><br>Ama şunu da söyleyeyim efendim — yüz elli yıldır hiçbir masaya tam eşit oturamadık ve bunun tek sebebi o kapalı kapı.`,
+   ops:[
+    {t:'🙇 Koşulsuz özür dile', eff:{rep:28, relAll:22, gold:-6000, hap:-10, mor:6}, res:`Özür diledik efendim, koşulsuz, kürsüden. Salon ayağa kalktı. Tazminat davaları geldi ve ödedik. Yüz elli yıllık bir yükü indirmenin fiyatı buymuş.`},
+    {t:'📜 Açıklama yap ama özür dileme', eff:{rep:10, relAll:6, edu:8, hap:4}, res:`Gerekçemizi anlattık, özür dilemedik efendim. "Anlatmak" ile "özür" arasındaki fark, salondaki herkesin fark ettiği bir farktı.`},
+    {t:'🚫 Reddet — geçmiş kapandı', eff:{hap:12, mor:10, mil:6, rep:-18, relAll:-16}, res:`Reddettik efendim. "Yaşamadığımız bir şeyin özrünü dileyemeyiz" dediniz. Hukuken güçlü, siyaseten pahalı bir cümleydi.`}]}},
+ {id:'b_k2_k3', ico:'🔑', n:'Kapı Artık Kimin', ay:5, req:['b_k2_k2'],
+  desc:'Bu felaketten sonra kapı politikamız kalıcı olarak ne olacak?',
+  ev:{txt:`Efendim, hukuk odası kalıcı bir yasa taslağı hazırladı: felaket hallerinde sınır politikası artık <b>önceden</b> belirlensin, o anki korkuyla değil.<br><br>Mantıklı. Ama bir kez yazarsak, bir daha esneyemeyiz. Yasa, gelecekteki kendimize atılmış bir zincirdir efendim — bazen kurtarır, bazen boğar.`,
+   ops:[
+    {t:'📖 Kalıcı açık kapı yasası', eff:{rep:24, relAll:20, edu:10, stab:-3, food:-6}, res:`Yasa çıktı efendim: bu ülke bir daha kapısını kapatmayacak, hangi hükümet gelirse gelsin. Kıta bunu bir dönüm noktası saydı. Geri dönüşü yok — zaten mesele buydu.`},
+    {t:'🛡️ Kalıcı koşullu kapı yasası', eff:{stab:6, food:10, edu:8, rep:4, relAll:-2}, res:`Yasa çıktı efendim: kapı, stok belirli eşiğin üstündeyken açık kalır. Soğuk bir metin ama dürüst — ve dürüst olduğu için kimse bize yalancı diyemeyecek.`}]}}
+];
+SEN_BRANCH.kul2.kazanan=[
+ {id:'b_k2_z1', ico:'📒', n:'Eski Defterler Ortada', ay:3, req:[], reqAny:['k2_defter','k2_yak'],
+  desc:'Yüz elli yıl önce kıtlıktan kazandık. Bu sefer gözler üstümüzde.',
+  ev:{txt:`Efendim, ikinci felaketin ilk haftasında gazeteler eski defterleri bastı — bizim defterlerimizi.<br><br>Yüz elli yıl önce hangi fiyattan sattığımız, kimden ne aldığımız, hangi toprağı nasıl edindiğimiz. Hepsi manşette.<br><br>Bu sefer aynı şeyi yaparsak efendim, kıta bunu bir tercih değil bir <b>karakter</b> sayacak.`,
+   ops:[
+    {t:'🧾 Bu kez maliyetine sat, ilan et', eff:{rep:30, relAll:22, gold:-7000, hap:-6, mor:10}, res:`Maliyetine sattık ve bunu manşetten ilan ettik efendim. "Aynı ülke değiliz" dediniz. Kıta ikna olmakta zorlandı ama rakamlar tartışılmazdı.`},
+    {t:'💹 Piyasa piyasadır, yine sat', eff:{gold:15000, ind:10, rep:-28, relAll:-24, corr:8}, res:`Yine sattık efendim. Yine zengin olduk. Kâtip sayfamıza tek cümle yazdı: "Değişmedi." Bu kıtada bir ülkeye yazılabilecek en soğuk cümle bu.`}]}},
+ {id:'b_k2_z2', ico:'🏞️', n:'Aldığımız Topraklar', ay:4, req:['b_k2_z1'],
+  desc:'Reddiye ile kaybettiklerimizi geri isteme fırsatı doğdu.',
+  ev:{txt:`Efendim, hukukçularımız bir fırsat gördü: kıtlık halinde eski tapu davaları yeniden açılabilir.<br><br>Doksan beş yıl önce Reddiye ile kaybettiğimiz toprakların bir kısmını geri alabiliriz. Karşı tarafın bugün direnecek gücü yok.<br><br>Yani efendim: aynı yöntemi, aynı şartlarda, ikinci kez uygulayabiliriz.`,
+   ops:[
+    {t:'⚖️ Davaları aç, hakkını iste', eff:{gold:10000, mil:8, ind:6, rep:-30, relAll:-26, mor:8}, res:`Davaları açtık efendim. Bazı toprakları geri aldık. Kıtada "ikinci Reddiye"yi konuşmaya başladılar — bu sefer bize karşı bir birlik olarak.`},
+    {t:'📜 Tapu iddialarından kalıcı olarak vazgeç', eff:{rep:30, relAll:26, gold:-3000, edu:8, mor:6}, res:`Bütün tapu iddialarımızdan kalıcı olarak vazgeçtik efendim, yazılı ve geri dönüşsüz. Yüz elli yıllık düşmanlık tek imzayla bitti. Tarihçiler buna "ikinci Reddiye — ama gönüllü" diyor.`}]}},
+ {id:'b_k2_z3', ico:'🏦', n:'Zenginliğin İkinci Sınavı', ay:5, req:['b_k2_z2'],
+  desc:'Kıtanın kıtlık fonuna en büyük katkıyı kim yapacak?',
+  ev:{txt:`Efendim, kıta ortak bir kıtlık fonu kuruyor ve masada tek soru var: kim ne kadar koyacak?<br><br>Bizden beklenen rakam çok yüksek — servetimizle orantılı. Kimse zorlayamaz, gönüllü.<br><br>Hazine bakanı "bu bir haraç" diyor. Dışişleri bakanı "bu bir yatırım" diyor. İkisi de aynı rakamdan bahsediyor efendim.`,
+   ops:[
+    {t:'💰 Beklenenin üstünde katkı yap', eff:{gold:-14000, rep:32, relAll:26, mor:12, edu:6}, res:`Beklenenin üstünde koyduk efendim. Fonun adına adımız verildi. Yüz elli yıllık "kıtlık tüccarı" yaftası bir toplantıda düşmedi ama ilk kez çatladı.`},
+    {t:'⚖️ Tam beklenen kadar', eff:{gold:-8000, rep:14, relAll:12, ind:4}, res:`Tam beklenen kadar koyduk efendim — ne fazla ne eksik. Kimse şikâyet edemedi, kimse etkilenmedi. Muhasebe açısından kusursuz bir karardı.`},
+    {t:'🚫 Sembolik katkı yeter', eff:{gold:2000, hap:8, rep:-20, relAll:-18}, res:`Sembolik bir rakam koyduk efendim. Hazine korundu. Toplantıdan çıkarken bir delege "en zengin ülke en az veriyor" dedi ve tutanağa geçti.`}]}}
+];
+SEN_BRANCH.kul2.yuklenen=[
+ {id:'b_k2_y1', ico:'🌋', n:'Yine Biz', ay:3, req:[], reqAny:['k2_defter','k2_yak'],
+  desc:'Aynı dağ, aynı ova, aynı yol. İkinci kez ilk vurulan biziz.',
+  ev:{txt:`Efendim, yüz elli yıl önce olan şey birebir tekrarlandı: kül önce bize düştü, hasadımız gitti, halkımız yürümeye başladı.<br><br>Arşivden eski raporları çıkardım — tarihler dışında hiçbir farkı yok.<br><br>Ama bir fark var efendim: bu sefer <b>ne olacağını biliyoruz</b>. Bilmek, hazırlıklı olmakla aynı şey değil ama sıfır da değil.`,
+   ops:[
+    {t:'📋 Eski planı derhal uygula', eff:{food:12, stab:6, mor:12, rep:14, gold:-3000, pop:1}, res:`Yüz elli yıllık planı raftan indirip uyguladık efendim. Güzergâhlar, su noktaları, elçiler. Kayıplarımız ilk felaketin dörtte biri. Hafıza, bu kıtada ilk kez hayat kurtardı.`},
+    {t:'🆕 Yeni bir yol dene', eff:{tech:12, edu:10, gold:-5000, mor:6, stab:-3}, res:`Eski planı bir kenara koyup yeni bir yöntem denedik efendim. Bazı kısımları çok iyi işledi, bazıları hiç. Denemek pahalıydı ve öğrendiklerimiz kalıcı.`}]}},
+ {id:'b_k2_y2', ico:'⚖️', n:'Bu Sefer Hesap Soruyoruz', ay:4, req:['b_k2_y1'],
+  desc:'İlk felakette suçlanan bizdik. Bu sefer suçlayan biz olabiliriz.',
+  ev:{txt:`Efendim, elimizde yüz elli yıllık bir dosya var: ilk felakette kimin bizi suçladığı, kimin yardım etmediği, kimin kapıyı kapattığı.<br><br>Şimdi aynı ülkeler bizden geçiş, tahıl ve yol istiyor.<br><br>Kâtipler bu anı bekliyor efendim. Ne yaparsak yapalım, yazılacak.`,
+   ops:[
+    {t:'📜 Dosyayı aç, herkes hesabını versin', eff:{rep:8, mor:16, hap:12, relAll:-18, mil:6}, res:`Dosyayı açtık efendim. Kıta savunmaya geçti, ilişkiler bozuldu, ama yüz elli yıllık bir haksızlık ilk kez yüksek sesle söylendi. Rahatladık ve yalnızlaştık.`},
+    {t:'🕊️ Dosyayı kapat, kimseye sorma', eff:{rep:28, relAll:24, mor:8, edu:6, hap:-6}, res:`Dosyayı kapattık efendim. "Bize yapılanı yapmayacağız" dediniz. Üç ülke temsilcisi ayrı ayrı gelip teşekkür etti. Hesap sormamak da bir güç gösterisiymiş.`}]}},
+ {id:'b_k2_y3', ico:'🛡️', n:'Bir Daha Asla', ay:5, req:['b_k2_y2'],
+  desc:'Üçüncü bir felakette aynı yerde olmamak için ne yapacağız?',
+  ev:{txt:`Efendim, iki kez aynı yerde, aynı şekilde vurulduk. Üçüncüsü olursa aynı şey olacak — coğrafyamız değişmiyor.<br><br>Ama coğrafyanın kaderi belirlemesi şart değil. Toprağı değiştiremeyiz ama ülkeyi değiştirebiliriz.<br><br>Genelkurmay, tarım ve hazine üç ayrı plan getirdi efendim ve üçü de pahalı.`,
+   ops:[
+    {t:'🏗️ Nüfusu ve tarımı güvenli bölgelere taşı', eff:{food:14, stab:8, gold:-9000, hap:-10, ind:6}, res:`Büyük bir yeniden yerleşim programı başlattık efendim. İnsanlar evlerinden oldu, kızdılar, gittiler. Üçüncü felakette bu kararın ne demek olduğu anlaşılacak.`},
+    {t:'🔬 Kelbaran\'ı sürekli izlemeye al', eff:{tech:16, edu:12, rep:16, relAll:10, gold:-6000}, res:`Dağın eteğine kalıcı bir izleme istasyonu kurduk efendim, kıtayla ortak. Üçüncü patlama olursa kıta bu sefer aylar önce bilecek. Yerimizi değiştiremedik ama zamanımızı satın aldık.`}]}}
+];
+SEN_BRANCH.kul2.kalem=[
+ {id:'b_k2_l1', ico:'📚', n:'Hafıza Sınavı', ay:3, req:[], reqAny:['k2_defter','k2_yak'],
+  desc:'Yüz elli yıl önce kaydı biz tuttuk. Şimdi o kayıt işe yarayacak mı?',
+  ev:{txt:`Efendim, felaket başlar başlamaz arşivimize akın oldu. On bir ülke aynı hafta içinde eski kayıtlarımızı istedi.<br><br>Yüz elli yıl önce yazdıklarımız — kim ne yaptı, ne işe yaradı, ne yaramadı — bugün kıtanın tek kılavuzu.<br><br>Bir kâtip "efendim, biz o zaman bunun bir gün lazım olacağını düşünmemiştik, sadece görevimizi yapmıştık" dedi.`,
+   ops:[
+    {t:'📖 Arşivi tamamen ve bedava aç', eff:{rep:30, relAll:24, edu:16, gold:-3000}, res:`Arşivi bedava açtık efendim, tamamını. Kıtanın kriz yönetimi haftalar içinde düzeldi. Hiçbir ordumuz yok ve şu an kıtanın en önemli devletiyiz.`},
+    {t:'🔑 Erişimi şarta bağla', eff:{gold:9000, rep:6, edu:8, relAll:-10, corr:6}, res:`Erişimi şarta bağladık efendim — bedel, imtiyaz, oy. Zenginleştik. "Hafızayı satan kâtip" diye bir tabir çıktı ve bize yapıştı.`}]}},
+ {id:'b_k2_l2', ico:'⚗️', n:'Kayıp Formülün Peşinde', ay:4, req:['b_k2_l1'],
+  desc:'Eisenburg Formülü kayboldu. Bulmak yine bize düşüyor.',
+  ev:{txt:`Efendim, kıta panik halinde: formül kayıp. Ustalar ölmüş, defterler dağılmış, kimse tekrarlamamış.<br><br>Ama bizim arşivimizde/laboratuvarımızda bir ipucu var: yüz elli yıl önce bir kâtibin "belki lazım olur" diye kopyaladığı eksik sayfa.<br><br>Tek başına yetmiyor efendim. Ama Prusen'deki parçalarla birleşirse yetebilir.`,
+   ops:[
+    {t:'🤝 Prusen ile birleştir, ortak çalış', eff:{tech:18, edu:14, rep:24, relAll:16, rel:{prusen:30}, gold:-5000}, res:`Parçaları birleştirdik efendim. Formül on dört ayda yeniden kuruldu ve bu sefer iki ülkenin ortak malı. Kimse tekelinde tutamayacak — bunu yazılı hale getirdik.`},
+    {t:'🔒 Tek başımıza tamamlamaya çalış', eff:{tech:12, gold:-8000, rep:-12, relAll:-10, ind:8}, res:`Tek başımıza denedik efendim. İki yıl sürdü, Prusen aynı anda ayrı çalıştı, ikimiz de geç kaldık. Rekabet, kıtlıkta pahalı bir lükstür.`}]}},
+ {id:'b_k2_l3', ico:'✒️', n:'İkinci Defteri Kim Yazacak', ay:5, req:['b_k2_l2'],
+  desc:'Bu felaketin kaydını da biz mi tutacağız? Kıta buna razı mı?',
+  ev:{txt:`Efendim, ikinci defterin kim tarafından tutulacağı tartışılıyor.<br><br>Bazıları "yine onlar" diyor, bazıları "kalemi bir ülkeye bırakmak yanlıştı" diyor. İkisi de savunulabilir.<br><br>Kalem bizde kalırsa güç bizde kalır. Kalemi paylaşırsak tarih daha güvenilir olur — ve biz sıradanlaşırız.`,
+   ops:[
+    {t:'🤲 Kalemi kıtayla paylaş', eff:{rep:28, relAll:22, edu:14, corr:-10, mor:-4}, res:`Ortak bir kâtipler kurulu oluşturuldu efendim, on beş ülkeden. Kalem artık bizim değil. Yüz elli yıllık ayrıcalığımızı kendi elimizle bıraktık ve kıta bunu asla unutmayacak.`},
+    {t:'✍️ Kalem bizde kalsın', eff:{rep:10, edu:12, corr:8, relAll:-8, gold:3000}, res:`Kalem bizde kaldı efendim. Tarafsız yazacağımıza söz verdik ve muhtemelen yazacağız. Ama "muhtemelen", tarih için yeterli bir güvence değil.`}]}}
+];
+
+// ═══ 4) KÜLSÜZ TOPARLANMA ═══
+SEN_BRANCH.toparlanma.veren=[
+ {id:'b_tp_v1', ico:'💸', n:'Fakirliğin Sonu Gelsin', ay:3, req:[], reqAny:['tp_bosalt','tp_tut'],
+  desc:'İki felakette de verdik ve iki kez fakir kaldık. Bu sefer kendimize bakalım mı?',
+  ev:{txt:`Efendim, gökyüzü açıldı ve ilk kez kendi ülkemize bakacak vaktimiz var.<br><br>Rakamlar acı: iki felakette de verdik, iki kez tohumsuz kaldık ve kıtanın en fakir ülkelerinden biriyiz. Zenginlik hiçbir zaman bize dönmedi.<br><br>Genç kuşak soruyor efendim: "Erdemli olmak zorunda fakir kalmak mı demek?"`,
+   ops:[
+    {t:'🏭 Bu dönemi tamamen kendimize ayır', eff:{ind:16, gold:8000, food:12, hap:14, rep:-8, relAll:-6}, res:`Bu dönemi kendimize ayırdık efendim. Fabrikalar, yollar, okullar. Kıta "değiştiler" diyor. Değişmedik — sadece ilk kez sıramız geldi.`},
+    {t:'⚖️ Yarısı bize, yarısı kıtaya', eff:{ind:8, food:8, rep:16, relAll:14, gold:2000, mor:8}, res:`Yarı yarıya böldük efendim. Ne tam kalkındık ne cömertliğimizi bıraktık. Bu kıtada ilk kez bir ülke hem verdi hem zenginleşti — yavaş ama sürdürülebilir.`}]}},
+ {id:'b_tp_v2', ico:'🏅', n:'Borcumuzu Kim Ödeyecek', ay:4, req:['b_tp_v1'],
+  desc:'Kıta bize borçlu olduğunu kabul ediyor. Nasıl ödensin?',
+  ev:{txt:`Efendim, Tahıl Meclisi tarihi bir karar aldı: iki felakette de veren ülkelere kıtanın borcu <b>resmen tanındı</b>.<br><br>Şimdi ödeme şeklini biz seçiyoruz. Altın isteyebiliriz, imtiyaz isteyebiliriz, ya da hiç istemeyebiliriz.<br><br>Yaşlı bir vekil "efendim, ne istersek isteyelim, bir daha asla bu kadar güçlü bir pazarlık masasına oturamayız" dedi.`,
+   ops:[
+    {t:'💰 Altın ve ticaret imtiyazı', eff:{gold:16000, ind:12, rep:4, relAll:-4}, res:`Altını ve imtiyazı aldık efendim. Ülke kalkındı, fakirlik bitti. Kâtip "borç ödendi, hesap kapandı" diye yazdı — ve o cümleyle özel konumumuz da kapandı.`},
+    {t:'🏫 Okul, laboratuvar ve altyapı iste', eff:{edu:20, tech:14, ind:8, rep:18, relAll:12, gold:3000}, res:`Para yerine kurum istedik efendim: üniversite, laboratuvar, liman. Bir kuşak sonra bu ülke kıtanın en eğitimlisi oldu. En iyi pazarlık, en geç meyve verendir.`},
+    {t:'🕊️ Hiçbir şey isteme — kayıtta kalsın yeter', eff:{rep:34, relAll:28, mor:20, edu:6, gold:-2000}, res:`Hiçbir şey istemedik efendim. "Kayıtlara geçmesi yeter" dediniz. Kıta bunu anlamadı, sonra anladı, sonra utandı. Dört ülke kendiliğinden yardım gönderdi.`}]}},
+ {id:'b_tp_v3', ico:'🌍', n:'Cömertliği Kurumsallaştır', ay:5, req:['b_tp_v2'],
+  desc:'İki kez elimizdekini verdik. Bunu bir kuruma dönüştürebilir miyiz?',
+  ev:{txt:`Efendim, bir teklif geldi ve bu kıtada eşi yok: verme geleneğimizi kalıcı bir kuruma dönüştürmek.<br><br>Bir felaket fonu — bizim adımızla, bizim kurallarımızla, kıtanın parasıyla.<br><br>"İki kez sezgiyle doğru olanı yaptınız" dedi teklifi getiren. "Üçüncüsünde sezgiye güvenmeyin, kurum kurun."`,
+   ops:[
+    {t:'🏛️ Kurumu kur, kıtaya aç', eff:{rep:30, relAll:24, edu:14, ind:6, gold:-5000}, res:`Kurum kuruldu efendim, adımızı taşıyor ve on beş ülke üye. Cömertliğimiz artık bir kişinin kararına bağlı değil. Yüz elli yıllık erdemi kalıcı hale getirdik.`},
+    {t:'🤲 Kurum olmasın — bu bir karakter meselesi', eff:{mor:18, hap:12, rep:14, edu:-4}, res:`Kurmadık efendim. "Bu bir kural değil, bir karakter" dediniz. Romantik ve kırılgan bir karar — çünkü karakter, kurumdan kolay değişir.`}]}}
+];
+SEN_BRANCH.toparlanma.kapanan=[
+ {id:'b_tp_k1', ico:'🚪', n:'Kapı Artık Ne Anlama Geliyor', ay:3, req:[], reqAny:['tp_bosalt','tp_tut'],
+  desc:'Kriz yok. Kapıyı kapalı tutmanın artık bir gerekçesi de yok.',
+  ev:{txt:`Efendim, kriz bitti ve kapı politikamızın gerekçesi de bitti.<br><br>İki felakette de "zorunluluktu" dedik. Şimdi zorunluluk yok. Kapıyı kapalı tutarsak bu bir tercih olacak ve tercihler karakter gösterir.<br><br>Dışişleri "bu, yüz elli yıllık yalnızlığımızı bitirme fırsatı" diyor efendim.`,
+   ops:[
+    {t:'🌍 Tam açıl — göç, ticaret, öğrenci', eff:{gold:9000, ind:10, edu:12, rep:24, relAll:20, pop:3, stab:-3}, res:`Tam açıldık efendim. Limanlarımız kıtanın kavşağı oldu, üniversitelerimiz doldu, ekonomimiz patladı. "Kapalı Liman" tabiri ilk kez geçmiş zamanla kullanılıyor.`},
+    {t:'⚖️ Ölçülü açıl, kontrolü bırakma', eff:{gold:5000, ind:6, rep:10, relAll:8, stab:3}, res:`Ölçülü açıldık efendim: seçici göç, denetimli ticaret. Kazandık ama kimliğimizi korudukmuş gibi hissediyoruz. Bu his, çoğu zaman kararların gerçek sebebidir.`}]}},
+ {id:'b_tp_k2', ico:'🕮', n:'Sayfayı Kapatma Girişimi', ay:4, req:['b_tp_k1'],
+  desc:'Yüz elli yıllık "Kapalı Liman" yaftasından kurtulmanın vakti geldi mi?',
+  ev:{txt:`Efendim, dış politikamızın yüz elli yıllık tek gerçek amacı vardı: o defterlerin kapatılması.<br><br>Şimdi kıta sakin, felaket bitti ve ilk kez bu talebi dile getirebileceğimiz bir ortam var.<br><br>Ama şu soru duruyor efendim: sayfayı kapatmak mı istiyoruz, yoksa <b>üstüne yeni bir sayfa yazmak</b> mı? İkisi çok farklı şeyler.`,
+   ops:[
+    {t:'🔒 Sayfanın kapatılmasını talep et', eff:{rep:6, relAll:-8, hap:14, mor:10, rel:{egeya:-20, eirlanda:-14}}, res:`Talebi sunduk efendim. Egeya reddetti, kıta bölündü, halkımız gurur duydu. Sayfa kapanmadı — kapatılmasını istemek, sayfayı bir kez daha okuttu.`},
+    {t:'✍️ Kapatma — yanına yeni sayfa yazdır', eff:{rep:28, relAll:22, edu:12, mor:12, gold:-4000}, res:`"Eskiyi silmeyin, yenisini yazın" dediniz efendim. Kâtipler bu teklifi kıta tarihinde ilk kez duyuyordu. İki sayfa yan yana duruyor ve ikincisini okuyanlar birincisini affediyor.`}]}},
+ {id:'b_tp_k3', ico:'⚓', n:'Yalnızlıktan Sonra', ay:5, req:['b_tp_k2'],
+  desc:'Kıtaya açıldık. Peki kim olduğumuzu koruyabilecek miyiz?',
+  ev:{txt:`Efendim, açılmanın beklenmedik bir sonucu ortaya çıktı: gençlerimiz gidiyor.<br><br>Yüz elli yıl kimse gelemedi, kimse gidemedi. Şimdi kapılar açık ve en iyi öğrencilerimiz kıtanın başka merkezlerinde.<br><br>Bir bakan "kapıyı açmak iki yönlü çalışıyormuş efendim" dedi. Biliyorduk ama yaşayınca başka oluyor.`,
+   ops:[
+    {t:'🏫 Onları geri çekecek kurumlar kur', eff:{edu:18, tech:12, gold:-8000, rep:12, ind:8}, res:`Kıtanın en iyi üniversitesini ve laboratuvarını kurduk efendim. Gidenler dönmeye başladı, üstelik yanlarında başkalarını getirerek. Kapalı ülke, çekim merkezi oldu.`},
+    {t:'📜 Gitmelerini zorlaştır', eff:{stab:4, hap:-10, edu:-12, rep:-16, relAll:-12}, res:`Çıkışı zorlaştırdık efendim. Gidiş azaldı, küskünlük arttı. Kapıyı yarım kapatmak, yüz elli yıllık kapalı kalmaktan daha çok yıprattı bizi.`}]}}
+];
+SEN_BRANCH.toparlanma.kazanan=[
+ {id:'b_tp_z1', ico:'🏦', n:'Servetin Yeni Anlamı', ay:3, req:[], reqAny:['tp_bosalt','tp_tut'],
+  desc:'Kriz bitti. Zenginliğimizi artık kimse mecburiyetten kabullenmiyor.',
+  ev:{txt:`Efendim, kıtlıkta zenginlik güçtür — kimse tartışmaz çünkü herkesin ihtiyacı vardır.<br><br>Bollukta zenginlik bir <b>soru</b>ya dönüşür: "Bu nereden geldi?"<br><br>Bu dönemde ilk kez servetimizin kaynağı açıkça tartışılıyor efendim ve tartışanların elinde iki felaketin kayıtları var.`,
+   ops:[
+    {t:'📖 Servetin kaynağını şeffaflaştır', eff:{rep:26, edu:12, corr:-16, relAll:14, gold:-4000, hap:-6}, res:`Bütün defterleri açtık efendim — nereden ne kazandığımızı kalem kalem. Bazı kalemler utandırdı. Ama şeffaflığın ardından ilk kez servetimiz sorgulanmadan kabul edildi.`},
+    {t:'🏭 Tartışmayı üretimle sustur', eff:{ind:16, gold:7000, hap:10, rep:6, edu:4}, res:`Cevap vermek yerine ürettik efendim. Fabrikalar, istihdam, ihracat. "Nereden geldiği" sorusu, "ne yaptığı" sorusunun altında kaldı. Şimdilik.`}]}},
+ {id:'b_tp_z2', ico:'🤝', n:'Alacaklıdan Ortağa', ay:4, req:['b_tp_z1'],
+  desc:'Yüz elli yıl alacaklıydık. Başka bir şey olabilir miyiz?',
+  ev:{txt:`Efendim, bu kıtada bizim için tek bir kelime kullanılıyor: <b>alacaklı</b>.<br><br>Reddiye bu yüzden oldu, düşmanlıklar bu yüzden sürüyor. Alacaklı olmak, karşındakinin seni sevmemesini garanti eder.<br><br>Hazine bakanı yeni bir model getirdi efendim: borç vermek yerine ortak olmak. Daha az garantili, daha çok kazançlı — ve tamamen farklı bir ilişki.`,
+   ops:[
+    {t:'📈 Alacak modelinden ortaklığa geç', eff:{gold:-6000, ind:14, rep:24, relAll:20, edu:8}, res:`Modeli değiştirdik efendim. Artık borç vermiyoruz, ortak oluyoruz. İlk yıl daha az kazandık, üçüncü yıl iki katı. Ve ilk kez kimse bizden nefret etmiyor.`},
+    {t:'📒 Alacaklı kal — işleyen sistemi bozma', eff:{gold:12000, ind:6, rep:-14, relAll:-12, corr:6}, res:`Sistemi bozmadık efendim. Kazanmaya devam ediyoruz ve nefret edilmeye de. Üçüncü bir Reddiye ihtimalini hazine bakanı bile tutanağa yazdırdı.`}]}},
+ {id:'b_tp_z3', ico:'🕮', n:'Üçüncü Sayfamız', ay:5, req:['b_tp_z2'],
+  desc:'İki felakette de kazandık. Felaketsiz bir dönemde ne olacağız?',
+  ev:{txt:`Efendim, kâtip geldi ve bu kez alışılmadık bir şey söyledi.<br><br>"İki felakette de aynı şeyi yazdım sizin için. Şimdi felaket yok ve elimde yazacak bir şey de yok. Zenginsiniz — bu bir olay değil, bir durum."<br><br>Sonra ekledi: "Bir ülke, kriz olmadan da bir şey olabilir mi? Bunu bana siz cevaplayacaksınız."`,
+   ops:[
+    {t:'🏛️ Kıtanın ekonomik omurgası ol', eff:{ind:16, gold:8000, rep:20, relAll:16, edu:8}, res:`Kâtip yazdı efendim: "Bu dönemde bu ülke kıtayı taşıdı." Ortak para, ortak kredi, ortak pazar — hepsinin merkezi biziz. Kazanç değil, <b>işlev</b> olduk.`},
+    {t:'🎓 Serveti bilime ve sanata çevir', eff:{edu:20, tech:16, rep:24, gold:-7000, hap:8, relAll:10}, res:`Kâtip yazdı efendim: "Bu dönemde bu ülke parasını bilgiye çevirdi." Kıtanın en iyi kütüphaneleri, laboratuvarları ve sahneleri bizde. Zenginlik ilk kez bize saygı da getirdi.`},
+    {t:'💰 Sadece büyümeye devam et', eff:{gold:16000, ind:14, hap:12, rep:-10, relAll:-8}, res:`Kâtip yazdı efendim: "Bu dönemde bu ülke zenginleşti." Nokta. Sayfa yarım kaldı ve kâtip başka bir şey yazmadı çünkü yazacak başka bir şey yoktu.`}]}}
+];
+SEN_BRANCH.toparlanma.yuklenen=[
+ {id:'b_tp_y1', ico:'🌱', n:'Toprak İlk Kez Bizim', ay:3, req:[], reqAny:['tp_bosalt','tp_tut'],
+  desc:'İki felakette de toprağımız kül altında kaldı. İlk kez temiz.',
+  ev:{txt:`Efendim, tarım müdürü bu sabah ağladı. Utanmadı da.<br><br>"Üç kuşaktır bu toprağın gerçek rengini kimse görmemişti" dedi. Ölçümler onu doğruluyor: toprağımız iki yüz yılın en verimli hâlinde.<br><br>İlk kez felaketin arkasını toplamıyoruz efendim. İlk kez bir şey <b>kuruyoruz</b>.`,
+   ops:[
+    {t:'🌾 Tarımı kıtanın ambarı haline getir', eff:{food:20, ind:8, gold:6000, rep:14, relAll:12}, res:`Kıtanın ambarı olduk efendim. İki felakette aç kalan ülke, şimdi kıtayı doyuruyor. Bu cümleyi kurmak için üç kuşak geçti.`},
+    {t:'🏭 Tarıma bağımlılıktan çık, sanayileş', eff:{ind:18, edu:10, gold:4000, food:-4, hap:6}, res:`Sanayileştik efendim. "Bir daha hasadımız bizi belirlemesin" dediniz. Üçüncü bir felakette kül tarlaya düşecek ama fabrikaya düşmeyecek.`}]}},
+ {id:'b_tp_y2', ico:'🪦', n:'Ölülerimizi Ne Yapacağız', ay:4, req:['b_tp_y1'],
+  desc:'İki felaketin kayıpları bu topraklarda. Hatıra mı, yük mü?',
+  ev:{txt:`Efendim, ovalarımızda iki felaketin mezarlıkları var — çoğu isimsiz.<br><br>Belediyeler ne yapacağını soruyor: bazıları anıt istiyor, bazıları toprağın tarıma açılmasını.<br><br>Bir muhtar şunu yazmış efendim: "Ölülerimiz bize yer bırakmıyor. Ama onları kaldırırsak ne kaldı bizden?"`,
+   ops:[
+    {t:'🕯️ Anıt alanları kur, kalıcı koru', eff:{mor:16, rep:18, edu:10, hap:8, food:-5, gold:-3000}, res:`Anıt alanları kuruldu efendim, kalıcı ve dokunulmaz. Kıtadan ziyaretçi geliyor. Acımız bir kimliğe dönüştü — hafif değil ama taşınabilir bir kimliğe.`},
+    {t:'🌾 Toprağı tarıma aç, kayıtla yetin', eff:{food:14, ind:6, hap:-8, mor:-10, rep:-6}, res:`Toprağı tarıma açtık efendim, isimleri arşive yazdık. Verim arttı. Bazı köylerde ekim mevsiminde kimse tarlaya girmedi ve bunu kimse zorlamadı.`}]}},
+ {id:'b_tp_y3', ico:'📣', n:'Artık Bizi Dinliyorlar', ay:5, req:['b_tp_y2'],
+  desc:'İki felaketi de ilk yaşayan biz olduk. Kıta artık sözümüzü dinliyor.',
+  ev:{txt:`Efendim, tuhaf bir şey oldu: Tahıl Meclisi'nde söz aldığımızda salon sustu.<br><br>Yüz elli yıl önce güldüler, yüz elli yıl sonra dinliyorlar. Çünkü iki felakette de haklı çıkan tek ülke biz olduk.<br><br>Bu bir güç efendim. Ve güçlerin en tehlikelisi, acıdan gelen güçtür — çünkü kullanması insanı acımasızlaştırır.`,
+   ops:[
+    {t:'🏛️ Kıtanın erken uyarı sistemini kur ve yönet', eff:{tech:16, rep:26, relAll:20, edu:12, gold:-6000}, res:`Sistemi kurduk ve merkezi bizde efendim. Kıta artık bir felaketi aylar önce görecek. Acımızı bir kuruma çevirdik — yapılabilecek en iyi şey buydu.`},
+    {t:'⚖️ Sözümüzü siyasi güce çevir', eff:{mil:10, gold:8000, mor:12, rep:-8, relAll:-10}, res:`Ahlaki üstünlüğümüzü siyasete çevirdik efendim: oy ağırlığı, imtiyaz, öncelik. Kazandık. Ve dinlenen ülke olmakla, korkulan ülke olmak arasındaki farkı kaybettik.`}]}}
+];
+SEN_BRANCH.toparlanma.kalem=[
+ {id:'b_tp_l1', ico:'📚', n:'Hafıza Kimseye Lazım Değil', ay:3, req:[], reqAny:['tp_bosalt','tp_tut'],
+  desc:'Kriz bitince arşive kimse gelmiyor. En tehlikeli dönem bu.',
+  ev:{txt:`Efendim, arşiv müdürü endişeli. Kriz sırasında günde yüzlerce talep geliyordu; bu ay <b>üç</b> talep geldi.<br><br>"İnsanlar hafızaya sadece korktuklarında ihtiyaç duyuyor efendim" dedi. "Korku geçince biz gereksiz bir masraf oluyoruz."<br><br>Kıta iki kez aynı dağdan vuruldu çünkü arada geçen yüz elli yılda kimse arşive uğramadı.`,
+   ops:[
+    {t:'💰 Arşivi kalıcı bütçeye bağla', eff:{edu:18, rep:14, tech:8, gold:-5000, corr:-8}, res:`Arşiv anayasal güvenceye alındı efendim; hiçbir hükümet bütçesini kesemez. Sıkıcı bir madde. Üçüncü felakette bu madde çok konuşulacak.`},
+    {t:'📉 Kriz yokken küçült, sonra büyütürüz', eff:{gold:6000, ind:4, edu:-14, rep:-10}, res:`Arşivi küçülttük efendim. Tasarruf sağlandı. Kâtiplerin yarısı başka işe geçti ve bilgileriyle birlikte gittiler — bilgi, kadro cetvelinde görünmez.`}]}},
+ {id:'b_tp_l2', ico:'🔭', n:'Bir Sonrakini Öngör', ay:4, req:['b_tp_l1'],
+  desc:'İki felaketi de sonradan kaydettik. Üçüncüsünü önceden görebilir miyiz?',
+  ev:{txt:`Efendim, genç bir bilgin ilginç bir iddiayla geldi: iki felaketin kayıtları karşılaştırıldığında bir <b>örüntü</b> çıkıyor.<br><br>Dağın davranışı, kaynak sıcaklıkları, hayvan göçleri — hepsi ikisinde de aynı sırayla ilerlemiş.<br><br>"Üçüncüsünü önceden görebiliriz efendim" diyor. "Ama bunun için kimsenin ilgilenmediği bir şeyi yıllarca ölçmemiz gerek."`,
+   ops:[
+    {t:'🔬 Öngörü enstitüsünü kur', eff:{tech:20, edu:16, rep:22, relAll:14, gold:-8000}, res:`Enstitü kuruldu efendim, kıtayla ortak. Kimsenin ilgilenmediği şeyleri ölçüyoruz. Bu kurumun değeri, hiçbir şey olmazsa hiç anlaşılmayacak — ve olursa her şeyi değiştirecek.`},
+    {t:'📄 Bulguyu yayımla, kurma', eff:{edu:10, rep:12, relAll:8, gold:1000, tech:4}, res:`Bulguyu yayımladık efendim, kurumu kurmadık. Başka bir ülke okudu ve enstitüyü onlar kurdu. Fikir bizim, kurum onların — bu kıtada sık görülen bir hikâye.`}]}},
+ {id:'b_tp_l3', ico:'📗', n:'Defteri Kim Devralacak', ay:5, req:['b_tp_l2'],
+  desc:'Kül Defterleri artık tarih. Ondan sonra ne yazılacak?',
+  ev:{txt:`Efendim, kâtipler kurulu bir soru sordu ve cevabı yüz elli yıl sürecek.<br><br>Kül Defterleri iki felaketi kaydetti. Şimdi felaket yok. Defter kapanacak mı, yoksa <b>başka bir şeyi</b> mi kaydedecek?<br><br>Baş kâtip şunu ekledi: "Bir kıta, sadece acılarını kaydederse, acıdan başka bir kimliği olmaz efendim."`,
+   ops:[
+    {t:'📖 Defteri kapat, yeni bir defter aç', eff:{edu:16, rep:24, relAll:18, mor:12, hap:8}, res:`Kül Defterleri müzeye kondu efendim ve yeni bir defter açıldı: ne inşa edildiğinin defteri. Kıta ilk kez acısıyla değil, yaptıklarıyla tanımlanıyor.`},
+    {t:'🕮 Aynı defter devam etsin', eff:{edu:12, rep:10, corr:-6, mor:-4, relAll:4}, res:`Aynı defter devam ediyor efendim. Sayfalar artık kıtlık değil hasat yazıyor ama kapağında hâlâ kül var. Bazı isimler kolay bırakılmıyor.`},
+    {t:'🔥 Defteri tamamen kapat', eff:{hap:16, mor:10, relAll:6, edu:-14, rep:-10}, res:`Defteri kapattık efendim, yenisini de açmadık. Kıta hafif hissediyor. Baş kâtip emekli olurken tek cümle yazdı: "Üçüncüsünde görüşürüz."`}]}}
+];
+
+// ── Senaryo tanımları ────────────────────────────────────────────────
+// bas = oyuna başlarken ülke istatistiklerine uygulanan fark. Her dönem
+// kendi zorluğunu getiriyor: Kül Yıllarında hazine ve yiyecek dipte,
+// patlamadan önce her şey bol ama sen tek başına tedirginsin.
+const SENARYOLAR=[
+ {id:'oncesi', ico:'🏔️', ad:'Kelbaran\'dan Önce', don:'Patlamadan 6 yıl önce',
+  ozet:'Kıta yüz yıldır bu kadar zengin olmadı. Ambarlar dolu, tahıl ucuz, kimse gökyüzüne bakmıyor. Alpenya\'daki bir avuç ölçümcü dışında.',
+  cizgi:'Bolluk · Uyarı · Hazırlık', renk:'#6fbf73',
+  bas:{gold:9000, food:22, ind:10, hap:12, gold_ore:0, rep:5, mil:-8}},
+
+ {id:'kul1', ico:'🌋', ad:'Kül Yılları', don:'Patlamadan sonraki 1. yıl',
+  ozet:'Gökyüzü gri, hasat yok, Aç Yürüyüş yollarda. Bu yıllarda ne yaparsan Kül Defterleri\'ne o yazılacak ve yüz elli yıl okunacak.',
+  cizgi:'Kıtlık · Seçim · Defter', renk:'#c8703a',
+  bas:{gold:-9000, food:-38, hap:-25, ind:-12, mor:-15, pop:-4, mil:-5}},
+
+ {id:'varsayilan', ico:'📖', ad:'Kül Defterleri Dönemi', don:'Patlamadan 150 yıl sonra',
+  ozet:'Kıtanın bugünü. Defterler tartışılıyor, Kelbaran yirmi yıldır yeniden tütüyor ve herkes hesap sormak istiyor — kendi sayfası okunmadığı sürece.',
+  cizgi:'Hesaplaşma · Diplomasi · Miras', renk:'#c8a23a',
+  bas:{}},
+
+ {id:'kul2', ico:'🔥', ad:'İkinci Kül Yılları', don:'Kelbaran yeniden patladı',
+  ozet:'Dağ ikinci kez konuştu. Fark şu: bu sefer kıtanın elinde hafıza var. Herkes kimin yüz elli yıl önce ne yaptığını biliyor.',
+  cizgi:'Tekrar · Hafıza · Hesap', renk:'#b8443a',
+  bas:{gold:-5000, food:-28, hap:-18, mor:-10, rep:-5, mil:6, tech:8}},
+
+ {id:'toparlanma', ico:'🌤️', ad:'Külsüz Toparlanma', don:'Gökyüzü ilk kez tamamen açık',
+  ozet:'Felaket bitti, bahane de bitti. Kıtlıkta herkes ya kahraman ya cellattır; bollukta bir ülke sadece kendisidir. Asıl sınav bu.',
+  cizgi:'İnşa · Kurum · Miras', renk:'#4a90c8',
+  bas:{gold:4000, food:15, ind:8, edu:10, tech:6, hap:8, mil:-10, rep:6}}
+];
+function senaryoAktif(){ return SENARYOLAR.find(s=>s.id===(G.senaryo||'varsayilan'))||SENARYOLAR[2]; }
+// Seçilen senaryonun omurgası; varsayılan senaryo eski FOCUS_SPINE'i kullanır
+function aktifSpine(){ return SEN_SPINE[G.senaryo] || FOCUS_SPINE; }
+
 const FOCUS_SPINE=[
  // ── KÖK: birini seç, diğeri kapanır ──
  {id:'sp_ledger', ico:'📕', n:'Defterleri Açtır', ay:3, req:[], xor:['sp_seal'], grup:'kok',
@@ -2440,12 +3149,20 @@ function ensureFocus(c){
  return c.focus;
 }
 // Oyuncunun ülkesine ait tam ağaç (ortak omurga + kendi dalı)
+// Varsayılan dönemde ülkeye özel dal; diğer dönemlerde ülkenin arketip dalı
+function aktifDal(){
+ const c=G.player;if(!c)return[];
+ const sid=G.senaryo||'varsayilan';
+ if(sid==='varsayilan')return FOCUS_BRANCHES[c.id]||[];
+ const ark=ARKETIP[c.id]||'veren';
+ return (SEN_BRANCH[sid]&&SEN_BRANCH[sid][ark])||[];
+}
 function focusTree(){
  const c=G.player;if(!c)return[];
- const br=(FOCUS_BRANCHES[c.id]||[]).map((f,i)=>Object.assign({},f,{tur:'dal',row:i,col:2}));
+ const br=aktifDal().map((f,i)=>Object.assign({},f,{tur:'dal',row:i,col:2}));
  const last=br.length?br[br.length-1].id:null;
  const coz=a=>(a||[]).map(r=>r==='BRANCH_LAST'?last:r).filter(Boolean);
- const sp=FOCUS_SPINE.map(f=>Object.assign({},f,{tur:'omurga',req:coz(f.req),reqAny:coz(f.reqAny)}));
+ const sp=aktifSpine().map(f=>Object.assign({},f,{tur:'omurga',req:coz(f.req),reqAny:coz(f.reqAny)}));
  return sp.concat(br);
 }
 function focusById(id){return focusTree().find(f=>f.id===id)||null;}
@@ -2558,7 +3275,7 @@ function focusChoose(id,idx){
  const o=f.ev.ops[idx];if(!o)return;
  applyFocusEff(o.eff);
  const st=ensureFocus(G.player);
- st.log.push({id:id,n:f.n,sec:o.t,y:G.year,m:G.month});
+ st.log.push({id:id,n:f.n,sec:o.t,ix:idx,y:G.year,m:G.month});
  const ozet=effText(o.eff);
  addEvent('good',`🕮 <b>${f.n}</b> → ${o.t}`);
  setTimeout(()=>{
@@ -2568,6 +3285,186 @@ function focusChoose(id,idx){
    ${ozet?`<div style="margin-top:13px;padding-top:11px;border-top:1px solid #2a3a55;font-size:12px;line-height:1.9;">${ozet}</div>`:''}`,
    [{text:'Anlaşıldı',cls:'primary',onClick:()=>{renderHUD();if(G.activePanelTabs)renderPanel(G.currentTab);}}]);
  },220);
+}
+
+// ═══════════════════ 🪶 MİRAS: GEÇ OYUN HESAPLAŞMASI (v1.11) ═══════════════════
+// Odak ağacı bittiğinde hikâye bitmiyor. Verdiğin kararlar dört eksende
+// puanlanıyor ve kıta seni o profile göre hatırlıyor: sonraki yıllarda
+// Baldrick "seçtiğin yolun faturası/getirisi" olan olaylarla geliyor.
+// Böylece geç oyunda savaş dışında da bir hikâye akışı oluyor.
+
+// Kararın hangi eksene yazıldığını efektinden çıkarıyoruz.
+//  acik   = kıtaya açık, cömert, fedakâr        sert   = önce kendi halkı, kapalı, güçlü
+//  tuccar = kazanç odaklı, pazarlıkçı           bilge  = bilgi, şeffaflık, kurum
+function eksenPuan(e){
+ const p={acik:0,sert:0,tuccar:0,bilge:0};
+ if(!e)return p;
+ const rep=e.rep||0, rel=e.relAll||0, gold=e.gold||0, mil=e.mil||0, ind=e.ind||0;
+ const hap=e.hap||0, edu=e.edu||0, tech=e.tech||0, corr=e.corr||0;
+ const food=e.food||0, stab=e.stab||0, mor=e.mor||0;
+ // Cömertlik = BAŞKASINA fayda + KENDİNE bedel. Sadece itibar artışı yetmez,
+ // çünkü neredeyse her "iyi" seçim itibar veriyor; ayırt edici olan fedakârlık.
+ if(rel>0)p.acik+=rel*1.05;
+ if(food<0)p.acik+=Math.abs(food)*0.75;
+ if(hap<0&&(rel>0||rep>0))p.acik+=Math.abs(hap)*0.5;
+ if(gold<0&&(rel>0||rep>0))p.acik+=Math.abs(gold)/1000;
+ // Sertlik = kıtayla arayı bozup kendi halkını/gücünü öne almak
+ if(rel<0)p.sert+=Math.abs(rel)*1.0;
+ if(mil>0)p.sert+=mil*0.9;
+ if(stab>0)p.sert+=stab*1.3;
+ if(hap>0&&rep<0)p.sert+=hap*0.7;
+ // Tüccarlık = kazanç ve imtiyaz
+ if(gold>0)p.tuccar+=gold/620;
+ if(corr>0)p.tuccar+=corr*1.0;
+ if(ind>0)p.tuccar+=ind*0.55;
+ // Bilgelik = bilgi, şeffaflık, kurum
+ if(edu>0)p.bilge+=edu*1.45;
+ if(tech>0)p.bilge+=tech*1.5;
+ if(corr<0)p.bilge+=Math.abs(corr)*1.45;
+ if(mor>0&&edu>0)p.bilge+=mor*0.3;
+ // Kazanan eksen tam puan alır, diğerleri kırpılır: bir karar bir yönü temsil etsin,
+ // yoksa her iyi seçim bütün eksenleri birden şişiriyor.
+ let enb='acik';
+ for(const k in p)if(p[k]>p[enb])enb=k;
+ for(const k in p)if(k!==enb)p[k]*=0.3;
+ return p;
+}
+function mirasProfil(){
+ const st=ensureFocus(G.player);
+ const top={acik:0,sert:0,tuccar:0,bilge:0};
+ if(!st)return {p:top,bas:'acik',ikinci:'bilge',karar:0};
+ (st.log||[]).forEach(l=>{
+  const f=focusById(l.id); if(!f||!f.ev||l.ix==null)return;
+  const o=f.ev.ops[l.ix]; if(!o)return;
+  const p=eksenPuan(o.eff);
+  for(const k in top)top[k]+=p[k];
+ });
+ const sira=Object.keys(top).sort((a,b)=>top[b]-top[a]);
+ return {p:top, bas:sira[0], ikinci:sira[1], karar:(st.log||[]).length};
+}
+const EKSEN_AD={acik:'Açık Kapı',sert:'Kendi Halkı',tuccar:'Tüccar Aklı',bilge:'Kalem ve Kurum'};
+const EKSEN_ICO={acik:'🚪',sert:'🛡️',tuccar:'💰',bilge:'📚'};
+const EKSEN_OZET={
+ acik:'Kıta seni verdiklerinle hatırlıyor. Kapını açtın, elindekini böldün, çoğu zaman kendinden kısarak.',
+ sert:'Kıta seni önce kendi halkını düşünen bir devlet olarak biliyor. Sert, tutarlı ve mesafeli.',
+ tuccar:'Kıta seni pazarlık masasında hatırlıyor. Kazandın, hesabını bildin, bedelini kimin ödediğini de.',
+ bilge:'Kıta seni kayıtlarınla, kurumlarınla ve şeffaflığınla tanıyor. Ordun değil, arşivin konuşuyor.'
+};
+
+// ── Geç oyun olayları: baskın eksene göre gelir ──
+// Her olayın gerçek bir seçimi ve kalıcı sonucu var; hikâye burada devam ediyor.
+const MIRAS_OLAY={
+ acik:[
+  {ico:'🕊️', n:'Sığınma Talebi', txt:`Efendim, komşu bir ülkede iç savaş çıktı ve mülteciler ilk olarak <b>bize</b> yöneldi.<br><br>Başka ülkeye gitmediler. Sizin açtığınız kapıyı hatırlıyorlar — kararlarınız kıtada bir itibar yarattı ve itibarın faturası şimdi kapıda duruyor.`,
+   ops:[{t:'🚪 Yine aç', eff:{pop:3, rep:16, relAll:12, food:-10, hap:-8}, res:`Yine açtık efendim. Bu ülke artık kıtanın sığınağı. Ambarlarımız zorlanıyor, adımız büyüyor.`},
+        {t:'⚖️ Kotayla al', eff:{pop:1, rep:6, food:-4, hap:-2}, res:`Kotayla aldık efendim. İtibarımız korundu, ambarımız da. Kapıda kalanlar oldu ve onları biz seçtik.`}]},
+  {ico:'🏛️', n:'Kıta Sana Başkanlık Öneriyor', txt:`Efendim, Tahıl Meclisi olağanüstü toplandı ve dönem başkanlığını <b>size</b> öneriyor.<br><br>Gerekçe tutanağa şöyle geçmiş: "Bu ülke krizde ne yaptığını kanıtladı." Verdiğiniz kararlar bir sicil oluşturdu ve o sicil şimdi bir makam getiriyor.`,
+   ops:[{t:'👑 Kabul et', eff:{rep:22, relAll:18, gold:-5000, edu:8}, res:`Kabul ettiniz efendim. Kıtanın ortak kurumunun başındayız. Masraflı bir onur ve bize sorulmadan hiçbir şey olmuyor artık.`},
+        {t:'🤲 Reddet, başkası olsun', eff:{rep:14, relAll:14, mor:10, hap:6}, res:`Reddettiniz efendim: "Bu koltuk küçük bir ülkenin olsun." Kıta bunu yıllarca konuştu. Güç istemeyen, gücü hak eden sayıldı.`}]},
+  {ico:'💔', n:'Cömertliğin Faturası', txt:`Efendim, hazine ve ambar raporu iç açıcı değil.<br><br>Yıllardır verdik. Her seferinde doğru olanı yaptık ve her seferinde kendimizden kıstık. Şimdi kendi köylerimizde eksikler var ve muhalefet bunu her gün soruyor: <b>"Kıtayı doyurduk, kendimizi kim doyuracak?"</b>`,
+   ops:[{t:'🛑 Bu yıl kendimize bakalım', eff:{food:14, hap:14, gold:5000, rep:-10, relAll:-8}, res:`Bir yıllığına durduk efendim. Halk rahatladı, kıta şaşırdı. "Onlar bile durdu" dendi ve bu cümle bazı ülkeleri utandırdı.`},
+        {t:'🔁 Devam — kimliğimiz bu', eff:{mor:18, rep:14, relAll:12, food:-8, hap:-10}, res:`Devam ettik efendim. Kendi halkımız zorlandı ama kimse "biz kimiz" diye sormadı. Bazı ülkeler bir yön seçer, biz bir karakter seçtik.`}]}],
+ sert:[
+  {ico:'🧱', n:'Yalnızlığın Sınavı', txt:`Efendim, bir ticaret bloğu kuruldu ve biz davet edilmedik.<br><br>Gerekçe kibarca yazılmış ama açık: "Kriz dönemlerindeki tutumları belirsizlik yaratıyor." Yıllar önce verdiğiniz kararlar bugün bir masada sandalyeye dönüşmüyor.<br><br>Halkımız bunu umursamıyor efendim — ama ekonomimiz umursayacak.`,
+   ops:[{t:'🤝 Kapıyı arala, bloğa girmeye çalış', eff:{rep:14, relAll:14, gold:-4000, hap:-6}, res:`Taviz verdik efendim ve bloğa alındık. Ticaret açıldı. Halk "eğildik mi" diye soruyor ve tam olarak öyle oldu.`},
+        {t:'⚔️ Kendi bloğumuzu kur', eff:{mil:10, ind:10, gold:-6000, mor:14, relAll:-8}, res:`Kendi bloğumuzu kurduk efendim. Üç ülke katıldı, hepsi bizim gibi yalnız. Küçük ama bizim.`}]},
+  {ico:'🏰', n:'Kimse Bize Dokunamıyor', txt:`Efendim, kıtada üç ayrı çatışma çıktı ve hiçbiri sınırımıza yaklaşamadı.<br><br>Yıllardır verdiğiniz kararlar bir sonuç üretti: bu ülkeye kimse bulaşmıyor. Halk güvende, ordu güçlü, sınır sessiz.<br><br>Ama dışişleri şunu not etti: "Kimse bize saldırmıyor efendim, kimse bize danışmıyor da."`,
+   ops:[{t:'🛡️ Bu yeterli — güvenlik her şeyden önce', eff:{mil:12, stab:6, hap:12, rep:-8, relAll:-6}, res:`Yolumuza devam ettik efendim. Kale sağlam. Kıtada olan biten bizi ilgilendirmiyor ve bu, bir gün bizi ilgilendirecek.`},
+        {t:'🕊️ Gücü arabuluculuğa çevir', eff:{rep:20, relAll:16, mil:-4, edu:8, gold:3000}, res:`Çatışan taraflar arasına girdik efendim — kimseye borçlu olmayan tek ülke olduğumuz için ikimiz de güvenildik. Yalnızlık, ilk kez işe yaradı.`}]},
+  {ico:'👥', n:'Halk Sordu', txt:`Efendim, yeni kuşak bir soru soruyor ve cevabı hazır değil.<br><br>"Biz neden hiçbir yerde yokuz? Kıtada bir şey olurken neden hep izliyoruz?"<br><br>Yıllardır güvenliği seçtik ve güvenli olduk. Şimdi güvenliğin bir bedeli olduğunu ilk kez konuşuyoruz: <b>anlamsızlık</b>.`,
+   ops:[{t:'🌍 Kıtaya adım at, geç kalmadan', eff:{rep:18, relAll:16, edu:10, mil:-6, gold:-4000}, res:`Kıtaya adım attık efendim: elçilikler, ortak projeler, öğrenci değişimi. Genç kuşak ilk kez ülkesini dışarıda temsil ediyor.`},
+        {t:'🏠 Sorunu içeride çöz — refahı büyüt', eff:{hap:16, ind:12, gold:5000, rep:-6}, res:`İçeriye yatırdık efendim: refah, iş, konfor. Soru sorulmaz oldu çünkü sormaya vakit kalmadı. Bu da bir cevaptır.`}]}],
+ tuccar:[
+  {ico:'📉', n:'Fiyatın Hatırlanması', txt:`Efendim, yeni bir ticaret anlaşmasında bize en kötü şartlar sunuldu ve gerekçesi açıkça söylendi:<br><br>"Kriz döneminde fiyatlarınızı hatırlıyoruz."<br><br>Yıllar önce kazanılan para, bugün her masada bir puan eksik olarak geri geliyor efendim. Kâr kalıcı değildi; hafıza kalıcı.`,
+   ops:[{t:'💰 Şartları kabul et, ticaret devam etsin', eff:{gold:6000, rep:-6, relAll:-4, ind:6}, res:`Kabul ettik efendim. Kötü şartlarla da olsa kazanıyoruz. Kıta bize "ne olursa olsun ticaret yaparlar" diyor ve haklılar.`},
+        {t:'🕊️ Telafi programı başlat', eff:{gold:-9000, rep:24, relAll:20, mor:8}, res:`Telafi programı başlattık efendim: kriz döneminde fazla ödeyenlere geri ödeme. Pahalıydı. İlk kez bir masaya eşit oturduk.`}]},
+  {ico:'🏦', n:'Kıtanın Kasası Olduk', txt:`Efendim, kıtanın parası artık bizim bankalarımızda duruyor.<br><br>Yıllardır verdiğiniz kararlar bu sonucu doğurdu: kimse bizi sevmiyor ama herkes bize güveniyor. Tuhaf bir güç bu — sevgisiz ama sağlam.<br><br>Şimdi bir teklif var: kıtanın ortak para birimini biz yönetelim.`,
+   ops:[{t:'💵 Kabul et — kıtanın kasası ol', eff:{gold:14000, ind:10, rep:8, relAll:6, corr:6}, res:`Kabul ettik efendim. Kıtanın parası bizim elimizde. Muazzam bir güç ve bir gün birileri bunun fazla olduğunu söyleyecek.`},
+        {t:'⚖️ Ortak yönetim öner', eff:{gold:7000, rep:22, relAll:18, edu:8, corr:-6}, res:`Ortak yönetim önerdik efendim — kasa bizde, karar herkeste. Daha az kazandık, çok daha fazlasını kazandık.`}]},
+  {ico:'🪞', n:'Zenginlik Neye Yaradı', txt:`Efendim, hazine tarihin en dolu hâlinde ve bir gazeteci basit bir soru sordu:<br><br>"Bu para ne işe yarıyor?"<br><br>Cevap veremedik. Yıllardır kazandık ama kazandığımızla ne yaptığımızın bir hikâyesi yok. Kâtipler zenginliği yazar ama zenginliğin <b>hikâyesi</b> olmazsa sayfa boş kalır.`,
+   ops:[{t:'🎓 Serveti bilgiye ve kuruma çevir', eff:{edu:18, tech:14, rep:20, gold:-9000, relAll:10}, res:`Serveti kuruma çevirdik efendim: üniversite, arşiv, laboratuvar. Kâtip sayfamıza ilk kez bir cümle daha ekledi.`},
+        {t:'🏙️ Halkın refahına çevir', eff:{hap:20, ind:10, food:10, gold:-7000, rep:8}, res:`Halka çevirdik efendim: konut, sağlık, ücret. Kıtanın en müreffeh halkı bizde. Dışarıdan nasıl göründüğümüz artık daha az önemli.`},
+        {t:'💰 Büyümeye devam', eff:{gold:11000, ind:12, rep:-10, relAll:-8}, res:`Büyümeye devam ettik efendim. Rakam büyüyor, soru duruyor. Bir gün birileri aynı soruyu daha sert soracak.`}]}],
+ bilge:[
+  {ico:'📚', n:'Kıta Arşivimizi İstiyor', txt:`Efendim, on bir ülke ortak bir talep sundu: kayıtlarınız kıtanın ortak malı olsun.<br><br>Yıllardır şeffaflığı ve kaydı seçtiniz; şimdi kıta bu birikimi paylaşmanızı istiyor. Bu, sahip olduğumuz en büyük güç — ve en kolay paylaşılabilen.`,
+   ops:[{t:'🤲 Aç ve paylaş', eff:{rep:26, relAll:22, edu:14, gold:-3000}, res:`Açtık efendim. Arşivimiz kıtanın ortak hafızası oldu. Ayrıcalığımızı bıraktık, vazgeçilmezliğimizi kazandık.`},
+        {t:'🔑 Şartlı erişim ver', eff:{gold:8000, rep:8, edu:8, relAll:-4, corr:5}, res:`Şartlı açtık efendim: bedel karşılığı erişim. Kazandık. "Hafızayı satan" tabiri yine dolaşıma girdi.`}]},
+  {ico:'🔭', n:'Öngörü Doğru Çıktı', txt:`Efendim, yıllar önce kurduğunuz izleme sistemi bir uyarı verdi ve <b>doğru çıktı</b>.<br><br>Kıtanın üç bölgesi zamanında tahliye edildi. Kayıp sayısı, benzer bir olayda tarihte görülenin onda biri.<br><br>Bugün kıtanın her başkentinde adımız anılıyor efendim. Ve ilk kez bir ülke, olmayan bir felaketle ünlü oldu.`,
+   ops:[{t:'🌍 Sistemi kıtaya bedava aç', eff:{rep:30, relAll:26, edu:14, tech:8, gold:-5000}, res:`Sistemi bedava açtık efendim. Kıta artık ortak bir gözle bakıyor. Bu, yüz elli yılda kurulan en sağlam şey oldu.`},
+        {t:'🏛️ Merkez bizde kalsın', eff:{rep:16, tech:14, edu:10, gold:4000, relAll:4}, res:`Merkezi elimizde tuttuk efendim. Kıta bize bağımlı ve bu bağımlılık iyi huylu — ama yine de bağımlılık.`}]},
+  {ico:'⚖️', n:'Kendi Sayfamız Açıldı', txt:`Efendim, yıllardır herkesin sayfasını okuttunuz. Bugün bir kâtip <b>bizim</b> sayfamızı açtı ve okudu.<br><br>İçinde iyi şeyler var. Ve iki tane de saklamayı tercih ettiğimiz şey var — küçük şeyler, ama şeffaflığı savunan bir ülke için küçük şey yoktur.<br><br>Kâtip bekliyor efendim.`,
+   ops:[{t:'📖 İkisini de kabul et, yayınla', eff:{rep:24, edu:16, corr:-16, hap:-8, relAll:12}, res:`İkisini de yayınladık efendim. Bir bakan gitti, bir yasa değişti. Şeffaflık, ilk kez kendi üstümüzde denendi ve dayandı.`},
+        {t:'🤫 Bu sefer sessiz kal', eff:{hap:8, stab:3, corr:12, rep:-18, edu:-8}, res:`Sessiz kaldık efendim. Yıllardır savunduğumuz ilkeyi bir kez çiğnedik. Bir kez yeter — kâtipler istisnaları çok iyi hatırlar.`}]}]
+};
+
+// Odak ağacı bitince miras dönemi başlar; ~her 14 ayda bir olay gelir.
+function mirasHazir(){
+ const st=ensureFocus(G.player); if(!st)return false;
+ const agac=focusTree(); if(!agac.length)return false;
+ const final=agac[agac.length-1];
+ // omurganın son odağı bitmişse miras dönemi açık
+ const om=agac.filter(f=>f.tur==='omurga');
+ const sonOm=om[om.length-1];
+ return !!(sonOm&&st.done.includes(sonOm.id));
+}
+function tickMiras(){
+ const c=G.player; if(!c||!mirasHazir())return;
+ const st=ensureFocus(c);
+ if(st.mirasSayac==null)st.mirasSayac=6;      // ilk olay için kısa bekleme
+ if(st.mirasGecmis==null)st.mirasGecmis=[];
+ if(--st.mirasSayac>0)return;
+ st.mirasSayac=14;
+ const pr=mirasProfil();
+ const havuz=MIRAS_OLAY[pr.bas]||MIRAS_OLAY.acik;
+ const kalan=havuz.filter((o,i)=>!st.mirasGecmis.includes(pr.bas+i));
+ if(!kalan.length)return;                     // bu eksenin olayları tükendi
+ const o=kalan[Math.floor(Math.random()*kalan.length)];
+ st.mirasGecmis.push(pr.bas+havuz.indexOf(o));
+ setTimeout(()=>mirasOlayGoster(o,pr),400);
+}
+function mirasOlayGoster(o,pr){
+ if(document.pointerLockElement)document.exitPointerLock();
+ const govde=`<div style="display:flex;gap:13px;align-items:flex-start;text-align:left;">
+   <div style="font-size:38px;line-height:1;flex-shrink:0;">🥔</div>
+   <div style="flex:1;min-width:0;">
+     <div style="color:#cfe08a;font-size:12px;font-weight:700;margin-bottom:6px;">Danışman Baldrick</div>
+     <div style="color:#e6ecf5;font-size:13.5px;line-height:1.65;">${o.txt}</div>
+   </div></div>
+  <div style="margin-top:13px;padding-top:11px;border-top:1px solid #2a3a55;font-size:11px;color:#8fa4c4;">
+   Bu olay <b style="color:#ffd86b">${EKSEN_ICO[pr.bas]} ${EKSEN_AD[pr.bas]}</b> mirasından geliyor — odak ağacında seçtiğin yol.</div>`;
+ showModal('🪶 '+o.n, govde, o.ops.map((op,i)=>({text:op.t, cls:i===0?'primary':'', onClick:()=>mirasSec(o,i)})));
+}
+function mirasSec(o,i){
+ const op=o.ops[i]; if(!op)return;
+ applyFocusEff(op.eff);
+ const st=ensureFocus(G.player);
+ (st.log=st.log||[]).push({id:'miras',n:'🪶 '+o.n,sec:op.t,y:G.year,m:G.month});
+ addEvent('good',`🪶 <b>${o.n}</b> → ${op.t}`);
+ const ozet=effText(op.eff);
+ setTimeout(()=>{
+  showModal('🥔 Sonuç',`<div style="display:flex;gap:13px;align-items:flex-start;text-align:left;">
+    <div style="font-size:34px;line-height:1;flex-shrink:0;">🥔</div>
+    <div style="flex:1;min-width:0;color:#e6ecf5;font-size:13.5px;line-height:1.65;">${op.res}</div></div>
+   ${ozet?`<div style="margin-top:13px;padding-top:11px;border-top:1px solid #2a3a55;font-size:12px;line-height:1.9;">${ozet}</div>`:''}`,
+   [{text:'Anlaşıldı',cls:'primary',onClick:()=>{renderHUD();if(G.activePanelTabs)renderPanel(G.currentTab);}}]);
+ },220);
+}
+// Odak sekmesinde gösterilen miras profili
+function mirasKart(){
+ if(!mirasHazir())return '';
+ const pr=mirasProfil();
+ const enb=Math.max(1,...Object.values(pr.p));
+ const bar=k=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+   <div style="width:118px;font-size:11.5px;color:#c9d4e6;">${EKSEN_ICO[k]} ${EKSEN_AD[k]}</div>
+   <div style="flex:1;height:8px;background:#1b2740;border-radius:4px;overflow:hidden;">
+     <div style="height:100%;width:${Math.round(pr.p[k]/enb*100)}%;background:${k===pr.bas?'linear-gradient(90deg,#c8a23a,#ffd86b)':'#3f5578'};"></div></div>
+   <div style="width:34px;text-align:right;font-size:11px;color:#8fa4c4;">${Math.round(pr.p[k])}</div></div>`;
+ return `<div class="card"><h3>🪶 Mirasın</h3>
+   <div class="desc" style="margin-bottom:10px;">Odak ağacında verdiğin <b>${pr.karar}</b> karar bir sicil oluşturdu.
+    Kıta seni bu profille hatırlıyor ve bundan sonraki olaylar buna göre geliyor.</div>
+   ${['acik','sert','tuccar','bilge'].map(bar).join('')}
+   <div style="margin-top:11px;padding-top:10px;border-top:1px solid #2a3a55;font-size:12.5px;color:#e6ecf5;line-height:1.65;">
+    <b style="color:#ffd86b">${EKSEN_ICO[pr.bas]} ${EKSEN_AD[pr.bas]}</b> — ${EKSEN_OZET[pr.bas]}</div></div>`;
 }
 
 // ---- Panel sekmesi ----
@@ -2616,6 +3513,7 @@ function renderFocusTab(){
   }
   return out;};
 
+ const miras=(typeof mirasKart==='function')?mirasKart():'';
  const gecmis=st.log.length?`<div class="card"><h3>📜 Verilen Kararlar</h3>${st.log.slice().reverse().map(l=>
    `<div class="kv"><span class="lbl">${l.n} <span style="color:#778">(Yıl ${l.y}, Ay ${l.m})</span></span><span class="v" style="color:#ffd86b">${l.sec}</span></div>`).join('')}</div>`:'';
 
@@ -2636,6 +3534,7 @@ function renderFocusTab(){
     <h3 style="color:#e8b86f;font-size:13px;margin:4px 0 9px;">📖 ${c.customName}'nın Sayfası</h3>
     ${dal.length?dizi(dal):'<div class="desc">Bu ülke için özel dal tanımlı değil.</div>'}</div>
   </div>
+  ${miras}
   ${gecmis}`;
 }
 
@@ -3120,9 +4019,41 @@ mapCanvas.addEventListener('click',()=>{
  const diff=power>150?{t:'⭐ Kolay',col:'#6fdc8c'}:power>110?{t:'⭐⭐ Orta',col:'#ffd86b'}:{t:'⭐⭐⭐ Zor',col:'#ff8050'};
  const biomeN={coastal:'⚓ Kıyı ülkesi',arctic:'❄️ Kutup iklimi',plains:'🌾 Ovalar',forest:'🌲 Ormanlık',mountain:'⛰️ Dağlık',desert:'🏜️ Kurak'}[hc.biome]||hc.biome;
  $('pickMeta').innerHTML=`Başkent <b style="color:#ffd86b">${hc.capital}</b> · ${biomeN}<br>${nCount} komşu · ${fmt(hc.soldiers)} asker · ${fmt(hc.gold)} hazine<br>Yönetim zorluğu: <b style="color:${diff.col}">${diff.t}</b>`;
+ renderSenaryolar();
  $('countryPicker').style.display='block';
 });
 function cancelPick(){$('countryPicker').style.display='none';G.selectedCountryId=null;}
+
+// ── Senaryo seçimi ──
+function renderSenaryolar(){
+ const kutu=$('senaryoKutu'); if(!kutu)return;
+ kutu.innerHTML='<div class="sbaslik">🕰️ HANGİ DÖNEMDEN BAŞLAYACAKSIN?</div>'+
+  SENARYOLAR.map(sn=>`<div class="senKart ${sn.id===G.senaryo?'sec':''}" style="--sr:${sn.renk}" onclick="secSenaryo('${sn.id}')">
+    <div class="sico">${sn.ico}</div>
+    <div style="flex:1;min-width:0;">
+      <div class="sad">${sn.ad}</div>
+      <div class="sdon">${sn.don}</div>
+      <div class="sozet">${sn.ozet}</div>
+      <div class="scizgi">${sn.cizgi}</div>
+    </div></div>`).join('');
+}
+function secSenaryo(id){ G.senaryo=id; renderSenaryolar(); }
+
+// Senaryonun başlangıç farkını ülkeye uygular (startGame sabit değerleri kurduktan sonra)
+function uygulaSenaryoBas(c){
+ const sn=senaryoAktif(); if(!sn||!sn.bas)return;
+ const b=sn.bas;
+ if(b.gold)c.gold=Math.max(500,c.gold+b.gold);
+ if(b.food)c.food=clamp(c.food+b.food,3,100);
+ if(b.hap)c.happiness=clamp(c.happiness+b.hap,3,100);
+ if(b.ind)c.industry=clamp(c.industry+b.ind,3,100);
+ if(b.mil)c.military=clamp(c.military+b.mil,3,100);
+ if(b.mor)c.morale=clamp(c.morale+b.mor,3,100);
+ if(b.rep)c.reputation=clamp(c.reputation+b.rep,3,100);
+ if(b.edu)c.education=clamp(c.education+b.edu,3,100);
+ if(b.tech)c.tech=clamp(c.tech+b.tech,3,100);
+ if(b.pop)c.population=Math.max(3,c.population+b.pop);
+}
 function mapLoop(){if(G.scene==='map'){drawMap();requestAnimationFrame(mapLoop);}}
 
 function startGame(){
@@ -3138,6 +4069,7 @@ function startGame(){
  c.currency=1;c.minWage=10;c.companies={};
  c.armyXP=25;c.warWeariness=0;c.agents=1;c.generals=[];c.pacts={};c.embassies={};
  G.generalMarket=[genGeneral(),genGeneral()];
+ uygulaSenaryoBas(c);   // v1.11: seçilen dönemin başlangıç farkı
  G.stats=mkStats(); // v1.8: ünvan/profil sicili
  G.player=c;
  initMinisters();
