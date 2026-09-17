@@ -672,6 +672,19 @@ Her kanunun mutluluk, moral, altın gideri, sanayi, bilim, yolsuzluk ve itibar �
                 .trim();
         }
 
+        // ──────────────────────────────────────────────────────────
+        // GİZLİ GÖREV: "gizli görevi başlat" yazılınca yayınlanmamış
+        // Unity oyunu (Lord of the Coffees) açılır.
+        // Tam cümle yerine ANAHTAR KELİME aranıyor; böylece "GİZLİ GÖREVİ
+        // BAŞLAT", "gizli gorev baslat" gibi yazımlar da tutar.
+        // Not: normalizeText toLowerCase'i önce yaptığı için "İ" birleşik
+        // noktalı "i̇" olarak kalabiliyor - o yüzden birleşen işaretler siliniyor.
+        // ──────────────────────────────────────────────────────────
+        function gizliGorevMi(metin) {
+            const n = normalizeText(metin).replace(/[\u0300-\u036f]/g, '');
+            return n.includes('gizli') && n.includes('gorev') && n.includes('baslat');
+        }
+
         // Bir kelimenin sorgu içinde olup olmadığını kontrol et (toleranslı)
         function hasAny(query, words) {
             const q = ' ' + query + ' ';
@@ -1041,6 +1054,22 @@ Nasıl yardım edebilirim?`,
 
             appendMessage('user', text);
             userInput.value = '';
+
+            // GİZLİ GÖREV kodu: normal cevap üretilmeden önce yakalanır.
+            if (gizliGorevMi(text)) {
+                const gizliTyping = appendTypingIndicator();
+                setTimeout(() => {
+                    removeTypingIndicator(gizliTyping);
+                    appendMessage('ai',
+                        '🔓 **GİZLİ GÖREV ONAYLANDI**\n\n' +
+                        'Yetki doğrulandı, Lord. Sitede listelenmeyen projeye erişim açılıyor…\n\n' +
+                        '☕ **Lord of the Coffees** — kendi kafeni kur, siparişleri yetiştir, ' +
+                        'restoranı ve havuzlu barı aç.\n\n' +
+                        '*Yönlendiriliyorsun…*');
+                    setTimeout(() => { window.location.href = 'games/gizli-gorev/index.html'; }, 2600);
+                }, 700);
+                return;
+            }
 
             const typingId = appendTypingIndicator();
 
